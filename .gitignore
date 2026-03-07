@@ -54,11 +54,19 @@ desktop.ini
 _agent/
 _agents/
 .gemini/
+.codex-logs/
+.cursor/
 .ruff_cache/
 .pytest_cache/
+.pytest-tmp/
+.uv-cache/
+.uv-python/
 coverage/
 .coverage
+coverage.json
 htmlcov/
 
 # Data directory
 data/
+textbooks/
+backend/data/chroma_db/

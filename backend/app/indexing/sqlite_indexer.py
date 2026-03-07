@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from threading import RLock
 from pathlib import Path
 
 from loguru import logger
@@ -68,11 +69,13 @@ class SQLiteIndexer:
 
     def __init__(self, db_path: Path) -> None:
         self.db_path = db_path
+        self._lock = RLock()
         db_path.parent.mkdir(parents=True, exist_ok=True)
-        self._conn = sqlite3.connect(str(db_path))
+        self._conn = sqlite3.connect(str(db_path), check_same_thread=False)
         self._conn.row_factory = sqlite3.Row
-        self._conn.executescript(_SCHEMA_SQL)
-        self._conn.commit()
+        with self._lock:
+            self._conn.executescript(_SCHEMA_SQL)
+            self._conn.commit()
 
     def index_chunks(self, chunks: list[Chunk], book_key: str, book_title: str) -> int:
         """Insert chunks for a book into the index.
@@ -83,9 +86,10 @@ class SQLiteIndexer:
             Number of chunks inserted.
         """
         # Check if already indexed
-        row = self._conn.execute(
-            "SELECT total_chunks FROM books WHERE book_key = ?", (book_key,)
-        ).fetchone()
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT total_chunks FROM books WHERE book_key = ?", (book_key,)
+            ).fetchone()
         if row and row["total_chunks"] > 0:
             logger.info(
                 "Book {} already indexed ({} chunks), skipping",
@@ -97,37 +101,39 @@ class SQLiteIndexer:
         count = 0
         for chunk in chunks:
             try:
-                self._conn.execute(
-                    """INSERT OR IGNORE INTO chunks
-                       (chunk_id, book_key, book_title, chapter, section,
-                        page_number, content_type, text, bbox_json, text_level, token_count)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                    (
-                        chunk.chunk_id,
-                        chunk.book_key,
-                        chunk.book_title,
-                        chunk.chapter,
-                        chunk.section,
-                        chunk.page_number,
-                        chunk.content_type,
-                        chunk.text,
-                        json.dumps(chunk.bbox),
-                        chunk.text_level,
-                        chunk.token_count,
-                    ),
-                )
+                with self._lock:
+                    self._conn.execute(
+                        """INSERT OR IGNORE INTO chunks
+                           (chunk_id, book_key, book_title, chapter, section,
+                            page_number, content_type, text, bbox_json, text_level, token_count)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                        (
+                            chunk.chunk_id,
+                            chunk.book_key,
+                            chunk.book_title,
+                            chunk.chapter,
+                            chunk.section,
+                            chunk.page_number,
+                            chunk.content_type,
+                            chunk.text,
+                            json.dumps(chunk.bbox),
+                            chunk.text_level,
+                            chunk.token_count,
+                        ),
+                    )
                 count += 1
             except sqlite3.IntegrityError:
                 pass
 
         # Upsert books metadata
         max_page = max((c.page_number for c in chunks), default=0) if chunks else 0
-        self._conn.execute(
-            """INSERT OR REPLACE INTO books (book_key, book_title, total_pages, total_chunks)
-               VALUES (?, ?, ?, ?)""",
-            (book_key, book_title, max_page + 1, count),
-        )
-        self._conn.commit()
+        with self._lock:
+            self._conn.execute(
+                """INSERT OR REPLACE INTO books (book_key, book_title, total_pages, total_chunks)
+                   VALUES (?, ?, ?, ?)""",
+                (book_key, book_title, max_page + 1, count),
+            )
+            self._conn.commit()
         logger.info("Indexed {} chunks for {}", count, book_key)
         return count
 
@@ -173,7 +179,8 @@ class SQLiteIndexer:
         sql += " ORDER BY rank LIMIT ?"
         params.append(top_k)
 
-        rows = self._conn.execute(sql, params).fetchall()
+        with self._lock:
+            rows = self._conn.execute(sql, params).fetchall()
         return [self._row_to_chunk(r) for r in rows]
 
     def get_chunks_by_pages(
@@ -183,17 +190,21 @@ class SQLiteIndexer:
         page_end: int,
     ) -> list[Chunk]:
         """Retrieve chunks within a page range (for PageIndex retrieval)."""
-        rows = self._conn.execute(
-            """SELECT * FROM chunks
-               WHERE book_key = ? AND page_number BETWEEN ? AND ?
-               ORDER BY page_number""",
-            (book_key, page_start, page_end),
-        ).fetchall()
+        with self._lock:
+            rows = self._conn.execute(
+                """SELECT * FROM chunks
+                   WHERE book_key = ? AND page_number BETWEEN ? AND ?
+                   ORDER BY page_number""",
+                (book_key, page_start, page_end),
+            ).fetchall()
         return [self._row_to_chunk(r) for r in rows]
 
     def get_books(self) -> list[BookInfo]:
         """List all indexed books."""
-        rows = self._conn.execute("SELECT * FROM books ORDER BY book_title").fetchall()
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT * FROM books ORDER BY book_title"
+            ).fetchall()
         return [
             BookInfo(
                 book_key=r["book_key"],
@@ -207,12 +218,14 @@ class SQLiteIndexer:
 
     def total_chunks(self) -> int:
         """Count total indexed chunks."""
-        row = self._conn.execute("SELECT COUNT(*) AS cnt FROM chunks").fetchone()
+        with self._lock:
+            row = self._conn.execute("SELECT COUNT(*) AS cnt FROM chunks").fetchone()
         return row["cnt"] if row else 0
 
     def close(self) -> None:
         """Close the database connection."""
-        self._conn.close()
+        with self._lock:
+            self._conn.close()
 
     @staticmethod
     def _row_to_chunk(row: sqlite3.Row) -> Chunk:

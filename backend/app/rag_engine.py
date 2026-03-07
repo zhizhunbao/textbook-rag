@@ -1,10 +1,11 @@
-# RAG Engine — orchestrates retrieval, fusion, and generation.
+# RAG Engine - orchestrates retrieval, fusion, and generation.
 # This is the main entry point for query processing.
-# Ref: DDIA (Kleppmann), Ch12 — composing data systems from specialized components
+# Ref: DDIA (Kleppmann), Ch12 - composing data systems from specialized components
 
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
+from typing import Callable
 
 from loguru import logger
 
@@ -22,27 +23,20 @@ from backend.app.tracing.source_tracer import SourceTracer
 
 
 class RAGEngine:
-    """Orchestrates the full RAG pipeline: retrieve → fuse → generate.
-
-    Designed as a standalone class with no UI dependency,
-    ready for ROS 2 wrapping (architecture ADR — OOP-ready design).
-    """
+    """Orchestrates the full RAG pipeline: retrieve -> fuse -> generate."""
 
     def __init__(self, config: Config) -> None:
         self._config = config
 
-        # Data stores
         self._sqlite = SQLiteIndexer(config.paths.sqlite_db)
         self._chroma = ChromaIndexer(
             config.paths.chroma_db,
             model_name=config.embedding.model,
         )
 
-        # PageIndex trees
         pi_builder = PageIndexBuilder()
         self._trees = pi_builder.load_all_trees(config.paths.pageindex_trees)
 
-        # Retrievers
         self._bm25 = BM25Retriever(self._sqlite)
         self._semantic = SemanticRetriever(self._chroma)
         self._pageindex = PageIndexRetriever(
@@ -52,14 +46,12 @@ class RAGEngine:
         )
         self._fuser = RRFFuser(k=config.retrieval.rrf_k)
 
-        # Generator
         self._generator = AnswerGenerator(
             host=config.ollama.host,
             model=config.ollama.model,
             timeout=config.ollama.timeout,
         )
 
-        # Source tracer
         self._tracer = SourceTracer(
             textbooks_dir=config.paths.textbooks_dir,
             mineru_output_dir=config.paths.mineru_output,
@@ -78,22 +70,14 @@ class RAGEngine:
         book_filter: list[str] | None = None,
         content_type_filter: list[str] | None = None,
         top_k: int | None = None,
+        progress_callback: Callable[[str], None] | None = None,
     ) -> QueryResult:
-        """Execute the full RAG pipeline.
+        """Execute the full RAG pipeline."""
 
-        1. Run retrieval methods in parallel (with timeout).
-        2. Fuse results with RRF.
-        3. Generate answer with LLM.
+        def report(message: str) -> None:
+            if progress_callback is not None:
+                progress_callback(message)
 
-        Args:
-            question: User's natural language question.
-            book_filter: Optional book_key whitelist.
-            content_type_filter: Optional content type filter.
-            top_k: Override default top_k from config.
-
-        Returns:
-            QueryResult with answer, sources, and stats.
-        """
         if top_k is None:
             top_k = self._config.retrieval.top_k
 
@@ -101,13 +85,19 @@ class RAGEngine:
         timeout = self._config.retrieval.parallel_timeout
         results_per_method: dict[str, list[RetrievedChunk]] = {}
         stats: dict[str, str] = {}
+        active_methods = [
+            name
+            for name, enabled in methods.items()
+            if enabled and (name != "pageindex" or self._trees)
+        ]
+        report(f"Starting retrieval with: {', '.join(active_methods) or 'none'}")
 
-        # Parallel retrieval using ThreadPoolExecutor
-        # Ref: Ramalho, Fluent Python, Ch20 — concurrent.futures for I/O-bound parallelism
+        # Ref: Ramalho, Fluent Python, Ch20 - concurrent.futures for I/O-bound parallelism
         with ThreadPoolExecutor(max_workers=3) as executor:
             futures = {}
 
             if methods.get("bm25"):
+                report("BM25 retrieval is scanning keyword matches.")
                 futures["bm25"] = executor.submit(
                     self._bm25.search,
                     question,
@@ -116,6 +106,7 @@ class RAGEngine:
                     content_type_filter,
                 )
             if methods.get("semantic"):
+                report("Semantic retrieval is comparing vector similarity.")
                 futures["semantic"] = executor.submit(
                     self._semantic.search,
                     question,
@@ -124,6 +115,7 @@ class RAGEngine:
                     content_type_filter,
                 )
             if methods.get("pageindex") and self._trees:
+                report("PageIndex retrieval is checking chapter and section hints.")
                 futures["pageindex"] = executor.submit(
                     self._pageindex.search,
                     question,
@@ -134,25 +126,31 @@ class RAGEngine:
             for method, future in futures.items():
                 try:
                     results_per_method[method] = future.result(timeout=timeout)
-                    stats[method] = f"✅ {len(results_per_method[method])} results"
+                    stats[method] = f"OK {len(results_per_method[method])} results"
+                    report(
+                        f"{method.upper()} retrieval finished with "
+                        f"{len(results_per_method[method])} results."
+                    )
                 except FutureTimeout:
                     logger.warning("{} retrieval timed out ({}s)", method, timeout)
                     results_per_method[method] = []
-                    stats[method] = f"⏱️ timeout ({timeout}s)"
+                    stats[method] = f"timeout ({timeout}s)"
+                    report(f"{method.upper()} retrieval timed out after {timeout}s.")
                 except Exception as exc:
                     logger.error("{} retrieval failed: {}", method, exc)
                     results_per_method[method] = []
-                    stats[method] = f"❌ error: {exc}"
+                    stats[method] = f"error: {exc}"
+                    report(f"{method.upper()} retrieval failed: {exc}")
 
-        # RRF fusion
+        report("Fusing retrieval results into a ranked shortlist.")
         fused = self._fuser.fuse(results_per_method, top_k=top_k)
         stats["rrf_fused"] = f"{len(fused)} chunks"
 
-        # Generate answer
         fused_chunks = [rc.chunk for rc in fused]
+        report(f"Generating the final answer from {len(fused_chunks)} cited chunks.")
         result = self._generator.generate(question, fused_chunks)
         result.retrieval_stats = stats
-
+        report("Answer generation finished.")
         return result
 
     def get_available_books(self) -> list[BookInfo]:
