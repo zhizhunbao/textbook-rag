@@ -17,7 +17,7 @@ commands. Treat them as intent labels and execute the documented workflow steps 
 
 1. Use `.dev-state.yaml` as the single source of truth for phase progress.
 2. Respect the canonical phase order:
-   `requirements -> prd -> ux_design -> architecture -> stories -> database -> backend -> frontend -> testing -> review -> deployment`
+   `requirements -> prd -> architecture -> stories -> database -> backend -> frontend -> testing -> review -> deployment`
 3. Enforce mandatory phase review and re-review before marking a phase completed.
 4. Follow Windows PowerShell execution constraints in this repo.
 5. Read textbook references before any workflow phase, skill-driven task, implementation, testing, or review work, and use textbook-sourced rationale for those decisions.
