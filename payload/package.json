@@ -1,0 +1,41 @@
+{
+  "name": "textbook-rag-payload",
+  "version": "2.0.0",
+  "description": "Textbook RAG v2.0 — Payload CMS + Next.js frontend",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "generate:types": "payload generate:types",
+    "generate:graphQLSchema": "payload generate:graphQLSchema",
+    "payload": "payload"
+  },
+  "dependencies": {
+    "@payloadcms/db-postgres": "^3.80.0",
+    "@payloadcms/db-sqlite": "^3.80.0",
+    "@payloadcms/next": "^3.0.0",
+    "@payloadcms/richtext-lexical": "^3.0.0",
+    "@payloadcms/ui": "^3.0.0",
+    "@tailwindcss/postcss": "^4.2.2",
+    "@tailwindcss/typography": "^0.5.19",
+    "autoprefixer": "^10.4.27",
+    "graphql": "^16.8.1",
+    "next": "^15.0.0",
+    "payload": "^3.0.0",
+    "pdfjs-dist": "^5.5.207",
+    "postcss": "^8.5.8",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-markdown": "^10.1.0",
+    "react-pdf": "^7.7.3",
+    "rehype-raw": "^7.0.0",
+    "sharp": "^0.33.5",
+    "tailwindcss": "^4.2.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.7.0"
+  }
+}

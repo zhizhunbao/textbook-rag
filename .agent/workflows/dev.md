@@ -150,7 +150,6 @@ Reviewer 分配表（不可自审）：
 | `database`     | Bob (Architect)  | David (Backend)     | 后端工程师验证数据模型的可用性   |
 | `backend`      | David (Backend)  | Grace (Reviewer)    | 代码审查专家审查代码质量         |
 | `frontend`     | Eve (Frontend)   | Grace (Reviewer)    | 代码审查专家审查代码质量         |
-| `testing`      | Frank (QA)       | Charlie (Tech Lead) | 技术主管验证测试覆盖率和策略     |
 | `review`       | Grace (Reviewer) | Charlie (Tech Lead) | 技术主管最终确认                 |
 | `deployment`   | Henry (DevOps)   | Bob (Architect)     | 架构师验证部署与架构的一致性     |
 
@@ -160,7 +159,6 @@ Review 类型映射：
 | ------------------------------------------------------------- | ----------- | --------------------------------- | ---------------------------------------- |
 | requirements, prd, architecture, stories, database            | 文档类      | `references/document-review.md`   | `docs/reviews/phase-{NN}-{phase_key}.md` |
 | backend, frontend, review                                     | 代码类      | `references/code-review.md`       | `docs/reviews/phase-{NN}-{phase_key}.md` |
-| testing                                                       | 测试类      | `references/testing-review.md`    | `docs/reviews/phase-{NN}-{phase_key}.md` |
 | deployment                                                    | 部署类      | `references/deployment-review.md` | `docs/reviews/phase-{NN}-{phase_key}.md` |
 
 Review 文件命名规则: `phase-{序号:02d}-{phase_key}.md`，例如 `phase-04-architecture.md`
@@ -176,11 +174,10 @@ Review 文件命名规则: `phase-{序号:02d}-{phase_key}.md`，例如 `phase-0
 | 5    | `database`     | 数据库设计 | Bob (Architect)  | `step-05-database.md`     | 文档类      |
 | 6    | `backend`      | 后端开发   | David (Backend)  | `step-06-backend.md`      | 代码类      |
 | 7    | `frontend`     | 前端开发   | Eve (Frontend)   | `step-07-frontend.md`     | 代码类      |
-| 8    | `testing`      | 测试       | Frank (QA)       | `step-08-testing.md`      | 测试阶段    |
-| 9    | `review`       | 代码审查   | Grace (Reviewer) | `step-09-review.md`       | 代码类      |
-| 10   | `deployment`   | 部署       | Henry (DevOps)   | `step-10-deployment.md`   | 部署阶段    |
+| 8    | `review`       | 代码审查   | Grace (Reviewer) | `step-08-review.md`       | 代码类      |
+| 9    | `deployment`   | 部署       | Henry (DevOps)   | `step-09-deployment.md`   | 部署阶段    |
 
-**Phase key 顺序**: `requirements` → `prd` → `architecture` → `stories` → `database` → `backend` → `frontend` → `testing` → `review` → `deployment`
+**Phase key 顺序**: `requirements` → `prd` → `architecture` → `stories` → `database` → `backend` → `frontend` → `review` → `deployment`
 
 ### Template-First 资源映射
 
@@ -189,24 +186,22 @@ Review 文件命名规则: `phase-{序号:02d}-{phase_key}.md`，例如 `phase-0
 | `stories`    | `docs/plan.md.template`    | -                                                   |
 | `backend`    | `backend/*.template`       | `scaffold.py feature --name <name> --type backend`  |
 | `frontend`   | `frontend/*.template`      | `scaffold.py feature --name <name> --type frontend` |
-| `testing`    | `tests/*.template`         | `coverage_report.py`, `extract_i18n.py --check`     |
 | `review`     | -                          | `env_check.py --files`                              |
-| `deployment` | `devops/*.template`        | `env_check.py --env production`                     |
+| `deployment` | `.vscode/tasks.json`       | `env_check.py --env production`                     |
 
 ### 自动验收检查（Phase Review 的第一步）
 
-| Phase        | 自动检查命令                                                                     |
-| ------------ | -------------------------------------------------------------------------------- |
-| Requirements | 文件存在 + 非空: `docs/requirements/requirements.md`                             |
-| PRD          | 文件存在 + 非空: `docs/requirements/prd.md`                                      |
-| Architecture | 文件存在 + 非空: `docs/architecture/system-architecture.md`                      |
-| Stories      | 文件存在 + 非空: `docs/sprints/sprint-plan.md`                                   |
-| Database     | 文件存在: `docs/codemaps/database.md`                                            |
-| Backend      | `cd backend && uv run ruff check app/`, `cd backend && uv run pytest --tb=short` |
-| Frontend     | `cd frontend && npm run lint`, `cd frontend && npx tsc --noEmit`                 |
-| Testing      | All tests pass, coverage ≥ 80%                                                   |
-| Review       | No CRITICAL issues in review report                                              |
-| Deployment   | 文件存在: `render.yaml`                                                          |
+| Phase        | 自动检查命令                                                                              |
+| ------------ | ----------------------------------------------------------------------------------------- |
+| Requirements | 文件存在 + 非空: `docs/requirements/requirements.md`                                      |
+| PRD          | 文件存在 + 非空: `docs/requirements/prd.md`                                               |
+| Architecture | 文件存在 + 非空: `docs/architecture/system-architecture.md`                               |
+| Stories      | 文件存在 + 非空: `docs/sprints/sprint-plan.md`                                            |
+| Database     | 文件存在: `docs/codemaps/database.md`                                                     |
+| Backend      | `uv run ruff check engine/ backend/`, `cd payload && npm run build`                       |
+| Frontend     | `cd payload && npx tsc --noEmit`, `cd payload && npm run lint`                            |
+| Review       | No CRITICAL issues in review report                                                       |
+| Deployment   | Engine `/engine/health` 返回 ok，Payload Admin 可登录，`docs/v2.0/deployment.md` 已生成   |
 
 ### 状态管理
 

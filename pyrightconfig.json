@@ -1,12 +1,8 @@
 {
-  "executionEnvironments": [
-    {
-      "root": ".",
-      "extraPaths": ["."]
-    }
-  ],
+  "pythonPath": ".venv/Scripts/python.exe",
   "venvPath": ".",
   "venv": ".venv",
-  "pythonVersion": "3.10",
+  "pythonVersion": "3.12",
+  "extraPaths": ["."],
   "typeCheckingMode": "basic"
 }

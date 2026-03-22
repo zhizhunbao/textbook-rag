@@ -1,0 +1,53 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+/* ── Theme tokens (Tailwind v4 CSS vars) ────────────────────────────────── */
+@theme {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  --color-surface-50:  #f8f9fc;
+  --color-surface-100: #f0f2f8;
+  --color-surface-200: #e4e7f0;
+  --color-surface-300: #c9cfe0;
+  --color-surface-700: #3b4060;
+  --color-surface-800: #252840;
+  --color-surface-900: #161826;
+  --color-surface-950: #0d0f1a;
+
+  --color-brand-300: #93c5fd;
+  --color-brand-400: #60a5fa;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+
+  --color-accent-400: #a78bfa;
+  --color-accent-500: #8b5cf6;
+}
+
+/* ── Base ──────────────────────────────────────────────────────────────── */
+html, body {
+  height: 100%;
+  margin: 0;
+  background-color: var(--color-surface-950);
+  color: #f1f5f9; /* slate-100 */
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--color-surface-900); }
+::-webkit-scrollbar-thumb { background: var(--color-surface-700); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-surface-300); }
+
+/* react-pdf compatibility */
+.react-pdf__Page__textContent { pointer-events: none; }
+.react-pdf__Page__textContent span {
+  position: relative;
+  border-radius: 2px;
+  transition: background-color 160ms ease, box-shadow 160ms ease;
+}

@@ -18,7 +18,7 @@ config:
 
 # Phase 顺序:
 # requirements → prd → architecture → stories →
-# database → backend → frontend → testing → review → deployment
+# database → backend → frontend → review → deployment
 
 phases:
   requirements:
@@ -111,18 +111,6 @@ phases:
       - command: "cd frontend && npx tsc --noEmit"
       - command: "cd frontend && npm run lint"
 
-  testing:
-    name: "测试"
-    status: pending
-    started_at: ""
-    completed_at: ""
-    output: "docs/test-report.md"
-    skill: "dev-senior_qa"
-    role: "qa_engineer"
-    depends_on: ["backend", "frontend"]
-    checks:
-      - command: "cd backend && uv run pytest --tb=short -q"
-
   review:
     name: "代码审查"
     status: pending
@@ -131,7 +119,7 @@ phases:
     output: "docs/review-report.md"
     skill: "dev-code_reviewer"
     role: "code_reviewer"
-    depends_on: ["testing"]
+    depends_on: ["backend", "frontend"]
     checks:
       - file_exists: "docs/review-report.md"
 
