@@ -8,6 +8,7 @@ from typing import Any
 
 import json
 import logging
+import re
 import sqlite3
 
 import httpx
@@ -27,6 +28,8 @@ _FALLBACK_SYSTEM_PROMPT = (
     "textbook excerpts provided below. "
     "Every question MUST reference a specific concept from the excerpts. "
     "Do NOT generate generic questions. "
+    "NEVER reference page numbers, chapter numbers, or section numbers in questions. "
+    "Questions must be self-contained and answerable by searching for concepts. "
     "Generate exactly {count} questions. "
     "Return ONLY a JSON array. Each element: "
     '"question" (string), "book_title" (string), "topic_hint" (string). '
@@ -67,7 +70,7 @@ def _fetch_question_prompt() -> str:
 
 class GenerateQuestionsRequest(BaseModel):
     """Request body for question generation."""
-    book_ids: list[int]
+    book_ids: list[str]     # engine text book_ids, e.g. ["bishop_prml", "james_ISLR"]
     count: int = 6          # how many questions to generate
     model: str | None = None
 
@@ -75,37 +78,39 @@ class GenerateQuestionsRequest(BaseModel):
 class GeneratedQuestion(BaseModel):
     """A single auto-generated question with metadata."""
     question: str
-    book_id: int
+    book_id: str
     book_title: str
     topic_hint: str         # short label like "Chapter 3" or "BM25"
 
 
-def _sample_chunks(book_ids: list[int], sample_size: int = 12) -> list[dict[str, Any]]:
-    """Sample random chunks from the given books in the SQLite DB.
+def _sample_chunks(book_ids: list[str], sample_size: int = 6) -> list[dict[str, Any]]:
+    """Sample random chunks from the specified books in the SQLite DB.
     
-    Note: book_ids from the frontend are Payload CMS IDs. In the engine
-    SQLite DB, books.book_id is a TEXT directory name and books.id is
-    the integer PK. We query all books and filter by text matching if
-    needed, or just sample across all available books.
+    Args:
+        book_ids: Engine text book_ids (e.g. ["bishop_prml"]).
+                  These match `books.book_id` column in the engine DB.
+        sample_size: Max number of chunks to sample.
     """
     db_path = str(DATABASE_PATH)
     conn = sqlite3.connect(db_path, check_same_thread=False)
     conn.row_factory = sqlite3.Row
 
-    # Sample chunks from all books (the engine DB may have different IDs)
+    # Build parameterized IN clause for the selected books
+    placeholders = ",".join("?" for _ in book_ids)
     rows = conn.execute(
-        """
+        f"""
         SELECT c.chunk_id, c.text, p.page_number,
                b.id AS engine_book_id, b.book_id AS book_dir_name,
                b.title AS book_title
         FROM chunks c
         JOIN books b ON c.book_id = b.id
         LEFT JOIN pages p ON c.primary_page_id = p.id
-        WHERE length(c.text) > 120
+        WHERE b.book_id IN ({placeholders})
+          AND length(c.text) > 120
         ORDER BY RANDOM()
         LIMIT ?
         """,
-        (sample_size,),
+        (*book_ids, sample_size),
     ).fetchall()
     conn.close()
 
@@ -113,6 +118,43 @@ def _sample_chunks(book_ids: list[int], sample_size: int = 12) -> list[dict[str,
         return []
 
     return [dict(r) for r in rows]
+
+
+
+
+def _extract_json_array(raw: str) -> list[dict[str, Any]]:
+    """Robustly extract a JSON array from LLM output.
+    
+    Handles common issues:
+    - Markdown code fences (```json ... ```)
+    - Extra text before/after the JSON array
+    - Trailing commas (best-effort)
+    """
+    text = raw.strip()
+
+    # Strip markdown code fences
+    text = re.sub(r"^```(?:json)?\s*\n?", "", text)
+    text = re.sub(r"\n?```\s*$", "", text)
+    text = text.strip()
+
+    # Find the first '[' and match to its closing ']'
+    start = text.find("[")
+    if start == -1:
+        raise ValueError("No JSON array found in LLM output")
+
+    depth = 0
+    end = start
+    for i in range(start, len(text)):
+        if text[i] == "[":
+            depth += 1
+        elif text[i] == "]":
+            depth -= 1
+            if depth == 0:
+                end = i + 1
+                break
+
+    candidate = text[start:end]
+    return json.loads(candidate)
 
 
 def _generate_questions_via_llm(
@@ -125,8 +167,10 @@ def _generate_questions_via_llm(
     # Build context from chunks
     context_parts = []
     for i, c in enumerate(chunks, 1):
-        header = f"[{i}] {c.get('book_title', '')} | p.{c.get('page_number', '?')}"
-        text = c.get("text", "")[:600]
+        # Omit page numbers from context to prevent LLM from referencing them
+        # in generated questions (RAG retrieval can't search by page number)
+        header = f"[{i}] {c.get('book_title', '')}"
+        text = c.get("text", "")[:400]
         context_parts.append(f"{header}\n{text}")
     context = "\n\n---\n\n".join(context_parts)
 
@@ -137,7 +181,7 @@ def _generate_questions_via_llm(
     # Detect thinking-capable models and disable CoT for faster responses
     is_thinking_model = any(
         tag in model.lower()
-        for tag in ("qwen3", "deepseek-r1", "qwq")
+        for tag in ("qwen3", "qwen3.5", "deepseek-r1", "qwq")
     )
 
     payload: dict[str, Any] = {
@@ -153,18 +197,10 @@ def _generate_questions_via_llm(
 
     try:
         logger.info("Calling Ollama model=%s at %s", model, ollama_url)
-        resp = httpx.post(f"{ollama_url}/api/chat", json=payload, timeout=120.0)
+        resp = httpx.post(f"{ollama_url}/api/chat", json=payload, timeout=60.0)
         resp.raise_for_status()
         content = resp.json().get("message", {}).get("content", "")
-        # Try to parse JSON from response
-        content = content.strip()
-        # Strip markdown code fences if present
-        if content.startswith("```"):
-            content = content.split("\n", 1)[1] if "\n" in content else content[3:]
-        if content.endswith("```"):
-            content = content[:-3]
-        content = content.strip()
-        questions = json.loads(content)
+        questions = _extract_json_array(content)
         if isinstance(questions, list):
             return questions[:count]
     except httpx.HTTPStatusError as e:
@@ -188,15 +224,15 @@ def generate_questions(req: GenerateQuestionsRequest):
     ollama_url = config.ollama_base_url
 
     # Sample chunks from requested books
-    chunks = _sample_chunks(req.book_ids, sample_size=12)
+    chunks = _sample_chunks(req.book_ids, sample_size=6)
     if not chunks:
         return {"questions": []}
 
-    # Get book_id mapping for attaching correct IDs
-    book_id_map: dict[str, int] = {}
+    # Get title → book_id mapping for attaching correct IDs
+    book_id_map: dict[str, str] = {}
     for c in chunks:
         title = c.get("book_title", "")
-        bid = c.get("engine_book_id")
+        bid = c.get("book_dir_name", "")
         if title and bid:
             book_id_map[title] = bid
 
@@ -204,10 +240,13 @@ def generate_questions(req: GenerateQuestionsRequest):
 
     questions = []
     for q in raw_questions:
+        if not isinstance(q, dict):
+            logger.warning("Skipping non-dict question item: %s", type(q).__name__)
+            continue
         title = q.get("book_title", "")
         questions.append({
             "question": q.get("question", ""),
-            "book_id": book_id_map.get(title, req.book_ids[0] if req.book_ids else 0),
+            "book_id": book_id_map.get(title, req.book_ids[0] if req.book_ids else ""),
             "book_title": title,
             "topic_hint": q.get("topic_hint", ""),
         })

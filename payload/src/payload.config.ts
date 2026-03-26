@@ -14,6 +14,7 @@ import { PromptModes } from './collections/PromptModes'
 import { LlmModels } from './collections/LlmModels'
 import { QueryTemplates } from './collections/QueryTemplates'
 import { QueryLogs } from './collections/QueryLogs'
+import { Questions } from './collections/Questions'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -35,6 +36,7 @@ export default buildConfig({
     LlmModels,
     QueryTemplates,
     QueryLogs,
+    Questions,
   ],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',

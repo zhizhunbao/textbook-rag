@@ -18,6 +18,7 @@ class ChunkHit:
     reading_order: int = 0
 
     # Metadata (populated by _enrich_metadata)
+    book_id_string: str = ""
     book_title: str = ""
     chapter_title: str | None = None
     primary_page_number: int | None = None

@@ -153,7 +153,11 @@ export default function ChatPanel({
       const startTime = Date.now();
 
       try {
-        const filters = sessionBookIds.length > 0 ? { book_ids: sessionBookIds } : undefined;
+        // Map Payload CMS IDs → engine book_id strings for correct filtering
+        const engineBookIdStrings = sessionBookIds
+          .map((pid) => books.find((b) => b.id === pid)?.book_id)
+          .filter((s): s is string => !!s);
+        const filters = engineBookIdStrings.length > 0 ? { book_id_strings: engineBookIdStrings } : undefined;
         const res: QueryResponse = await queryTextbook({
           question: trimmed,
           filters,
@@ -281,6 +285,7 @@ export default function ChatPanel({
                   role={message.role}
                   content={message.content}
                   sources={message.sources}
+                  onRetry={message.role === "user" && !loading ? (q) => void submitQuestion(q) : undefined}
                 />
                 {message.role === "assistant" && chatMode === "trace" && message.trace && (
                   <TracePanel trace={message.trace} />

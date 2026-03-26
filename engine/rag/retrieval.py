@@ -120,6 +120,7 @@ class RetrievalOrchestrator:
                 f"""
                 SELECT
                     c.id           AS chunk_pk,
+                    b.book_id      AS book_id_string,
                     b.title        AS book_title,
                     b.category     AS category,
                     ch.title       AS chapter_title,
@@ -137,6 +138,7 @@ class RetrievalOrchestrator:
                 f"""
                 SELECT
                     c.id           AS chunk_pk,
+                    b.book_id      AS book_id_string,
                     b.title        AS book_title,
                     '' AS category,
                     ch.title       AS chapter_title,
@@ -171,6 +173,7 @@ class RetrievalOrchestrator:
 
         for hit in hits:
             meta = meta_map.get(hit.id, {})
+            hit.book_id_string = meta.get("book_id_string") or hit.book_id_string
             hit.book_title = meta.get("book_title") or hit.book_title
             hit.category = meta.get("category") or hit.category
             hit.chapter_title = meta.get("chapter_title")

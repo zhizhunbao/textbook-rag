@@ -42,6 +42,7 @@ export async function POST() {
         title: eb.title,
         authors: eb.authors || '',
         category: inferCategory(eb.book_id),
+        subcategory: inferSubcategory(eb.book_id),
         status: 'indexed' as const,
         chunkCount: eb.chunk_count || 0,
         pipeline: {
@@ -96,4 +97,102 @@ export async function POST() {
 function inferCategory(bookId: string): string {
   if (bookId.startsWith('ed_update') || bookId.startsWith('oreb_')) return 'ecdev'
   return 'textbook'
+}
+
+/** Infer subcategory from engine book_id for hierarchical filtering */
+function inferSubcategory(bookId: string): string {
+  // ── EC Development ──
+  if (bookId.startsWith('ed_update')) return 'Quarterly Reports'
+  if (bookId.startsWith('oreb_')) return 'Market Analysis'
+
+  // ── Textbook subcategories by subject ──
+  const SUBCATEGORY_MAP: Record<string, string> = {
+    // Python
+    ramalho_fluent_python: 'Python',
+    percival_cosmic_python: 'Python',
+    beazley_python_cookbook: 'Python',
+    downey_think_python_2e: 'Python',
+    downey_how_to_think_like_cs: 'Python',
+    okken_python_testing_pytest: 'Python',
+    seitz_black_hat_python: 'Python',
+    lubanovic_fastapi_modern_web: 'Python',
+
+    // JavaScript / TypeScript
+    haverbeke_eloquent_javascript: 'JavaScript',
+    flanagan_js_definitive_guide: 'JavaScript',
+    simpson_ydkjs_async_performance: 'JavaScript',
+    simpson_ydkjs_es6_beyond: 'JavaScript',
+    simpson_ydkjs_scope_closures: 'JavaScript',
+    simpson_ydkjs_types_grammar: 'JavaScript',
+    simpson_ydkjs_up_going: 'JavaScript',
+    simpson_ydkjs_this_object_prototypes: 'JavaScript',
+    basarat_typescript_deep_dive: 'JavaScript',
+
+    // ML & Statistics
+    james_ISLR: 'Machine Learning',
+    hastie_esl: 'Machine Learning',
+    bishop_prml: 'Machine Learning',
+    'shalev-shwartz_uml': 'Machine Learning',
+    kelleher_ml_fundamentals: 'Machine Learning',
+    murphy_pml1: 'Machine Learning',
+    murphy_pml2: 'Machine Learning',
+    barber_brml: 'Machine Learning',
+
+    // Deep Learning
+    goodfellow_deep_learning: 'Deep Learning',
+
+    // NLP / IR
+    eisenstein_nlp: 'NLP',
+    jurafsky_slp3: 'NLP',
+    manning_intro_to_ir: 'NLP',
+
+    // Computer Vision
+    szeliski_cv: 'Computer Vision',
+
+    // Reinforcement Learning
+    sutton_barto_rl_intro: 'Reinforcement Learning',
+    hamilton_grl: 'Reinforcement Learning',
+
+    // Math & Probability
+    deisenroth_mml: 'Math',
+    boyd_convex_optimization: 'Math',
+    grinstead_snell_probability: 'Math',
+    mackay_information_theory: 'Math',
+
+    // Algorithms & Data Structures
+    cormen_CLRS: 'Algorithms',
+
+    // Software Engineering
+    martin_clean_code: 'Software Engineering',
+    martin_clean_architecture: 'Software Engineering',
+    fowler_refactoring: 'Software Engineering',
+    hunt_pragmatic_programmer: 'Software Engineering',
+    gof_design_patterns: 'Software Engineering',
+    google_swe: 'Software Engineering',
+    chacon_pro_git: 'Software Engineering',
+
+    // Systems & Infrastructure
+    kleppmann_ddia: 'Systems',
+    google_sre: 'Systems',
+    nygard_release_it: 'Systems',
+    ejsmont_web_scalability: 'Systems',
+    kreibich_using_sqlite: 'Systems',
+
+    // Networking & Web
+    gourley_http_definitive_guide: 'Networking',
+    barrett_ssh_definitive_guide: 'Networking',
+    zalewski_tangled_web: 'Security',
+    aumasson_serious_cryptography: 'Security',
+    andriesse_practical_binary_analysis: 'Security',
+
+    // Design & UX
+    krug_dont_make_me_think: 'Design',
+    norman_design_everyday_things: 'Design',
+
+    // Data & Statistics
+    downey_think_stats_2e: 'Statistics',
+    fontaine_art_of_postgresql: 'Database',
+  }
+
+  return SUBCATEGORY_MAP[bookId] || ''
 }

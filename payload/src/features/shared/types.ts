@@ -8,6 +8,8 @@ export interface BookSummary {
   page_count: number;
   chapter_count: number;
   chunk_count: number;
+  category: string;
+  subcategory: string;
 }
 
 export interface ChapterInfo {
@@ -32,6 +34,8 @@ export interface TocEntry {
 export interface SourceInfo {
   source_id: string;
   book_id: number;
+  book_id_string?: string;
+  citation_index?: number;
   book_title: string;
   chapter_title: string | null;
   page_number: number;
@@ -93,6 +97,7 @@ export interface QueryResponse {
 
 export interface QueryFilters {
   book_ids?: number[];
+  book_id_strings?: string[];
   chapter_ids?: number[];
   content_types?: string[];
 }

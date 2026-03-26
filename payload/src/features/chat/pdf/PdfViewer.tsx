@@ -530,7 +530,9 @@ export default function PdfViewer() {
 
   useEffect(() => {
     if (!selectedSource) return;
-    if (selectedSource.book_id !== currentBookId) return;
+    // Allow highlight if book matches (by engine ID or if already on the correct book)
+    const bookMatches = !selectedSource.book_id_string || selectedSource.book_id_string === engineBookId;
+    if (!bookMatches) return;
 
     pendingSourceScrollRef.current = {
       pageNumber: selectedSource.page_number,
@@ -581,7 +583,9 @@ export default function PdfViewer() {
 
   useEffect(() => {
     if (!selectedSource?.snippet) return;
-    if (selectedSource.book_id !== currentBookId) return;
+    // Allow highlight if book matches (by engine ID or if already on the correct book)
+    const highlightBookMatches = !selectedSource.book_id_string || selectedSource.book_id_string === engineBookId;
+    if (!highlightBookMatches) return;
 
     // Remove any previous citation box on other pages
     for (const node of pageRefs.current.values()) {

@@ -71,6 +71,7 @@ function mapPayloadBook(raw: any): LibraryBook {
     authors: raw.authors ?? null,
     isbn: raw.isbn ?? null,
     category: raw.category ?? 'textbook',
+    subcategory: raw.subcategory ?? null,
     status: raw.status ?? 'pending',
     chunkCount: raw.chunkCount ?? null,
     metadata: raw.metadata ?? null,

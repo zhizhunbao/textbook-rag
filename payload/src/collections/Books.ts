@@ -7,7 +7,7 @@ export const Books: CollectionConfig = {
   slug: 'books',
   admin: {
     useAsTitle: 'title',
-    defaultColumns: ['title', 'category', 'status', 'chunkCount', 'updatedAt'],
+    defaultColumns: ['title', 'category', 'subcategory', 'status', 'chunkCount', 'updatedAt'],
     group: 'Content',
   },
   access: {
@@ -52,6 +52,11 @@ export const Books: CollectionConfig = {
         { label: 'EC Dev', value: 'ecdev' },
         { label: 'Real Estate', value: 'real_estate' },
       ],
+    },
+    {
+      name: 'subcategory',
+      type: 'text',
+      admin: { description: 'Sub-classification within category (e.g. Python, NLP, Policy)' },
     },
     {
       name: 'status',

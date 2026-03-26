@@ -1,0 +1,112 @@
+/* ── API response types ── */
+
+export interface BookSummary {
+  id: number;
+  book_id: string;
+  title: string;
+  authors: string;
+  page_count: number;
+  chapter_count: number;
+  chunk_count: number;
+}
+
+export interface ChapterInfo {
+  id: number;
+  chapter_key: string;
+  title: string;
+  start_page: number | null;
+}
+
+export interface BookDetail extends BookSummary {
+  chapters: ChapterInfo[];
+}
+
+export interface TocEntry {
+  id: number;
+  level: number;
+  number: string;
+  title: string;
+  pdf_page: number;
+}
+
+export interface SourceInfo {
+  source_id: string;
+  book_id: number;
+  book_title: string;
+  chapter_title: string | null;
+  page_number: number;
+  snippet: string;
+  bbox: { x0: number; y0: number; x1: number; y1: number } | null;
+  page_dim: { width: number; height: number } | null;
+  confidence: number;
+  citation_label?: string;
+}
+
+export interface RetrievalStats {
+  fts_hits: number;
+  vector_hits: number;
+  pageindex_hits: number;
+  metadata_hits: number;
+  fused_count: number;
+}
+
+export interface TraceChunkHit {
+  strategy: "fts" | "vector" | "pageindex" | "metadata" | "fused";
+  rank: number;
+  chunk_id: string;
+  book_title: string;
+  chapter_title: string | null;
+  page_number: number | null;
+  score: number | null;
+  snippet: string;
+}
+
+export interface RetrievalTrace {
+  fetch_k: number;
+  fts_query: string;
+  fts_results: TraceChunkHit[];
+  vector_results: TraceChunkHit[];
+  pageindex_results: TraceChunkHit[];
+  metadata_results: TraceChunkHit[];
+  fused_results: TraceChunkHit[];
+}
+
+export interface GenerationTrace {
+  model: string;
+  system_prompt: string;
+  user_prompt: string;
+}
+
+export interface QueryTrace {
+  question: string;
+  top_k: number;
+  filters: QueryFilters | null;
+  active_book_title: string | null;
+  retrieval: RetrievalTrace;
+  generation: GenerationTrace;
+}
+
+export interface QueryResponse {
+  answer: string;
+  sources: SourceInfo[];
+  retrieval_stats: RetrievalStats;
+  trace: QueryTrace;
+}
+
+export interface QueryFilters {
+  book_ids?: number[];
+  chapter_ids?: number[];
+  content_types?: string[];
+}
+
+export interface QueryRequest {
+  question: string;
+  filters?: QueryFilters;
+  top_k?: number;
+  model?: string;
+}
+
+export interface ModelInfo {
+  name: string;
+  is_default: boolean;
+}

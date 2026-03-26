@@ -189,8 +189,11 @@ export const promptModesData = [
       '1. Every question MUST reference a specific concept, term, formula, method, or example that appears in the excerpts.\n' +
       '2. Do NOT generate generic questions like "What is the main topic?" or "What are the prerequisites?". ' +
       'Every question must be answerable ONLY from the given text.\n' +
-      '3. Include a mix: definition questions, comparison questions, "why" questions, and application questions.\n' +
-      '4. The "topic_hint" should be a specific concept name from the excerpt (e.g., "BM25 Ranking", "Dependency Injection"), NOT generic labels.\n' +
+      '3. NEVER reference page numbers, chapter numbers, section numbers, or figure numbers in your questions. ' +
+      'Questions must be self-contained and answerable by searching for concepts, not by locating a specific page. ' +
+      'BAD: "What is described on page 479?" GOOD: "What application of fast feature tracking involves interactive deformation?"\n' +
+      '4. Include a mix: definition questions, comparison questions, "why" questions, and application questions.\n' +
+      '5. The "topic_hint" should be a specific concept name from the excerpt (e.g., "BM25 Ranking", "Dependency Injection"), NOT generic labels.\n' +
       '\nGenerate exactly {count} questions. ' +
       'Return ONLY a JSON array. Each element must have: ' +
       '"question" (string), "book_title" (string, from the source), ' +

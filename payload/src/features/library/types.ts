@@ -58,6 +58,7 @@ export interface LibraryBook {
   authors: string | null
   isbn: string | null
   category: BookCategory
+  subcategory: string | null
   status: BookStatus
   chunkCount: number | null
   metadata: {

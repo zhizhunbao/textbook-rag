@@ -113,14 +113,21 @@ function reducer(state: AppState, action: Action): AppState {
       };
     case "SET_PAGE":
       return { ...state, currentPage: action.page };
-    case "SELECT_SOURCE":
+    case "SELECT_SOURCE": {
+      // Resolve engine book_id_string → Payload CMS id
+      let resolvedBookId = state.currentBookId;
+      if (action.source?.book_id_string) {
+        const match = state.books.find((b) => b.book_id === action.source!.book_id_string);
+        if (match) resolvedBookId = match.id;
+      }
       return {
         ...state,
         selectedSource: action.source,
         selectedSourceNonce: state.selectedSourceNonce + 1,
-        currentBookId: action.source?.book_id ?? state.currentBookId,
+        currentBookId: resolvedBookId,
         currentPage: action.source?.page_number ?? state.currentPage,
       };
+    }
     case "SET_MODEL":
       return { ...state, selectedModel: action.model };
     case "SET_CHAT_MODE":

@@ -42,6 +42,7 @@ export async function fetchBooks(): Promise<BookSummary[]> {
     chapter_count: 0,
     chunk_count: b.chunkCount ?? 0,
     category: b.category ?? 'textbook',
+    subcategory: b.subcategory ?? '',
   }))
 }
 
@@ -55,6 +56,8 @@ export async function fetchBook(bookId: number): Promise<BookDetail> {
     page_count: 0,
     chapter_count: 0,
     chunk_count: b.chunkCount ?? 0,
+    category: b.category ?? 'textbook',
+    subcategory: b.subcategory ?? '',
     chapters: [],
   }
 }
@@ -165,14 +168,18 @@ export async function queryTextbook(req: QueryRequest): Promise<QueryResponse> {
   const sources = (res.sources ?? []).map((s: any) => ({
     source_id: s.chunk_id ?? String(s.page_number),
     book_id: s.book_id ?? 0,
+    book_id_string: s.book_id_string ?? '',
+    citation_index: s.citation_index ?? undefined,
     book_title: s.book_title ?? '',
     chapter_title: s.chapter_title ?? null,
     page_number: s.page_number ?? 1,
     snippet: s.text ?? s.snippet ?? '',
-    bbox: s.locators?.[0]
-      ? { x0: s.locators[0].x0, y0: s.locators[0].y0, x1: s.locators[0].x1, y1: s.locators[0].y1 }
+    bbox: s.bbox
+      ? { x0: s.bbox.x0, y0: s.bbox.y0, x1: s.bbox.x1, y1: s.bbox.y1 }
       : null,
-    page_dim: null,
+    page_dim: s.bbox?.page_width && s.bbox?.page_height
+      ? { width: s.bbox.page_width, height: s.bbox.page_height }
+      : null,
     confidence: s.score ?? 1,
   }))
 
@@ -197,13 +204,13 @@ export async function fetchDemo(): Promise<QueryResponse> {
 
 export interface GeneratedQuestion {
   question: string
-  book_id: number
+  book_id: string
   book_title: string
   topic_hint: string
 }
 
 export async function fetchGeneratedQuestions(
-  bookIds: number[],
+  bookIds: string[],
   count = 6,
   model?: string,
 ): Promise<GeneratedQuestion[]> {

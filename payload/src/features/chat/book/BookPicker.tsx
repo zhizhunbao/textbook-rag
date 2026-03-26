@@ -1,18 +1,32 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import { Library, BookOpen, Building2, Home, Layers, LayoutGrid, List } from "lucide-react";
 import { fetchBooks } from "@/features/shared/api";
 import { useAppDispatch, useAppState } from "@/features/shared/AppContext";
+import { cn } from "@/features/shared/utils";
+import { SidebarLayout, type SidebarItem, type ViewMode } from "@/features/shared/components/SidebarLayout";
+import type { BookSummary } from "@/features/shared/types";
 
 /**
- * BookPicker — pre-session screen (Coze-inspired)
+ * BookPicker — pre-session book selection with SidebarLayout
  *
- * User must select ≥1 book before the chat session starts.
- * Once started, books are locked for the entire conversation.
+ * - Sidebar: Category → Subcategory hierarchy
+ * - Main area: Card view / List view toggle
+ * - Footer: "Start Chat" CTA
  */
+
+const CATEGORY_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string }> = {
+  textbook: { label: "Textbooks", icon: BookOpen, color: "text-blue-400" },
+  ecdev: { label: "EC Development", icon: Building2, color: "text-emerald-400" },
+  real_estate: { label: "Real Estate", icon: Home, color: "text-amber-400" },
+};
+
 export default function BookPicker() {
   const { books } = useAppState();
   const dispatch = useAppDispatch();
   const [loadingBooks, setLoadingBooks] = useState(books.length === 0);
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [filter, setFilter] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<ViewMode>("cards");
 
   useEffect(() => {
     if (books.length > 0) {
@@ -41,158 +55,303 @@ export default function BookPicker() {
     dispatch({ type: "START_SESSION", bookIds: [...selected] });
   }
 
+  // ── Compute category → subcategory tree ────────────────────────────────────
+  const { categoryCounts, subcategoryMap } = useMemo(() => {
+    const counts: Record<string, number> = { all: books.length };
+    const subMap: Record<string, Set<string>> = {};
+
+    for (const b of books) {
+      const cat = b.category || "textbook";
+      counts[cat] = (counts[cat] || 0) + 1;
+      if (b.subcategory) {
+        const subKey = `${cat}::${b.subcategory}`;
+        counts[subKey] = (counts[subKey] || 0) + 1;
+        if (!subMap[cat]) subMap[cat] = new Set();
+        subMap[cat].add(b.subcategory);
+      }
+    }
+    return { categoryCounts: counts, subcategoryMap: subMap };
+  }, [books]);
+
+  // ── Filtered books ─────────────────────────────────────────────────────────
+  const displayBooks = useMemo(() => {
+    if (filter === "all") return books;
+    // Subcategory filter: "category::subcategory"
+    if (filter.includes("::")) {
+      const [cat, sub] = filter.split("::");
+      return books.filter((b) => (b.category || "textbook") === cat && b.subcategory === sub);
+    }
+    // Category filter
+    return books.filter((b) => (b.category || "textbook") === filter);
+  }, [books, filter]);
+
+  // ── Sidebar items: Category → Subcategory hierarchy ────────────────────────
+  const sidebarItems = useMemo<SidebarItem[]>(() => {
+    const items: SidebarItem[] = [
+      { key: "all", label: "All Books", count: categoryCounts.all || 0, icon: <Layers className="h-4 w-4 shrink-0" /> },
+    ];
+    for (const [catKey, cfg] of Object.entries(CATEGORY_CONFIG)) {
+      const count = categoryCounts[catKey] || 0;
+      if (count === 0) continue;
+      const Icon = cfg.icon;
+      items.push({
+        key: catKey,
+        label: cfg.label,
+        count,
+        icon: <Icon className={cn("h-4 w-4 shrink-0", cfg.color)} />,
+      });
+      // Subcategories under this category
+      const subs = subcategoryMap[catKey];
+      if (subs) {
+        for (const sub of [...subs].sort()) {
+          const subKey = `${catKey}::${sub}`;
+          items.push({
+            key: subKey,
+            label: sub,
+            count: categoryCounts[subKey] || 0,
+            indent: true,
+          });
+        }
+      }
+    }
+    return items;
+  }, [categoryCounts, subcategoryMap]);
+
   const canStart = selected.size > 0;
 
-  // Group books by category (authors field)
-  const grouped: { category: string; items: typeof books }[] = [];
-  const categoryMap = new Map<string, typeof books>();
-  for (const book of books) {
-    const cat = book.authors || 'Other';
-    if (!categoryMap.has(cat)) categoryMap.set(cat, []);
-    categoryMap.get(cat)!.push(book);
-  }
-  for (const [cat, items] of categoryMap) grouped.push({ category: cat, items });
-
-  const categoryLabel: Record<string, string> = {
-    ecdev: 'Economic Development',
-    real_estate: 'Real Estate',
-    textbook: 'Textbooks',
-  };
-
   return (
-    <div className="flex h-full flex-col bg-[#f5f7fb]">
-      {/* ── Scrollable body ── */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
-        <div className="mx-auto w-full max-w-3xl px-6 py-10">
-          {/* Hero */}
-          <div className="mb-8 flex flex-col items-center text-center">
-            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-900 shadow-lg">
-              <svg className="h-7 w-7 text-white" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
-              </svg>
+    <SidebarLayout
+      title="Choose Books"
+      icon={<Library className="h-4 w-4 text-primary" />}
+      sidebarItems={sidebarItems}
+      activeFilter={filter}
+      onFilterChange={setFilter}
+      sidebarWidth="w-48"
+      showViewToggle
+      viewMode={viewMode}
+      onViewModeChange={setViewMode}
+      sidebarFooter={
+        <p className="text-[10px] text-muted-foreground">
+          {selected.size > 0
+            ? `${selected.size} book${selected.size > 1 ? "s" : ""} selected`
+            : "Select books to start"}
+        </p>
+      }
+      subtitle={`${displayBooks.length} book${displayBooks.length !== 1 ? "s" : ""}`}
+      loading={loadingBooks}
+      loadingText="Loading books..."
+      toolbar={
+        <SelectAllButton
+          books={displayBooks}
+          selected={selected}
+          onSelectChange={setSelected}
+        />
+      }
+      footer={
+        <div className="shrink-0 border-t border-border bg-card/90 backdrop-blur px-6 py-3">
+          <div className="mx-auto flex max-w-4xl items-center gap-4">
+            <div className="flex-1 text-sm text-muted-foreground">
+              {selected.size === 0
+                ? "Select at least one book to continue"
+                : `${selected.size} book${selected.size > 1 ? "s" : ""} selected`}
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Choose your textbooks</h1>
-            <p className="mt-2 max-w-sm text-sm text-slate-500">
-              Select one or more books to study. Your selection will be{" "}
-              <strong className="font-medium text-slate-700">locked</strong> for this entire conversation.
-            </p>
+            <button
+              type="button"
+              onClick={startSession}
+              disabled={!canStart}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-semibold shadow-sm transition",
+                canStart
+                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                  : "bg-muted text-muted-foreground cursor-not-allowed shadow-none",
+              )}
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
+              </svg>
+              Start Chat
+            </button>
           </div>
+        </div>
+      }
+    >
+      {displayBooks.length === 0 ? (
+        <div className="flex flex-col items-center py-20">
+          <Library className="h-10 w-10 text-muted-foreground/40 mb-3" />
+          <p className="text-sm text-muted-foreground">No books in this category</p>
+        </div>
+      ) : viewMode === "cards" ? (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {displayBooks.map((book) => (
+            <BookCard key={book.id} book={book} checked={selected.has(book.id)} onToggle={toggle} />
+          ))}
+        </div>
+      ) : (
+        <BookTable books={displayBooks} selected={selected} onToggle={toggle} />
+      )}
+    </SidebarLayout>
+  );
+}
 
-          {/* Book list */}
-          {loadingBooks ? (
-            <div className="flex justify-center py-16">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-slate-900" />
-            </div>
-          ) : books.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-300 bg-white py-14 text-center text-slate-400">
-              <svg className="mx-auto mb-3 h-8 w-8 opacity-40" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
-              </svg>
-              No indexed books found.
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {grouped.map(({ category, items }) => (
-                <div key={category}>
-                  {/* Category header with select-all */}
-                  <div className="mb-2 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="rounded-md bg-slate-200 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
-                        {categoryLabel[category] ?? category}
-                      </span>
-                      <span className="text-xs text-slate-400">{items.length} books</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const allSelected = items.every((b) => selected.has(b.id));
-                        setSelected((prev) => {
-                          const next = new Set(prev);
-                          if (allSelected) items.forEach((b) => next.delete(b.id));
-                          else items.forEach((b) => next.add(b.id));
-                          return next;
-                        });
-                      }}
-                      className="text-[11px] text-slate-400 hover:text-slate-700 transition-colors"
-                    >
-                      {items.every((b) => selected.has(b.id)) ? 'Deselect all' : 'Select all'}
-                    </button>
-                  </div>
+// ═══════════════════════════════════════════════════════════════════════════════
+// Sub-components
+// ═══════════════════════════════════════════════════════════════════════════════
 
-                  <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-                    {items.map((book) => {
-                      const checked = selected.has(book.id);
-                      return (
-                        <button
-                          key={book.id}
-                          type="button"
-                          onClick={() => toggle(book.id)}
-                          className={`group flex items-start gap-3 rounded-xl border-2 p-3.5 text-left transition-all ${
-                            checked
-                              ? "border-slate-900 bg-slate-900"
-                              : "border-slate-200 bg-white hover:border-slate-400 hover:shadow-sm"
-                          }`}
-                        >
-                          {/* Checkbox */}
-                          <div className={`mt-0.5 flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded border-2 transition-colors ${
-                            checked ? "border-white bg-white" : "border-slate-300 group-hover:border-slate-400"
-                          }`}>
-                            {checked && (
-                              <svg className="h-2.5 w-2.5 text-slate-900" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-                              </svg>
-                            )}
-                          </div>
-                          {/* Meta */}
-                          <div className="min-w-0 flex-1">
-                            <div className={`text-sm font-semibold leading-snug ${checked ? "text-white" : "text-slate-900"}`}>
-                              {book.title}
-                            </div>
-                            <div className={`mt-1.5 flex flex-wrap gap-1.5 text-[11px] ${checked ? "text-slate-300" : "text-slate-400"}`}>
-                              {book.chunk_count > 0 && (
-                                <span className={`rounded px-1.5 py-0.5 ${checked ? "bg-white/10" : "bg-slate-100"}`}>
-                                  {book.chunk_count} chunks
-                                </span>
-                              )}
-                              {book.page_count > 0 && (
-                                <span className={`rounded px-1.5 py-0.5 ${checked ? "bg-white/10" : "bg-slate-100"}`}>
-                                  {book.page_count} pages
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
+/** Select/Deselect all button for toolbar */
+function SelectAllButton({
+  books,
+  selected,
+  onSelectChange,
+}: {
+  books: BookSummary[];
+  selected: Set<number>;
+  onSelectChange: (s: Set<number>) => void;
+}) {
+  const allSelected = books.length > 0 && books.every((b) => selected.has(b.id));
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        const next = new Set(selected);
+        if (allSelected) books.forEach((b) => next.delete(b.id));
+        else books.forEach((b) => next.add(b.id));
+        onSelectChange(next);
+      }}
+      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+    >
+      {allSelected ? "Deselect all" : "Select all"}
+    </button>
+  );
+}
+
+/** Card view item */
+function BookCard({
+  book,
+  checked,
+  onToggle,
+}: {
+  book: BookSummary;
+  checked: boolean;
+  onToggle: (id: number) => void;
+}) {
+  const catCfg = CATEGORY_CONFIG[book.category || "textbook"];
+  return (
+    <button
+      type="button"
+      onClick={() => onToggle(book.id)}
+      className={cn(
+        "group flex items-start gap-3 rounded-xl border-2 p-4 text-left transition-all",
+        checked
+          ? "border-primary bg-primary/5"
+          : "border-border bg-card hover:border-primary/30 hover:shadow-sm",
+      )}
+    >
+      {/* Checkbox */}
+      <div
+        className={cn(
+          "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border-2 transition-colors",
+          checked
+            ? "border-primary bg-primary"
+            : "border-muted-foreground/30 group-hover:border-muted-foreground/50",
+        )}
+      >
+        {checked && (
+          <svg className="h-2.5 w-2.5 text-primary-foreground" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+          </svg>
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="text-sm font-semibold leading-snug text-foreground">{book.title}</div>
+        {book.authors && (
+          <div className="text-[11px] text-muted-foreground mt-0.5 truncate">{book.authors}</div>
+        )}
+        <div className="mt-1.5 flex flex-wrap gap-1.5 text-[11px] text-muted-foreground">
+          {catCfg && (
+            <span className={cn("rounded px-1.5 py-0.5 bg-secondary", catCfg.color)}>
+              {catCfg.label}
+            </span>
+          )}
+          {book.subcategory && (
+            <span className="rounded px-1.5 py-0.5 bg-secondary">{book.subcategory}</span>
+          )}
+          {book.chunk_count > 0 && (
+            <span className="rounded px-1.5 py-0.5 bg-secondary">{book.chunk_count} chunks</span>
           )}
         </div>
       </div>
+    </button>
+  );
+}
 
-      {/* ── Sticky CTA footer ── */}
-      <div className="shrink-0 border-t border-slate-200 bg-white/90 backdrop-blur px-6 py-4">
-        <div className="mx-auto flex max-w-3xl items-center gap-4">
-          <div className="flex-1 text-sm text-slate-500">
-            {selected.size === 0
-              ? "Select at least one book to continue"
-              : `${selected.size} book${selected.size > 1 ? 's' : ''} selected`}
-          </div>
-          <button
-            type="button"
-            onClick={startSession}
-            disabled={!canStart}
-            className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
-          >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
-            </svg>
-            Start Chat
-          </button>
-        </div>
-      </div>
+/** List/Table view */
+function BookTable({
+  books,
+  selected,
+  onToggle,
+}: {
+  books: BookSummary[];
+  selected: Set<number>;
+  onToggle: (id: number) => void;
+}) {
+  return (
+    <div className="rounded-xl border border-border overflow-hidden">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="bg-card/80 border-b border-border">
+            <th className="w-10 px-4 py-2.5" />
+            <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Title</th>
+            <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Authors</th>
+            <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Category</th>
+            <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Subcategory</th>
+            <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Chunks</th>
+          </tr>
+        </thead>
+        <tbody>
+          {books.map((book) => {
+            const checked = selected.has(book.id);
+            const catCfg = CATEGORY_CONFIG[book.category || "textbook"];
+            return (
+              <tr
+                key={book.id}
+                onClick={() => onToggle(book.id)}
+                className={cn(
+                  "border-b border-border/50 cursor-pointer transition-colors",
+                  checked ? "bg-primary/5" : "hover:bg-card/50",
+                )}
+              >
+                <td className="px-4 py-3">
+                  <div
+                    className={cn(
+                      "flex h-4 w-4 items-center justify-center rounded border-2 transition-colors",
+                      checked ? "border-primary bg-primary" : "border-muted-foreground/30",
+                    )}
+                  >
+                    {checked && (
+                      <svg className="h-2.5 w-2.5 text-primary-foreground" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                      </svg>
+                    )}
+                  </div>
+                </td>
+                <td className="px-4 py-3">
+                  <span className="text-sm font-medium text-foreground">{book.title}</span>
+                </td>
+                <td className="px-4 py-3 text-xs text-muted-foreground">{book.authors || "—"}</td>
+                <td className="px-4 py-3">
+                  {catCfg && (
+                    <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-medium bg-secondary", catCfg.color)}>
+                      {catCfg.label}
+                    </span>
+                  )}
+                </td>
+                <td className="px-4 py-3 text-xs text-foreground">{book.subcategory || "—"}</td>
+                <td className="px-4 py-3 text-xs text-foreground text-right">{book.chunk_count}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }

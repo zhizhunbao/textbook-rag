@@ -47,13 +47,35 @@ class QueryFilters:
     """Filters applied across all retrieval strategies (cross-cutting)."""
 
     book_ids: list[int] = field(default_factory=list)
+    book_id_strings: list[str] = field(default_factory=list)
     chapter_ids: list[int] = field(default_factory=list)
     content_types: list[str] = field(default_factory=list)
     categories: list[str] = field(default_factory=list)
 
+    def resolve_book_ids(self, db) -> None:
+        """Resolve book_id_strings (engine slug like 'krug_dont_make_me_think') to integer IDs.
+
+        Called once before retrieval so strategies can use book_ids uniformly.
+        """
+        if not self.book_id_strings:
+            return
+        ph = ",".join("?" * len(self.book_id_strings))
+        rows = db.execute(
+            f"SELECT id FROM books WHERE book_id IN ({ph})",
+            self.book_id_strings,
+        ).fetchall()
+        resolved = [r[0] if isinstance(r, (tuple, list)) else r["id"] for r in rows]
+        # Merge with any existing book_ids
+        existing = set(self.book_ids)
+        for rid in resolved:
+            if rid not in existing:
+                self.book_ids.append(rid)
+                existing.add(rid)
+
     def as_dict(self) -> dict:
         return {
             "book_ids": self.book_ids,
+            "book_id_strings": self.book_id_strings,
             "chapter_ids": self.chapter_ids,
             "content_types": self.content_types,
             "categories": self.categories,

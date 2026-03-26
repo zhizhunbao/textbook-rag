@@ -14,11 +14,65 @@ from engine.rag.strategies.base import RetrievalStrategy
 from engine.rag.types import ChunkHit, StrategyResult
 
 
+# Common English stopwords — stripped from long FTS queries to reduce
+# overly restrictive implicit-AND matching
+_STOPWORDS = frozenset({
+    "a", "an", "the", "is", "are", "was", "were", "be", "been", "being",
+    "have", "has", "had", "do", "does", "did", "will", "would", "shall",
+    "should", "may", "might", "can", "could", "must",
+    "i", "me", "my", "we", "our", "you", "your", "he", "she", "it", "its",
+    "they", "them", "their", "this", "that", "these", "those",
+    "what", "which", "who", "whom", "how", "when", "where", "why",
+    "in", "on", "at", "to", "for", "of", "with", "by", "from", "as",
+    "into", "through", "during", "before", "after", "above", "below",
+    "between", "about", "against", "and", "but", "or", "nor", "not", "no",
+    "so", "if", "than", "too", "very", "just", "also", "more", "most",
+    "some", "any", "each", "every", "all", "both", "few", "other",
+    "such", "only", "own", "same", "then", "once", "here", "there",
+    "again", "further", "regarding", "overall", "don", "t", "s",
+    # Common question/navigation words — unlikely to match content
+    "explain", "describe", "discuss", "emphasize", "emphasizes",
+    "page", "chapter", "section", "paragraph", "figure", "table",
+    "according", "based", "using", "used", "use",
+})
+
+# If after stopword removal fewer than this many tokens remain, fall back
+# to the full (no-stopword-removal) query to avoid empty searches
+_MIN_CONTENT_TOKENS = 2
+
+# Maximum content tokens to keep — more than this makes implicit-AND too strict
+_MAX_CONTENT_TOKENS = 5
+
+
 def _sanitise_fts(query: str) -> str:
-    """Strip FTS5 special syntax from user input to prevent query errors."""
+    """Strip FTS5 special syntax and remove stopwords from long queries.
+
+    FTS5 treats space-separated tokens as implicit AND.  For short keyword
+    queries (≤4 tokens) this works well, but natural-language questions with
+    many tokens almost never match because every word must appear in a single
+    chunk.  Removing stopwords keeps only content words, dramatically
+    improving recall while preserving precision via BM25 ranking.
+    """
     cleaned = re.sub(r"[^\w\s]", " ", query)
     tokens = cleaned.split()
-    return " ".join(tokens) if tokens else ""
+    if not tokens:
+        return ""
+
+    # Short queries: keep as-is (implicit AND is fine)
+    if len(tokens) <= 4:
+        return " ".join(tokens)
+
+    # Long queries: strip stopwords and bare numbers to keep content words only
+    content = [
+        t for t in tokens
+        if t.lower() not in _STOPWORDS and not t.isdigit()
+    ]
+    if len(content) < _MIN_CONTENT_TOKENS:
+        # Fallback: stopword removal was too aggressive
+        return " ".join(tokens[:_MAX_CONTENT_TOKENS])
+
+    # Cap to prevent over-constraining
+    return " ".join(content[:_MAX_CONTENT_TOKENS])
 
 
 class FTS5BM25Strategy(RetrievalStrategy):
@@ -41,7 +95,11 @@ class FTS5BM25Strategy(RetrievalStrategy):
         config: QueryConfig,
         db: sqlite3.Connection,
     ) -> StrategyResult:
-        """Run FTS5 MATCH and return ranked ChunkHit list."""
+        """Run FTS5 MATCH and return ranked ChunkHit list.
+
+        Uses implicit AND first; if that returns 0 results, falls back to
+        OR mode so that BM25 can still rank partial matches.
+        """
         safe_q = _sanitise_fts(query)
         if not safe_q:
             return StrategyResult(strategy=self.name, hits=[], query_used="")
@@ -76,26 +134,17 @@ class FTS5BM25Strategy(RetrievalStrategy):
             "LEFT JOIN books b ON b.id = c.book_id" if f.categories else ""
         )
 
-        sql = (
-            "SELECT c.id, c.chunk_id, c.book_id, c.chapter_id, c.primary_page_id,"
-            "       c.content_type, c.text, c.reading_order, c.chroma_document_id,"
-            "       fts.rank "
-            "FROM chunk_fts AS fts "
-            "JOIN chunks AS c ON c.id = fts.rowid "
-            f"{books_join} "
-            f"WHERE fts.chunk_fts MATCH ?{extra_where} "
-            "ORDER BY fts.rank "
-            "LIMIT ?"
-        )
-        all_params: list[object] = [safe_q, *params, fetch_k]
+        # --- Try implicit AND first ---
+        rows = self._execute_fts(db, safe_q, books_join, extra_where, params, fetch_k)
 
-        try:
-            rows = db.execute(sql, all_params).fetchall()
-        except Exception as exc:  # noqa: BLE001
-            return StrategyResult(
-                strategy=self.name, hits=[], query_used=safe_q,
-                error=str(exc),
-            )
+        # --- Fallback: OR mode if AND returned nothing ---
+        actual_query = safe_q
+        tokens = safe_q.split()
+        if not rows and len(tokens) > 1:
+            or_query = " OR ".join(tokens)
+            rows = self._execute_fts(db, or_query, books_join, extra_where, params, fetch_k)
+            if rows:
+                actual_query = or_query
 
         hits = []
         for rank, row in enumerate(rows, start=1):
@@ -115,4 +164,31 @@ class FTS5BM25Strategy(RetrievalStrategy):
                 )
             )
 
-        return StrategyResult(strategy=self.name, hits=hits, query_used=safe_q)
+        return StrategyResult(strategy=self.name, hits=hits, query_used=actual_query)
+
+    @staticmethod
+    def _execute_fts(
+        db: sqlite3.Connection,
+        match_expr: str,
+        books_join: str,
+        extra_where: str,
+        params: list[object],
+        limit: int,
+    ) -> list:
+        """Execute a single FTS5 query and return raw rows."""
+        sql = (
+            "SELECT c.id, c.chunk_id, c.book_id, c.chapter_id, c.primary_page_id,"
+            "       c.content_type, c.text, c.reading_order, c.chroma_document_id,"
+            "       fts.rank "
+            "FROM chunk_fts AS fts "
+            "JOIN chunks AS c ON c.id = fts.rowid "
+            f"{books_join} "
+            f"WHERE fts.chunk_fts MATCH ?{extra_where} "
+            "ORDER BY fts.rank "
+            "LIMIT ?"
+        )
+        all_params: list[object] = [match_expr, *params, limit]
+        try:
+            return db.execute(sql, all_params).fetchall()
+        except Exception:  # noqa: BLE001
+            return []

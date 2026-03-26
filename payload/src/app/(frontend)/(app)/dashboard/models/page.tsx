@@ -7,7 +7,7 @@ import {
   Search, Wifi, WifiOff, HardDrive, Clock, Trash2, Plus,
 } from 'lucide-react'
 import { cn } from '@/features/shared/utils'
-import { DashboardShell, type ViewMode, type SidebarItem } from '@/features/shared/components/DashboardShell'
+import { SidebarLayout, type ViewMode, type SidebarItem } from '@/features/shared/components/SidebarLayout'
 import { useModels } from '@/features/models/useModels'
 import type { RuntimeModel, DiscoveredLocalModel, ModelProvider } from '@/features/models/types'
 import { PROVIDER_CONFIGS } from '@/features/models/types'
@@ -116,7 +116,7 @@ export default function Page() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <DashboardShell
+    <SidebarLayout
       title="模型管理"
       icon={<Brain className="h-4 w-4 text-purple-400" />}
       sidebarItems={sidebarItems}
@@ -206,7 +206,7 @@ export default function Page() {
           )}
         </>
       )}
-    </DashboardShell>
+    </SidebarLayout>
   )
 }
 

@@ -80,7 +80,7 @@ class GenerationEngine:
         # Detect thinking-capable models and disable CoT for faster responses
         is_thinking_model = any(
             tag in model.lower()
-            for tag in ("qwen3", "deepseek-r1", "qwq")
+            for tag in ("qwen3", "qwen3.5", "deepseek-r1", "qwq")
         )
 
         payload: dict = {

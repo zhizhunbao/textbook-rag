@@ -1,6 +1,6 @@
 'use client'
 
-import { BarChart3, LineChart, ThumbsUp, Brain, FileText } from 'lucide-react'
+import { BarChart3, LineChart, ThumbsUp, Brain, FileText, MessageSquare, HelpCircle } from 'lucide-react'
 import Link from 'next/link'
 
 const modules = [
@@ -9,6 +9,8 @@ const modules = [
   { title: '反馈管理', desc: '用户 👍👎 汇总、差评分析', icon: ThumbsUp, href: '/dashboard/feedback', color: 'text-amber-400' },
   { title: '模型管理', desc: '查看 / 拉取 / 删除 Ollama 模型', icon: Brain, href: '/dashboard/models', color: 'text-purple-400' },
   { title: 'Prompt 管理', desc: '编辑 / 测试 Prompt 模板', icon: FileText, href: '/dashboard/prompts', color: 'text-rose-400' },
+  { title: '问题库', desc: 'AI 生成的学习问题、点赞排序', icon: MessageSquare, href: '/dashboard/questions', color: 'text-cyan-400' },
+  { title: '查询模板', desc: '意图澄清与查询改写规则', icon: HelpCircle, href: '/dashboard/queries', color: 'text-orange-400' },
 ]
 
 /**

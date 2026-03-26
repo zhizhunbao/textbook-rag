@@ -8,6 +8,7 @@ interface Props {
   role: "user" | "assistant";
   content: string;
   sources?: SourceInfo[];
+  onRetry?: (content: string) => void;
 }
 
 function injectCitationLinks(text: string, maxCitation: number): string {
@@ -24,17 +25,38 @@ function injectCitationLinks(text: string, maxCitation: number): string {
   );
 }
 
-export default function MessageBubble({ role, content, sources }: Props) {
+export default function MessageBubble({ role, content, sources, onRetry }: Props) {
   const isUser = role === "user";
   const dispatch = useAppDispatch();
 
-  const handleCitationClick = (index: number) => {
-    if (!sources || index < 0 || index >= sources.length) return;
+  // Build a map from citation_index → source for correct lookup
+  const citationMap = new Map<number, SourceInfo>();
+  let maxCitation = 0;
+  if (sources) {
+    for (const s of sources) {
+      const ci = (s as any).citation_index as number | undefined;
+      if (ci != null) {
+        citationMap.set(ci, s);
+        maxCitation = Math.max(maxCitation, ci);
+      }
+    }
+    // Fallback: if no citation_index, use legacy array-based mapping
+    if (citationMap.size === 0) {
+      maxCitation = sources.length;
+      for (let i = 0; i < sources.length; i++) {
+        citationMap.set(i + 1, sources[i]);
+      }
+    }
+  }
+
+  const handleCitationClick = (citationIndex: number) => {
+    const source = citationMap.get(citationIndex);
+    if (!source) return;
     dispatch({
       type: "SELECT_SOURCE",
       source: {
-        ...sources[index],
-        citation_label: `[${index + 1}]`,
+        ...source,
+        citation_label: `[${citationIndex}]`,
       },
     });
   };
@@ -127,12 +149,12 @@ export default function MessageBubble({ role, content, sources }: Props) {
                 }) {
                   const ref = props["data-ref"];
                   if (ref) {
-                    const idx = Number.parseInt(ref, 10) - 1;
+                    const citIndex = Number.parseInt(ref, 10);
                     return (
                       <button
                         type="button"
                         className="inline-flex cursor-pointer items-center border-0 bg-transparent p-0 text-[0.72em] font-semibold text-blue-600 align-super hover:text-blue-800"
-                        onClick={() => handleCitationClick(idx)}
+                        onClick={() => handleCitationClick(citIndex)}
                       >
                         {children}
                       </button>
@@ -142,11 +164,27 @@ export default function MessageBubble({ role, content, sources }: Props) {
                 },
               }}
             >
-              {injectCitationLinks(content, sources?.length ?? 0)}
+              {injectCitationLinks(content, maxCitation)}
             </Markdown>
           )}
         </div>
 
+        {/* Retry button for user messages */}
+        {isUser && onRetry && (
+          <div className="mt-1 flex justify-end">
+            <button
+              type="button"
+              onClick={() => onRetry(content)}
+              className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              title="Re-ask this question"
+            >
+              <svg className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182" />
+              </svg>
+              Retry
+            </button>
+          </div>
+        )}
       </div>
 
       {isUser && (

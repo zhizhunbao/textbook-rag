@@ -91,6 +91,8 @@ class CitationEngine:
             sources.append({
                 "citation_index": n,
                 "chunk_id": chunk.chunk_id,
+                "book_id": chunk.book_id,
+                "book_id_string": chunk.book_id_string,
                 "book_title": chunk.book_title,
                 "chapter_title": chunk.chapter_title,
                 "page_number": page_num,

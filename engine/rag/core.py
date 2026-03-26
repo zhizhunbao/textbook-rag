@@ -111,6 +111,9 @@ class RAGCore:
         logger.info("═══ RAG query start: %s", question[:80])
 
         try:
+            # 0. Resolve string book IDs → integer IDs
+            cfg.filters.resolve_book_ids(db)
+
             # 1. Retrieve
             t0 = time.perf_counter()
             retrieval_result = self._get_retriever().retrieve(question, cfg, db)

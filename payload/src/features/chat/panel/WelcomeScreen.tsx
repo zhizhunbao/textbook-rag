@@ -11,6 +11,7 @@
 import { useState, useEffect } from "react";
 import type { BookSummary } from "@/features/shared/types";
 import { fetchGeneratedQuestions, type GeneratedQuestion } from "@/features/shared/api";
+import { Database, Layers, Bot, Sparkles, Check, Loader2 } from "lucide-react";
 
 /* ── Color palette for topic hints ── */
 const TOPIC_COLORS = [
@@ -67,7 +68,7 @@ export default function WelcomeScreen({
   const [generated, setGenerated] = useState(false);
   const [failed, setFailed] = useState(false);
 
-  const bookIds = sessionBooks.map((b) => b.id);
+  const bookIds = sessionBooks.map((b) => b.book_id);
 
   // Auto-fetch AI questions when session books change
   const doGenerate = () => {
@@ -80,6 +81,25 @@ export default function WelcomeScreen({
       setGenerating(false);
       setGenerated(true);
       if (qs.length === 0) setFailed(true);
+
+      // Save to Payload Questions collection (fire-and-forget)
+      for (const q of qs) {
+        const matchedBook = sessionBooks.find((b) => b.book_id === q.book_id);
+        fetch('/api/questions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            question: q.question,
+            bookId: q.book_id,
+            bookTitle: q.book_title,
+            topicHint: q.topic_hint,
+            source: 'ai',
+            likes: 0,
+            category: matchedBook?.category || 'textbook',
+            subcategory: matchedBook?.subcategory || '',
+          }),
+        }).catch(() => { /* silently fail */ });
+      }
     });
   };
 
@@ -113,28 +133,7 @@ export default function WelcomeScreen({
 
       {/* ── AI-generated questions section ── */}
       {generating && (
-        <div className="w-full">
-          <div className="mb-3 flex items-center gap-2 text-xs font-medium text-muted-foreground">
-            <svg className="h-4 w-4 animate-spin" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
-            </svg>
-            <span>AI is generating study questions from your books…</span>
-          </div>
-          <div className="grid w-full gap-2 sm:grid-cols-2">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="rounded-xl border border-border bg-card px-3 py-4 shadow-sm">
-                <div className="flex items-start gap-3">
-                  <div className="mt-0.5 h-8 w-8 shrink-0 animate-pulse rounded-lg bg-muted" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-3 w-16 animate-pulse rounded bg-muted" />
-                    <div className="h-3 w-full animate-pulse rounded bg-muted" />
-                    <div className="h-3 w-3/4 animate-pulse rounded bg-muted" />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <GenerationProgress />
       )}
 
       {showAiQuestions && (
@@ -221,6 +220,149 @@ export default function WelcomeScreen({
           </svg>
           Quick Demo
         </button>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Step-by-step progress tracker with SVG icons + per-step timing
+// ═══════════════════════════════════════════════════════════════════════════════
+
+
+interface StepDef {
+  label: string;
+  icon: React.ElementType;
+  autoAdvanceMs: number; // 0 = wait for parent unmount
+}
+
+const GENERATION_STEPS: StepDef[] = [
+  { label: "Sampling chunks from books", icon: Database, autoAdvanceMs: 1500 },
+  { label: "Building prompt context",    icon: Layers,   autoAdvanceMs: 2000 },
+  { label: "Calling LLM model",          icon: Bot,      autoAdvanceMs: 0 },
+  { label: "Parsing & formatting",       icon: Sparkles, autoAdvanceMs: 1000 },
+];
+
+function GenerationProgress() {
+  const [currentStep, setCurrentStep] = useState(0);
+  const [totalElapsed, setTotalElapsed] = useState(0);
+  const [stepTimestamps, setStepTimestamps] = useState<number[]>(() => [Date.now()]);
+  const startRef = useState(() => Date.now())[0];
+
+  // Auto-advance timed steps
+  useEffect(() => {
+    const step = GENERATION_STEPS[currentStep];
+    if (!step || step.autoAdvanceMs === 0) return;
+
+    const timer = setTimeout(() => {
+      if (currentStep < GENERATION_STEPS.length - 1) {
+        setStepTimestamps((prev) => [...prev, Date.now()]);
+        setCurrentStep((s) => s + 1);
+      }
+    }, step.autoAdvanceMs);
+    return () => clearTimeout(timer);
+  }, [currentStep]);
+
+  // Total elapsed counter
+  useEffect(() => {
+    const iv = setInterval(() => setTotalElapsed(Math.floor((Date.now() - startRef) / 1000)), 200);
+    return () => clearInterval(iv);
+  }, [startRef]);
+
+  // Per-step durations
+  const stepDurations = GENERATION_STEPS.map((_, i) => {
+    if (i >= stepTimestamps.length) return null; // not started
+    const start = stepTimestamps[i];
+    const end = i + 1 < stepTimestamps.length ? stepTimestamps[i + 1] : Date.now();
+    return ((end - start) / 1000).toFixed(1);
+  });
+
+  const pct = Math.min(((currentStep + 0.5) / GENERATION_STEPS.length) * 100, 95);
+
+  return (
+    <div className="w-full max-w-md mx-auto">
+      {/* Header */}
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+          <span>Generating study questions…</span>
+        </div>
+        <span className="text-[11px] tabular-nums font-mono text-muted-foreground">
+          {totalElapsed}s
+        </span>
+      </div>
+
+      {/* Progress bar */}
+      <div className="mb-4 h-1.5 w-full rounded-full bg-muted overflow-hidden">
+        <div
+          className="h-full rounded-full bg-primary transition-all duration-500 ease-out"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+
+      {/* Steps */}
+      <div className="space-y-1">
+        {GENERATION_STEPS.map((step, i) => {
+          const isDone = i < currentStep;
+          const isActive = i === currentStep;
+          const Icon = step.icon;
+          const duration = stepDurations[i];
+
+          return (
+            <div
+              key={i}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all duration-300 ${
+                isActive
+                  ? "bg-primary/5 border border-primary/20 shadow-sm"
+                  : isDone
+                  ? "bg-transparent"
+                  : "bg-transparent opacity-40"
+              }`}
+            >
+              {/* Step number circle or status */}
+              <div className="relative w-6 h-6 flex items-center justify-center shrink-0">
+                {isDone ? (
+                  <div className="w-6 h-6 rounded-full bg-emerald-500/15 flex items-center justify-center">
+                    <Check className="h-3.5 w-3.5 text-emerald-500" strokeWidth={3} />
+                  </div>
+                ) : isActive ? (
+                  <div className="w-6 h-6 rounded-full border-2 border-primary/30 flex items-center justify-center">
+                    <div className="h-3 w-3 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                  </div>
+                ) : (
+                  <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
+                    <span className="text-[10px] font-bold text-muted-foreground">{i + 1}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Icon */}
+              <Icon className={`h-4 w-4 shrink-0 ${
+                isDone ? "text-emerald-500" : isActive ? "text-primary" : "text-muted-foreground"
+              }`} />
+
+              {/* Label */}
+              <span className={`text-xs flex-1 ${
+                isActive ? "text-foreground font-medium" : isDone ? "text-muted-foreground" : "text-muted-foreground"
+              }`}>
+                {step.label}
+              </span>
+
+              {/* Duration */}
+              {duration && (
+                <span className={`text-[10px] tabular-nums font-mono px-1.5 py-0.5 rounded ${
+                  isDone
+                    ? "text-emerald-500 bg-emerald-500/10"
+                    : isActive
+                    ? "text-primary bg-primary/10"
+                    : "text-muted-foreground"
+                }`}>
+                  {duration}s
+                </span>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
