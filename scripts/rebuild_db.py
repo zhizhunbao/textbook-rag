@@ -30,7 +30,7 @@ MINERU_DIR = BASE_DIR / "data" / "mineru_output"
 
 # Category → raw PDF source directory
 SOURCE_DIRS: dict[str, Path] = {
-    "textbook":    BASE_DIR / "data" / "raw_pdfs" / "textbooks",
+    "textbooks":   BASE_DIR / "data" / "raw_pdfs" / "textbooks",
     "ecdev":       BASE_DIR / "data" / "raw_pdfs" / "ecdev",
     "real_estate": BASE_DIR / "data" / "raw_pdfs" / "real_estate",
 }
@@ -529,7 +529,7 @@ def _insert_book_assets(
 ):
     """Register PDF and other assets in book_assets table."""
     # Source PDF — look in the category-specific raw PDF directory
-    src_dir = SOURCE_DIRS.get(category, SOURCE_DIRS["textbook"])
+    src_dir = SOURCE_DIRS.get(category, SOURCE_DIRS["textbooks"])
     src_pdf = src_dir / f"{book_dir_name}.pdf"
     if src_pdf.exists():
         cur.execute(
@@ -592,7 +592,7 @@ def main():
     # ── Step 3: Ingest books — scan all category subdirectories ──
     print("\n📚 Ingesting books...")
 
-    categories = ["textbook", "ecdev", "real_estate"]
+    categories = ["textbooks", "ecdev", "real_estate"]
     total_stats = {"books": 0, "pages": 0, "chapters": 0, "chunks": 0}
 
     for category in categories:

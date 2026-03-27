@@ -12,7 +12,7 @@ import sqlite3
 
 from fastapi import APIRouter
 
-from engine.config import DATABASE_PATH, PAYLOAD_URL
+from engine.config import DATABASE_PATH, PAYLOAD_URL, PAYLOAD_API_KEY
 
 import httpx
 
@@ -23,7 +23,10 @@ _TIMEOUT = 30.0
 
 
 def _headers() -> dict[str, str]:
-    return {"Content-Type": "application/json"}
+    h = {"Content-Type": "application/json"}
+    if PAYLOAD_API_KEY:
+        h["Authorization"] = f"Bearer {PAYLOAD_API_KEY}"
+    return h
 
 
 def _category_from_book_id(book_id: str) -> str:

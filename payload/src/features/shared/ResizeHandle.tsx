@@ -71,7 +71,7 @@ export default function ResizeHandle({
   return (
     <div
       className={`relative shrink-0 cursor-col-resize select-none transition-colors ${
-        active ? "bg-blue-400" : "bg-gray-300 hover:bg-blue-300"
+        active ? "bg-primary" : "bg-border hover:bg-primary/50"
       }`}
       style={{
         width: 4,

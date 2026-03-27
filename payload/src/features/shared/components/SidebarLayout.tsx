@@ -22,6 +22,7 @@
 import { useState, type ReactNode } from 'react'
 import { LayoutGrid, List, Loader2, AlertCircle, RefreshCw, Folder, FolderOpen } from 'lucide-react'
 import { cn } from '@/features/shared/utils'
+import ResizeHandle from '@/features/shared/ResizeHandle'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -80,7 +81,13 @@ export interface SidebarLayoutProps {
   /** 错误重试回调 / Error retry callback */
   onRetry?: () => void
 
-  /** 侧边栏宽度 class / Sidebar width class */
+  /** 侧边栏初始宽度 (px) / Sidebar initial width in pixels */
+  sidebarWidthPx?: number
+  /** 侧边栏最小宽度 (px) / Sidebar min width */
+  sidebarMinWidth?: number
+  /** 侧边栏最大宽度 (px) / Sidebar max width */
+  sidebarMaxWidth?: number
+  /** @deprecated Use sidebarWidthPx instead */
   sidebarWidth?: string
 
   /** 底部操作区（如 BookPicker 的 Start Chat 按钮）/ Bottom action bar */
@@ -108,7 +115,10 @@ export function SidebarLayout({
   loadingText = '加载中...',
   error = null,
   onRetry,
-  sidebarWidth = 'w-52',
+  sidebarWidthPx = 208,
+  sidebarMinWidth = 160,
+  sidebarMaxWidth = 400,
+  sidebarWidth,
   footer,
   children,
 }: SidebarLayoutProps) {
@@ -119,6 +129,9 @@ export function SidebarLayout({
     onViewModeChange?.(mode)
     setInternalViewMode(mode)
   }
+
+  // ── Resizable sidebar width ──
+  const [sbWidth, setSbWidth] = useState(sidebarWidthPx)
 
   // ── Full-page loading ──
   if (loading) {
@@ -154,7 +167,10 @@ export function SidebarLayout({
   return (
     <div className="flex h-full">
       {/* ════════ Sidebar ════════ */}
-      <aside className={cn(sidebarWidth, 'shrink-0 border-r border-border bg-card/50 flex flex-col')}>
+      <aside
+        className="shrink-0 border-r border-border bg-card/50 flex flex-col"
+        style={{ width: sbWidth }}
+      >
         {/* Sidebar header */}
         <div className="px-3 py-3 border-b border-border">
           <div className="flex items-center gap-2">
@@ -213,6 +229,9 @@ export function SidebarLayout({
           </div>
         )}
       </aside>
+
+      {/* ════════ Resize handle ════════ */}
+      <ResizeHandle width={sbWidth} onResize={setSbWidth} min={sidebarMinWidth} max={sidebarMaxWidth} />
 
       {/* ════════ Main content ════════ */}
       <div className="flex-1 min-w-0 flex flex-col">

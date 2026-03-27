@@ -27,6 +27,7 @@ import BookCard from './BookCard'
 import StatusBadge, { StageDot } from './StatusBadge'
 import { cn } from '@/features/shared/utils'
 import { SidebarLayout, type SidebarItem, type ViewMode } from '@/features/shared/components/SidebarLayout'
+import { PipelineActions } from '@/features/pipeline'
 
 // ── Category icon/color mapping (same as BookPicker) ─────────────────────────
 const CATEGORY_CONFIG: Record<string, { label: string; labelZh: string; icon: React.ElementType; color: string }> = {
@@ -243,6 +244,10 @@ export default function LibraryPage() {
       onRetry={refresh}
       toolbar={
         <div className="flex items-center gap-2">
+          <PipelineActions
+            selectedBookIds={selected}
+            onComplete={refresh}
+          />
           <button
             onClick={refresh}
             className="p-1.5 rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"

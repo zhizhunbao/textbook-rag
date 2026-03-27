@@ -30,15 +30,14 @@ export default function BookCard({ book, onSelect }: BookCardProps) {
     <button
       type="button"
       onClick={() => onSelect?.(book)}
-      className="w-full text-left group p-4 rounded-xl border border-border bg-card hover:bg-secondary/50
+      className="relative w-full text-left group p-4 rounded-xl border border-border bg-card hover:bg-secondary/50
                  transition-all duration-200 hover:shadow-md hover:border-primary/20"
     >
-      {/* Top row: category badge + status */}
-      <div className="flex items-center justify-between mb-3">
+      {/* Top row: category badge */}
+      <div className="mb-3">
         <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${cat.color}`}>
           {cat.label}
         </span>
-        <StatusBadge status={book.status} />
       </div>
 
       {/* Title */}
@@ -88,6 +87,11 @@ export default function BookCard({ book, onSelect }: BookCardProps) {
           <PipelineProgress pipeline={book.pipeline} />
         </div>
       )}
+
+      {/* Status badge — bottom-right */}
+      <div className="absolute bottom-3 right-3">
+        <StatusBadge status={book.status} />
+      </div>
     </button>
   )
 }

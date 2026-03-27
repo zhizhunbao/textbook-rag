@@ -74,6 +74,7 @@ export interface Messages {
   navFeedback: string
   navModels: string
   navPrompts: string
+  navPipeline: string
 }
 
 const en: Messages = {
@@ -137,6 +138,7 @@ const en: Messages = {
   navFeedback: 'Feedback',
   navModels: 'Models',
   navPrompts: 'Prompts',
+  navPipeline: 'Pipeline',
 }
 
 const zh: Messages = {
@@ -200,6 +202,7 @@ const zh: Messages = {
   navFeedback: '反馈管理',
   navModels: '模型管理',
   navPrompts: 'Prompt',
+  navPipeline: '流水线',
 }
 
 export const messages: Record<Locale, Messages> = { en, zh }

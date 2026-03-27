@@ -30,6 +30,100 @@ DEFAULT_EMAIL = "402707192@qq.com"
 DEFAULT_PASSWORD = "123123"
 
 
+# ── Subcategory registry (mirrors README.md sections) ────────────────────────
+# Maps engine book_id → subcategory string shown in Library sidebar
+SUBCATEGORY_REGISTRY: dict[str, str] = {
+    # Python
+    "ramalho_fluent_python":       "Python",
+    "beazley_python_cookbook":      "Python",
+    "downey_think_python_2e":      "Python",
+    "downey_how_to_think_like_cs": "Python",
+    "okken_python_testing_pytest": "Python",
+    "percival_cosmic_python":      "Python",
+    # JavaScript / TypeScript
+    "flanagan_js_definitive_guide":         "JavaScript",
+    "haverbeke_eloquent_javascript":        "JavaScript",
+    "simpson_ydkjs_up_going":               "JavaScript",
+    "simpson_ydkjs_scope_closures":         "JavaScript",
+    "simpson_ydkjs_this_object_prototypes": "JavaScript",
+    "simpson_ydkjs_types_grammar":          "JavaScript",
+    "simpson_ydkjs_async_performance":      "JavaScript",
+    "simpson_ydkjs_es6_beyond":             "JavaScript",
+    "basarat_typescript_deep_dive":         "TypeScript",
+    # Algorithms
+    "cormen_CLRS": "Algorithms",
+    # Machine Learning
+    "goodfellow_deep_learning":    "Machine Learning",
+    "Deep-Learning-with-PyTorch":  "Machine Learning",
+    "bishop_prml":                 "Machine Learning",
+    "hastie_esl":                  "Machine Learning",
+    "james_ISLR":                  "Machine Learning",
+    "kelleher_ml_fundamentals":    "Machine Learning",
+    "murphy_pml1":                 "Machine Learning",
+    "murphy_pml2":                 "Machine Learning",
+    "barber_brml":                 "Machine Learning",
+    "shalev-shwartz_uml":          "Machine Learning",
+    # Mathematics
+    "deisenroth_mml":              "Mathematics",
+    "boyd_convex_optimization":    "Mathematics",
+    "grinstead_snell_probability": "Mathematics",
+    "downey_think_stats_2e":       "Mathematics",
+    "mackay_information_theory":   "Mathematics",
+    # NLP / IR
+    "jurafsky_slp3":       "NLP",
+    "jurafsky_slp3_jan2026":"NLP",
+    "eisenstein_nlp":      "NLP",
+    "manning_intro_to_ir": "NLP",
+    # Computer Vision
+    "szeliski_cv": "Computer Vision",
+    # Reinforcement Learning
+    "sutton_barto_rl_intro": "Reinforcement Learning",
+    # Graph Learning
+    "hamilton_grl": "Graph Learning",
+    # Software Engineering
+    "martin_clean_code":         "Software Engineering",
+    "martin_clean_code_excerpt": "Software Engineering",
+    "martin_clean_architecture":  "Software Engineering",
+    "gof_design_patterns":        "Software Engineering",
+    "kleppmann_ddia":             "Software Engineering",
+    "hunt_pragmatic_programmer":  "Software Engineering",
+    "fowler_refactoring":         "Software Engineering",
+    "ejsmont_web_scalability":    "Software Engineering",
+    "google_swe":                 "Software Engineering",
+    # DevOps
+    "chacon_pro_git":    "DevOps",
+    "google_sre":        "DevOps",
+    "nygard_release_it": "DevOps",
+    # Security
+    "seitz_black_hat_python":             "Security",
+    "aumasson_serious_cryptography":      "Security",
+    "andriesse_practical_binary_analysis": "Security",
+    "zalewski_tangled_web":               "Security",
+    # Networking
+    "gourley_http_definitive_guide": "Networking",
+    "barrett_ssh_definitive_guide":  "Networking",
+    # Database / Frameworks
+    "kreibich_using_sqlite":       "Database",
+    "fontaine_art_of_postgresql":  "Database",
+    "lubanovic_fastapi_modern_web": "Frameworks",
+    # UX / Design
+    "krug_dont_make_me_think":       "UX Design",
+    "norman_design_everyday_things": "UX Design",
+    "williams_non_designers_design_book": "UX Design",
+    # Video / Educational Design
+    "mayer_multimedia_learning":       "Educational Design",
+    "clark_mayer_elearning":           "Educational Design",
+    "knaflic_storytelling_with_data":   "Educational Design",
+    "williams_animators_survival_kit": "Educational Design",
+    "heath_made_to_stick":             "Educational Design",
+    "mckee_story":                     "Educational Design",
+    "snyder_save_the_cat":             "Educational Design",
+    # LLM / Post-training slides
+    "post_training_llms_slides":           "LLM",
+    "sociotechnical_challenges_llms_slides":"LLM",
+}
+
+
 # ── Payload API helpers ──────────────────────────────────────────────────────
 
 class PayloadClient:
@@ -126,13 +220,18 @@ def read_engine_chapters(conn: sqlite3.Connection, engine_book_id: str) -> list[
     ]
 
 
-def detect_category(book_id: str) -> str:
-    """Detect book category from book_id naming convention."""
+def detect_category(book_id: str) -> tuple[str, str]:
+    """Detect book (category, subcategory) from book_id.
+
+    Returns:
+        (category, subcategory) — subcategory may be empty string.
+    """
     if book_id.startswith("ed_update"):
-        return "ecdev"
+        return ("ecdev", "")
     if book_id.startswith("oreb"):
-        return "real_estate"
-    return "textbook"
+        return ("real_estate", "")
+    subcategory = SUBCATEGORY_REGISTRY.get(book_id, "")
+    return ("textbook", subcategory)
 
 
 # ── Main sync logic ──────────────────────────────────────────────────────────
@@ -159,8 +258,9 @@ def sync(args: argparse.Namespace):
         print("\n🔍 DRY RUN — no changes will be made\n")
         for b in books:
             chapters = read_engine_chapters(conn, b["book_id"])
-            cat = detect_category(b["book_id"])
-            print(f"  📖 [{cat}] {b['book_id']}: {b['title']}")
+            cat, sub = detect_category(b["book_id"])
+            sub_label = f" / {sub}" if sub else ""
+            print(f"  📖 [{cat}{sub_label}] {b['book_id']}: {b['title']}")
             print(f"     {b['page_count']} pages, {b['chapter_count']} chapters, {b['chunk_count']} chunks")
             if chapters:
                 print(f"     Chapters: {', '.join(c['chapter_key'] for c in chapters[:5])}", end="")
@@ -192,7 +292,7 @@ def sync(args: argparse.Namespace):
 
     for i, book in enumerate(books, 1):
         engine_id = book["book_id"]
-        category = detect_category(engine_id)
+        category, subcategory = detect_category(engine_id)
 
         # Skip if already exists
         if engine_id in existing_by_engine_id:
@@ -203,7 +303,7 @@ def sync(args: argparse.Namespace):
             continue
 
         # Create in Payload
-        doc = client.create("books", {
+        create_data: dict = {
             "engineBookId": engine_id,
             "title": book["title"],
             "authors": book["authors"],
@@ -222,7 +322,10 @@ def sync(args: argparse.Namespace):
                 "chapterCount": book["chapter_count"],
                 "source": "engine_sync",
             },
-        })
+        }
+        if subcategory:
+            create_data["subcategory"] = subcategory
+        doc = client.create("books", create_data)
 
         if doc.get("_skipped"):
             stats["books_skipped"] += 1
@@ -321,6 +424,38 @@ def fix_pipeline(args: argparse.Namespace):
     print(f"\n  Fixed {fixed} books")
 
 
+def fix_subcategory(args: argparse.Namespace):
+    """Backfill subcategory for existing textbooks that don't have one."""
+    print("\n🏷️  Fixing subcategories for existing textbooks...")
+    client = PayloadClient(args.url)
+    client.login(args.email, args.password)
+
+    docs = client.find("books", limit=500)
+    fixed = 0
+    skipped = 0
+    for doc in docs:
+        engine_id = doc.get("engineBookId", "")
+        if not engine_id:
+            continue
+
+        _, expected_sub = detect_category(engine_id)
+        current_sub = doc.get("subcategory") or ""
+
+        # Skip if already correct or no mapping exists
+        if current_sub == expected_sub:
+            skipped += 1
+            continue
+        if not expected_sub:
+            skipped += 1
+            continue
+
+        client.update("books", doc["id"], {"subcategory": expected_sub})
+        fixed += 1
+        print(f"  ✅ {engine_id}: subcategory → {expected_sub}")
+
+    print(f"\n  Fixed {fixed} books, skipped {skipped}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Sync engine SQLite → Payload CMS")
     parser.add_argument("--book", type=str, default=None,
@@ -329,6 +464,8 @@ def main():
                         help="Show what would be synced without making changes")
     parser.add_argument("--fix-pipeline", action="store_true",
                         help="Backfill pipeline fields for existing books")
+    parser.add_argument("--fix-subcategory", action="store_true",
+                        help="Backfill subcategory for existing textbooks")
     parser.add_argument("--email", type=str, default=DEFAULT_EMAIL,
                         help="Payload admin email")
     parser.add_argument("--password", type=str, default=DEFAULT_PASSWORD,
@@ -339,6 +476,8 @@ def main():
 
     if args.fix_pipeline:
         fix_pipeline(args)
+    elif args.fix_subcategory:
+        fix_subcategory(args)
     else:
         sync(args)
 

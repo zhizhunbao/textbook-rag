@@ -15,6 +15,7 @@ import {
   ChevronRight,
   MessageSquare,
   Trash2,
+  Zap,
 } from 'lucide-react'
 import { useState } from 'react'
 import { useI18n } from '@/features/shared/i18n'
@@ -96,6 +97,7 @@ export default function AppSidebar() {
     { titleKey: 'navPrompts', icon: FileText, href: '/dashboard/prompts' },
     { titleKey: 'navEvaluation', icon: LineChart, href: '/dashboard/evaluation' },
     { titleKey: 'navFeedback', icon: ThumbsUp, href: '/dashboard/feedback' },
+    { titleKey: 'navPipeline', icon: Zap, href: '/dashboard/pipeline' },
   ] as const
 
   function navLink(href: string, Icon: React.ElementType, label: string) {
