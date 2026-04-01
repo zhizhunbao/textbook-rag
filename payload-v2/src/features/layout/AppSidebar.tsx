@@ -95,11 +95,13 @@ export default function AppSidebar() {
 
   const adminLinks = [
     { titleKey: 'navAnalytics', icon: BarChart3, href: '/engine/analytics' },
-    { titleKey: 'navModels', icon: Brain, href: '/engine/llms' },
-    { titleKey: 'navPrompts', icon: FileText, href: '/engine/response_synthesizers' },
+    { titleKey: 'navLlms', icon: Brain, href: '/engine/llms' },
+    { titleKey: 'navResponseSynthesizers', icon: FileText, href: '/engine/response_synthesizers' },
     { titleKey: 'navEvaluation', icon: LineChart, href: '/engine/evaluation' },
     { titleKey: 'navFeedback', icon: ThumbsUp, href: '/engine/feedback' },
-    { titleKey: 'navPipeline', icon: Zap, href: '/engine/ingestion' },
+    { titleKey: 'navIngestion', icon: Zap, href: '/engine/ingestion' },
+    { titleKey: 'navRetrievers', icon: Database, href: '/engine/retrievers' },
+    { titleKey: 'navQueryEngine', icon: MessageSquare, href: '/engine/query_engine' },
     { titleKey: 'navSeed', icon: Database, href: '/seed' },
   ] as const
 
@@ -298,8 +300,8 @@ export default function AppSidebar() {
             </p>
           )}
           <nav className="flex flex-col gap-0.5">
-            {navLink('/readers', Library, String(t.navLibrary))}
-            {navLink('/engine/question_gen', MessageSquareDot, String(t.navQuestions))}
+            {navLink('/readers', Library, String(t.navReaders))}
+            {navLink('/engine/question_gen', MessageSquareDot, String(t.navQuestionGen))}
           </nav>
 
           {isAdmin && (

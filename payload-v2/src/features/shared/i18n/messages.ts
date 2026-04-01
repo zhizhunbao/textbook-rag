@@ -65,17 +65,20 @@ export interface Messages {
 
   // ── Sidebar Nav ──
   navNewChat: string
-  navLibrary: string
-  navQuestions: string
+  navReaders: string
+  navQuestionGen: string
   navGroupChat: string
   navGroupResources: string
   navGroupAdmin: string
   navAnalytics: string
   navEvaluation: string
   navFeedback: string
-  navModels: string
-  navPrompts: string
-  navPipeline: string
+  navLlms: string
+  navResponseSynthesizers: string
+  navIngestion: string
+  navRetrievers: string
+  navQueryEngine: string
+  navSeed: string
 }
 
 const en: Messages = {
@@ -130,17 +133,20 @@ const en: Messages = {
   loginErrorFailed: 'Login failed. Please check your credentials.',
 
   navNewChat: 'New Chat',
-  navLibrary: 'Library',
-  navQuestions: 'Questions',
+  navReaders: 'Library',
+  navQuestionGen: 'Questions',
   navGroupChat: 'Chat',
   navGroupResources: 'Resources',
   navGroupAdmin: 'Admin',
   navAnalytics: 'Analytics',
   navEvaluation: 'Evaluation',
   navFeedback: 'Feedback',
-  navModels: 'Models',
-  navPrompts: 'Prompts',
-  navPipeline: 'Pipeline',
+  navLlms: 'LLMs',
+  navResponseSynthesizers: 'Prompts',
+  navIngestion: 'Ingestion',
+  navRetrievers: 'Retrievers',
+  navQueryEngine: 'Query Engine',
+  navSeed: 'Seed Database',
 }
 
 const zh: Messages = {
@@ -195,17 +201,20 @@ const zh: Messages = {
   loginErrorFailed: '登录失败，请检查您的凭据。',
 
   navNewChat: '新对话',
-  navLibrary: '资料库',
-  navQuestions: '问题库',
+  navReaders: '资料库',
+  navQuestionGen: '问题库',
   navGroupChat: '对话',
   navGroupResources: '资源',
   navGroupAdmin: '管理',
   navAnalytics: '使用统计',
   navEvaluation: '质量评估',
   navFeedback: '反馈管理',
-  navModels: '模型管理',
-  navPrompts: 'Prompt',
-  navPipeline: '流水线',
+  navLlms: 'LLMs',
+  navResponseSynthesizers: 'Prompt 管理',
+  navIngestion: '数据导入',
+  navRetrievers: '检索器',
+  navQueryEngine: '查询引擎',
+  navSeed: '数据初始化',
 }
 
 export const messages: Record<Locale, Messages> = { en, zh }

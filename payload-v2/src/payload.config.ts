@@ -1,11 +1,12 @@
 import { buildConfig } from 'payload'
-import { sqliteAdapter } from '@payloadcms/db-sqlite'
+import { postgresAdapter } from '@payloadcms/db-postgres'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
 
 import { Books } from './collections/Books'
+import { Chapters } from './collections/Chapters'
 import { Chunks } from './collections/Chunks'
 import { Users } from './collections/Users'
 import { IngestTasks } from './collections/IngestTasks'
@@ -29,6 +30,7 @@ export default buildConfig({
   collections: [
     Users,
     Books,
+    Chapters,
     Chunks,
     IngestTasks,
     Llms,
@@ -42,9 +44,9 @@ export default buildConfig({
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
-  db: sqliteAdapter({
-    client: {
-      url: process.env.DATABASE_URI || 'file:../data/payload.db',
+  db: postgresAdapter({
+    pool: {
+      connectionString: process.env.DATABASE_URI || 'postgresql://payload:payload@127.0.0.1:5432/payload',
     },
   }),
   sharp,

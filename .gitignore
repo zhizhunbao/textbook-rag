@@ -71,3 +71,5 @@ backend/data/chroma_db/
 textbooks.zip
 payload/.next/
 .github/
+# Next.js build output
+.next/
