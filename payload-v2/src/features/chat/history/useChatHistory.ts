@@ -11,6 +11,7 @@ import {
   fetchSessions as fetchServerSessions,
   createServerSession,
   deleteServerSession,
+  deleteAllServerSessions,
   appendServerMessages,
   fetchMessages as fetchServerMessages,
   type PayloadChatSession,
@@ -185,10 +186,15 @@ export function useChatHistory(userId?: number | null) {
     [isLoggedIn],
   );
 
-  /** Clear all history (local state only — doesn't delete from Payload). */
+  /** Clear all history — deletes from both local state and Payload. */
   const clearHistory = useCallback(() => {
     setSessions([]);
-  }, []);
+
+    if (!isLoggedIn) return;
+    deleteAllServerSessions().catch((err) => {
+      console.warn("[ChatHistory] deleteAllServerSessions failed:", err);
+    });
+  }, [isLoggedIn]);
 
   /** Get one session by id. */
   const getSession = useCallback(

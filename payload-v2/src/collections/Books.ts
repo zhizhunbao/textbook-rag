@@ -88,21 +88,18 @@ export const Books: CollectionConfig = {
       type: 'number',
       admin: { readOnly: true },
     },
-    // ── Pipeline stage status (5 stages) ──
-    // chunked:    MinerUReader → Document[] (content_list.json parsing)
-    // toc:        TOC extraction from PDF bookmarks / headings
-    // bm25:       FTS5/BM25 full-text index building
-    // embeddings: HuggingFace/Azure embedding generation
-    // vector:     ChromaDB vector store ingestion
+    // ── Pipeline stage status (2 stages) ──
+    // parse:  MinerU PDF parsing → content_list.json
+    // ingest: MinerUReader → IngestionPipeline → ChromaDB + Payload sync
     {
       name: 'pipeline',
       type: 'group',
       admin: {
-        description: 'Processing pipeline stage status (chunked → toc → bm25 → embeddings → vector)',
+        description: 'Processing pipeline stage status (parse → ingest)',
       },
       fields: [
         {
-          name: 'chunked',
+          name: 'parse',
           type: 'select',
           defaultValue: 'pending',
           options: [
@@ -110,10 +107,10 @@ export const Books: CollectionConfig = {
             { label: 'Done', value: 'done' },
             { label: 'Error', value: 'error' },
           ],
-          admin: { readOnly: true, width: '20%' },
+          admin: { readOnly: true, width: '50%' },
         },
         {
-          name: 'toc',
+          name: 'ingest',
           type: 'select',
           defaultValue: 'pending',
           options: [
@@ -121,40 +118,23 @@ export const Books: CollectionConfig = {
             { label: 'Done', value: 'done' },
             { label: 'Error', value: 'error' },
           ],
-          admin: { readOnly: true, width: '20%' },
+          admin: { readOnly: true, width: '50%' },
         },
         {
-          name: 'bm25',
-          type: 'select',
-          defaultValue: 'pending',
-          options: [
-            { label: 'Pending', value: 'pending' },
-            { label: 'Done', value: 'done' },
-            { label: 'Error', value: 'error' },
-          ],
-          admin: { readOnly: true, width: '20%' },
+          name: 'parseOutput',
+          type: 'json',
+          admin: {
+            readOnly: true,
+            description: 'MinerU parse results: output path, content_list count, images count, sample entries',
+          },
         },
         {
-          name: 'embeddings',
-          type: 'select',
-          defaultValue: 'pending',
-          options: [
-            { label: 'Pending', value: 'pending' },
-            { label: 'Done', value: 'done' },
-            { label: 'Error', value: 'error' },
-          ],
-          admin: { readOnly: true, width: '20%' },
-        },
-        {
-          name: 'vector',
-          type: 'select',
-          defaultValue: 'pending',
-          options: [
-            { label: 'Pending', value: 'pending' },
-            { label: 'Done', value: 'done' },
-            { label: 'Error', value: 'error' },
-          ],
-          admin: { readOnly: true, width: '20%' },
+          name: 'ingestOutput',
+          type: 'json',
+          admin: {
+            readOnly: true,
+            description: 'Ingestion results: node count, ChromaDB collection, chunk push stats',
+          },
         },
       ],
     },

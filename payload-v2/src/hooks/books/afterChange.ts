@@ -50,11 +50,8 @@ export const afterChangeHook: CollectionAfterChangeHook = async ({
     return doc
   }
 
-  const payloadUrl = process.env.PAYLOAD_PUBLIC_SERVER_URL || 'http://localhost:3001'
-  const pdfUrl = `${payloadUrl}/api/pdf-uploads/file/${pdfFilename}`
-
   req.payload.logger.info(
-    `[Books.afterChange] Triggering ingest for book ${doc.id} (${doc.title}), PDF: ${pdfUrl}`
+    `[Books.afterChange] Triggering ingest for book ${doc.id} (${doc.title}), PDF: ${pdfFilename}`
   )
 
   try {
@@ -70,13 +67,13 @@ export const afterChangeHook: CollectionAfterChangeHook = async ({
       },
     })
 
-    // 2. POST to Engine ingest endpoint
+    // 2. POST to Engine ingest endpoint (pdf_filename — Engine reads from shared data/raw_pdfs/)
     const response = await fetch(`${ENGINE}/engine/ingest`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         book_id: doc.id,
-        pdf_url: pdfUrl,
+        pdf_filename: pdfFilename,
         category: doc.category || 'textbook',
         task_id: task.id,
         title: doc.title,

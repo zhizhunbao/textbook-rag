@@ -126,8 +126,8 @@ export function PipelineProgress({ pipeline }: { pipeline: PipelineStages }) {
   return (
     <div className="flex items-center gap-1 flex-wrap">
       {PIPELINE_STAGE_CONFIGS.map((cfg) => {
-        const status = pipeline[cfg.key]
-        const style = stageStyle[status]
+        const status = pipeline[cfg.key] ?? 'pending'
+        const style = stageStyle[status] ?? stageStyle.pending
         const Icon = style.icon
 
         return (

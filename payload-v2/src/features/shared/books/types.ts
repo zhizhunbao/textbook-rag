@@ -13,13 +13,10 @@ export type BookCategory = string
 export type BookStatus = 'pending' | 'processing' | 'indexed' | 'error'
 export type PipelineStage = 'pending' | 'done' | 'error'
 
-/** Per-stage pipeline status for the 5-stage ingestion flow. */
+/** Per-stage pipeline status for the 2-stage ingestion flow. */
 export interface PipelineInfo {
-  chunked: PipelineStage
-  toc: PipelineStage
-  bm25: PipelineStage
-  embeddings: PipelineStage
-  vector: PipelineStage
+  parse: PipelineStage
+  ingest: PipelineStage
 }
 
 // ============================================================
@@ -39,7 +36,7 @@ export interface BookBase {
   pageCount: number
   fileSize: number
   createdAt: string
-  /** 5-stage pipeline status (only populated when pipeline group exists). */
+  /** 2-stage pipeline status (only populated when pipeline group exists). */
   pipeline?: PipelineInfo
 }
 

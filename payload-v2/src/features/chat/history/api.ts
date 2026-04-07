@@ -91,11 +91,42 @@ export async function createServerSession(opts: {
   return res.doc
 }
 
-/** Delete a chat session by Payload ID. */
+/** Delete all ChatMessages belonging to a session. */
+async function deleteSessionMessages(sessionId: number): Promise<void> {
+  // Fetch IDs of all messages for this session
+  const params = new URLSearchParams()
+  params.set('where[session][equals]', String(sessionId))
+  params.set('limit', '500')
+  params.set('depth', '0')
+
+  const data = await request<{ docs: { id: number }[] }>(
+    `/api/chat-messages?${params}`,
+  )
+
+  // Delete each message
+  await Promise.all(
+    data.docs.map((msg) =>
+      request<unknown>(`/api/chat-messages/${msg.id}`, { method: 'DELETE' }),
+    ),
+  )
+}
+
+/** Delete a chat session and its messages by Payload ID. */
 export async function deleteServerSession(sessionId: number): Promise<void> {
+  // Delete messages first, then the session
+  await deleteSessionMessages(sessionId)
   await request<unknown>(`/api/chat-sessions/${sessionId}`, {
     method: 'DELETE',
   })
+}
+
+/** Bulk-delete all sessions for the current user (used by "Clear All"). */
+export async function deleteAllServerSessions(): Promise<void> {
+  const sessions = await fetchSessions(500)
+  // Delete all sessions (and their messages) in parallel
+  await Promise.all(
+    sessions.map((s) => deleteServerSession(s.id)),
+  )
 }
 
 // ============================================================

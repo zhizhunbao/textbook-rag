@@ -94,12 +94,19 @@ async def query(req: QueryRequest, engine=Depends(get_engine)):
 
     Flow:
         query_engine/ (RetrieverQueryEngine)
-        ├── retrievers/ (BM25 + Vector → RRF)
+        ├── retrievers/ (BM25 + Vector → RRF, with MetadataFilters)
         ├── response_synthesizers/ (citation prompts)
         └── llms/ (Ollama or Azure OpenAI)
     """
-    logger.info("Sync query: {} (top_k={})", req.question[:80], req.top_k)
-    result = run_query(req.question, engine=engine)
+    # Extract book scope from filters
+    book_ids = req.filters.book_id_strings or []
+    logger.info("Sync query: {} (top_k={}, books={})", req.question[:80], req.top_k, book_ids or "all")
+
+    result = run_query(
+        req.question,
+        engine=engine if not book_ids else None,
+        book_id_strings=book_ids or None,
+    )
 
     return {
         "answer": result.answer,
@@ -127,13 +134,17 @@ async def _stream_generator(req: QueryRequest):
         3. event: done            — final response with full answer + sources + trace
     """
     try:
-        # Build streaming engine (separate from singleton to enable streaming)
+        # Extract book scope from filters
+        book_ids = req.filters.book_id_strings or []
+
+        # Build streaming engine with book scope filter
         streaming_engine = get_query_engine(
             similarity_top_k=req.top_k,
             streaming=True,
+            book_id_strings=book_ids or None,
         )
 
-        logger.info("Stream query: {} (top_k={})", req.question[:80], req.top_k)
+        logger.info("Stream query: {} (top_k={}, books={})", req.question[:80], req.top_k, book_ids or "all")
 
         # Execute query with streaming enabled
         response = streaming_engine.query(req.question)

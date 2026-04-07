@@ -18,21 +18,16 @@ export type StageStatus = 'pending' | 'done' | 'error'
 /**
  * Pipeline stages — maps to engine-v2/ingestion/pipeline.py (v2, LlamaIndex-native)
  *
- *   chunked — MinerUReader → Document[] (BaseReader.load_data)
- *   toc     — TOC extraction from headings (project-specific)
- *   vector  — IngestionPipeline → ChromaDB (includes BM25 in-memory)
- *
- * v1 had 5 stages (chunked/stored/vector/fts/toc).
- * v2 drops "stored" (atomic in IngestionPipeline) and "fts" (BM25 is in-memory).
+ *   parse  — MinerU PDF parsing → content_list.json
+ *   ingest — MinerUReader → IngestionPipeline → ChromaDB (chunking + embedding + upsert)
  */
 export interface PipelineStages {
-  chunked: StageStatus
-  toc: StageStatus
-  vector: StageStatus
+  parse: StageStatus
+  ingest: StageStatus
 }
 
 // ── Stage keys and display config ───────────────────────────────────────────
-export const PIPELINE_STAGE_KEYS = ['chunked', 'toc', 'vector'] as const
+export const PIPELINE_STAGE_KEYS = ['parse', 'ingest'] as const
 export type PipelineStageKey = (typeof PIPELINE_STAGE_KEYS)[number]
 
 export interface PipelineStageConfig {
@@ -42,9 +37,8 @@ export interface PipelineStageConfig {
 }
 
 export const PIPELINE_STAGE_CONFIGS: PipelineStageConfig[] = [
-  { key: 'chunked', label: 'Chunked', labelZh: '分块' },
-  { key: 'toc',     label: 'TOC',     labelZh: 'TOC' },
-  { key: 'vector',  label: 'Vector',  labelZh: '向量' },
+  { key: 'parse',  label: 'Parse',  labelZh: '解析' },
+  { key: 'ingest', label: 'Ingest', labelZh: '入库' },
 ]
 
 // ── Cover image from Payload Media upload ───────────────────────────────────

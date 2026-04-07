@@ -54,18 +54,30 @@ export async function fetchIndexedBooks(): Promise<BookBase[]> {
 // Internal mapper
 // ============================================================
 
-function mapPipeline(p: Record<string, any> | undefined): PipelineInfo | undefined {
-  if (!p) return undefined
-  return {
-    chunked: p.chunked ?? 'pending',
-    toc: p.toc ?? 'pending',
-    bm25: p.bm25 ?? 'pending',
-    embeddings: p.embeddings ?? 'pending',
-    vector: p.vector ?? 'pending',
+function mapPipeline(p: Record<string, any> | undefined, bookStatus: string): PipelineInfo | undefined {
+  // If pipeline group has explicit values, use them
+  if (p && (p.parse !== 'pending' || p.ingest !== 'pending')) {
+    return {
+      parse: p.parse ?? 'pending',
+      ingest: p.ingest ?? 'pending',
+    }
   }
+  // Infer from book status for legacy books without pipeline data
+  if (bookStatus === 'indexed') {
+    return { parse: 'done', ingest: 'done' }
+  }
+  if (bookStatus === 'processing') {
+    return { parse: 'pending', ingest: 'pending' }
+  }
+  if (bookStatus === 'error') {
+    return { parse: 'error', ingest: 'error' }
+  }
+  // Default: pending
+  return p ? { parse: p.parse ?? 'pending', ingest: p.ingest ?? 'pending' } : undefined
 }
 
 function mapPayloadBook(b: Record<string, any>): BookBase {
+  const status = b.status ?? 'pending'
   return {
     id: b.id,
     book_id: b.engineBookId ?? String(b.id),
@@ -74,10 +86,10 @@ function mapPayloadBook(b: Record<string, any>): BookBase {
     chunk_count: b.chunkCount ?? 0,
     category: b.category ?? 'textbook',
     subcategory: b.subcategory ?? '',
-    status: b.status ?? 'pending',
+    status,
     pageCount: b.metadata?.pageCount ?? 0,
     fileSize: b.metadata?.fileSize ?? 0,
     createdAt: b.createdAt ?? '',
-    pipeline: mapPipeline(b.pipeline),
+    pipeline: mapPipeline(b.pipeline, status),
   }
 }

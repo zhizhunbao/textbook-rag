@@ -9,6 +9,8 @@ interface Props {
   min?: number;
   /** Maximum allowed width. */
   max?: number;
+  /** If true, dragging left increases width (for right-side panels). */
+  invert?: boolean;
 }
 
 /**
@@ -20,6 +22,7 @@ export default function ResizeHandle({
   onResize,
   min = 100,
   max = 1200,
+  invert = false,
 }: Props) {
   const dragging = useRef(false);
   const startX = useRef(0);
@@ -42,7 +45,8 @@ export default function ResizeHandle({
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => {
       if (!dragging.current) return;
-      const delta = e.clientX - startX.current;
+      const rawDelta = e.clientX - startX.current;
+      const delta = invert ? -rawDelta : rawDelta;
       const next = Math.max(min, Math.min(max, startW.current + delta));
       setPreviewDelta(next - startW.current);
     };
@@ -75,7 +79,7 @@ export default function ResizeHandle({
       }`}
       style={{
         width: 4,
-        transform: previewDelta === 0 ? undefined : `translateX(${previewDelta}px)`,
+        transform: previewDelta === 0 ? undefined : `translateX(${invert ? -previewDelta : previewDelta}px)`,
         zIndex: active ? 10 : undefined,
       }}
       onMouseDown={onMouseDown}

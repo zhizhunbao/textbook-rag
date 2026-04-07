@@ -25,6 +25,10 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup: initialise LlamaIndex Settings (LLM + embed model)."""
+    # Install thread-aware stdout/stderr capture for SSE log streaming
+    from engine_v2.api.log_capture import install as install_log_capture
+    install_log_capture()
+
     init_settings()
     logger.info("LlamaIndex Settings initialised")
     yield

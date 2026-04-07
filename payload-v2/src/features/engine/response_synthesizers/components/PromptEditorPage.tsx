@@ -12,7 +12,7 @@
 
 'use client'
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef, Suspense } from 'react'
 import {
   FileText, RefreshCw, Star, Save, Eye, Pencil,
   Lightbulb, BookOpen, BarChart3, Minimize2,
@@ -22,6 +22,7 @@ import {
 import { cn } from '@/features/shared/utils'
 import { useI18n } from '@/features/shared/i18n/I18nProvider'
 import { SidebarLayout, type SidebarItem } from '@/features/shared/components/SidebarLayout'
+import { useQueryState } from '@/features/shared/hooks/useQueryState'
 import { fetchPromptModes, updatePromptMode } from '../api'
 import type { PromptMode, PromptModeUpdatePayload } from '../types'
 
@@ -52,6 +53,14 @@ const ENGINE = process.env.NEXT_PUBLIC_ENGINE_URL || 'http://localhost:8000'
 // ============================================================
 
 export default function PromptEditorPage() {
+  return (
+    <Suspense>
+      <PromptEditorPageInner />
+    </Suspense>
+  )
+}
+
+function PromptEditorPageInner() {
   const { locale } = useI18n()
   const isZh = locale === 'zh'
 
@@ -61,7 +70,11 @@ export default function PromptEditorPage() {
   const [modes, setModes] = useState<PromptMode[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [selected, setSelected] = useState<number | null>(null)
+  const [selectedStr, setSelectedStr] = useQueryState('selected', '')
+  const selected = selectedStr ? Number(selectedStr) : null
+  const setSelected = useCallback((id: number | null) => {
+    setSelectedStr(id != null ? String(id) : '')
+  }, [setSelectedStr])
 
   // ==========================================================
   // Edit state

@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { isEditorOrAdmin } from '../access/isEditorOrAdmin'
+import { isAdminOrApiKey } from '../access/isAdminOrApiKey'
 
 export const Chunks: CollectionConfig = {
   slug: 'chunks',
@@ -10,9 +10,9 @@ export const Chunks: CollectionConfig = {
   },
   access: {
     read: () => true,
-    create: isEditorOrAdmin,
-    update: isEditorOrAdmin,
-    delete: isEditorOrAdmin,
+    create: isAdminOrApiKey,
+    update: isAdminOrApiKey,
+    delete: isAdminOrApiKey,
   },
   fields: [
     {

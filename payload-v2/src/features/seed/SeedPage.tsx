@@ -13,7 +13,7 @@
  *   module name → target collection → record count → data summary
  */
 
-import { useState, useMemo, type ReactNode } from 'react'
+import { useState, useMemo, Suspense, type ReactNode } from 'react'
 import {
   Database, Loader2, CheckCircle2, XCircle, Brain,
   FileText, RefreshCw, BookOpen, UserCog, Sparkles,
@@ -22,6 +22,7 @@ import {
 import { SidebarLayout, type SidebarItem } from '@/features/shared/components/SidebarLayout'
 import { useI18n } from '@/features/shared/i18n'
 import { cn } from '@/features/shared/utils'
+import { useQueryState } from '@/features/shared/hooks/useQueryState'
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -143,11 +144,19 @@ const SEED_MODULES: SeedModuleMeta[] = [
 // ── Component ───────────────────────────────────────────────────────────────
 
 export default function SeedPage() {
+  return (
+    <Suspense>
+      <SeedPageInner />
+    </Suspense>
+  )
+}
+
+function SeedPageInner() {
   const { locale } = useI18n()
   const isZh = locale === 'zh'
 
   // UI state
-  const [filter, setFilter] = useState<string>('all')
+  const [filter, setFilter] = useQueryState('filter', 'all')
 
   // Seed state
   const [loading, setLoading] = useState<string | null>(null)

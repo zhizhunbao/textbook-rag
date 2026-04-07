@@ -102,8 +102,14 @@ def ingest_book(
     _push_chunks_to_payload(nodes, book_id)
     _notify(task_id, status="running", progress=90, log="Chunks pushed to Payload")
 
-    # Step 4: Update book status
-    _update_book_status(book_id, chunk_count=len(nodes))
+    # Step 4: Update book status + seed ingestOutput
+    ingest_output = {
+        "nodeCount": len(nodes),
+        "chromaCollection": CHROMA_COLLECTION,
+        "chromaPersistDir": str(CHROMA_PERSIST_DIR),
+    }
+    _update_book_status(book_id, chunk_count=len(nodes), ingest_output=ingest_output)
+    logger.info("Ingest complete for book {} — {} nodes indexed", book_id, len(nodes))
     _notify(task_id, status="done", progress=100, log="Ingest complete")
 
     return {
@@ -173,11 +179,32 @@ def _login_payload() -> str | None:
     return None
 
 
+def _map_content_type(raw: str) -> str:
+    """Map MinerU content_type to Payload Chunks select values.
+
+    Payload allows: text, table, image, equation, code.
+    MinerU produces: text, title, interline_equation,
+    table, image, discarded, etc.
+    """
+    mapping: dict[str, str] = {
+        "text": "text",
+        "title": "text",
+        "table": "table",
+        "image": "image",
+        "equation": "equation",
+        "interline_equation": "equation",
+        "inline_equation": "equation",
+        "code": "code",
+        "discarded": "text",
+    }
+    return mapping.get(raw, "text")
+
+
 def _push_chunks_to_payload(nodes: list[BaseNode], book_id: int) -> None:
     """Batch-create chunk records in Payload CMS.
 
-    Pushes chunks in batches of BATCH_SIZE to avoid
-    thousands of individual HTTP requests for large books.
+    Deletes existing chunks for the book first (idempotent re-runs),
+    then pushes new chunks in batches of BATCH_SIZE.
     """
     import httpx
 
@@ -187,25 +214,52 @@ def _push_chunks_to_payload(nodes: list[BaseNode], book_id: int) -> None:
     created = 0
     errors = 0
 
+    # Delete existing chunks for this book (idempotent re-run support)
+    try:
+        del_resp = httpx.get(
+            f"{PAYLOAD_URL}/api/chunks",
+            params={
+                "where[book][equals]": str(book_id),
+                "limit": "0",  # Just get totalDocs count
+            },
+            headers=headers, timeout=15.0,
+        )
+        if del_resp.is_success:
+            existing = del_resp.json().get("totalDocs", 0)
+            if existing > 0:
+                logger.info("Deleting {} existing chunks for book {}", existing, book_id)
+                httpx.delete(
+                    f"{PAYLOAD_URL}/api/chunks",
+                    params={"where[book][equals]": str(book_id)},
+                    headers=headers, timeout=60.0,
+                ).raise_for_status()
+                logger.info("Deleted existing chunks for book {}", book_id)
+    except Exception as e:
+        logger.warning("Failed to delete existing chunks for book {}: {}", book_id, e)
+
     for batch_start in range(0, total, BATCH_SIZE):
         batch = nodes[batch_start:batch_start + BATCH_SIZE]
         batch_num = batch_start // BATCH_SIZE + 1
         total_batches = (total + BATCH_SIZE - 1) // BATCH_SIZE
 
         for node in batch:
-            bbox = node.metadata.get("bbox", [0, 0, 0, 0])
+            x0 = node.metadata.get("bbox_x0", 0.0)
+            y0 = node.metadata.get("bbox_y0", 0.0)
+            x1 = node.metadata.get("bbox_x1", 0.0)
+            y1 = node.metadata.get("bbox_y1", 0.0)
             page_idx = node.metadata.get("page_idx", 0)
+            raw_type = node.metadata.get("content_type", "text")
             payload = {
                 "chunkId": node.id_,
                 "book": book_id,
-                "text": node.get_content(),
-                "contentType": node.metadata.get("content_type", "text"),
+                "text": node.get_content() or "(empty)",
+                "contentType": _map_content_type(raw_type),
                 "readingOrder": node.metadata.get("reading_order", 0),
                 "pageNumber": page_idx,
                 "sourceLocators": [
-                    {"x0": bbox[0], "y0": bbox[1], "x1": bbox[2], "y1": bbox[3],
+                    {"x0": x0, "y0": y0, "x1": x1, "y1": y1,
                      "page": page_idx}
-                ] if bbox and any(v != 0 for v in bbox) else [],
+                ] if any(v != 0 for v in (x0, y0, x1, y1)) else [],
                 "vectorized": True,
             }
             try:
@@ -213,11 +267,18 @@ def _push_chunks_to_payload(nodes: list[BaseNode], book_id: int) -> None:
                     f"{PAYLOAD_URL}/api/chunks",
                     json=payload, headers=headers, timeout=30.0,
                 )
-                resp.raise_for_status()
+                if not resp.is_success:
+                    # Log response body for debugging 400 errors
+                    if errors < 3:
+                        logger.warning(
+                            "Chunk push {} failed ({}): {}",
+                            node.id_, resp.status_code, resp.text[:500],
+                        )
+                    resp.raise_for_status()
                 created += 1
             except Exception as e:
                 errors += 1
-                if errors <= 3:  # Only log first 3 errors
+                if errors <= 3:
                     logger.warning("Failed to push chunk {}: {}", node.id_, e)
 
         logger.info(
@@ -231,24 +292,29 @@ def _push_chunks_to_payload(nodes: list[BaseNode], book_id: int) -> None:
     )
 
 
-def _update_book_status(book_id: int, chunk_count: int) -> None:
-    """Mark book as indexed in Payload CMS with 5-stage pipeline."""
+def _update_book_status(
+    book_id: int,
+    chunk_count: int,
+    ingest_output: dict | None = None,
+) -> None:
+    """Mark book as indexed in Payload CMS with 2-stage pipeline."""
     import httpx
+
+    body: dict = {
+        "status": "indexed",
+        "chunkCount": chunk_count,
+        "pipeline": {
+            "parse": "done",
+            "ingest": "done",
+        },
+    }
+    if ingest_output:
+        body["pipeline"]["ingestOutput"] = ingest_output
 
     try:
         httpx.patch(
             f"{PAYLOAD_URL}/api/books/{book_id}",
-            json={
-                "status": "indexed",
-                "chunkCount": chunk_count,
-                "pipeline": {
-                    "chunked": "done",
-                    "toc": "done",
-                    "bm25": "done",
-                    "embeddings": "done",
-                    "vector": "done",
-                },
-            },
+            json=body,
             headers=_payload_headers(),
             timeout=30.0,
         ).raise_for_status()
@@ -261,22 +327,45 @@ def _notify(
     progress: int | None = None, log: str | None = None,
     error: str | None = None,
 ) -> None:
-    """Update PipelineTask progress in Payload CMS."""
+    """Update PipelineTask progress in Payload CMS.
+
+    Log lines are APPENDED with timestamps for real-time visibility.
+    """
     if task_id is None:
         return
     import httpx
+    from datetime import datetime
 
     body: dict[str, Any] = {"status": status}
     if progress is not None:
         body["progress"] = progress
-    if log is not None:
-        body["log"] = log
     if error is not None:
         body["error"] = error
+
     try:
+        # Append log line with timestamp (fetch existing → append → patch)
+        if log is not None:
+            ts = datetime.now().strftime("%H:%M:%S")
+            new_line = f"[{ts}] {log}"
+
+            # Fetch existing log
+            existing_log = ""
+            try:
+                resp = httpx.get(
+                    f"{PAYLOAD_URL}/api/ingest-tasks/{task_id}",
+                    headers=_payload_headers(), timeout=10.0,
+                )
+                if resp.is_success:
+                    existing_log = resp.json().get("log", "") or ""
+            except Exception:
+                pass
+
+            body["log"] = f"{existing_log}\n{new_line}".strip()
+
         httpx.patch(
             f"{PAYLOAD_URL}/api/ingest-tasks/{task_id}",
             json=body, headers=_payload_headers(), timeout=30.0,
         ).raise_for_status()
     except Exception as e:
         logger.warning("Failed to notify task {}: {}", task_id, e)
+

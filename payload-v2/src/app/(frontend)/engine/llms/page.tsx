@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, Suspense, useCallback } from 'react'
 import {
   Brain, Loader2, AlertCircle, RefreshCw, CheckCircle2, XCircle,
   Cpu, Globe, Zap, DollarSign, Activity,
@@ -11,10 +11,19 @@ import { SidebarLayout, type ViewMode, type SidebarItem } from '@/features/share
 import { useModels } from '@/features/engine/llms/useModels'
 import type { RuntimeModel, DiscoveredLocalModel, ModelProvider } from '@/features/engine/llms/types'
 import { PROVIDER_CONFIGS } from '@/features/engine/llms/types'
+import { useQueryState } from '@/features/shared/hooks/useQueryState'
 
 type FilterKey = 'all' | 'discovered' | ModelProvider
 
 export default function Page() {
+  return (
+    <Suspense>
+      <LlmsPageInner />
+    </Suspense>
+  )
+}
+
+function LlmsPageInner() {
   const {
     models,
     loading,
@@ -30,8 +39,8 @@ export default function Page() {
     setDefaultModel,
   } = useModels({ autoLoad: true, autoCheck: true, pollInterval: 0 })
 
-  const [filter, setFilter] = useState<FilterKey>('all')
-  const [viewMode, setViewMode] = useState<ViewMode>('cards')
+  const [filter, setFilter] = useQueryState('filter', 'all') as [FilterKey, (v: string) => void]
+  const [viewMode, setViewMode] = useQueryState('view', 'cards') as [ViewMode, (v: string) => void]
 
   // ── 首次加载时自动执行一次完整探测 ────────────────────────────────────────
   const [hasDiscovered, setHasDiscovered] = useState(false)

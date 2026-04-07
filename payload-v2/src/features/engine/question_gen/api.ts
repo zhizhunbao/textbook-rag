@@ -75,6 +75,18 @@ export async function deleteAllQuestions(ids: number[]): Promise<void> {
   }
 }
 
+/** Persist evaluation results (depth + reasoning) to a question record */
+export async function updateQuestionEval(
+  id: number,
+  data: { evalDepth: string; evalScore: number; evalReasoning: string },
+): Promise<void> {
+  await fetch(`/api/questions/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+}
+
 // ── Generation (Engine FastAPI) ─────────────────────────────────────────────
 
 /** Trigger question generation via engine LLM */
@@ -153,6 +165,9 @@ function mapDoc(d: Record<string, any>): Question {
     scoreClarity: d.scoreClarity ?? null,
     scoreDifficulty: d.scoreDifficulty ?? null,
     scoreOverall: d.scoreOverall ?? null,
+    evalDepth: d.evalDepth ?? null,
+    evalScore: d.evalScore ?? null,
+    evalReasoning: d.evalReasoning ?? null,
     createdAt: d.createdAt ?? '',
   }
 }

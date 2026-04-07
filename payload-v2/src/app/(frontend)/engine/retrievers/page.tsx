@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, Suspense } from 'react'
 import {
   HelpCircle, Plus, Save, Trash2, Loader2, Check,
   Shuffle, Focus, LayoutList, MessageCircleQuestion,
@@ -8,6 +8,7 @@ import {
 import { useI18n } from '@/features/shared/i18n/I18nProvider'
 import { cn } from '@/features/shared/utils'
 import { SidebarLayout, type SidebarItem } from '@/features/shared/components/SidebarLayout'
+import { useQueryState } from '@/features/shared/hooks/useQueryState'
 
 interface QueryTemplate {
   id: number
@@ -43,6 +44,14 @@ function CategoryBadge({ category, isZh }: { category: string; isZh: boolean }) 
 }
 
 export default function Page() {
+  return (
+    <Suspense>
+      <RetrieversPageInner />
+    </Suspense>
+  )
+}
+
+function RetrieversPageInner() {
   const { t, locale } = useI18n()
   const isZh = locale === 'zh'
 
@@ -53,7 +62,7 @@ export default function Page() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [isNew, setIsNew] = useState(false)
-  const [filter, setFilter] = useState<string>('all')
+  const [filter, setFilter] = useQueryState('filter', 'all')
 
   const fetchTemplates = useCallback(async () => {
     setLoading(true)

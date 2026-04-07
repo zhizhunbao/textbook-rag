@@ -17,7 +17,7 @@
 
 'use client'
 
-import { useState, useMemo } from 'react'
+import { Suspense, useMemo } from 'react'
 import {
   Download,
   FileText,
@@ -33,6 +33,7 @@ import { useI18n } from '@/features/shared/i18n'
 import { cn } from '@/features/shared/utils'
 import { useBooks, useBookSidebar } from '@/features/shared/books'
 import { SidebarLayout } from '@/features/shared/components/SidebarLayout'
+import { useQueryState } from '@/features/shared/hooks/useQueryState'
 import type { ImportTab } from '../types'
 import FileUploadCard from './FileUploadCard'
 import UrlImportCard from './UrlImportCard'
@@ -68,10 +69,18 @@ const TABS: TabConfig[] = [
 // Component
 // ============================================================
 export default function ImportPage() {
+  return (
+    <Suspense>
+      <ImportPageInner />
+    </Suspense>
+  )
+}
+
+function ImportPageInner() {
   const { locale } = useI18n()
   const isZh = locale === 'zh'
-  const [activeTab, setActiveTab] = useState<ImportTab>('import')
-  const [filter, setFilter] = useState<string>('all')
+  const [activeTab, setActiveTab] = useQueryState('tab', 'import') as [ImportTab, (v: string) => void]
+  const [filter, setFilter] = useQueryState('filter', 'all')
 
   // ── Book data (shared hooks — same as LibraryPage) ──
   const { books, loading, error, refetch } = useBooks()
@@ -147,7 +156,7 @@ export default function ImportPage() {
       {/* ── Tab content ── */}
       {activeTab === 'import' && <ImportTabContent />}
       {activeTab === 'files' && <MediaTab books={filteredBooks} filter={filter} />}
-      {activeTab === 'pipeline' && <PipelineTab books={filteredBooks} filter={filter} />}
+      {activeTab === 'pipeline' && <PipelineTab books={filteredBooks} filter={filter} onBooksRefresh={refetch} />}
     </SidebarLayout>
   )
 }

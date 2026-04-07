@@ -4,15 +4,15 @@
  * Layout: Pipeline Stepper (220px) │ Execute Panel (~300px) │ Output Panel (~400px)
  *
  * Data source: Payload CMS
- *   - Books.pipeline (chunked / toc / bm25 / embeddings / vector)
+ *   - Books.pipeline (parse / ingest)
  *   - IngestTasks collection — task progress / log / error
- *   - Engine API — per-stage output data + embedding model list
+ *   - Engine API — trigger ingest
  *
- * Execution modes:
- *   - Run All: sequential Chunked → TOC → BM25 → Embeddings → Vector
- *   - Run {Stage}: single-step execution for the selected stage
+ * 2-stage pipeline:
+ *   - Parse:  MinerU PDF parsing → content_list.json
+ *   - Ingest: Reader → Chunking → Embedding → ChromaDB → Payload sync
  *
- * Ref: AQ-08 — Pipeline Tab (v5 three-column design)
+ * Ref: AQ-08 — Pipeline Tab (v6 two-stage design)
  */
 
 'use client'
@@ -27,18 +27,15 @@ import {
   RefreshCw,
   Copy,
   Zap,
-  FileText,
-  BookOpen,
-  Search,
-  Cpu,
+  FileSearch,
   Database,
-  Pause,
   Square,
-  RotateCcw,
   Activity,
   ChevronDown,
   ChevronRight,
   Radio,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react'
 import { useI18n } from '@/features/shared/i18n'
 import { cn } from '@/features/shared/utils'
@@ -49,13 +46,12 @@ import type { BookBase, PipelineStage, PipelineInfo } from '@/features/shared/bo
 // Constants
 // ============================================================
 const ENGINE_URL = process.env.NEXT_PUBLIC_ENGINE_URL || 'http://localhost:8001'
-const POLL_TASKS_MS = 3000
-const POLL_OUTPUT_MS = 5000
+const POLL_TASKS_MS = 1500
 
 // ============================================================
 // Types
 // ============================================================
-type PipelineKey = 'chunked' | 'toc' | 'bm25' | 'embeddings' | 'vector'
+type PipelineKey = 'parse' | 'ingest'
 
 interface IngestTask {
   id: number
@@ -69,24 +65,28 @@ interface IngestTask {
   finishedAt: string | null
 }
 
-interface EmbeddingModel {
-  name: string
-  provider: string
-  dimensions: number
-  description: string
-}
-
 // ============================================================
 // Props
 // ============================================================
 interface PipelineTabProps {
   books: BookBase[]
   filter: string
+  /** Callback to re-fetch books list from DB (ensures pipeline status persists). */
+  onBooksRefresh?: () => void
 }
 
 // ============================================================
 // Stage config
 // ============================================================
+interface StepDetail {
+  label: string
+  labelZh: string
+  input: string
+  inputZh: string
+  output: string | string[]
+  outputZh: string | string[]
+}
+
 interface StageConfig {
   key: PipelineKey
   label: string
@@ -94,55 +94,75 @@ interface StageConfig {
   icon: React.ElementType
   description: string
   descriptionZh: string
-  steps: string[]
-  stepsZh: string[]
+  steps: StepDetail[]
 }
 
 const STAGES: StageConfig[] = [
   {
-    key: 'chunked',
-    label: 'Chunked', labelZh: '分块',
-    icon: FileText,
-    description: 'MinerU Reader parses content_list.json into Document nodes.',
-    descriptionZh: 'MinerU Reader 解析 content_list.json 为 Document 节点。',
-    steps: ['Read MinerU output (content_list.json)', 'Parse documents → Document[]', 'Push chunks to Payload CMS'],
-    stepsZh: ['读取 MinerU 输出 (content_list.json)', '解析文档 → Document[]', '推送 chunks 到 Payload CMS'],
+    key: 'parse',
+    label: 'Parse', labelZh: '解析',
+    icon: FileSearch,
+    description: 'MinerU parses PDF into structured content_list.json.',
+    descriptionZh: 'MinerU 将 PDF 解析为结构化 content_list.json。',
+    steps: [
+      {
+        label: 'Run MinerU (layout + OCR)',
+        labelZh: '运行 MinerU（版面分析 + OCR）',
+        input: 'data/raw_pdfs/{category}/{filename}.pdf',
+        inputZh: 'data/raw_pdfs/{category}/{filename}.pdf',
+        output: 'mineru_output/{category}/{book}/auto/',
+        outputZh: 'mineru_output/{category}/{book}/auto/',
+      },
+      {
+        label: 'Generate content_list.json',
+        labelZh: '生成 content_list.json',
+        input: 'MinerU layout analysis results',
+        inputZh: 'MinerU 版面分析结果',
+        output: ['{book}_content_list.json', '{book}.md', 'images/'],
+        outputZh: ['{book}_content_list.json', '{book}.md', 'images/'],
+      },
+    ],
   },
   {
-    key: 'toc',
-    label: 'TOC', labelZh: '目录',
-    icon: BookOpen,
-    description: 'Extract PDF bookmarks and heading hierarchy.',
-    descriptionZh: '提取 PDF 书签与标题层级结构。',
-    steps: ['Extract PDF bookmarks / headings', 'Build heading hierarchy', 'Map chapters ↔ page ranges'],
-    stepsZh: ['提取 PDF 书签 / 标题', '构建标题层级结构', '映射章节 ↔ 页码范围'],
-  },
-  {
-    key: 'bm25',
-    label: 'BM25', labelZh: 'BM25',
-    icon: Search,
-    description: 'Build FTS5 inverted index for BM25 keyword retrieval.',
-    descriptionZh: '构建 FTS5 倒排索引，用于 BM25 关键词检索。',
-    steps: ['Build FTS5 inverted index', 'Calculate term frequencies (TF-IDF)', 'BM25 scoring ready'],
-    stepsZh: ['构建 FTS5 倒排索引', '计算词频 (TF-IDF)', 'BM25 评分就绪'],
-  },
-  {
-    key: 'embeddings',
-    label: 'Embeddings', labelZh: '嵌入',
-    icon: Cpu,
-    description: 'Generate vector embeddings via selected model.',
-    descriptionZh: '通过选定模型生成向量嵌入。',
-    steps: ['Load embedding model', 'Batch generate vectors', 'Validate dimension consistency'],
-    stepsZh: ['加载嵌入模型', '批量生成向量', '验证维度一致性'],
-  },
-  {
-    key: 'vector',
-    label: 'Vector', labelZh: '向量',
+    key: 'ingest',
+    label: 'Ingest', labelZh: '入库',
     icon: Database,
-    description: 'Ingest vectors into ChromaDB persistent collection.',
-    descriptionZh: '将向量写入 ChromaDB 持久化集合。',
-    steps: ['Initialize ChromaDB collection', 'Batch upsert vectors', 'Verify vector count vs chunk count'],
-    stepsZh: ['初始化 ChromaDB collection', '批量 upsert 向量', '验证向量数 vs chunk 数'],
+    description: 'LlamaIndex pipeline: chunk → embed → ChromaDB → Payload sync.',
+    descriptionZh: 'LlamaIndex 流水线：分块 → 嵌入 → ChromaDB → Payload 同步。',
+    steps: [
+      {
+        label: 'Read MinerU output → Document[]',
+        labelZh: '读取 MinerU 输出 → Document[]',
+        input: '{book}_content_list.json',
+        inputZh: '{book}_content_list.json',
+        output: 'LlamaIndex Document[] (N docs)',
+        outputZh: 'LlamaIndex Document[] (N 篇)',
+      },
+      {
+        label: 'Chunking + embedding via IngestionPipeline',
+        labelZh: '通过 IngestionPipeline 分块 + 嵌入',
+        input: 'Document[] + HuggingFace model',
+        inputZh: 'Document[] + HuggingFace 模型',
+        output: 'TextNode[] with embeddings',
+        outputZh: '带嵌入向量的 TextNode[]',
+      },
+      {
+        label: 'Upsert vectors into ChromaDB',
+        labelZh: '向量 upsert 到 ChromaDB',
+        input: 'TextNode[] with embeddings',
+        inputZh: '带嵌入向量的 TextNode[]',
+        output: 'ChromaDB collection updated',
+        outputZh: 'ChromaDB collection 已更新',
+      },
+      {
+        label: 'Push chunk metadata to Payload CMS',
+        labelZh: '推送 chunk 元数据到 Payload CMS',
+        input: 'TextNode[] metadata',
+        inputZh: 'TextNode[] 元数据',
+        output: 'Payload chunks collection',
+        outputZh: 'Payload chunks collection',
+      },
+    ],
   },
 ]
 
@@ -157,40 +177,55 @@ const STAGE_STATUS: Record<PipelineStage, {
   label: string
   labelZh: string
 }> = {
-  done:    { icon: CheckCircle2,  color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', label: 'Done',    labelZh: '完成' },
-  pending: { icon: Clock,         color: 'text-muted-foreground', bg: 'bg-muted/50', border: 'border-border',          label: 'Pending', labelZh: '待处理' },
-  error:   { icon: AlertTriangle, color: 'text-red-400',     bg: 'bg-red-500/10',     border: 'border-red-500/30',     label: 'Error',   labelZh: '错误' },
+  done: { icon: CheckCircle2, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', label: 'Done', labelZh: '完成' },
+  pending: { icon: Clock, color: 'text-muted-foreground', bg: 'bg-muted/50', border: 'border-border', label: 'Pending', labelZh: '待处理' },
+  error: { icon: AlertTriangle, color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/30', label: 'Error', labelZh: '错误' },
 }
 
 const TASK_STATUS: Record<string, { icon: React.ElementType; color: string; label: string; labelZh: string }> = {
-  queued:  { icon: Clock,         color: 'text-muted-foreground', label: 'Queued',  labelZh: '排队中' },
-  running: { icon: Loader2,       color: 'text-amber-400',        label: 'Running', labelZh: '运行中' },
-  done:    { icon: CheckCircle2,  color: 'text-emerald-400',      label: 'Done',    labelZh: '完成' },
-  error:   { icon: AlertTriangle, color: 'text-red-400',          label: 'Error',   labelZh: '错误' },
+  queued: { icon: Clock, color: 'text-muted-foreground', label: 'Queued', labelZh: '排队中' },
+  running: { icon: Loader2, color: 'text-amber-400', label: 'Running', labelZh: '运行中' },
+  done: { icon: CheckCircle2, color: 'text-emerald-400', label: 'Done', labelZh: '完成' },
+  error: { icon: AlertTriangle, color: 'text-red-400', label: 'Error', labelZh: '错误' },
 }
 
 // ============================================================
 // Component
 // ============================================================
-export default function PipelineTab({ books, filter }: PipelineTabProps) {
+export default function PipelineTab({ books, filter, onBooksRefresh }: PipelineTabProps) {
   const { locale } = useI18n()
   const isZh = locale === 'zh'
 
   // ==========================================================
   // State
   // ==========================================================
-  const [activeStage, setActiveStage] = useState<PipelineKey>('chunked')
+  const [activeStage, setActiveStage] = useState<PipelineKey>('parse')
   const [tasks, setTasks] = useState<IngestTask[]>([])
   const [loadingTasks, setLoadingTasks] = useState(false)
   const [triggerLoading, setTriggerLoading] = useState(false)
+  const [cancelLoading, setCancelLoading] = useState(false)
+  const [resetLoading, setResetLoading] = useState(false)
   const [expandedTasks, setExpandedTasks] = useState<Set<number>>(new Set())
-  const [embeddingModels, setEmbeddingModels] = useState<EmbeddingModel[]>([])
-  const [selectedModel, setSelectedModel] = useState<string>('')
+  const [expandedSteps, setExpandedSteps] = useState<Set<string>>(new Set())
+  const [inspectorTarget, setInspectorTarget] = useState<{
+    stageKey: PipelineKey; stepIdx: number; direction: 'in' | 'out'
+  } | null>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [inspectData, setInspectData] = useState<any>(null)
+  const [inspectLoading, setInspectLoading] = useState(false)
   const logRef = useRef<HTMLPreElement>(null)
+  const [sseLines, setSseLines] = useState<string[]>([])
+  const sseRef = useRef<EventSource | null>(null)
+  const [logExpanded, setLogExpanded] = useState(true)
+  // SSE-driven live step tracking (which step is currently executing)
+  const [liveStepIdx, setLiveStepIdx] = useState<number>(-1)
 
   // — Resizable panel widths (same pattern as EvaluationPage)
   const [stepperWidth, setStepperWidth] = useState(220)
   const [executeWidth, setExecuteWidth] = useState(320)
+
+  // Local override for pipeline status (optimistic reset on re-run)
+  const [pipelineOverride, setPipelineOverride] = useState<Partial<PipelineInfo> | null>(null)
 
   // ==========================================================
   // Selected book (from sidebar filter)
@@ -204,12 +239,34 @@ export default function PipelineTab({ books, filter }: PipelineTabProps) {
     return null
   }, [books, filter])
 
-  // Pipeline info from book
+  // Pipeline info from book (merged with local override for optimistic UI)
   const pipeline: PipelineInfo = useMemo(() => {
-    if (!selectedBook?.pipeline) {
-      return { chunked: 'pending', toc: 'pending', bm25: 'pending', embeddings: 'pending', vector: 'pending' }
+    const base = selectedBook?.pipeline || { parse: 'pending' as const, ingest: 'pending' as const }
+    if (pipelineOverride) {
+      return { ...base, ...pipelineOverride }
     }
-    return selectedBook.pipeline
+    return base
+  }, [selectedBook, pipelineOverride])
+
+  // Auto-advance stepper when DB pipeline data changes
+  useEffect(() => {
+    // Clear optimistic override — real DB state has arrived
+    setPipelineOverride(null)
+    const bp = selectedBook?.pipeline
+    if (bp?.parse === 'done' && bp?.ingest !== 'done') {
+      setActiveStage('ingest')
+    }
+  }, [selectedBook?.pipeline])
+
+  // Resolve template placeholders in step paths with actual book data
+  const resolvePath = useCallback((tpl: string) => {
+    if (!selectedBook) return tpl
+    const bookDirName = (selectedBook.title || '').toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '') || `book_${selectedBook.id}`
+    const pdfName = (selectedBook as any)?.pdfMedia?.filename || `${bookDirName}.pdf`
+    return tpl
+      .replace(/\{filename\}/g, pdfName.replace(/\.pdf$/i, ''))
+      .replace(/\{category\}/g, selectedBook.category || 'textbook')
+      .replace(/\{book\}/g, bookDirName)
   }, [selectedBook])
 
   // ==========================================================
@@ -242,7 +299,16 @@ export default function PipelineTab({ books, filter }: PipelineTabProps) {
   // ==========================================================
   // Auto-poll when tasks are running
   // ==========================================================
-  const hasRunning = tasks.some((t) => t.status === 'running' || t.status === 'queued')
+  // Treat tasks older than 10 minutes as stale — they no longer block the button
+  const STALE_MS = 10 * 60 * 1000
+  const activeQueuedTasks = tasks.filter((t) => t.status === 'running' || t.status === 'queued')
+  const hasRunning = activeQueuedTasks.some((t) => {
+    const createdAt = (t as any).createdAt || t.startedAt
+    if (!createdAt) return false
+    return Date.now() - new Date(createdAt).getTime() < STALE_MS
+  })
+  // Stale tasks = queued/running but older than threshold
+  const hasStale = activeQueuedTasks.length > 0 && !hasRunning
 
   useEffect(() => {
     if (!hasRunning) return
@@ -253,52 +319,453 @@ export default function PipelineTab({ books, filter }: PipelineTabProps) {
   // ==========================================================
   // Auto-scroll log
   // ==========================================================
+  // Most recent task (running or latest completed) — for log display
+  // Hide stale tasks when pipeline hasn't been started (both stages pending)
   const activeTask = tasks.find((t) => t.status === 'running')
+  const pipelineNeverRun = pipeline.parse === 'pending' && pipeline.ingest === 'pending'
+  const latestTask = activeTask || (pipelineNeverRun ? null : tasks[0]) || null
   useEffect(() => {
     if (logRef.current) {
       logRef.current.scrollTop = logRef.current.scrollHeight
     }
-  }, [activeTask?.log])
+  }, [latestTask?.log, sseLines])
 
   // ==========================================================
-  // Fetch embedding models
+  // SSE real-time log stream
   // ==========================================================
   useEffect(() => {
-    fetch(`${ENGINE_URL}/engine/embeddings/models`)
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => {
-        if (data?.models) {
-          setEmbeddingModels(data.models)
-          setSelectedModel(data.default || data.models[0]?.name || '')
-        }
+    if (!selectedBook || !hasRunning) {
+      // Close SSE when not running
+      if (sseRef.current) {
+        sseRef.current.close()
+        sseRef.current = null
+      }
+      return
+    }
+
+    // Already connected?
+    if (sseRef.current) return
+
+    // Clear previous lines and connect
+    setSseLines([])
+    const url = `${ENGINE_URL}/engine/ingest/stream/${selectedBook.id}`
+    const es = new EventSource(url)
+    sseRef.current = es
+
+    es.onmessage = (ev) => {
+      const line = ev.data as string
+      setSseLines((prev) => {
+        const next = [...prev, line]
+        return next.length > 500 ? next.slice(-500) : next
       })
-      .catch(() => {})
-  }, [])
+
+      // ── SSE-driven stage/step auto-tracking ──
+      const msg = line.toLowerCase()
+
+      // Parse stage: step 0 (Run MinerU)
+      if (msg.includes('parsing pdf with mineru') || msg.includes('running mineru parse') || msg.includes('force re-parse')) {
+        setPipelineOverride(prev => ({ ...prev, parse: 'pending' as const, ingest: 'pending' as const }))
+        setActiveStage('parse')
+        setLiveStepIdx(0)
+        setExpandedSteps(prev => new Set([...prev, 'parse-0']))
+      }
+      // Parse stage: step 1 (content_list generated)
+      else if (msg.includes('mineru parse complete') || msg.includes('mineru output found') || msg.includes('mineru output already exists')) {
+        setLiveStepIdx(1)
+        setExpandedSteps(prev => new Set([...prev, 'parse-1']))
+      }
+      // Ingest stage: step 0 (Reading MinerU output)
+      else if (msg.includes('reading mineru output')) {
+        setPipelineOverride({ parse: 'done' as const, ingest: 'pending' as const })
+        setActiveStage('ingest')
+        setLiveStepIdx(0)
+        setExpandedSteps(prev => new Set([...prev, 'ingest-0']))
+      }
+      // Ingest stage: step 1 (Chunking + embedding)
+      else if (msg.includes('read') && msg.includes('documents') || msg.includes('read') && msg.includes('chunks')) {
+        setLiveStepIdx(1)
+        setExpandedSteps(prev => new Set([...prev, 'ingest-1']))
+      }
+      // Ingest stage: step 2 (Upsert vectors into ChromaDB)
+      else if (msg.includes('applying transformations') || msg.includes('ingested') && msg.includes('chromadb')) {
+        setLiveStepIdx(2)
+        setExpandedSteps(prev => new Set([...prev, 'ingest-2']))
+      }
+      // Ingest stage: step 3 (Push chunk metadata to Payload)
+      else if (msg.includes('deleting') && msg.includes('chunks') || msg.includes('pushed batch') || msg.includes('chunk push complete')) {
+        setLiveStepIdx(3)
+        setExpandedSteps(prev => new Set([...prev, 'ingest-3']))
+      }
+      // Done — look for both "ingest complete" (from _notify to task log)
+      // and "chunk push complete" (loguru message that IS in SSE stream)
+      else if (msg.includes('ingest complete') || msg.includes('chunk push complete')) {
+        setPipelineOverride({ parse: 'done' as const, ingest: 'done' as const })
+        setLiveStepIdx(-1)
+      }
+    }
+
+    es.addEventListener('done', () => {
+      es.close()
+      sseRef.current = null
+      setLiveStepIdx(-1)
+      // Mark pipeline as done (in case onmessage didn't catch it)
+      setPipelineOverride({ parse: 'done' as const, ingest: 'done' as const })
+      // Refresh tasks to get final status
+      fetchTasks()
+      // Re-fetch books so DB pipeline status persists across page refreshes
+      setTimeout(() => onBooksRefresh?.(), 1500)
+    })
+
+    es.addEventListener('error', () => {
+      // EventSource auto-reconnects on network errors.
+      // If it's a fatal error (stream closed), just clean up.
+      if (es.readyState === EventSource.CLOSED) {
+        sseRef.current = null
+      }
+    })
+
+    return () => {
+      es.close()
+      sseRef.current = null
+    }
+  }, [selectedBook, hasRunning, fetchTasks])
+
+  // ==========================================================
+  // Fetch inspect data when target changes
+  // ==========================================================
+  useEffect(() => {
+    if (!inspectorTarget || !selectedBook) {
+      setInspectData(null)
+      return
+    }
+    const { stageKey, stepIdx, direction } = inspectorTarget
+    setInspectLoading(true)
+    setInspectData(null)
+
+    const fetchInspect = async () => {
+      try {
+        const bookId = selectedBook.id
+
+        // Fetch book with depth=1 (includes pdfMedia + pipeline output)
+        const bookRes = await authFetch(`/api/books/${bookId}?depth=1`)
+        if (!bookRes.ok) return
+        const doc = await bookRes.json()
+        const po = doc.pipeline?.parseOutput
+        const io = doc.pipeline?.ingestOutput
+        const media = typeof doc.pdfMedia === 'object' ? doc.pdfMedia : null
+
+        // ─── Parse stage (all data from DB: pipeline.parseOutput) ──
+        if (stageKey === 'parse') {
+
+          // Step 1: Run MinerU (layout + OCR)
+          if (stepIdx === 0 && direction === 'in') {
+            // IN: PDF file info (from Payload pdfMedia)
+            setInspectData(media ? {
+              _type: 'pdf',
+              filename: media.filename,
+              mimeType: media.mimeType,
+              filesize: `${(media.filesize / 1048576).toFixed(2)} MB`,
+              url: media.url,
+            } : {
+              _type: 'path',
+              path: resolvePath('data/raw_pdfs/{category}/{filename}.pdf'),
+              source: 'filesystem (not uploaded via Payload)',
+              category: doc.category || 'textbook',
+              title: doc.title,
+            })
+          } else if (stepIdx === 0 && direction === 'out') {
+            // OUT: MinerU output directory (from DB: parseOutput.fileTree)
+            setInspectData({
+              _type: 'directory',
+              outputPath: po?.outputPath || resolvePath('mineru_output/{category}/{book}/auto/'),
+              contentListExists: po?.contentListExists,
+              mdExists: po?.mdExists,
+              imagesCount: po?.imagesCount,
+              fileTree: po?.fileTree || [],
+            })
+          }
+
+          // Step 2: Generate content_list.json
+          else if (stepIdx === 1 && direction === 'in') {
+            // IN: MinerU layout analysis (from DB: parseOutput)
+            setInspectData({
+              _type: 'directory',
+              outputPath: po?.outputPath || resolvePath('mineru_output/{category}/{book}/auto/'),
+              contentListCount: po?.contentListCount,
+              imagesCount: po?.imagesCount,
+              fileTree: po?.fileTree || [],
+            })
+          } else if (stepIdx === 1 && direction === 'out') {
+            // OUT: content_list.json sample entries (from DB: parseOutput.sample)
+            setInspectData(po ? {
+              _type: 'json_sample',
+              contentListCount: po.contentListCount,
+              sample: po.sample,
+            } : {
+              _type: 'path',
+              path: resolvePath('{book}_content_list.json'),
+              status: doc.pipeline?.parse === 'done' ? 'generated' : 'waiting for parse',
+            })
+          }
+        }
+
+        // ─── Ingest stage ──────────────────────────────
+        if (stageKey === 'ingest') {
+
+          // Step 1: Read MinerU output → Document[]
+          if (stepIdx === 0 && direction === 'in') {
+            // IN: content_list.json (same as parse step 2 OUT)
+            setInspectData(po ? {
+              _type: 'json_sample',
+              contentListCount: po.contentListCount,
+              sample: po.sample,
+            } : {
+              _type: 'path',
+              path: resolvePath('{book}_content_list.json'),
+              status: doc.pipeline?.parse === 'done' ? 'available' : 'pending parse',
+            })
+          } else if (stepIdx === 0 && direction === 'out') {
+            // OUT: LlamaIndex Document[] — show count + sample docs
+            setInspectData(io ? {
+              _type: 'documents',
+              documentCount: io.nodeCount || '—',
+              readerType: 'MinerUReader',
+              metadataFields: ['book_id', 'category', 'content_type', 'page_idx', 'bbox', 'reading_order'],
+            } : {
+              _type: 'path',
+              path: 'LlamaIndex Document[]',
+              status: doc.pipeline?.ingest === 'done' ? 'available' : 'waiting for ingest',
+            })
+          }
+
+          // Step 2: Chunking + embedding via IngestionPipeline
+          else if (stepIdx === 1 && direction === 'in') {
+            // IN: Document[] + model info
+            setInspectData({
+              _type: 'model_info',
+              documentCount: io?.nodeCount || '—',
+              embeddingModel: 'all-MiniLM-L6-v2',
+              transformations: ['BBoxNormalizer', 'HuggingFaceEmbedding'],
+              vectorDimensions: 384,
+            })
+          } else if (stepIdx === 1 && direction === 'out') {
+            // OUT: TextNode[] with embeddings — sample from chunks
+            const chunksRes = await authFetch(`/api/chunks?where[book][equals]=${bookId}&limit=3&depth=0`)
+            const chunkData = chunksRes.ok ? await chunksRes.json() : null
+            setInspectData({
+              _type: 'text_nodes',
+              totalNodes: chunkData?.totalDocs ?? io?.nodeCount ?? '—',
+              embeddingDimensions: 384,
+              embeddingModel: 'all-MiniLM-L6-v2',
+              sample: chunkData?.docs?.slice(0, 3)?.map((d: any) => ({
+                chunkId: d.chunkId,
+                contentType: d.contentType,
+                pageNumber: d.pageNumber,
+                text: d.text?.slice(0, 150) + (d.text?.length > 150 ? '…' : ''),
+                vectorized: d.vectorized,
+              })),
+            })
+          }
+
+          // Step 3: Upsert vectors into ChromaDB
+          else if (stepIdx === 2 && direction === 'in') {
+            // IN: TextNode[] with embeddings (stats)
+            setInspectData({
+              _type: 'text_nodes',
+              totalNodes: io?.nodeCount ?? '—',
+              embeddingDimensions: 384,
+              embeddingModel: 'all-MiniLM-L6-v2',
+            })
+          } else if (stepIdx === 2 && direction === 'out') {
+            // OUT: ChromaDB collection stats
+            setInspectData({
+              _type: 'chroma',
+              chromaCollection: io?.chromaCollection || 'textbook_chunks',
+              chromaPersistDir: io?.chromaPersistDir || 'data/chroma_persist',
+              nodeCount: io?.nodeCount ?? '—',
+              status: doc.pipeline?.ingest === 'done' ? 'synced' : 'pending',
+            })
+          }
+
+          // Step 4: Push chunk metadata to Payload CMS
+          else if (stepIdx === 3 && direction === 'in') {
+            // IN: TextNode[] metadata (sample of what gets pushed)
+            const chunksRes = await authFetch(`/api/chunks?where[book][equals]=${bookId}&limit=2&depth=0`)
+            const chunkData = chunksRes.ok ? await chunksRes.json() : null
+            setInspectData({
+              _type: 'chunk_metadata',
+              totalNodes: io?.nodeCount ?? '—',
+              fieldsToSync: ['chunkId', 'book', 'text', 'contentType', 'pageNumber', 'sourceLocators', 'vectorized'],
+              sample: chunkData?.docs?.slice(0, 2)?.map((d: any) => ({
+                chunkId: d.chunkId,
+                contentType: d.contentType,
+                pageNumber: d.pageNumber,
+                text: d.text?.slice(0, 100) + (d.text?.length > 100 ? '…' : ''),
+              })),
+            })
+          } else if (stepIdx === 3 && direction === 'out') {
+            // OUT: Payload chunks collection — final results
+            const chunksRes = await authFetch(`/api/chunks?where[book][equals]=${bookId}&limit=3&depth=0`)
+            if (chunksRes.ok) {
+              const data = await chunksRes.json()
+              setInspectData({
+                _type: 'payload_chunks',
+                totalChunks: data.totalDocs,
+                chromaCollection: io?.chromaCollection,
+                nodeCount: io?.nodeCount,
+                sample: data.docs?.slice(0, 3)?.map((d: any) => ({
+                  chunkId: d.chunkId,
+                  contentType: d.contentType,
+                  pageNumber: d.pageNumber,
+                  text: d.text?.slice(0, 120) + (d.text?.length > 120 ? '…' : ''),
+                  vectorized: d.vectorized,
+                })),
+              })
+            }
+          }
+        }
+      } catch (e) {
+        setInspectData({ error: String(e) })
+      } finally {
+        setInspectLoading(false)
+      }
+    }
+    fetchInspect()
+  }, [inspectorTarget, selectedBook])
 
   // ==========================================================
   // Trigger action
   // ==========================================================
-  const triggerAction = useCallback(async (stage: PipelineKey) => {
+  const triggerAction = useCallback(async () => {
     if (!selectedBook) return
+
+    // If parse already done, confirm re-parse with user
+    let forceParse = false
+    if (pipeline.parse === 'done') {
+      const msg = isZh
+        ? 'MinerU 解析结果已存在。\n是否删除缓存并重新解析？（耗时较长）'
+        : 'MinerU parse output already exists.\nDelete cache and re-parse? (this may take a while)'
+      forceParse = window.confirm(msg)
+      if (!forceParse && pipeline.ingest === 'done') {
+        // User declined re-parse, and ingest is also done — nothing to do
+        return
+      }
+    }
+
     setTriggerLoading(true)
+    setActiveStage('parse')
+    setSseLines([])
+    // Optimistically reset pipeline status so stepper shows "pending"
+    setPipelineOverride({
+      parse: forceParse ? 'pending' : pipeline.parse,
+      ingest: 'pending',
+    })
     try {
-      await fetch(`${ENGINE_URL}/engine/ingest`, {
+      // 1. Fetch book with pdfMedia populated to get filename
+      const bookRes = await authFetch(`/api/books/${selectedBook.id}?depth=1`)
+      if (!bookRes.ok) throw new Error(`Failed to fetch book: ${bookRes.status}`)
+      const bookDoc = await bookRes.json()
+
+      const pdfMedia = bookDoc.pdfMedia
+      const pdfFilename: string | undefined =
+        typeof pdfMedia === 'object' ? pdfMedia?.filename : undefined
+
+      if (!pdfFilename) {
+        console.warn('No PDF file linked to this book')
+      }
+
+      // 2. Create IngestTask for progress tracking
+      const taskRes = await authFetch('/api/ingest-tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          taskType: 'ingest',
+          book: selectedBook.id,
+          status: 'queued',
+          progress: 0,
+        }),
+      })
+      const taskDoc = taskRes.ok ? await taskRes.json() : null
+      const taskId = taskDoc?.doc?.id ?? null
+
+      // 3. POST to Engine
+      const engineRes = await fetch(`${ENGINE_URL}/engine/ingest`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           book_id: selectedBook.id,
+          pdf_filename: pdfFilename,
           title: selectedBook.title,
           category: selectedBook.category,
-          ...(stage === 'embeddings' && selectedModel ? { embed_model: selectedModel } : {}),
+          task_id: taskId,
+          force_parse: forceParse,
         }),
       })
+
+      if (!engineRes.ok) {
+        const errText = await engineRes.text()
+        throw new Error(`Engine returned ${engineRes.status}: ${errText}`)
+      }
+
+      // 4. Refresh tasks after short delay
       setTimeout(() => fetchTasks(), 1000)
     } catch (e) {
-      console.error('Failed to trigger:', e)
+      console.error('Failed to trigger pipeline:', e)
+      // Revert optimistic override on error
+      setPipelineOverride(null)
     } finally {
       setTriggerLoading(false)
     }
-  }, [selectedBook, selectedModel, fetchTasks])
+  }, [selectedBook, pipeline, isZh, fetchTasks])
+
+  // ==========================================================
+  // Cancel pipeline
+  // ==========================================================
+  const cancelPipeline = useCallback(async () => {
+    if (!selectedBook) return
+    setCancelLoading(true)
+    try {
+      const res = await fetch(`${ENGINE_URL}/engine/ingest/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ book_id: selectedBook.id }),
+      })
+      if (!res.ok) {
+        console.error('Cancel failed:', await res.text())
+      }
+      // Refresh tasks after short delay to pick up status change
+      setTimeout(() => fetchTasks(), 1500)
+    } catch (e) {
+      console.error('Failed to cancel pipeline:', e)
+    } finally {
+      setCancelLoading(false)
+    }
+  }, [selectedBook, fetchTasks])
+
+  // ==========================================================
+  // Reset stale tasks
+  // ==========================================================
+  const resetStaleTasks = useCallback(async () => {
+    if (!selectedBook) return
+    setResetLoading(true)
+    try {
+      const res = await fetch(`${ENGINE_URL}/engine/ingest/reset-tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ book_id: selectedBook.id }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        console.log(`Reset ${data.reset_count} stale tasks`)
+      }
+      // Refresh tasks immediately
+      await fetchTasks()
+    } catch (e) {
+      console.error('Failed to reset stale tasks:', e)
+    } finally {
+      setResetLoading(false)
+    }
+  }, [selectedBook, fetchTasks])
 
   // ==========================================================
   // Resize drag handler (same pattern as EvaluationPage)
@@ -378,10 +845,8 @@ export default function PipelineTab({ books, filter }: PipelineTabProps) {
   const stageStatus: PipelineStage = pipeline[activeStage]
   const statusCfg = STAGE_STATUS[stageStatus]
 
-  // Tasks filtered for active stage
-  const stageTasks = tasks.filter((t) =>
-    t.taskType === activeStage || t.taskType === 'ingest' || t.taskType === 'full',
-  )
+  // All tasks (no stage filtering needed — both stages run as one ingest job)
+  const stageTasks = tasks
 
   // ==========================================================
   // Render
@@ -389,7 +854,25 @@ export default function PipelineTab({ books, filter }: PipelineTabProps) {
   return (
     <div className="space-y-4">
       {/* ── Toolbar ── */}
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-foreground">
+                {isZh ? stageConfig.labelZh : stageConfig.label}
+              </h3>
+              <span className={cn(
+                'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium',
+                statusCfg.bg, statusCfg.color,
+              )}>
+                {isZh ? statusCfg.labelZh : statusCfg.label}
+              </span>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-0.5">
+              {isZh ? stageConfig.descriptionZh : stageConfig.description}
+            </p>
+          </div>
+        </div>
         <button
           onClick={fetchTasks}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border
@@ -401,70 +884,79 @@ export default function PipelineTab({ books, filter }: PipelineTabProps) {
       </div>
 
       {/* ── 3-column layout (flex + resize handles, same as EvaluationPage) ── */}
-      <div className="flex overflow-hidden rounded-lg border border-border" style={{ minHeight: '480px' }}>
+      <div className="flex overflow-hidden rounded-lg border border-border" style={{ height: 'calc(100vh - 280px)', minHeight: '360px' }}>
 
         {/* ════════════════════════════════════════════════
-            LEFT: Pipeline Stepper
+            LEFT: Pipeline Stepper (2 stages)
             ════════════════════════════════════════════════ */}
         <div className="flex flex-col shrink-0 border-r border-border p-3" style={{ width: stepperWidth }}>
-          <div className="flex-1 space-y-0">
+          <div className="flex-1">
             {STAGES.map((stage, idx) => {
               const st = pipeline[stage.key]
               const sc = STAGE_STATUS[st]
               const Icon = sc.icon
               const isActive = activeStage === stage.key
               const isLast = idx === STAGES.length - 1
+              const isDone = st === 'done'
+              const isError = st === 'error'
 
               return (
                 <div key={stage.key}>
-                  {/* Stage row */}
+                  {/* Stage button */}
                   <button
                     type="button"
                     onClick={() => setActiveStage(stage.key)}
                     className={cn(
-                      'w-full text-left px-3 py-2.5 rounded-lg transition-all flex items-start gap-2.5',
+                      'w-full text-left px-2.5 py-2.5 rounded-lg transition-all duration-200 flex items-center gap-3',
                       isActive
-                        ? cn(sc.bg, sc.border, 'border')
-                        : 'hover:bg-secondary/30',
+                        ? 'bg-gradient-to-r from-primary/8 to-transparent border border-primary/20'
+                        : 'hover:bg-secondary/40 border border-transparent',
                     )}
                   >
-                    {/* Status icon */}
+                    {/* Status circle */}
                     <div className={cn(
-                      'w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5',
-                      st === 'done' ? 'bg-emerald-500/15' :
-                      st === 'error' ? 'bg-red-500/15' :
-                      'bg-muted',
+                      'w-7 h-7 rounded-full flex items-center justify-center shrink-0 ring-[1.5px]',
+                      isDone ? 'bg-emerald-500/15 ring-emerald-500/30' :
+                        isError ? 'bg-red-500/15 ring-red-500/30' :
+                          isActive ? 'bg-primary/10 ring-primary/30' :
+                            'bg-muted ring-border',
                     )}>
                       <Icon className={cn(
                         'h-3.5 w-3.5',
-                        sc.color,
-                        st === 'done' ? '' : st === 'error' ? '' : '',
+                        isDone ? 'text-emerald-500' :
+                          isError ? 'text-red-500' :
+                            isActive ? 'text-primary' :
+                              'text-muted-foreground/50',
                       )} />
                     </div>
+
+                    {/* Label + status */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-semibold text-foreground">{isZh ? stage.labelZh : stage.label}</span>
-                        <span className={cn('text-[10px] font-medium', sc.color)}>
-                          {isZh ? sc.labelZh : sc.label}
-                        </span>
-                      </div>
-                      {isActive && (
-                        <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight truncate">
-                          {isZh ? stage.descriptionZh : stage.description}
-                        </p>
-                      )}
+                      <span className={cn(
+                        'text-[13px] font-semibold block leading-tight',
+                        isActive ? 'text-foreground' : 'text-muted-foreground',
+                      )}>
+                        {isZh ? stage.labelZh : stage.label}
+                      </span>
+                      <span className={cn(
+                        'text-[10px] font-medium mt-0.5 block',
+                        isDone ? 'text-emerald-500' :
+                          isError ? 'text-red-500' :
+                            'text-muted-foreground/50',
+                      )}>
+                        {isZh ? sc.labelZh : sc.label}
+                      </span>
                     </div>
                   </button>
 
-                  {/* Connector line */}
+                  {/* Connector line between stages */}
                   {!isLast && (
-                    <div className="flex justify-start pl-[22px] py-0.5">
+                    <div className="flex items-center pl-6 h-6">
                       <div className={cn(
-                        'w-0.5 h-3 rounded-full',
-                        st === 'done' ? 'bg-emerald-500/40' :
-                        st === 'error' ? 'bg-red-500/40' :
-                        'bg-border',
-                        st !== 'done' && st !== 'error' && 'opacity-50',
+                        'w-px h-full',
+                        isDone ? 'bg-emerald-500/40' :
+                          isError ? 'bg-red-500/30' :
+                            'bg-border',
                       )} />
                     </div>
                   )}
@@ -473,28 +965,48 @@ export default function PipelineTab({ books, filter }: PipelineTabProps) {
             })}
           </div>
 
-          {/* Action buttons */}
-          <div className="mt-4 space-y-2">
-            <button
-              onClick={() => triggerAction(activeStage)}
-              disabled={triggerLoading || stageStatus === 'done'}
-              className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-md
-                         bg-primary text-primary-foreground text-xs font-medium
-                         hover:bg-primary/90 disabled:opacity-40 transition-colors"
-            >
-              {triggerLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
-              {isZh ? `运行 ${stageConfig.labelZh}` : `Run ${stageConfig.label}`}
-            </button>
-            <button
-              onClick={() => triggerAction('chunked')}
-              disabled={triggerLoading}
-              className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-md
-                         border border-border text-xs font-medium text-muted-foreground
-                         hover:text-foreground hover:bg-secondary/50 disabled:opacity-40 transition-colors"
-            >
-              <Play className="h-3 w-3" />
-              {isZh ? '全部运行' : 'Run All'}
-            </button>
+          {/* Action buttons — Run / Cancel / Reset */}
+          <div className="mt-4 space-y-1.5">
+            {hasRunning ? (
+              /* Cancel button — visible when pipeline is actively running */
+              <button
+                onClick={cancelPipeline}
+                disabled={cancelLoading}
+                className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-md
+                           bg-red-600 text-white text-xs font-medium
+                           hover:bg-red-700 disabled:opacity-40 transition-colors"
+              >
+                {cancelLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Square className="h-3.5 w-3.5" />}
+                {isZh ? '取消 Pipeline' : 'Cancel Pipeline'}
+              </button>
+            ) : (
+              /* Run / Re-run button — visible when idle */
+              <button
+                onClick={triggerAction}
+                disabled={triggerLoading}
+                className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-md
+                           bg-primary text-primary-foreground text-xs font-medium
+                           hover:bg-primary/90 disabled:opacity-40 transition-colors"
+              >
+                {triggerLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
+                {pipeline.parse === 'done' && pipeline.ingest === 'done'
+                  ? (isZh ? '重新运行' : 'Re-run Pipeline')
+                  : (isZh ? '运行 Pipeline' : 'Run Pipeline')}
+              </button>
+            )}
+            {/* Reset stale tasks — only show when there are stale (old) queued/running tasks */}
+            {hasStale && !hasRunning && (
+              <button
+                onClick={resetStaleTasks}
+                disabled={resetLoading}
+                className="w-full inline-flex items-center gap-1.5 justify-center px-3 py-1.5 rounded-md
+                           border border-border text-[10px] text-muted-foreground
+                           hover:text-foreground hover:bg-secondary/50 disabled:opacity-40 transition-colors"
+              >
+                {resetLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                {isZh ? '清理僵尸任务' : 'Reset Stale Tasks'}
+              </button>
+            )}
           </div>
         </div>
 
@@ -510,318 +1022,285 @@ export default function PipelineTab({ books, filter }: PipelineTabProps) {
             MIDDLE: Execute Panel
             ════════════════════════════════════════════════ */}
         <div className="flex flex-col shrink-0 border-r border-border p-4 overflow-y-auto" style={{ width: executeWidth }}>
-          {/* Stage header */}
-          <div className="flex items-center gap-2.5 mb-3">
-            <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center', statusCfg.bg)}>
-              <stageConfig.icon className={cn('h-4 w-4', statusCfg.color)} />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-semibold text-foreground">
-                  {isZh ? stageConfig.labelZh : stageConfig.label}
-                </h3>
-                <span className={cn(
-                  'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium',
-                  statusCfg.bg, statusCfg.color,
-                )}>
-                  {isZh ? statusCfg.labelZh : statusCfg.label}
-                </span>
-              </div>
-            </div>
-          </div>
 
-          <p className="text-[11px] text-muted-foreground mb-3">
-            {isZh ? stageConfig.descriptionZh : stageConfig.description}
-          </p>
-
-          {/* Steps checklist */}
-          <div className="space-y-1.5 mb-3">
-            {(isZh ? stageConfig.stepsZh : stageConfig.steps).map((step, i) => {
+          {/* Steps list (expandable) */}
+          <div className="space-y-0.5 mb-3">
+            {stageConfig.steps.map((step, i) => {
               const stepDone = stageStatus === 'done'
               const stepError = stageStatus === 'error' && i === stageConfig.steps.length - 1
+              const isExpanded = expandedSteps.has(`${activeStage}-${i}`)
+              const toggleStep = () => {
+                setExpandedSteps(prev => {
+                  const next = new Set(prev)
+                  const key = `${activeStage}-${i}`
+                  next.has(key) ? next.delete(key) : next.add(key)
+                  return next
+                })
+              }
               return (
-                <div key={i} className="flex items-start gap-2">
-                  {stepDone ? (
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                  ) : stepError ? (
-                    <AlertTriangle className="h-3.5 w-3.5 text-red-400 shrink-0 mt-0.5" />
-                  ) : (
-                    <div className="h-3.5 w-3.5 rounded-full border-[1.5px] border-muted-foreground/20 shrink-0 mt-0.5" />
+                <div key={i}>
+                  <button
+                    type="button"
+                    onClick={toggleStep}
+                    className={cn(
+                      'w-full text-left flex items-center gap-1.5 py-1 px-1.5 rounded transition-colors',
+                      hasRunning && liveStepIdx === i
+                        ? 'bg-primary/10 text-primary font-medium'
+                        : stepDone ? 'text-foreground hover:bg-secondary/30' :
+                          stepError ? 'text-red-400 hover:bg-secondary/30' :
+                            'text-muted-foreground hover:bg-secondary/30',
+                    )}
+                  >
+                    {hasRunning && liveStepIdx === i
+                      ? <Loader2 className="h-3 w-3 shrink-0 animate-spin" />
+                      : isExpanded
+                        ? <ChevronDown className="h-3 w-3 shrink-0" />
+                        : <ChevronRight className="h-3 w-3 shrink-0" />}
+                    <span className="text-[11px] leading-relaxed">
+                      <span className="text-muted-foreground/40 mr-1">{i + 1}.</span>
+                      {isZh ? step.labelZh : step.label}
+                    </span>
+                  </button>
+                  {isExpanded && (
+                    <div className="ml-6 mt-0.5 mb-1.5 space-y-1 text-[10px]">
+                      <button
+                        type="button"
+                        onClick={() => setInspectorTarget({ stageKey: activeStage, stepIdx: i, direction: 'in' })}
+                        className={cn(
+                          'flex items-start gap-1.5 w-full text-left rounded px-1 py-0.5 transition-colors',
+                          inspectorTarget?.stageKey === activeStage && inspectorTarget?.stepIdx === i && inspectorTarget?.direction === 'in'
+                            ? 'bg-primary/10' : 'hover:bg-secondary/30',
+                        )}
+                      >
+                        <span className="text-muted-foreground/60 shrink-0 uppercase tracking-wider font-medium" style={{ fontSize: '9px' }}>IN</span>
+                        <span className="text-muted-foreground font-mono">{resolvePath(isZh ? step.inputZh : step.input)}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setInspectorTarget({ stageKey: activeStage, stepIdx: i, direction: 'out' })}
+                        className={cn(
+                          'flex items-start gap-1.5 w-full text-left rounded px-1 py-0.5 transition-colors',
+                          inspectorTarget?.stageKey === activeStage && inspectorTarget?.stepIdx === i && inspectorTarget?.direction === 'out'
+                            ? 'bg-emerald-500/10' : 'hover:bg-secondary/30',
+                        )}
+                      >
+                        <span className="text-emerald-500/60 shrink-0 uppercase tracking-wider font-medium" style={{ fontSize: '9px' }}>OUT</span>
+                        {(() => {
+                          const raw = isZh ? step.outputZh : step.output
+                          const items = Array.isArray(raw) ? raw : [raw]
+                          return (
+                            <span className="text-muted-foreground font-mono flex flex-col">
+                              {items.map((item, j) => (
+                                <span key={j}>{resolvePath(item)}</span>
+                              ))}
+                            </span>
+                          )
+                        })()}
+                      </button>
+                    </div>
                   )}
-                  <span className={cn(
-                    'text-[11px] leading-relaxed',
-                    stepDone ? 'text-foreground' :
-                    stepError ? 'text-red-400' :
-                    'text-muted-foreground',
-                  )}>
-                    <span className="text-muted-foreground/40 mr-1">{i + 1}.</span>
-                    {step}
-                  </span>
                 </div>
               )
             })}
           </div>
 
-          {/* Embedding model selector (only for embeddings stage) */}
-          {activeStage === 'embeddings' && embeddingModels.length > 0 && (
-            <div className="mb-3 p-2.5 rounded-md bg-card border border-border">
-              <label className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5 block">
-                {isZh ? '嵌入模型' : 'Embedding Model'}
-              </label>
-              <select
-                value={selectedModel}
-                onChange={(e) => setSelectedModel(e.target.value)}
-                className="w-full text-xs bg-background border border-border rounded-md px-2 py-1.5
-                           text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-              >
-                {embeddingModels.map((m) => (
-                  <option key={m.name} value={m.name}>
-                    {m.name} ({m.dimensions}d)
-                  </option>
-                ))}
-              </select>
-              {embeddingModels.find((m) => m.name === selectedModel)?.description && (
-                <p className="text-[10px] text-muted-foreground/70 mt-1">
-                  {embeddingModels.find((m) => m.name === selectedModel)?.description}
-                </p>
-              )}
-            </div>
-          )}
-
           {/* Divider */}
           <div className="border-t border-border my-2" />
 
-          {/* Progress bar (from active running task) */}
-          {activeTask && (
+          {/* Progress bar (from latest task) */}
+          {latestTask && (
             <div className="mb-3">
               <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                 <div
                   className={cn(
                     'h-full rounded-full transition-all duration-500',
-                    activeTask.status === 'error' ? 'bg-red-500' :
-                    activeTask.status === 'done' ? 'bg-emerald-500' :
-                    'bg-amber-400',
+                    latestTask.status === 'error' ? 'bg-red-500' :
+                      latestTask.status === 'done' ? 'bg-emerald-500' :
+                        'bg-amber-400',
                   )}
-                  style={{ width: `${activeTask.progress}%` }}
+                  style={{ width: `${latestTask.progress}%` }}
                 />
               </div>
               <div className="flex items-center justify-between mt-1">
                 <span className="text-[10px] text-muted-foreground tabular-nums">
-                  {activeTask.progress}%
+                  {latestTask.progress}%
                 </span>
-                {activeTask.startedAt && (
+                {latestTask.startedAt && (
                   <span className="text-[10px] text-muted-foreground">
-                    {fmtDate(activeTask.startedAt)}
+                    {fmtDate(latestTask.startedAt)}
                   </span>
                 )}
               </div>
             </div>
           )}
 
-          {/* Task log (terminal style) */}
-          <div className="flex-1 min-h-0">
+          {/* Task log (terminal style — shows SSE stream when live, task log when historical) */}
+          <div className={cn('min-h-0', logExpanded ? 'flex-[3]' : 'flex-1')}>
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                {hasRunning && sseLines.length > 0 && (
+                  <Radio className="h-2.5 w-2.5 text-emerald-400 animate-pulse" />
+                )}
                 {isZh ? '任务日志' : 'Task Log'}
+                {hasRunning && sseLines.length > 0 && (
+                  <span className="text-emerald-400 font-normal">LIVE</span>
+                )}
               </span>
-              {activeTask?.log && (
-                <button onClick={() => copyText(activeTask.log!)} className="text-muted-foreground hover:text-foreground">
-                  <Copy className="h-2.5 w-2.5" />
+              <div className="flex items-center gap-1">
+                {(sseLines.length > 0 || latestTask?.log) && (
+                  <button
+                    onClick={() => copyText(sseLines.length > 0 ? sseLines.join('\n') : latestTask?.log || '')}
+                    className="text-muted-foreground hover:text-foreground p-0.5"
+                    title={isZh ? '复制日志' : 'Copy log'}
+                  >
+                    <Copy className="h-2.5 w-2.5" />
+                  </button>
+                )}
+                <button
+                  onClick={() => setLogExpanded((v) => !v)}
+                  className="text-muted-foreground hover:text-foreground p-0.5"
+                  title={logExpanded ? (isZh ? '缩小' : 'Minimize') : (isZh ? '放大' : 'Maximize')}
+                >
+                  {logExpanded ? <Minimize2 className="h-2.5 w-2.5" /> : <Maximize2 className="h-2.5 w-2.5" />}
                 </button>
-              )}
+              </div>
             </div>
             <pre
               ref={logRef}
-              className="text-[10px] text-muted-foreground bg-[#0a0d14] rounded-md p-2.5
-                         whitespace-pre-wrap font-mono leading-relaxed
-                         max-h-36 overflow-auto border border-border/50"
+              className={cn(
+                'text-[10px] text-muted-foreground bg-[#0a0d14] rounded-md p-2.5',
+                'whitespace-pre-wrap font-mono leading-relaxed',
+                'min-h-[60px] overflow-auto border border-border/50 resize-y',
+                logExpanded ? 'max-h-[300px] h-[200px]' : 'max-h-[160px]',
+              )}
             >
-              {activeTask?.log || (isZh ? '等待执行...' : 'Waiting for execution...')}
+              {sseLines.length > 0
+                ? sseLines.join('\n')
+                : latestTask?.log || (isZh ? '等待执行...' : 'Waiting for execution...')}
             </pre>
           </div>
 
           {/* Error display */}
-          {activeTask?.error && (
+          {latestTask?.error && (
             <div className="mt-2">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[10px] text-red-400 font-medium">Error</span>
-                <button onClick={() => copyText(activeTask.error!)} className="text-muted-foreground hover:text-foreground">
+                <button onClick={() => copyText(latestTask.error!)} className="text-muted-foreground hover:text-foreground">
                   <Copy className="h-2.5 w-2.5" />
                 </button>
               </div>
               <pre className="text-[10px] text-red-400 bg-red-500/5 rounded-md p-2 whitespace-pre-wrap max-h-20 overflow-auto border border-red-500/20 font-mono">
-                {activeTask.error}
+                {latestTask.error}
               </pre>
             </div>
           )}
 
-          {/* Action buttons */}
-          {hasRunning && (
-            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
-              <button
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md border border-border
-                           text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
-              >
-                <Square className="h-3 w-3" />
-                {isZh ? '取消' : 'Cancel'}
-              </button>
-            </div>
-          )}
         </div>
 
         {/* Execute ↔ Results resize handle */}
         <div
           className="w-1 shrink-0 cursor-col-resize hover:bg-primary/20 active:bg-primary/30 transition-colors relative group"
-          onMouseDown={createDragHandler(setExecuteWidth, 240, 500)}
+          onMouseDown={createDragHandler(setExecuteWidth, 240, 800)}
         >
           <div className="absolute inset-y-0 -left-1 -right-1" />
         </div>
 
         {/* ════════════════════════════════════════════════
-            RIGHT: Output / Results Panel
+            RIGHT: Data Inspector Panel
             ════════════════════════════════════════════════ */}
         <div className="flex-1 flex flex-col p-4 overflow-y-auto">
-          {/* Section header */}
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-foreground">
-                {isZh ? '执行结果' : 'Results'}
-              </span>
-              {stageTasks.length > 0 && (
-                <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
-                  {stageTasks.length}
-                </span>
-              )}
-            </div>
-            {hasRunning && (
-              <div className="flex items-center gap-1.5">
-                <Radio className="h-2.5 w-2.5 text-emerald-400 animate-pulse" />
-                <span className="text-[10px] text-emerald-400 font-medium">Live</span>
-              </div>
-            )}
-          </div>
+          {inspectorTarget ? (() => {
+            const tStage = STAGES.find(s => s.key === inspectorTarget.stageKey)
+            const tStep = tStage?.steps[inspectorTarget.stepIdx]
+            if (!tStage || !tStep) return null
+            const isIn = inspectorTarget.direction === 'in'
+            const rawPath = isIn ? (isZh ? tStep.inputZh : tStep.input) : (isZh ? tStep.outputZh : tStep.output)
+            const bookDirName = (selectedBook?.title || '').toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '') || `book_${selectedBook?.id}`
+            const pdfName = (selectedBook as any)?.pdfMedia?.filename || (selectedBook as any)?.pdfFilename || `${bookDirName}.pdf`
+            const rawPathStr = Array.isArray(rawPath) ? rawPath.join('\n') : rawPath
+            const path = rawPathStr
+              .replace(/\{filename\}/g, pdfName.replace(/\.pdf$/i, ''))
+              .replace(/\{category\}/g, selectedBook?.category || 'textbook')
+              .replace(/\{book\}/g, bookDirName)
+            const stepLabel = isZh ? tStep.labelZh : tStep.label
 
-          {/* Task results list */}
-          <div className="flex-1 overflow-y-auto min-h-0">
-            {loadingTasks ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-              </div>
-            ) : stageTasks.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-border flex flex-col items-center justify-center py-10 text-muted-foreground">
-                <Zap className="h-6 w-6 mb-2 opacity-40" />
-                <span className="text-xs">
-                  {isZh ? '暂无任务记录' : 'No task records'}
-                </span>
-                <span className="text-[10px] text-muted-foreground/60 mt-1">
-                  {isZh ? '点击左侧按钮开始执行' : 'Click a Run button to start'}
-                </span>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {stageTasks.map((task) => {
-                  const tcfg = TASK_STATUS[task.status] ?? TASK_STATUS.queued
-                  const TaskIcon = tcfg.icon
-                  const isExpanded = expandedTasks.has(task.id)
+            return (
+              <>
+                {/* Inspector header */}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className={cn(
+                      'text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
+                      isIn ? 'text-muted-foreground bg-muted' : 'text-emerald-400 bg-emerald-500/10',
+                    )}>
+                      {isIn ? 'INPUT' : 'OUTPUT'}
+                    </span>
+                    <span className="text-xs font-semibold text-foreground">
+                      {isZh ? tStage.labelZh : tStage.label} › {stepLabel}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setInspectorTarget(null)}
+                    className="text-muted-foreground hover:text-foreground text-xs"
+                  >✕</button>
+                </div>
 
-                  return (
-                    <div
-                      key={task.id}
-                      className={cn(
-                        'rounded-lg border overflow-hidden transition-colors',
-                        task.status === 'running' ? 'border-amber-500/30 bg-amber-500/5' :
-                        task.status === 'error' ? 'border-red-500/20 bg-red-500/5' :
-                        task.status === 'done' ? 'border-emerald-500/20' :
-                        'border-border',
-                      )}
-                    >
-                      {/* Task header (clickable to expand) */}
-                      <button
-                        type="button"
-                        onClick={() => toggleTask(task.id)}
-                        className="w-full flex items-center justify-between p-2.5 text-left"
-                      >
-                        <div className="flex items-center gap-2">
-                          <TaskIcon className={cn(
-                            'h-3.5 w-3.5',
-                            tcfg.color,
-                            task.status === 'running' && 'animate-spin',
-                          )} />
-                          <span className="text-[11px] font-medium text-foreground">
-                            {task.taskType.toUpperCase()}
-                          </span>
-                          <span className={cn('text-[10px] font-medium', tcfg.color)}>
-                            {isZh ? tcfg.labelZh : tcfg.label}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] text-muted-foreground tabular-nums">{task.progress}%</span>
-                          <span className="text-[10px] text-muted-foreground">{fmtDate(task.startedAt)}</span>
-                          {isExpanded
-                            ? <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                            : <ChevronRight className="h-3 w-3 text-muted-foreground" />}
-                        </div>
-                      </button>
-
-                      {/* Progress bar */}
-                      <div className="px-2.5 pb-1">
-                        <div className="h-1 rounded-full bg-muted overflow-hidden">
-                          <div
-                            className={cn(
-                              'h-full rounded-full transition-all duration-500',
-                              task.status === 'error' ? 'bg-red-500' :
-                              task.status === 'done' ? 'bg-emerald-500' :
-                              'bg-amber-400',
-                            )}
-                            style={{ width: `${task.progress}%` }}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Expanded content */}
-                      {isExpanded && (
-                        <div className="px-2.5 pb-2.5 space-y-2">
-                          {task.log && (
-                            <div>
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-[10px] text-muted-foreground font-medium">Log</span>
-                                <button onClick={() => copyText(task.log!)} className="text-muted-foreground hover:text-foreground">
-                                  <Copy className="h-2.5 w-2.5" />
-                                </button>
-                              </div>
-                              <pre className="text-[10px] text-muted-foreground bg-[#0a0d14] rounded p-2 whitespace-pre-wrap max-h-24 overflow-auto border border-border/50 font-mono">
-                                {task.log}
-                              </pre>
-                            </div>
-                          )}
-                          {task.error && (
-                            <div>
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-[10px] text-red-400 font-medium">Error</span>
-                                <button onClick={() => copyText(task.error!)} className="text-muted-foreground hover:text-foreground">
-                                  <Copy className="h-2.5 w-2.5" />
-                                </button>
-                              </div>
-                              <pre className="text-[10px] text-red-400 bg-red-500/5 rounded p-2 whitespace-pre-wrap max-h-20 overflow-auto border border-red-500/20 font-mono">
-                                {task.error}
-                              </pre>
-                            </div>
-                          )}
-                          {task.finishedAt && (
-                            <p className="text-[10px] text-muted-foreground">
-                              {isZh ? '完成于' : 'Finished'} {fmtDate(task.finishedAt)}
-                            </p>
-                          )}
-                        </div>
-                      )}
+                {/* Path */}
+                <div className="mb-4">
+                  <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium block mb-1">
+                    {isZh ? '路径' : 'Path'}
+                  </span>
+                  <div className="flex items-start gap-2">
+                    <div className="text-[11px] font-mono text-foreground bg-muted/50 px-2 py-1 rounded border border-border/50 flex-1 flex flex-col gap-0.5">
+                      {path.split('\n').map((p, i) => (
+                        <span key={i}>{p}</span>
+                      ))}
                     </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
+                    <button onClick={() => copyText(path)} className="text-muted-foreground hover:text-foreground shrink-0 mt-1">
+                      <Copy className="h-3 w-3" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Live data — always JSON */}
+                <div className="flex-1 min-h-0">
+                  <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium block mb-1">
+                    {isZh ? '实际数据' : 'Live Data'}
+                  </span>
+                  {inspectLoading ? (
+                    <div className="flex items-center justify-center py-10">
+                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : inspectData ? (
+                    <pre className="text-[10px] text-muted-foreground bg-[#0a0d14] rounded-md p-3
+                                    whitespace-pre-wrap font-mono leading-relaxed
+                                    overflow-auto border border-border/50 max-h-[320px]">
+                      {JSON.stringify(inspectData, null, 2)}
+                    </pre>
+                  ) : (
+                    <div className="text-[10px] text-muted-foreground/40 py-4 text-center">
+                      {isZh ? '无数据' : 'No data available'}
+                    </div>
+                  )}
+                </div>
+              </>
+            )
+          })() : (
+            <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
+              <FileSearch className="h-8 w-8 mb-3 opacity-30" />
+              <span className="text-xs font-medium">
+                {isZh ? '数据检查器' : 'Data Inspector'}
+              </span>
+              <span className="text-[10px] text-muted-foreground/60 mt-1 text-center max-w-[200px]">
+                {isZh
+                  ? '展开步骤并点击 IN 或 OUT 查看实际数据'
+                  : 'Expand a step and click IN or OUT to inspect live data'}
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </div>
   )
 }
+

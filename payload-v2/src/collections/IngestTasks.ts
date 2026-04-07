@@ -25,13 +25,9 @@ export const IngestTasks: CollectionConfig = {
       type: 'select',
       required: true,
       options: [
-        { label: 'Ingest', value: 'ingest' },
         { label: 'Full', value: 'full' },
-        { label: 'Chunked', value: 'chunked' },
-        { label: 'TOC', value: 'toc' },
-        { label: 'BM25', value: 'bm25' },
-        { label: 'Embeddings', value: 'embeddings' },
-        { label: 'Vector', value: 'vector' },
+        { label: 'Parse', value: 'parse' },
+        { label: 'Ingest', value: 'ingest' },
       ],
     },
     {

@@ -7,7 +7,7 @@
 
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -38,6 +38,7 @@ import BookEditDialog from './BookEditDialog'
 import { PipelineProgress } from './StatusBadge'
 import { cn } from '@/features/shared/utils'
 import { SidebarLayout, type ViewMode } from '@/features/shared/components/SidebarLayout'
+import { useQueryState } from '@/features/shared/hooks/useQueryState'
 
 // ── Category icons (ReactNode, can't be in shared/books/types) ───────────────
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
@@ -96,6 +97,14 @@ function compareBooks(a: LibraryBook, b: LibraryBook, field: SortField, dir: Sor
  * LibraryPage — uses SidebarLayout with category → subcategory hierarchy
  */
 export default function LibraryPage() {
+  return (
+    <Suspense>
+      <LibraryPageInner />
+    </Suspense>
+  )
+}
+
+function LibraryPageInner() {
   const router = useRouter()
   const { locale } = useI18n()
   const isZh = locale === 'zh'
@@ -108,7 +117,7 @@ export default function LibraryPage() {
     refresh,
   } = useLibraryBooks()
 
-  const [viewMode, setViewMode] = useState<ViewMode>('table')
+  const [viewMode, setViewMode] = useQueryState('view', 'table') as [ViewMode, (v: string) => void]
   const [sortField, setSortField] = useState<SortField>('title')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
   const [localSearch, setLocalSearch] = useState('')
@@ -117,7 +126,7 @@ export default function LibraryPage() {
   const [editingBookId, setEditingBookId] = useState<number | null>(null)
 
   // Client-side filter key (category / subcategory / all)
-  const [filter, setFilter] = useState<string>('all')
+  const [filter, setFilter] = useQueryState('filter', 'all')
 
   const toggleSelect = (book: LibraryBook) => {
     if (book.status !== 'indexed') return
@@ -461,12 +470,14 @@ export default function LibraryPage() {
           {displayBooks.map((book, idx) => {
             const isChecked = selected.has(book.id)
             return (
-            <button
+            <div
               key={book.id}
-              type="button"
+              role="button"
+              tabIndex={0}
               onClick={() => toggleSelect(book)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') toggleSelect(book) }}
               className={cn(
-                'flex items-center gap-4 w-full px-4 py-2.5 text-left transition-colors',
+                'flex items-center gap-4 w-full px-4 py-2.5 text-left transition-colors cursor-pointer',
                 isChecked ? 'bg-primary/5 hover:bg-primary/10' : 'hover:bg-secondary/50',
                 idx > 0 && 'border-t border-border',
                 book.status !== 'indexed' && 'opacity-60'
@@ -542,7 +553,7 @@ export default function LibraryPage() {
                   <Trash2 className="h-3 w-3" />
                 </button>
               </div>
-            </button>
+            </div>
           )})}
         </div>
       )}

@@ -23,6 +23,9 @@ export interface Question {
   scoreClarity: number | null
   scoreDifficulty: number | null
   scoreOverall: number | null
+  evalDepth: string | null
+  evalScore: number | null
+  evalReasoning: string | null
   createdAt: string
 }
 

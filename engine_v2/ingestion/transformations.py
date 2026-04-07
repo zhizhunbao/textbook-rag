@@ -12,10 +12,12 @@ from llama_index.core.schema import BaseNode, TransformComponent
 
 
 class BBoxNormalizer(TransformComponent):
-    """Ensure bbox metadata is a flat list of 4 floats.
+    """Flatten bbox and sanitise metadata for ChromaDB.
 
-    MinerU sometimes produces malformed bboxes. This transform
-    normalises them to [x0, y0, x1, y1] in PDF points.
+    ChromaDB requires all metadata values to be flat (str, int, float, None).
+    This transform:
+      1. Splits bbox list [x0, y0, x1, y1] into 4 separate float fields
+      2. Converts any remaining list/dict metadata to JSON strings
     """
 
     @classmethod
@@ -26,11 +28,26 @@ class BBoxNormalizer(TransformComponent):
         self, nodes: Sequence[BaseNode], **kwargs: Any
     ) -> Sequence[BaseNode]:
         for node in nodes:
-            bbox = node.metadata.get("bbox")
-            if bbox is None:
-                node.metadata["bbox"] = [0.0, 0.0, 0.0, 0.0]
-            elif isinstance(bbox, (list, tuple)) and len(bbox) >= 4:
-                node.metadata["bbox"] = [float(v) for v in bbox[:4]]
+            meta = node.metadata
+
+            # Flatten bbox [x0, y0, x1, y1] → 4 separate float fields
+            bbox = meta.pop("bbox", None)
+            if isinstance(bbox, (list, tuple)) and len(bbox) >= 4:
+                meta["bbox_x0"] = float(bbox[0])
+                meta["bbox_y0"] = float(bbox[1])
+                meta["bbox_x1"] = float(bbox[2])
+                meta["bbox_y1"] = float(bbox[3])
             else:
-                node.metadata["bbox"] = [0.0, 0.0, 0.0, 0.0]
+                meta["bbox_x0"] = 0.0
+                meta["bbox_y0"] = 0.0
+                meta["bbox_x1"] = 0.0
+                meta["bbox_y1"] = 0.0
+
+            # Sanitise: convert any remaining non-flat values to strings
+            import json
+            for key, val in list(meta.items()):
+                if isinstance(val, (list, dict, tuple)):
+                    meta[key] = json.dumps(val, ensure_ascii=False)
+
         return nodes
+

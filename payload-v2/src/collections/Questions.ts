@@ -110,5 +110,21 @@ export const Questions: CollectionConfig = {
       min: 1, max: 5,
       admin: { description: 'Overall quality score (average of relevance + clarity)' },
     },
+    // ── Depth evaluation (set by manual "Evaluate" action) ──
+    {
+      name: 'evalDepth',
+      type: 'text',
+      admin: { description: 'Question depth level: surface / understanding / synthesis' },
+    },
+    {
+      name: 'evalScore',
+      type: 'number',
+      admin: { description: 'Normalized depth score (0-1)' },
+    },
+    {
+      name: 'evalReasoning',
+      type: 'textarea',
+      admin: { description: 'Reasoning from the depth evaluator' },
+    },
   ],
 }

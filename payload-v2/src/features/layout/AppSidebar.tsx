@@ -19,7 +19,7 @@ import {
   Database,
   Download,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useI18n } from '@/features/shared/i18n'
 import { cn } from '@/features/shared/utils'
 import {
@@ -59,6 +59,8 @@ function groupByDay(sessions: ChatSession[]) {
   return groups
 }
 
+const SIDEBAR_KEY = 'app-sidebar-collapsed'
+
 /** CSS transition timing — shared across width + opacity */
 const DURATION = 'duration-200'
 
@@ -72,7 +74,15 @@ export default function AppSidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const { t } = useI18n()
-  const [collapsed, setCollapsed] = useState(false)
+  // Persist collapsed state in localStorage so it survives refresh
+  const [collapsed, setCollapsedRaw] = useState(() => {
+    if (typeof window === 'undefined') return false
+    try { return localStorage.getItem(SIDEBAR_KEY) === '1' } catch { return false }
+  })
+  const setCollapsed = (v: boolean) => {
+    setCollapsedRaw(v)
+    try { localStorage.setItem(SIDEBAR_KEY, v ? '1' : '0') } catch {}
+  }
   const { sessions, activeSessionId, deleteSession, clearHistory } = useChatHistoryContext()
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const [confirmClear, setConfirmClear] = useState(false)
