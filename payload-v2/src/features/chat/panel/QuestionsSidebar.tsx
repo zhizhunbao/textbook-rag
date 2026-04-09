@@ -1,16 +1,16 @@
 /**
  * chat/QuestionsSidebar — Right-side collapsible panel for suggested questions
  *
- * Inspired by: RAG-Project/frontend/src/components/SuggestedQuestionsPanel.tsx
- * Data source: Payload CMS pre-scored high-quality questions (via useSuggestedQuestions)
+ * Data source: Ottawa EcDev categories from data/suggested_questions.json
+ * Fallback: CMS questions via useSuggestedQuestions (currently disabled)
  *
  * Layout:
  *  ┌─────────────────────┐
  *  │ 💡 Questions  [X]   │  ← header
  *  │ 🔍 Search...        │  ← filter
- *  │ ─── Book Title ───  │
- *  │  question text       │  ← scrollable list
- *  │  question text       │
+ *  │ 📈 Labour Market    │  ← category (expandable)
+ *  │    question text     │
+ *  │ 🏠 Housing Starts   │
  *  └─────────────────────┘
  */
 'use client'
@@ -20,14 +20,12 @@ import {
   Lightbulb,
   X,
   Search,
-  RefreshCw,
   ChevronRight,
   MessageCircleQuestion,
   Loader2,
 } from 'lucide-react'
 import { cn } from '@/features/shared/utils'
 import { useSuggestedQuestions } from '@/features/engine/question_gen'
-import type { Question } from '@/features/engine/question_gen'
 
 // ============================================================
 // Types
@@ -40,34 +38,18 @@ interface QuestionsSidebarProps {
   /** Close this panel */
   onClose: () => void
   className?: string
+  /** Inline style — used for dynamic resizable width */
+  style?: React.CSSProperties
 }
+
 
 // ============================================================
-// Helpers
+// Default Ottawa EcDev questions (imported from RAG-Project)
 // ============================================================
-function groupByBook(questions: Question[]): { bookTitle: string; items: Question[] }[] {
-  const map = new Map<string, Question[]>()
-  for (const q of questions) {
-    const key = q.bookTitle || 'General'
-    if (!map.has(key)) map.set(key, [])
-    map.get(key)!.push(q)
-  }
-  return Array.from(map, ([bookTitle, items]) => ({ bookTitle, items }))
-}
+import suggestedQuestionsData from '../../../../../data/suggested_questions.json'
 
-function difficultyColor(score: number | null): string {
-  if (!score) return 'text-muted-foreground'
-  if (score <= 2) return 'text-emerald-500'
-  if (score <= 3) return 'text-amber-500'
-  return 'text-rose-500'
-}
-
-function difficultyLabel(score: number | null): string {
-  if (!score) return ''
-  if (score <= 2) return 'Basic'
-  if (score <= 3) return 'Medium'
-  return 'Advanced'
-}
+type QuestionCategory = { id: string; label: string; icon: string; questions: string[] }
+const DEFAULT_CATEGORIES: QuestionCategory[] = suggestedQuestionsData.categories
 
 // ============================================================
 // Component
@@ -77,33 +59,33 @@ export default function QuestionsSidebar({
   onSelect,
   onClose,
   className,
+  style,
 }: QuestionsSidebarProps) {
-  const { questions, loading, refetch } = useSuggestedQuestions(bookIds, 20)
+  // CMS questions not used for now — Ottawa default categories are primary
+  const { loading } = useSuggestedQuestions(bookIds, 20)
   const [search, setSearch] = useState('')
   const [expandedBook, setExpandedBook] = useState<string | null>(null)
 
-  // Filter questions by search
-  const filtered = useMemo(() => {
-    if (!search.trim()) return questions
+  // Filter default questions by search
+  const defaultGroups = useMemo(() => {
+    if (!search.trim()) return DEFAULT_CATEGORIES
     const lower = search.toLowerCase()
-    return questions.filter(
-      (q) =>
-        q.question.toLowerCase().includes(lower) ||
-        (q.bookTitle || '').toLowerCase().includes(lower),
-    )
-  }, [questions, search])
+    return DEFAULT_CATEGORIES.map((cat) => ({
+      ...cat,
+      questions: cat.questions.filter((q) => q.toLowerCase().includes(lower)),
+    })).filter((cat) => cat.questions.length > 0)
+  }, [search])
 
-  const groups = useMemo(() => groupByBook(filtered), [filtered])
-
-  // Auto-expand first group
-  const effectiveExpanded = expandedBook ?? (groups.length > 0 ? groups[0].bookTitle : null)
+  const totalQuestions = defaultGroups.reduce((s, c) => s + c.questions.length, 0)
+  const effectiveExpanded = expandedBook
 
   return (
     <aside
       className={cn(
-        'flex flex-col h-full w-[280px] shrink-0 bg-card border-l border-border',
+        'flex flex-col h-full shrink-0 bg-card border-l border-border',
         className,
       )}
+      style={style}
     >
       {/* ── Header ── */}
       <div className="flex items-center justify-between px-3 py-2.5 border-b border-border shrink-0">
@@ -111,7 +93,7 @@ export default function QuestionsSidebar({
           <Lightbulb size={16} className="text-amber-500" />
           <span className="text-sm font-semibold text-foreground">Questions</span>
           <span className="text-[10px] text-muted-foreground bg-muted rounded-full px-1.5 py-0.5">
-            {questions.length}
+            {totalQuestions}
           </span>
         </div>
         <button
@@ -153,33 +135,31 @@ export default function QuestionsSidebar({
             <Loader2 size={20} className="animate-spin text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Loading questions…</span>
           </div>
-        ) : groups.length === 0 ? (
+        ) : defaultGroups.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 gap-2 px-4 text-center">
             <MessageCircleQuestion size={28} className="text-muted-foreground/40" />
-            <p className="text-xs text-muted-foreground">
-              {search ? 'No results found' : 'No questions available'}
-            </p>
+            <p className="text-xs text-muted-foreground">No results found</p>
           </div>
         ) : (
-          groups.map(({ bookTitle, items }) => {
-            const isExpanded = effectiveExpanded === bookTitle
+          /* ── Ottawa EcDev questions grouped by category ── */
+          defaultGroups.map((cat) => {
+            const isExpanded = effectiveExpanded === cat.label
             return (
-              <div key={bookTitle} className="border-b border-border/50 last:border-b-0">
-                {/* Book group header */}
+              <div key={cat.label} className="border-b border-border/50 last:border-b-0">
                 <button
                   type="button"
-                  onClick={() => setExpandedBook(isExpanded ? null : bookTitle)}
+                  onClick={() => setExpandedBook(isExpanded ? null : cat.label)}
                   className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-xs">📖</span>
+                    <span className="text-xs">{cat.icon}</span>
                     <span className="text-xs font-medium text-foreground truncate">
-                      {bookTitle}
+                      {cat.label}
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     <span className="text-[10px] font-medium text-primary bg-primary/10 rounded-full px-1.5 py-0.5">
-                      {items.length}
+                      {cat.questions.length}
                     </span>
                     <ChevronRight
                       size={14}
@@ -190,15 +170,13 @@ export default function QuestionsSidebar({
                     />
                   </div>
                 </button>
-
-                {/* Questions */}
                 {isExpanded && (
                   <div className="pb-1">
-                    {items.map((q) => (
+                    {cat.questions.map((question) => (
                       <button
-                        key={q.id}
+                        key={question}
                         type="button"
-                        onClick={() => onSelect(q.question)}
+                        onClick={() => onSelect(question)}
                         className="w-full text-left px-3 py-2 hover:bg-secondary/60 transition-colors group"
                       >
                         <div className="flex items-start gap-2">
@@ -207,19 +185,9 @@ export default function QuestionsSidebar({
                             className="mt-0.5 text-primary/50 group-hover:text-primary shrink-0 transition-colors"
                           />
                           <p className="text-[11px] text-foreground leading-relaxed line-clamp-3">
-                            {q.question}
+                            {question}
                           </p>
                         </div>
-                        {q.scoreDifficulty && (
-                          <span
-                            className={cn(
-                              'ml-5 text-[10px] font-medium',
-                              difficultyColor(q.scoreDifficulty),
-                            )}
-                          >
-                            {difficultyLabel(q.scoreDifficulty)}
-                          </span>
-                        )}
                       </button>
                     ))}
                   </div>
@@ -232,15 +200,9 @@ export default function QuestionsSidebar({
 
       {/* ── Footer ── */}
       <div className="shrink-0 px-3 py-2 border-t border-border">
-        <button
-          type="button"
-          onClick={refetch}
-          disabled={loading}
-          className="flex items-center gap-1.5 mx-auto text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-        >
-          <RefreshCw size={12} className={cn(loading && 'animate-spin')} />
-          Refresh
-        </button>
+        <p className="text-center text-[10px] text-muted-foreground">
+          {totalQuestions} suggested questions
+        </p>
       </div>
     </aside>
   )

@@ -204,7 +204,7 @@ export async function queryTextbookStream(
   req: QueryRequest,
   callbacks: {
     onToken: (token: string) => void
-    onRetrievalDone?: (stats: Record<string, number>) => void
+    onRetrievalDone?: (data: { stats: Record<string, number>; sources: SourceInfo[] }) => void
     onDone: (result: QueryResponse) => void
     onError: (error: Error) => void
     signal?: AbortSignal
@@ -255,7 +255,8 @@ export async function queryTextbookStream(
             if (currentEvent === 'token') {
               callbacks.onToken(data.t ?? '')
             } else if (currentEvent === 'retrieval_done') {
-              callbacks.onRetrievalDone?.(data.stats ?? {})
+              const sources = (data.sources ?? []).map(normaliseSource)
+              callbacks.onRetrievalDone?.({ stats: data.stats ?? {}, sources })
             } else if (currentEvent === 'done') {
               const sources = (data.sources ?? []).map(normaliseSource)
 

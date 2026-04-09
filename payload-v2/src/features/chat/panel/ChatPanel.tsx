@@ -13,7 +13,7 @@ import { queryTextbookStream } from "@/features/engine/query_engine";
 import { fetchAvailableModels } from "@/features/engine/llms";
 import { useAppDispatch, useAppState } from "@/features/shared/AppContext";
 import { useAuth } from "@/features/shared/AuthProvider";
-import type { ModelInfo } from "@/features/shared/types";
+import type { ModelInfo, SourceInfo } from "@/features/shared/types";
 
 import type { Message } from "../types";
 import { NEAR_BOTTOM_THRESHOLD } from "../types";
@@ -61,6 +61,7 @@ export default function ChatPanel({
   const [isNearBottom, setIsNearBottom] = useState(true);
   const [hasNewMessagesBelow, setHasNewMessagesBelow] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
+  const [streamingSources, setStreamingSources] = useState<SourceInfo[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   // Token accumulator — ref avoids re-renders per token; RAF batches at 60fps
@@ -92,7 +93,14 @@ export default function ChatPanel({
     const session = chatHistory.getSession(activeSessionId);
     if (session && session.messages.length > 0) {
       setMessages(session.messages as Message[]);
+      return;
     }
+    // Messages not cached — lazy-load from Payload
+    chatHistory.loadSessionMessages(activeSessionId).then((msgs) => {
+      if (msgs.length > 0) {
+        setMessages(msgs as Message[]);
+      }
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeSessionId]);
 
@@ -101,8 +109,8 @@ export default function ChatPanel({
     if (!thread) return;
     thread.scrollTo({ top: thread.scrollHeight, behavior });
     shouldStickToBottomRef.current = true;
-    setIsNearBottom(true);
-    setHasNewMessagesBelow(false);
+    setIsNearBottom((prev) => prev === true ? prev : true);
+    setHasNewMessagesBelow((prev) => prev === false ? prev : false);
   }, []);
 
   const updateNearBottom = useCallback(() => {
@@ -112,8 +120,8 @@ export default function ChatPanel({
       thread.scrollHeight - thread.scrollTop - thread.clientHeight;
     const nextNearBottom = distanceFromBottom < NEAR_BOTTOM_THRESHOLD;
     shouldStickToBottomRef.current = nextNearBottom;
-    setIsNearBottom(nextNearBottom);
-    if (nextNearBottom) setHasNewMessagesBelow(false);
+    setIsNearBottom((prev) => prev === nextNearBottom ? prev : nextNearBottom);
+    if (nextNearBottom) setHasNewMessagesBelow((prev) => prev === false ? prev : false);
   }, []);
 
   /* ── Load models ── */
@@ -141,7 +149,7 @@ export default function ChatPanel({
 
 
 
-  /* ── Auto-scroll ── */
+  /* ── Auto-scroll on new messages / loading changes ── */
   useEffect(() => {
     if (!threadRef.current) return;
     if (!hasMessages) {
@@ -153,7 +161,22 @@ export default function ChatPanel({
       return;
     }
     setHasNewMessagesBelow(true);
-  }, [hasMessages, loading, messages, smoothedText, scrollToBottom]);
+  }, [hasMessages, loading, messages, scrollToBottom]);
+
+  /* ── Keep scrolled to bottom during streaming (RAF, no state deps) ── */
+  useEffect(() => {
+    if (!isStreaming || !shouldStickToBottomRef.current) return;
+    let id: number;
+    const tick = () => {
+      const el = threadRef.current;
+      if (el && shouldStickToBottomRef.current) {
+        el.scrollTop = el.scrollHeight;
+      }
+      id = requestAnimationFrame(tick);
+    };
+    id = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(id);
+  }, [isStreaming]);
 
   /* ── Submit question ── */
   const submitQuestion = useCallback(
@@ -168,6 +191,7 @@ export default function ChatPanel({
       setMessages((prev) => [...prev, { role: "user", content: trimmed }]);
       setLoading(true);
       setStreamingContent("");
+      setStreamingSources([]);
       tokenBufferRef.current = "";
       setIsStreaming(true);
 
@@ -190,9 +214,13 @@ export default function ChatPanel({
       const startTime = Date.now();
 
       // Map Payload CMS IDs → engine book_id strings for correct filtering
-      const engineBookIdStrings = sessionBookIds
-        .map((pid) => books.find((b) => b.id === pid)?.book_id)
-        .filter((s): s is string => !!s);
+      // DM-T1-02: When ALL books are selected, skip the filter so backend searches entire library
+      const isAllBooks = sessionBookIds.length === books.length;
+      const engineBookIdStrings = isAllBooks
+        ? []
+        : sessionBookIds
+            .map((pid) => books.find((b) => b.id === pid)?.book_id)
+            .filter((s): s is string => !!s);
       const filters = engineBookIdStrings.length > 0 ? { book_id_strings: engineBookIdStrings } : undefined;
 
       await queryTextbookStream(
@@ -208,6 +236,9 @@ export default function ChatPanel({
                 rafIdRef.current = null;
               });
             }
+          },
+          onRetrievalDone: ({ sources }) => {
+            setStreamingSources(sources);
           },
           onDone: (res) => {
             // Enrich sources with book titles from the loaded books list
@@ -245,6 +276,7 @@ export default function ChatPanel({
               },
             ]);
             setStreamingContent("");
+            setStreamingSources([]);
             tokenBufferRef.current = "";
             if (rafIdRef.current !== null) {
               cancelAnimationFrame(rafIdRef.current);
@@ -286,6 +318,7 @@ export default function ChatPanel({
               cancelAnimationFrame(rafIdRef.current);
               rafIdRef.current = null;
             }
+            setStreamingSources([]);
             setIsStreaming(false);
             setLoading(false);
           },
@@ -366,6 +399,7 @@ export default function ChatPanel({
                 <MessageBubble
                   role="assistant"
                   content={smoothedText}
+                  sources={streamingSources}
                   isStreaming={isRevealing}
                 />
               </div>
@@ -386,7 +420,7 @@ export default function ChatPanel({
                       <span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground" />
                     </div>
                     <span className="text-sm text-muted-foreground">
-                      Searching the books…
+                      Searching the documents…
                     </span>
                   </div>
                 </div>

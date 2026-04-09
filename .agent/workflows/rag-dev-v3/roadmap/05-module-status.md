@@ -199,6 +199,10 @@ Func
 ✅  来源追溯              citation_label + page_number + snippet 高亮
 ✅  聊天持久化            ChatSessions + ChatMessages Payload 集合 → Sprint 2 [S2-CH-BE-01] ✅
 ❌  全链编排              缺端到端管线配置 UI（参数暴露在 chat 界面）
+🆕  全书搜索              新对话默认扫描全部 PDF，跳过选书步骤                  → Sprint Demo [DM-T1-01/02]
+🆕  建议问题卡片          WelcomeScreen Ottawa 7 类 120+ 问题                    → Sprint Demo [DM-T3-01/02]
+🆕  Citation Score         CitationChip 显示相关性分数徽章 (trustability)         → Sprint Demo [DM-T4-01]
+🆕  暖色主题              DeepTutor #FAF9F6 米色 light 主题                      → Sprint Demo [DM-T2-01]
 🗑️  answer/trace 删除    trace 可视化移至 evaluation 模块统一管理
 ```
 
@@ -386,6 +390,39 @@ Func
 ✅  问题推荐              suggest.py + useSuggestedQuestions + SuggestedQuestions.tsx → Sprint 1 ✅
 ❌  质量评估              无问题深度分级 → Sprint 2 evaluation/ 统一中枢 [S2-EV-BE-01] QuestionDepthEvaluator
 ❌  重复检测              无向量相似度匹配 → Sprint 2 evaluation/ 统一中枢 [S2-EV-BE-02] SemanticSimilarityEvaluator
+```
+
+---
+
+## `report` — 报告生成 🆕 → Sprint Demo (MVP) + Sprint 8 (完整版)
+
+> Sprint Demo 实现 MVP：基于聊天历史生成 Markdown 报告。Sprint 8 扩展为完整的多角色报告生成引擎。
+> 对应 Project Brief: "produce periodic narrative summaries, tables, and graphs"
+
+```
+Layout
+🆕  双栏布局              ReportPage — 左侧报告列表 + 右侧 Markdown 预览    → Sprint Demo [DM-T5-03]
+❌  生成向导              无（Sprint 8 三步向导 [S8-FE-01]）
+❌  图表区域              无（Sprint 8 Recharts 交互图表 [S8-FE-05]）
+
+UI
+🆕  报告列表              卡片（标题 + 日期 + 状态）                          → Sprint Demo [DM-T5-03]
+🆕  生成按钮              从聊天 session 生成报告                              → Sprint Demo [DM-T5-03]
+❌  模板卡片              角色/模板选择卡片                                    → Sprint 8 [S8-FE-01]
+❌  导出按钮              PDF / Markdown 导出                                  → Sprint 8 [S8-FE-03]
+
+UX
+🆕  一键生成              选择 session → 生成报告                              → Sprint Demo [DM-T5-02]
+❌  流式进度              StreamEvent 实时进度                                  → Sprint 8 [S8-BE-11]
+❌  引用跳转              报告内引用 → 对话/PDF 跳转                           → Sprint 8 [S8-FE-02]
+
+Func
+🆕  Reports 集合          Payload CMS 集合（user/title/content/sessionId）     → Sprint Demo [DM-T5-01]
+🆕  报告生成 API          POST /engine/report/generate + GET /list + GET /{id} → Sprint Demo [DM-T5-02]
+❌  模板 Registry         多角色模板管理                                        → Sprint 8 [S8-BE-02]
+❌  数据收集器            多源数据聚合（chat + eval + sources）                  → Sprint 8 [S8-BE-04]
+❌  可视化引擎            code_executor 图表生成                                → Sprint 8 [S8-BE-07]
+❌  PDF 导出              Markdown → PDF（含图表）                              → Sprint 8 [S8-BE-12]
 ```
 
 ---

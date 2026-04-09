@@ -260,7 +260,19 @@ export async function fetchQueriesBySession(
     // Continue with ChatMessage-based data
   }
 
-  return items
+  // Deduplicate: if two ChatMessages matched the same Queries doc
+  // (e.g. retried question), keep only the latest entry per id
+  const seen = new Set<number>()
+  const deduped: QueryListItem[] = []
+  for (let i = items.length - 1; i >= 0; i--) {
+    if (!seen.has(items[i].id)) {
+      seen.add(items[i].id)
+      deduped.push(items[i])
+    }
+  }
+  deduped.reverse()
+
+  return deduped
 }
 
 /** Fetch chat sessions for the evaluation sidebar.

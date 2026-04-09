@@ -22,14 +22,12 @@ import {
   MessageSquarePlus,
   CheckSquare,
   Square,
-  Building2,
-  Home,
   Download,
   Trash2,
   Pencil,
 } from 'lucide-react'
 import { useI18n } from '@/features/shared/i18n'
-import { useBookSidebar } from '@/features/shared/books'
+import { useBookSidebar, buildCategoryIcons } from '@/features/shared/books'
 import { useLibraryBooks } from '../useLibraryBooks'
 import { deleteBook } from '../api'
 import type { LibraryBook, BookCategory } from '../types'
@@ -40,12 +38,7 @@ import { cn } from '@/features/shared/utils'
 import { SidebarLayout, type ViewMode } from '@/features/shared/components/SidebarLayout'
 import { useQueryState } from '@/features/shared/hooks/useQueryState'
 
-// ── Category icons (ReactNode, can't be in shared/books/types) ───────────────
-const CATEGORY_ICONS: Record<string, React.ReactNode> = {
-  textbook:    <BookOpen  className={cn('h-4 w-4 shrink-0', 'text-blue-400')} />,
-  ecdev:       <Building2 className={cn('h-4 w-4 shrink-0', 'text-emerald-400')} />,
-  real_estate: <Home      className={cn('h-4 w-4 shrink-0', 'text-amber-400')} />,
-}
+
 
 type SortField = 'title' | 'authors' | 'pages' | 'chunks' | 'status' | 'updatedAt'
 type SortDir = 'asc' | 'desc'
@@ -191,12 +184,18 @@ function LibraryPageInner() {
     [books],
   )
 
+  // ── Dynamic category icons from actual book data ──────────────────────────
+  const categoryIcons = useMemo(() => {
+    const cats = [...new Set(booksForSidebar.map((b) => b.category || 'textbook'))]
+    return buildCategoryIcons(cats)
+  }, [booksForSidebar])
+
   const { sidebarItems, filterBooks: _filterBooks } = useBookSidebar(booksForSidebar, {
     mode: 'by-category',
     isZh,
     allLabel: isZh ? '全部教材' : 'All Books',
     allIcon: <Layers className="h-4 w-4 shrink-0" />,
-    categoryIcons: CATEGORY_ICONS,
+    categoryIcons,
   })
 
   // ── Filter + sort books ────────────────────────────────────────────────────

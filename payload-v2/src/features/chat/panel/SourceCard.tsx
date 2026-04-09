@@ -14,17 +14,9 @@ import rehypeKatex from "rehype-katex";
 import remarkMath from "remark-math";
 import type { SourceInfo } from "@/features/shared/types";
 import { useAppDispatch } from "@/features/shared/AppContext";
+import { prepareForKatex } from "./textUtils";
 
-/**
- * Convert LaTeX delimiters that remark-math doesn't recognize:
- *   \( ... \)  →  $ ... $   (inline math)
- *   \[ ... \]  →  $$ ... $$ (display math)
- */
-function convertLatexDelimiters(text: string): string {
-  text = text.replace(/\\\[([\s\S]*?)\\\]/g, (_m, math) => `$$${math}$$`);
-  text = text.replace(/\\\((.+?)\\\)/g, (_m, math) => `$${math}$`);
-  return text;
-}
+
 
 interface Props {
   source: SourceInfo;
@@ -181,7 +173,7 @@ export default function SourceCard({ source, index, isActive }: Props) {
                   },
                 }}
               >
-                {convertLatexDelimiters(source.snippet)}
+                {prepareForKatex(source.snippet)}
               </Markdown>
             </div>
           </div>,

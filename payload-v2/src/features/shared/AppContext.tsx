@@ -38,7 +38,7 @@ const initialState: AppState = {
   selectedModel: "llama3.2:3b",
   selectedProvider: "ollama",
   pdfVariant: "origin",
-  showToc: true,
+  showToc: false,
 };
 
 /* ── Persistence helpers ── */

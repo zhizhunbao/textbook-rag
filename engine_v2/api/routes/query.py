@@ -156,7 +156,8 @@ async def _stream_generator(req: QueryRequest):
 
         stats = _build_stats(sources)
 
-        # Event 1: retrieval done
+        # Event 1: retrieval done — sources are already pre-deduped
+        # by TextbookCitationQueryEngine._create_citation_nodes()
         yield _sse_event("retrieval_done", {"stats": stats, "sources": sources})
 
         # Event 2: stream tokens from the response generator
@@ -170,7 +171,8 @@ async def _stream_generator(req: QueryRequest):
             # Fallback: if response_gen is None, use the full response text
             full_answer = str(response)
 
-        # Event 3: done — final complete response
+        # Event 3: done — no post-hoc dedup needed
+        # Source N labels are 1:1 with source_nodes (guaranteed by engine)
         trace = _build_trace(
             question=req.question,
             top_k=req.top_k,

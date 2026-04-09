@@ -17,7 +17,7 @@
 
 'use client'
 
-import { Suspense, useMemo } from 'react'
+import { Suspense, useMemo, useState, useCallback } from 'react'
 import {
   Download,
   FileText,
@@ -26,28 +26,21 @@ import {
   Link2,
   Layers,
   BookOpen,
-  Building2,
-  Home,
+  Trash2,
+  RefreshCw,
 } from 'lucide-react'
 import { useI18n } from '@/features/shared/i18n'
 import { cn } from '@/features/shared/utils'
-import { useBooks, useBookSidebar } from '@/features/shared/books'
+import { useBooks, useBookSidebar, buildCategoryIcons } from '@/features/shared/books'
 import { SidebarLayout } from '@/features/shared/components/SidebarLayout'
 import { useQueryState } from '@/features/shared/hooks/useQueryState'
 import type { ImportTab } from '../types'
+import { deleteBookWithCleanup } from '../api'
 import FileUploadCard from './FileUploadCard'
 import UrlImportCard from './UrlImportCard'
 import MediaTab from './MediaTab'
 import PipelineTab from './PipelineTab'
 
-// ============================================================
-// Category icons (same as LibraryPage)
-// ============================================================
-const CATEGORY_ICONS: Record<string, React.ReactNode> = {
-  textbook:    <BookOpen  className={cn('h-4 w-4 shrink-0', 'text-blue-400')} />,
-  ecdev:       <Building2 className={cn('h-4 w-4 shrink-0', 'text-emerald-400')} />,
-  real_estate: <Home      className={cn('h-4 w-4 shrink-0', 'text-amber-400')} />,
-}
 
 // ============================================================
 // Tab config
@@ -81,6 +74,7 @@ function ImportPageInner() {
   const isZh = locale === 'zh'
   const [activeTab, setActiveTab] = useQueryState('tab', 'import') as [ImportTab, (v: string) => void]
   const [filter, setFilter] = useQueryState('filter', 'all')
+  const [deleting, setDeleting] = useState(false)
 
   // ── Book data (shared hooks — same as LibraryPage) ──
   const { books, loading, error, refetch } = useBooks()
@@ -94,17 +88,57 @@ function ImportPageInner() {
     [books],
   )
 
+  // ── Dynamic category icons from actual book data ──
+  const categoryIcons = useMemo(() => {
+    const cats = [...new Set(booksForSidebar.map((b) => b.category || 'textbook'))]
+    return buildCategoryIcons(cats)
+  }, [booksForSidebar])
+
   const { sidebarItems, filterBooks } = useBookSidebar(booksForSidebar, {
     mode: 'by-book',
     isZh,
     allLabel: isZh ? '全部' : 'All',
     allIcon: <Layers className="h-4 w-4 shrink-0" />,
     bookIcon: <BookOpen className="h-3.5 w-3.5 shrink-0" />,
-    categoryIcons: CATEGORY_ICONS,
+    categoryIcons,
   })
 
   // ── Filter books by sidebar selection ──
   const filteredBooks = useMemo(() => filterBooks(filter), [filter, filterBooks])
+
+  // ── Selected book (when sidebar filter is a specific book) ──
+  const selectedBook = useMemo(() => {
+    if (!filter.startsWith('book::')) return null
+    const bookId = filter.slice(6) // "book::{book_id}" → book_id string
+    return books.find((b) => b.book_id === bookId) ?? null
+  }, [filter, books])
+
+  // ── Delete handler ──
+  const handleDelete = useCallback(async () => {
+    if (!selectedBook) return
+    const confirmed = window.confirm(
+      isZh
+        ? `确定删除「${selectedBook.title}」？\n将同时清除 Engine 侧数据（向量、MinerU 输出）。此操作不可撤销。`
+        : `Delete "${selectedBook.title}"?\nThis will also clean up Engine-side data (vectors, MinerU output). This cannot be undone.`,
+    )
+    if (!confirmed) return
+
+    setDeleting(true)
+    try {
+      await deleteBookWithCleanup(selectedBook.id, selectedBook.book_id)
+      setFilter('all') // reset sidebar filter after delete
+      refetch()
+    } catch (err) {
+      console.error('Delete failed:', err)
+      window.alert(
+        isZh
+          ? `删除失败: ${err instanceof Error ? err.message : String(err)}`
+          : `Delete failed: ${err instanceof Error ? err.message : String(err)}`,
+      )
+    } finally {
+      setDeleting(false)
+    }
+  }, [selectedBook, isZh, refetch, setFilter])
 
   return (
     <SidebarLayout
@@ -125,6 +159,36 @@ function ImportPageInner() {
       subtitle={isZh
         ? '上传 → 文件 → 管线'
         : 'Upload → Files → Pipeline'}
+      toolbar={
+        <div className="flex items-center gap-2">
+          {/* Delete button — visible when a specific book is selected */}
+          {selectedBook && (
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={deleting}
+              className={cn(
+                'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors',
+                'text-destructive hover:bg-destructive/10',
+                'disabled:opacity-50 disabled:cursor-not-allowed',
+              )}
+              title={isZh ? '删除此书' : 'Delete this book'}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              {isZh ? '删除' : 'Delete'}
+            </button>
+          )}
+          {/* Refresh button */}
+          <button
+            type="button"
+            onClick={refetch}
+            className="p-1.5 rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+            title={isZh ? '刷新' : 'Refresh'}
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      }
     >
       {/* ── Tab bar ── */}
       <div className="flex items-center gap-1 border-b border-border -mx-6 px-6 mb-4 -mt-2">
@@ -154,7 +218,7 @@ function ImportPageInner() {
       </div>
 
       {/* ── Tab content ── */}
-      {activeTab === 'import' && <ImportTabContent />}
+      {activeTab === 'import' && <ImportTabContent onBooksRefresh={refetch} />}
       {activeTab === 'files' && <MediaTab books={filteredBooks} filter={filter} />}
       {activeTab === 'pipeline' && <PipelineTab books={filteredBooks} filter={filter} onBooksRefresh={refetch} />}
     </SidebarLayout>
@@ -164,12 +228,13 @@ function ImportPageInner() {
 // ============================================================
 // Import Tab — 2-column: File Upload + URL Import
 // ============================================================
-function ImportTabContent() {
+function ImportTabContent({ onBooksRefresh }: { onBooksRefresh: () => void }) {
   const { locale } = useI18n()
   const isZh = locale === 'zh'
 
   const handleComplete = () => {
-    // Future: trigger list reload / show notification
+    // Auto-refresh sidebar book list after upload/import
+    onBooksRefresh()
   }
 
   return (
@@ -200,4 +265,3 @@ function ImportTabContent() {
     </div>
   )
 }
-

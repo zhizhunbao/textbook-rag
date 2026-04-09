@@ -21,6 +21,29 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
+# ── LaTeX artifact cleanup ───────────────────────────────────────────────────
+
+# MinerU OCR sometimes emits raw LaTeX instead of Unicode symbols
+_LATEX_MAP: list[tuple[re.Pattern, str]] = [
+    (re.compile(r"\$\\bullet\$"), "•"),
+    (re.compile(r"\$\\cdot\$"), "·"),
+    (re.compile(r"\$\\rightarrow\$"), "→"),
+    (re.compile(r"\$\\leftarrow\$"), "←"),
+    (re.compile(r"\$\\star\$"), "★"),
+    (re.compile(r"\$\\circ\$"), "○"),
+    (re.compile(r"\$\\times\$"), "×"),
+    (re.compile(r"\$\\diamond\$"), "◇"),
+    # Catch-all: strip remaining $...$ inline math that looks like a single symbol
+    (re.compile(r"\$\\(\w+)\$"), ""),
+]
+
+
+def _clean_latex(text: str) -> str:
+    """Replace common LaTeX artifacts with Unicode equivalents."""
+    for pat, repl in _LATEX_MAP:
+        text = pat.sub(repl, text)
+    return text.strip()
+
 # ── Shared helpers ───────────────────────────────────────────────────────────
 
 # Pattern: "Chapter 3: Foo", "3.2 Foo", "A.1 Foo"
@@ -177,7 +200,7 @@ def extract_toc_from_content_list(content_list: list[dict]) -> list[dict]:
         if text_level is None or text_level < 1 or text_level > 3:
             continue
 
-        text = item.get("text", "").strip()
+        text = _clean_latex(item.get("text", "").strip())
 
         # --- Noise filters ---
 
@@ -236,7 +259,6 @@ def find_pdf_for_book(
     Returns:
         Path to PDF, or None if not found.
     """
-    categories = ["textbooks", "ecdev", "real_estate"]
 
     # Check raw PDF directories first (bookmarks preserved)
     if raw_pdf_dirs:
@@ -246,10 +268,14 @@ def find_pdf_for_book(
                 return p
 
     # Fallback: MinerU _origin.pdf (bookmarks usually stripped, but try)
-    for cat in categories:
-        origin = mineru_output_dir / cat / book_id / book_id / "auto" / f"{book_id}_origin.pdf"
-        if origin.exists():
-            return origin
+    # Scan all category directories dynamically
+    if mineru_output_dir.is_dir():
+        for cat_dir in sorted(mineru_output_dir.iterdir()):
+            if not cat_dir.is_dir():
+                continue
+            origin = cat_dir / book_id / book_id / "auto" / f"{book_id}_origin.pdf"
+            if origin.exists():
+                return origin
 
     return None
 

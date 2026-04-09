@@ -9,6 +9,7 @@
 // ============================================================
 export type { BookBase, BookCategory, BookStatus, CategoryConfig, PipelineStage, PipelineInfo } from './types'
 export { CATEGORY_CONFIGS, getCategoryConfig } from './types'
+export { getCategoryIcon, buildCategoryIcons } from './CategoryIcons'
 export { fetchBooks, fetchIndexedBooks } from './api'
 export type { FetchBooksOptions } from './api'
 export { useBooks } from './useBooks'

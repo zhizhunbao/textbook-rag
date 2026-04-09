@@ -24,16 +24,32 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["books"])
 
-# Category directories under mineru_output/
-CATEGORIES = ["textbooks", "ecdev", "real_estate"]
+# Raw PDF root
+RAW_PDF_ROOT = DATA_DIR / "raw_pdfs"
 
-# Raw PDF source directories (fallback for origin variant)
-RAW_PDF_DIRS = [
-    DATA_DIR / "raw_pdfs" / "textbooks",
-    DATA_DIR / "raw_pdfs" / "ecdev",
-    DATA_DIR / "raw_pdfs" / "real_estate",
-    DATA_DIR / "raw_pdfs" / "uploads",
-]
+
+def _list_categories() -> list[str]:
+    """Discover all category directories under mineru_output/.
+
+    Dynamic instead of hardcoded — any new category (e.g. professional_profile)
+    created by classify or manual upload is automatically included.
+    """
+    cats: list[str] = []
+    if MINERU_OUTPUT_DIR.is_dir():
+        for d in sorted(MINERU_OUTPUT_DIR.iterdir()):
+            if d.is_dir():
+                cats.append(d.name)
+    return cats
+
+
+def _list_raw_pdf_dirs() -> list[Path]:
+    """Discover all subdirectories under data/raw_pdfs/ for PDF lookup."""
+    dirs: list[Path] = []
+    if RAW_PDF_ROOT.is_dir():
+        for d in sorted(RAW_PDF_ROOT.iterdir()):
+            if d.is_dir():
+                dirs.append(d)
+    return dirs
 
 
 # ── Internal helpers ─────────────────────────────────────────────────────────
@@ -67,7 +83,7 @@ def _humanize_title(book_id: str) -> str:
 
 def _find_book_dir(book_id: str) -> Path | None:
     """Locate the MinerU book directory across all categories."""
-    for category in CATEGORIES:
+    for category in _list_categories():
         book_dir = MINERU_OUTPUT_DIR / category / book_id
         if book_dir.is_dir():
             return book_dir
@@ -97,7 +113,7 @@ def _find_origin_pdf(book_id: str) -> Path | None:
             return origin_pdf
 
     # Fallback: scan raw_pdfs directories
-    for d in RAW_PDF_DIRS:
+    for d in _list_raw_pdf_dirs():
         p = d / f"{book_id}.pdf"
         if p.exists():
             return p
@@ -130,7 +146,7 @@ def _load_content_list(book_id: str) -> list[dict]:
 
 def _extract_toc(book_id: str, content_list: list[dict]) -> list[dict]:
     """Extract TOC entries — PDF bookmarks first, MinerU fallback."""
-    pdf_path = _toc_find_pdf(book_id, MINERU_OUTPUT_DIR, RAW_PDF_DIRS)
+    pdf_path = _toc_find_pdf(book_id, MINERU_OUTPUT_DIR, _list_raw_pdf_dirs())
     return _toc_extract(content_list, pdf_path=pdf_path)
 
 
@@ -138,7 +154,7 @@ def _discover_books() -> list[dict]:
     """Scan mineru_output/ for all processed books."""
     books: list[dict] = []
 
-    for category in CATEGORIES:
+    for category in _list_categories():
         category_dir = MINERU_OUTPUT_DIR / category
         if not category_dir.is_dir():
             continue
@@ -204,13 +220,17 @@ async def get_pdf(book_id: str, variant: str = "origin"):
         )
 
     from starlette.responses import Response as RawResponse
+    from urllib.parse import quote
 
     pdf_bytes = pdf_path.read_bytes()
+    # RFC 5987: use filename* for non-ASCII names, with ASCII fallback
+    safe_name = quote(f"{book_id}.pdf", safe="")
+    content_disp = f'inline; filename="document.pdf"; filename*=UTF-8\'\'{safe_name}'
     return RawResponse(
         content=pdf_bytes,
         media_type="application/pdf",
         headers={
-            "Content-Disposition": f'inline; filename="{book_id}.pdf"',
+            "Content-Disposition": content_disp,
             "Cache-Control": "public, max-age=3600",
         },
     )

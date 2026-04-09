@@ -1,7 +1,7 @@
 /**
  * answerBlocks — Parse LLM output into semantic AnswerBlocks.
  *
- * Splits continuous text into paragraphs (by \n\n), extracts trailing
+ * Splits continuous text into paragraphs (by \n\n), extracts ALL
  * [N] citation markers from each paragraph, and returns an array of
  * AnswerBlock objects for structured rendering in MessageBubble.
  *
@@ -14,9 +14,9 @@
 
 /** A single semantic paragraph with its bound citations. */
 export interface AnswerBlock {
-  /** Paragraph text with trailing [N] markers removed. */
+  /** Paragraph text with [N] markers removed. */
   text: string;
-  /** Citation indices extracted from the paragraph tail. */
+  /** Citation indices extracted from the paragraph. */
   citationIndices: number[];
 }
 
@@ -25,17 +25,10 @@ export interface AnswerBlock {
 // ============================================================
 
 /**
- * Regex to match one or more trailing [N] or [N.N.N] markers at paragraph end.
- * Supports both integer indices ([1]) and dotted section numbers ([3.2][3.2.2]).
- * Allows optional trailing punctuation (e.g. "[1]." or "[1][2][4].").
- */
-const TRAILING_CITATIONS_RE = /(?:\[\d+(?:\.\d+)*\]\s*)+[.,;:]*\s*$/;
-
-/**
- * Regex to extract individual [N] or [N.N.N] from a matched trailer string.
+ * Regex to find ALL [N] or [N.N.N] markers anywhere in a paragraph.
  * The captured group contains the full number (e.g. "3", "3.2", "3.2.2").
  */
-const INDIVIDUAL_CITATION_RE = /\[(\d+(?:\.\d+)*)\]/g;
+const ALL_CITATIONS_RE = /\[(\d+(?:\.\d+)*)\]/g;
 
 // ============================================================
 // Parser
@@ -46,7 +39,8 @@ const INDIVIDUAL_CITATION_RE = /\[(\d+(?:\.\d+)*)\]/g;
  *
  * Rules:
  *   1. Split by double newline (\n\n) into raw paragraphs.
- *   2. For each paragraph, extract trailing [N] markers into citationIndices.
+ *   2. For each paragraph, extract ALL [N] markers into citationIndices
+ *      and remove them from the displayed text.
  *   3. Consecutive Markdown headings (## / ###) are merged with the
  *      following paragraph so headings are not rendered as standalone blocks.
  *   4. Empty input returns [].
@@ -92,29 +86,28 @@ export function parseAnswerBlocks(text: string): AnswerBlock[] {
     return [{ text: text.trim(), citationIndices: [] }];
   }
 
-  // Extract citations from each paragraph
+  // Extract ALL citations from each paragraph and strip them from text
   return merged.map((paragraph) => {
-    const match = paragraph.match(TRAILING_CITATIONS_RE);
-    if (!match) {
-      return { text: paragraph, citationIndices: [] };
-    }
-
-    // Remove the trailing citation markers from the text
-    const cleanText = paragraph.slice(0, match.index).trimEnd();
-    const trailer = match[0];
-
-    // Extract individual citation values; dotted → integer part (e.g. "3.2" → 3)
     const indices: number[] = [];
     const seen = new Set<number>();
+
+    // Collect all [N] indices from anywhere in the paragraph
     let m: RegExpExecArray | null;
-    INDIVIDUAL_CITATION_RE.lastIndex = 0;
-    while ((m = INDIVIDUAL_CITATION_RE.exec(trailer)) !== null) {
+    ALL_CITATIONS_RE.lastIndex = 0;
+    while ((m = ALL_CITATIONS_RE.exec(paragraph)) !== null) {
       const intIdx = Number.parseInt(m[1], 10);
       if (!seen.has(intIdx)) {
         seen.add(intIdx);
         indices.push(intIdx);
       }
     }
+
+    // Remove all [N] markers from the text
+    const cleanText = paragraph
+      .replace(ALL_CITATIONS_RE, "")
+      // Clean up extra whitespace left behind after removal
+      .replace(/  +/g, " ")
+      .trim();
 
     return { text: cleanText, citationIndices: indices };
   });

@@ -5,8 +5,11 @@
  *
  * Flow:
  *   1. Create Book record (status: pending)
- *   2. Upload PDF to Media collection
- *   3. PATCH book with pdfMedia → triggers afterChange hook → Engine ingest
+ *   2. Upload PDF to PdfUploads collection → data/raw_pdfs/
+ *   3. PATCH book with pdfMedia → afterChange moves PDF to category subdir
+ *
+ * NOTE: Pipeline (MinerU + ingestion) is NOT auto-triggered.
+ * User must manually start it from the Pipeline Tab.
  *
  * Ref: AQ-02 — split useUpload into useFileUpload + useUrlImport
  */
@@ -161,8 +164,8 @@ export function useFileUpload(options?: FileUploadOptions) {
       const mediaId = mediaDoc.doc?.id ?? mediaDoc.id
 
       // Step 3: Link PDF media to book via pdfMedia field (80%)
-      // This PATCH triggers afterChange hook → Engine ingest pipeline
-      setState((s) => ({ ...s, progress: 80, stage: 'Triggering MinerU parsing...' }))
+      // afterChange hook will move PDF to category subdir (no pipeline triggered)
+      setState((s) => ({ ...s, progress: 80, stage: 'Linking PDF to book...' }))
 
       const linkRes = await authFetch(`/api/books/${bookId}`, {
         method: 'PATCH',
@@ -177,8 +180,8 @@ export function useFileUpload(options?: FileUploadOptions) {
         throw new Error(`Failed to link PDF to book: ${linkRes.status}`)
       }
 
-      // Done — afterChange hook will trigger Engine ingest in background
-      setState({ uploading: false, progress: 100, error: null, fileName: file.name, stage: 'Processing with MinerU...' })
+      // Done — PDF uploaded and linked, user can trigger pipeline from Pipeline Tab
+      setState({ uploading: false, progress: 100, error: null, fileName: file.name, stage: 'Upload complete' })
       options?.onSuccess?.(bookId)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Upload failed'

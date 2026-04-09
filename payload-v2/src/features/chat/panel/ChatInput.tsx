@@ -51,25 +51,30 @@ export default function ChatInput({
       className="absolute inset-x-0 bottom-0 bg-background px-4 pb-4 pt-3"
     >
       <div className="mx-auto max-w-3xl overflow-hidden rounded-2xl border border-border bg-card shadow-md">
-        {/* Locked books bar */}
+        {/* Document scope indicator */}
         <div className="flex items-center gap-2 border-b border-border bg-muted/50 px-4 py-2">
           <svg className="h-3.5 w-3.5 shrink-0 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
           </svg>
-          <div className="flex min-w-0 flex-1 flex-wrap gap-1.5">
-            {sessionBooks.map((book) => (
-              <span
-                key={book.id}
-                className="inline-flex max-w-[200px] items-center truncate rounded-full bg-primary px-2.5 py-0.5 text-[11px] font-medium text-primary-foreground"
-                title={book.title}
-              >
-                {book.title}
-              </span>
-            ))}
-          </div>
-          <span className="shrink-0 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-            Locked
-          </span>
+          {sessionBooks.length <= 5 ? (
+            /* Show individual book pills only for small selections */
+            <div className="flex min-w-0 flex-1 flex-wrap gap-1.5">
+              {sessionBooks.map((book) => (
+                <span
+                  key={book.id}
+                  className="inline-flex max-w-[200px] items-center truncate rounded-full bg-primary px-2.5 py-0.5 text-[11px] font-medium text-primary-foreground"
+                  title={book.title}
+                >
+                  {book.title}
+                </span>
+              ))}
+            </div>
+          ) : (
+            /* All-books mode: clean single-line indicator */
+            <span className="text-xs text-muted-foreground">
+              Searching all {sessionBooks.length} documents
+            </span>
+          )}
         </div>
 
         {/* Textarea + send */}
@@ -81,7 +86,7 @@ export default function ChatInput({
             placeholder={
               sessionBooks.length === 1
                 ? `Ask about ${sessionBooks[0].title}...`
-                : `Ask about your ${sessionBooks.length} books...`
+                : "Ask about Ottawa economic data..."
             }
             value={input}
             onChange={(event) => onInputChange(event.target.value)}

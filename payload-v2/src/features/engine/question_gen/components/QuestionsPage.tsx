@@ -18,7 +18,7 @@ import { Document, Page, pdfjs } from 'react-pdf'
 import 'react-pdf/dist/esm/Page/TextLayer.css'
 import {
   MessageSquare, BookOpen, ThumbsUp,
-  RefreshCw, Layers, Trash2, Building2, Home, Sparkles,
+  RefreshCw, Layers, Trash2, Sparkles,
   Loader2, AlertCircle, Hash, Zap, FileText, X,
   BarChart3, RotateCcw, ChevronRight, GripVertical, Clock,
   PanelLeftClose, PanelLeftOpen,
@@ -29,7 +29,7 @@ import rehypeKatex from 'rehype-katex'
 import { useI18n } from '@/features/shared/i18n/I18nProvider'
 import { cn } from '@/features/shared/utils'
 import { SidebarLayout, type SidebarItem, type ViewMode } from '@/features/shared/components/SidebarLayout'
-import { useBooks, useBookSidebar } from '@/features/shared/books'
+import { useBooks, useBookSidebar, buildCategoryIcons } from '@/features/shared/books'
 import { useQueryState } from '@/features/shared/hooks/useQueryState'
 import type { TocEntry } from '@/features/shared/books'
 import type { Question } from '../types'
@@ -161,6 +161,12 @@ function QuestionsPageInner() {
     return map
   }, [questions])
 
+  // Dynamic category icons from actual book data
+  const categoryIcons = useMemo(() => {
+    const cats = [...new Set(books.map((b) => b.category || 'textbook'))]
+    return buildCategoryIcons(cats, 'h-3.5 w-3.5')
+  }, [books])
+
   const { sidebarItems: baseSidebarItems } = useBookSidebar(books, {
     mode: 'by-book',
     countMap,
@@ -168,11 +174,7 @@ function QuestionsPageInner() {
     allLabel: isZh ? '全部问题' : 'All Questions',
     allIcon: <Layers className="h-4 w-4 text-cyan-400" />,
     bookIcon: <BookOpen className="h-3.5 w-3.5" />,
-    categoryIcons: {
-      textbook: <BookOpen className="h-3.5 w-3.5 text-blue-400" />,
-      ecdev: <Building2 className="h-3.5 w-3.5 text-emerald-400" />,
-      real_estate: <Home className="h-3.5 w-3.5 text-amber-400" />,
-    },
+    categoryIcons,
   })
 
   // ==========================================================

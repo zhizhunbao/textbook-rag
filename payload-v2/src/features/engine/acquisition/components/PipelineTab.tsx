@@ -261,7 +261,15 @@ export default function PipelineTab({ books, filter, onBooksRefresh }: PipelineT
   // Resolve template placeholders in step paths with actual book data
   const resolvePath = useCallback((tpl: string) => {
     if (!selectedBook) return tpl
-    const bookDirName = (selectedBook.title || '').toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '') || `book_${selectedBook.id}`
+    // Use engineBookId (engine's actual dir name) if available, otherwise derive from title
+    // Unicode-aware: \p{L} matches any letter (Chinese, Korean, etc.), \p{N} any digit
+    const bookDirName = selectedBook.book_id !== String(selectedBook.id)
+      ? selectedBook.book_id
+      : (selectedBook.title || '').toLowerCase()
+          .replace(/[^\p{L}\p{N}\s_-]/gu, '')
+          .replace(/[\s-]+/g, '_')
+          .replace(/_+/g, '_')
+          .replace(/^_|_$/g, '') || `book_${selectedBook.id}`
     const pdfName = (selectedBook as any)?.pdfMedia?.filename || `${bookDirName}.pdf`
     return tpl
       .replace(/\{filename\}/g, pdfName.replace(/\.pdf$/i, ''))

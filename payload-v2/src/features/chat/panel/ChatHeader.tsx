@@ -54,7 +54,7 @@ export default function ChatHeader({
           <p className="text-[11px] text-muted-foreground">
             {sessionBooks.length === 1
               ? sessionBooks[0].title
-              : `${sessionBooks.length} books in session`}
+              : `Searching all ${sessionBooks.length} documents`}
           </p>
         </div>
 

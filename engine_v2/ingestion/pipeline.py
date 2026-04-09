@@ -108,7 +108,10 @@ def ingest_book(
         "chromaCollection": CHROMA_COLLECTION,
         "chromaPersistDir": str(CHROMA_PERSIST_DIR),
     }
-    _update_book_status(book_id, chunk_count=len(nodes), ingest_output=ingest_output)
+    _update_book_status(
+        book_id, chunk_count=len(nodes),
+        ingest_output=ingest_output, engine_book_id=book_dir_name,
+    )
     logger.info("Ingest complete for book {} — {} nodes indexed", book_id, len(nodes))
     _notify(task_id, status="done", progress=100, log="Ingest complete")
 
@@ -296,6 +299,7 @@ def _update_book_status(
     book_id: int,
     chunk_count: int,
     ingest_output: dict | None = None,
+    engine_book_id: str | None = None,
 ) -> None:
     """Mark book as indexed in Payload CMS with 2-stage pipeline."""
     import httpx
@@ -310,6 +314,9 @@ def _update_book_status(
     }
     if ingest_output:
         body["pipeline"]["ingestOutput"] = ingest_output
+    # Set engineBookId so frontend can resolve TOC/PDF API calls correctly
+    if engine_book_id:
+        body["engineBookId"] = engine_book_id
 
     try:
         httpx.patch(

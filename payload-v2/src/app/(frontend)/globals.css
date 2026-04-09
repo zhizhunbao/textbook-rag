@@ -58,34 +58,34 @@
   --color-sidebar-border: var(--sidebar-border);
 }
 
-/* ── Light theme (default) ─────────────────────────────────────────────── */
+/* ── Light theme (warm beige — inspired by DeepTutor #FAF9F6) ──────────── */
 :root {
   --radius: 0.625rem;
-  --background: #ffffff;
-  --foreground: #0f172a;
-  --card: #ffffff;
-  --card-foreground: #0f172a;
-  --popover: #ffffff;
-  --popover-foreground: #0f172a;
+  --background: #FAF9F6;
+  --foreground: #2D2B28;
+  --card: #FFFFFF;
+  --card-foreground: #2D2B28;
+  --popover: #FFFFFF;
+  --popover-foreground: #2D2B28;
   --primary: #004890;
-  --primary-foreground: #ffffff;
-  --secondary: #f1f5f9;
-  --secondary-foreground: #1e293b;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #f1f5f9;
-  --accent-foreground: #1e293b;
-  --destructive: #ef4444;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F0EDE7;
+  --secondary-foreground: #2D2B28;
+  --muted: #F0EDE7;
+  --muted-foreground: #8B8580;
+  --accent: #F0EDE7;
+  --accent-foreground: #2D2B28;
+  --destructive: #D44A3C;
+  --border: #E8E4DE;
+  --input: #E8E4DE;
   --ring: #004890;
-  --sidebar: #f8fafc;
-  --sidebar-foreground: #0f172a;
+  --sidebar: #FAF9F6;
+  --sidebar-foreground: #2D2B28;
   --sidebar-primary: #004890;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f1f5f9;
-  --sidebar-accent-foreground: #1e293b;
-  --sidebar-border: #e2e8f0;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #F0EDE7;
+  --sidebar-accent-foreground: #2D2B28;
+  --sidebar-border: #E8E4DE;
 
   color-scheme: light;
 }

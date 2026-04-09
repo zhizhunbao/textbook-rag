@@ -17,9 +17,9 @@ import rehypeRaw from "rehype-raw";
 import rehypeKatex from "rehype-katex";
 import remarkMath from "remark-math";
 import type { SourceInfo } from "@/features/shared/types";
-import { useAppState } from "@/features/shared/AppContext";
 import { parseAnswerBlocks } from "./answerBlocks";
 import CitationChip from "./CitationChip";
+import { prepareForKatex } from "./textUtils";
 
 // ============================================================
 // Types
@@ -35,12 +35,7 @@ interface AnswerBlockRendererProps {
 // Helpers
 // ============================================================
 
-/** Convert LaTeX delimiters that remark-math does not recognise. */
-function convertLatexDelimiters(text: string): string {
-  text = text.replace(/\\\[([\\s\\S]*?)\\\]/g, (_m, math) => `$$${math}$$`);
-  text = text.replace(/\\\((.+?)\\\)/g, (_m, math) => `$${math}$`);
-  return text;
-}
+
 
 // ============================================================
 // Inline citation content panel
@@ -97,7 +92,7 @@ function InlineCitationPanel({ source, index, onClose }: { source: SourceInfo; i
           },
         }}
       >
-        {convertLatexDelimiters(previewContent)}
+        {prepareForKatex(previewContent)}
       </Markdown>
     </div>
   );
@@ -110,7 +105,6 @@ export default function AnswerBlockRenderer({
   content,
   sources,
 }: AnswerBlockRendererProps) {
-  const { selectedSource } = useAppState();
 
   // ── Build citation lookup map ─────────────────────────────
   const citationMap = useMemo(() => {
@@ -154,14 +148,14 @@ export default function AnswerBlockRenderer({
   }, []);
 
   // ── Determine active citation ─────────────────────────────
-  const activeChunkId = selectedSource
-    ? (selectedSource as any).chunk_id || (selectedSource as any).source_id
-    : null;
+  // Track the specific globalIndex that was selected (not just chunk_id)
+  // so only one chip highlights when the same citation appears in multiple blocks
+  const [selectedGlobalIndex, setSelectedGlobalIndex] = useState<number | null>(null);
 
   // ── Pre-compute global sequential numbering across all blocks ──
   const blocksWithGlobalIndex = useMemo(() => {
     let globalIdx = 0;
-    return blocks.map((block) => {
+    const result = blocks.map((block) => {
       const blockSources = block.citationIndices
         .map((ci) => ({ ci, source: citationMap.get(ci) }))
         .filter(
@@ -174,126 +168,227 @@ export default function AnswerBlockRenderer({
       }));
       return { text: block.text, sources: withGlobal };
     });
+
+    // Fallback: if LLM didn't write any [N] markers, show all sources
+    // as citation chips after the last paragraph block.
+    const totalCited = result.reduce((sum, b) => sum + b.sources.length, 0);
+    if (totalCited === 0 && citationMap.size > 0 && result.length > 0) {
+      const lastBlock = result[result.length - 1];
+      const fallbackSources = Array.from(citationMap.entries()).map(
+        ([ci, source]) => ({ ci, source, globalIndex: ++globalIdx }),
+      );
+      lastBlock.sources = fallbackSources;
+    }
+
+    return result;
   }, [blocks, citationMap]);
+
+  // ── Compute uncited sources (sources not referenced by any [N] marker) ──
+  const { uncitedSources } = useMemo(() => {
+    // Collect all citation indices that appeared in the answer text
+    const citedIndices = new Set<number>();
+    for (const block of blocksWithGlobalIndex) {
+      for (const { ci } of block.sources) {
+        citedIndices.add(ci);
+      }
+    }
+
+    // Find sources that exist in citationMap but were never cited
+    let idx = blocksWithGlobalIndex.reduce(
+      (max, b) => Math.max(max, ...b.sources.map((s) => s.globalIndex), 0),
+      0,
+    );
+    const uncited: Array<{ ci: number; source: SourceInfo; globalIndex: number }> = [];
+    for (const [ci, source] of citationMap.entries()) {
+      if (!citedIndices.has(ci)) {
+        uncited.push({ ci, source, globalIndex: ++idx });
+      }
+    }
+    return { uncitedSources: uncited, nextGlobalIdx: idx };
+  }, [blocksWithGlobalIndex, citationMap]);
+
+  // ── Show/hide uncited sources section ─────────────────────
+  const [showAllSources, setShowAllSources] = useState(false);
 
   // ── Render ────────────────────────────────────────────────
   return (
     <div className="answer-blocks space-y-3">
       {blocksWithGlobalIndex.map((block, blockIdx) => (
-          <div key={blockIdx} className="answer-block">
-            {/* ── Paragraph text (Markdown + KaTeX) ── */}
-            <Markdown
-              remarkPlugins={[remarkMath]}
-              rehypePlugins={[rehypeKatex, rehypeRaw]}
-              components={{
-                h2({ children }) {
-                  return (
-                    <h2 className="mt-4 mb-2 text-base font-bold text-foreground">
-                      {children}
-                    </h2>
-                  );
-                },
-                h3({ children }) {
-                  return (
-                    <h3 className="mt-3 mb-1.5 text-[0.94rem] font-semibold text-foreground">
-                      {children}
-                    </h3>
-                  );
-                },
-                p({ children }) {
-                  return (
-                    <p className="my-1.5 leading-7 text-foreground">
-                      {children}
-                    </p>
-                  );
-                },
-                ul({ children }) {
-                  return (
-                    <ul className="my-2 list-disc space-y-1 pl-5 text-foreground">
-                      {children}
-                    </ul>
-                  );
-                },
-                ol({ children }) {
-                  return (
-                    <ol className="my-2 list-decimal space-y-1 pl-5 text-foreground">
-                      {children}
-                    </ol>
-                  );
-                },
-                li({ children }) {
-                  return <li className="leading-7">{children}</li>;
-                },
-                strong({ children }) {
-                  return (
-                    <strong className="font-semibold text-foreground">
-                      {children}
-                    </strong>
-                  );
-                },
-                code({ children }) {
-                  return (
-                    <code className="rounded bg-muted px-1.5 py-0.5 text-[0.92em] text-foreground">
-                      {children}
-                    </code>
-                  );
-                },
-                a({
-                  href,
-                  children,
-                }: {
-                  href?: string;
-                  children?: ReactNode;
-                }) {
-                  return (
-                    <a
-                      href={href}
-                      className="text-blue-600 underline decoration-blue-200 underline-offset-2 hover:text-blue-800"
-                    >
-                      {children}
-                    </a>
-                  );
-                },
-              }}
-            >
-              {convertLatexDelimiters(block.text)}
-            </Markdown>
+        <div key={blockIdx} className="answer-block">
+          {/* ── Paragraph text (Markdown + KaTeX) ── */}
+          <Markdown
+            remarkPlugins={[remarkMath]}
+            rehypePlugins={[rehypeKatex, rehypeRaw]}
+            components={{
+              h2({ children }) {
+                return (
+                  <h2 className="mt-4 mb-2 text-base font-bold text-foreground">
+                    {children}
+                  </h2>
+                );
+              },
+              h3({ children }) {
+                return (
+                  <h3 className="mt-3 mb-1.5 text-[0.94rem] font-semibold text-foreground">
+                    {children}
+                  </h3>
+                );
+              },
+              p({ children }) {
+                return (
+                  <p className="my-1.5 leading-7 text-foreground">
+                    {children}
+                  </p>
+                );
+              },
+              ul({ children }) {
+                return (
+                  <ul className="my-2 list-disc space-y-1 pl-5 text-foreground">
+                    {children}
+                  </ul>
+                );
+              },
+              ol({ children }) {
+                return (
+                  <ol className="my-2 list-decimal space-y-1 pl-5 text-foreground">
+                    {children}
+                  </ol>
+                );
+              },
+              li({ children }) {
+                return <li className="leading-7">{children}</li>;
+              },
+              strong({ children }) {
+                return (
+                  <strong className="font-semibold text-foreground">
+                    {children}
+                  </strong>
+                );
+              },
+              code({ children }) {
+                return (
+                  <code className="rounded bg-muted px-1.5 py-0.5 text-[0.92em] text-foreground">
+                    {children}
+                  </code>
+                );
+              },
+              a({
+                href,
+                children,
+              }: {
+                href?: string;
+                children?: ReactNode;
+              }) {
+                return (
+                  <a
+                    href={href}
+                    className="text-blue-600 underline decoration-blue-200 underline-offset-2 hover:text-blue-800"
+                  >
+                    {children}
+                  </a>
+                );
+              },
+            }}
+          >
+            {prepareForKatex(block.text)}
+          </Markdown>
 
-            {/* ── Citation chips row ── */}
-            {block.sources.length > 0 && (
-              <div className="mt-1">
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {block.sources.map(({ ci, source, globalIndex }) => (
-                    <CitationChip
-                      key={ci}
-                      source={source}
-                      index={globalIndex}
-                      isActive={
-                        expandedCitations.has(globalIndex) ||
-                        (activeChunkId != null &&
-                          ((source as any).chunk_id === activeChunkId ||
-                            (source as any).source_id === activeChunkId))
-                      }
-                      onChipClick={() => toggleCitation(globalIndex)}
-                    />
-                  ))}
-                </div>
-
-                {/* ── Inline expanded content panels (multiple can be open) ── */}
-                {block.sources.map(({ ci, source, globalIndex }) =>
-                  expandedCitations.has(globalIndex) ? (
-                    <InlineCitationPanel
-                      key={`panel-${ci}`}
-                      source={source}
-                      index={globalIndex}
-                      onClose={() => closeCitation(globalIndex)}
-                    />
-                  ) : null,
-                )}
+          {/* ── Citation chips row ── */}
+          {block.sources.length > 0 && (
+            <div className="mt-1">
+              <div className="flex flex-wrap items-center gap-1.5">
+                {block.sources.map(({ ci, source, globalIndex }) => (
+                  <CitationChip
+                    key={ci}
+                    source={source}
+                    index={ci}
+                    isActive={
+                      expandedCitations.has(globalIndex) ||
+                      selectedGlobalIndex === globalIndex
+                    }
+                    onChipClick={() => {
+                      toggleCitation(globalIndex);
+                      setSelectedGlobalIndex(
+                        selectedGlobalIndex === globalIndex ? null : globalIndex,
+                      );
+                    }}
+                  />
+                ))}
               </div>
-            )}
-          </div>
-        ))}
+
+              {/* ── Inline expanded content panels (multiple can be open) ── */}
+              {block.sources.map(({ ci, source, globalIndex }) =>
+                expandedCitations.has(globalIndex) ? (
+                  <InlineCitationPanel
+                    key={`panel-${ci}`}
+                    source={source}
+                    index={globalIndex}
+                    onClose={() => closeCitation(globalIndex)}
+                  />
+                ) : null,
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+
+      {/* ── All Sources section (shows uncited sources) ── */}
+      {uncitedSources.length > 0 && (
+        <div className="mt-2 border-t border-border/30 pt-2">
+          <button
+            type="button"
+            onClick={() => setShowAllSources((prev) => !prev)}
+            className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground/70 transition-colors hover:text-foreground"
+          >
+            <svg
+              className={`h-3 w-3 transition-transform duration-150 ${showAllSources ? "rotate-90" : ""}`}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+            {uncitedSources.length} more source{uncitedSources.length > 1 ? "s" : ""} retrieved
+          </button>
+
+          {showAllSources && (
+            <div className="mt-1.5">
+              <div className="flex flex-wrap items-center gap-1.5">
+                {uncitedSources.map(({ ci, source, globalIndex }) => (
+                  <CitationChip
+                    key={`uncited-${ci}`}
+                    source={source}
+                    index={ci}
+                    isActive={
+                      expandedCitations.has(globalIndex) ||
+                      selectedGlobalIndex === globalIndex
+                    }
+                    onChipClick={() => {
+                      toggleCitation(globalIndex);
+                      setSelectedGlobalIndex(
+                        selectedGlobalIndex === globalIndex ? null : globalIndex,
+                      );
+                    }}
+                  />
+                ))}
+              </div>
+
+              {/* ── Inline expanded content panels for uncited sources ── */}
+              {uncitedSources.map(({ ci, source, globalIndex }) =>
+                expandedCitations.has(globalIndex) ? (
+                  <InlineCitationPanel
+                    key={`panel-uncited-${ci}`}
+                    source={source}
+                    index={globalIndex}
+                    onClose={() => closeCitation(globalIndex)}
+                  />
+                ) : null,
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

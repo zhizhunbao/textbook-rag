@@ -22,10 +22,18 @@ interface BookCardProps {
   onSelect?: (book: LibraryBook) => void
 }
 
-const categoryLabels: Record<string, { label: string; color: string }> = {
+const KNOWN_CAT_LABELS: Record<string, { label: string; color: string }> = {
   textbook: { label: 'Textbook', color: 'bg-brand-500/10 text-brand-400' },
   ecdev: { label: 'EC Dev', color: 'bg-purple-500/10 text-purple-400' },
   real_estate: { label: 'Real Estate', color: 'bg-teal-500/10 text-teal-400' },
+}
+
+/** Get category badge config — generates one for unknown categories. */
+function getCatLabel(category: string): { label: string; color: string } {
+  if (KNOWN_CAT_LABELS[category]) return KNOWN_CAT_LABELS[category]
+  // Dynamic fallback for LLM-classified categories
+  const label = category.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+  return { label, color: 'bg-violet-500/10 text-violet-400' }
 }
 
 /** Generate a consistent gradient from book title for placeholder covers */
@@ -50,7 +58,7 @@ function titleInitials(title: string): string {
 }
 
 export default function BookCard({ book, onSelect }: BookCardProps) {
-  const cat = categoryLabels[book.category] ?? categoryLabels.textbook
+  const cat = getCatLabel(book.category)
   const pageCount = book.metadata?.pageCount ?? 0
   const chapterCount = book.metadata?.chapterCount ?? 0
   const coverUrl =

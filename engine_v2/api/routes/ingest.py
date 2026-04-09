@@ -222,6 +222,13 @@ def _resolve_pdf_path(req: IngestRequest) -> Path | None:
         path = RAW_PDF_DIR / req.category / req.pdf_filename
         if path.exists():
             return path
+        # 2b. Scan ALL subdirs for exact pdf_filename (file may be in a different category)
+        for subdir in RAW_PDF_DIR.iterdir():
+            if subdir.is_dir():
+                candidate = subdir / req.pdf_filename
+                if candidate.exists():
+                    logger.info("Found PDF at {}", candidate)
+                    return candidate
         logger.warning("PDF not found at {} or {}", RAW_PDF_DIR / req.pdf_filename, path)
 
     # 3. Try {category}/{book_dir_name}.pdf

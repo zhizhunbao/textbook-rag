@@ -44,7 +44,7 @@ export const syncEngineEndpoint: Endpoint = {
           engineBookId: eb.book_id,
           title: meta?.title ?? eb.title,
           authors: meta?.authors ?? null,
-          category: inferCategory(eb.book_id),
+          category: eb.category || inferCategory(eb.book_id),
           subcategory: inferSubcategory(eb.book_id),
           status: 'indexed' as const,
           chunkCount: eb.chunk_count || 0,

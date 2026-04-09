@@ -14,6 +14,7 @@ import rehypeKatex from "rehype-katex";
 import remarkMath from "remark-math";
 import type { SourceInfo } from "@/features/shared/types";
 import AnswerBlockRenderer from "./AnswerBlockRenderer";
+import { prepareForKatex } from "./textUtils";
 
 // ============================================================
 // Types
@@ -30,16 +31,7 @@ interface Props {
 // Helpers
 // ============================================================
 
-/**
- * Convert LaTeX delimiters that remark-math doesn't recognize:
- *   \( ... \)  →  $ ... $   (inline math)
- *   \[ ... \]  →  $$ ... $$ (display math)
- */
-function convertLatexDelimiters(text: string): string {
-  text = text.replace(/\\\[([\\s\S]*?)\\\]/g, (_m, math) => `$$${math}$$`);
-  text = text.replace(/\\\((.+?)\\\)/g, (_m, math) => `$${math}$`);
-  return text;
-}
+
 
 // ============================================================
 // Component
@@ -73,7 +65,7 @@ export default function MessageBubble({ role, content, sources, onRetry, isStrea
             /* ── User message: Markdown + KaTeX ── */
             <div className="leading-6 [&_p]:my-0.5 [&_.katex]:text-[0.95em]">
               <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                {convertLatexDelimiters(content)}
+                {prepareForKatex(content)}
               </Markdown>
             </div>
           ) : isStreaming ? (

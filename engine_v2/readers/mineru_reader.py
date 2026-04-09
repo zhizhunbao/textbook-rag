@@ -80,6 +80,9 @@ class MinerUReader(BaseReader):
 
             chapter_key = self._assign_chapter(page_idx, chapter_ranges)
 
+            # Page dimensions for frontend bbox scaling (PDF points)
+            pw, ph = page_sizes.get(page_idx, (0.0, 0.0))
+
             doc_id = f"{book_dir_name}_{reading_order:06d}"
             yield Document(
                 doc_id=doc_id,
@@ -90,11 +93,15 @@ class MinerUReader(BaseReader):
                     "content_type": item_type,
                     "page_idx": page_idx,
                     "bbox": bbox,
+                    "page_width": pw,
+                    "page_height": ph,
                     "chapter_key": chapter_key,
                     "reading_order": reading_order,
                     "text_level": item.get("text_level"),
                 },
-                excluded_llm_metadata_keys=["bbox", "reading_order"],
+                excluded_llm_metadata_keys=[
+                    "bbox", "reading_order", "page_width", "page_height",
+                ],
             )
             reading_order += 1
 

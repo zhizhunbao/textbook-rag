@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
-import { Library, BookOpen, Building2, Home, Layers } from "lucide-react";
-import { fetchIndexedBooks, useBookSidebar, type BookBase } from "@/features/shared/books";
+import { Library, Layers } from "lucide-react";
+import { fetchIndexedBooks, useBookSidebar, getCategoryConfig, buildCategoryIcons, type BookBase } from "@/features/shared/books";
 import { useAppDispatch, useAppState } from "@/features/shared/AppContext";
 import { cn } from "@/features/shared/utils";
 import { SidebarLayout, type ViewMode } from "@/features/shared/components/SidebarLayout";
@@ -13,17 +13,7 @@ import { SidebarLayout, type ViewMode } from "@/features/shared/components/Sideb
  * - Footer: "Start Chat" CTA
  */
 
-const CATEGORY_ICONS: Record<string, React.ReactNode> = {
-  textbook:    <BookOpen  className={cn('h-4 w-4 shrink-0', 'text-blue-400')} />,
-  ecdev:       <Building2 className={cn('h-4 w-4 shrink-0', 'text-emerald-400')} />,
-  real_estate: <Home      className={cn('h-4 w-4 shrink-0', 'text-amber-400')} />,
-}
 
-const CATEGORY_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string }> = {
-  textbook: { label: "Textbooks", icon: BookOpen, color: "text-blue-400" },
-  ecdev: { label: "EC Development", icon: Building2, color: "text-emerald-400" },
-  real_estate: { label: "Real Estate", icon: Home, color: "text-amber-400" },
-};
 
 export default function BookPicker() {
   const { books } = useAppState();
@@ -60,12 +50,18 @@ export default function BookPicker() {
     dispatch({ type: "START_SESSION", bookIds: [...selected] });
   }
 
+  // ── Dynamic category icons from actual book data ─────────────────────────
+  const categoryIcons = useMemo(() => {
+    const cats = [...new Set(books.map((b) => b.category || 'textbook'))]
+    return buildCategoryIcons(cats)
+  }, [books])
+
   // ── Book sidebar (via shared hook) ──────────────────────────────────────────
   const { sidebarItems, filterBooks } = useBookSidebar(books, {
     mode: 'by-category',
     allLabel: 'All Books',
     allIcon: <Layers className="h-4 w-4 shrink-0" />,
-    categoryIcons: CATEGORY_ICONS,
+    categoryIcons,
   });
 
   // ── Filtered books ─────────────────────────────────────────────────────────
@@ -188,7 +184,7 @@ function BookCard({
   checked: boolean;
   onToggle: (id: number) => void;
 }) {
-  const catCfg = CATEGORY_CONFIG[book.category || "textbook"];
+  const catCfg = getCategoryConfig(book.category || "textbook");
   return (
     <button
       type="button"
@@ -264,7 +260,7 @@ function BookTable({
         <tbody>
           {books.map((book) => {
             const checked = selected.has(book.id);
-            const catCfg = CATEGORY_CONFIG[book.category || "textbook"];
+            const catCfg = getCategoryConfig(book.category || "textbook");
             return (
               <tr
                 key={book.id}

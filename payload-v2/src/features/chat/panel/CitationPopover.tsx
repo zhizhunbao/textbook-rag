@@ -17,6 +17,7 @@ import rehypeRaw from "rehype-raw";
 import rehypeKatex from "rehype-katex";
 import remarkMath from "remark-math";
 import type { SourceInfo } from "@/features/shared/types";
+import { prepareForKatex } from "./textUtils";
 
 // ============================================================
 // Types
@@ -38,12 +39,6 @@ interface CitationPopoverProps {
 // Helpers
 // ============================================================
 
-/** Convert LaTeX delimiters that remark-math does not recognise. */
-function convertLatexDelimiters(text: string): string {
-  text = text.replace(/\\\[([\\s\S]*?)\\\]/g, (_m, math) => `$$${math}$$`);
-  text = text.replace(/\\\((.+?)\\\)/g, (_m, math) => `$${math}$`);
-  return text;
-}
 
 // ============================================================
 // Component
@@ -166,7 +161,7 @@ export default function CitationPopover({
             },
           }}
         >
-          {convertLatexDelimiters(previewContent)}
+          {prepareForKatex(previewContent)}
         </Markdown>
       </div>
     </div>,

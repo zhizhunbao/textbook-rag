@@ -76,7 +76,7 @@ export function useQueryEngine() {
       },
 
       onRetrievalDone: () => {
-        // Retrieval phase done — could update partial state here
+        // Retrieval phase done — sources available via streaming state
       },
 
       onDone: (result: QueryResponse) => {

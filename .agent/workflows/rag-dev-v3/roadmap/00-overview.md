@@ -122,23 +122,23 @@ graph TD
 
 ---
 
-## 实施路线（四阶段）
+## 实施路线
 
-> 各 Sprint 详情见独立文件：
+> 各 Sprint 详情见独立文件。总计 147 stories, ~401.5h（含 Sprint Demo 14 stories）。
 
 | Sprint | 文件 | 目标 | 工时 | 状态 |
 |--------|------|------|------|------|
-| **Hotfix** | [10-sprint-hotfix.md](./10-sprint-hotfix.md) | 🔴 **上传→摄取管线修通** (P0, 阻塞全链路) | 20h (7 stories) | ❌ 最高优先 |
+| **Hotfix** | [10-sprint-hotfix.md](./10-sprint-hotfix.md) | **上传→摄取管线修通** (P0) | 20h (7 stories) | 🚧 6/7 |
 | Sprint 1 | [01-sprint1.md](./01-sprint1.md) | 端到端用户旅程闭环 | 52h (17 stories) | ✅ 100% |
 | Sprint 2 | [02-sprint2.md](./02-sprint2.md) | 问题生成闭环 + 评估中枢 + 引用UX + 持久化 | 78h (30 stories) | 🚧 21/30 |
+| **Demo** | [12-sprint-demo.md](./12-sprint-demo.md) | **展示日冲刺** — 全书搜索+暖色主题+建议问题+Citation Score+Report MVP+Admin分离 | 10.5h (14 stories) | 🆕 |
 | Sprint 3 | [03-sprint3.md](./03-sprint3.md) | 评估图表+反馈 + 多题型 + toc | 24h (8 stories) | ❌ |
 | Sprint 4 | [04-sprint4.md](./04-sprint4.md) | 基建补全 | 29h (11 stories) | ❌ |
-| Sprint 5 | [06-sprint5.md](./06-sprint5.md) | 🆕 智能检索 + 多步推理 (DeepTutor Tier 1) | 30h (10 stories) | ❌ |
-| Sprint 6 | [07-sprint6.md](./07-sprint6.md) | 🆕 问题生成升级 + Web Search (DeepTutor Tier 2) | 28h (9 stories) | ❌ |
-| Sprint 7 | [08-sprint7.md](./08-sprint7.md) | 🆕 架构升级 + 用户记忆 (DeepTutor Tier 3) | 40h (11 stories) | ❌ |
-| Sprint 8 | [09-sprint8.md](./09-sprint8.md) | 🆕 多角色报告生成引擎 | 56h (17 stories) | ❌ |
-| **Acquisition** | [11-sprint-acquisition.md](./11-sprint-acquisition.md) | 🆕 **导入模块独立化 + 数据透明化** (3 模块 Tab 设计) | 28h (12 stories) | 🚧 5/10 |
-| **Pipeline** | [12-sprint-pipeline.md](./12-sprint-pipeline.md) | 🆕 **Prefect 集成 + Pipeline UI 重构** (参考 Prefect UI) | 30h (10 stories) | ❌ |
+| Sprint 5 | [06-sprint5.md](./06-sprint5.md) | 智能检索 + 多步推理 (DeepTutor Tier 1) | 30h (10 stories) | ❌ |
+| Sprint 6 | [07-sprint6.md](./07-sprint6.md) | 问题生成升级 + Web Search (DeepTutor Tier 2) | 28h (9 stories) | ❌ |
+| Sprint 7 | [08-sprint7.md](./08-sprint7.md) | 架构升级 + 用户记忆 (DeepTutor Tier 3) | 40h (11 stories) | ❌ |
+| Sprint 8 | [09-sprint8.md](./09-sprint8.md) | 多角色报告生成引擎 | 56h (17 stories) | ❌ |
+| **Acquisition** | [11-sprint-acquisition.md](./11-sprint-acquisition.md) | **导入模块独立化 + 数据透明化** (5-Tab 设计) | 34h (13 stories) | 🚧 5/13 |
 
 ---
 
@@ -151,39 +151,38 @@ graph TD
 ## 总览
 
 ```
-完成度
-├── 🔴  断链 (0)       upload → ingestion 已修通 (Hotfix)
-├── 🆕  待建 (1)       acquisition (导入模块独立化，从 readers/ 拆出)
+完成度 (2026-04-09 更新)
 ├── ✅  完成 (5)       layout · auth · ingestion(读) · query_engine · llms
-├── 🚧  部分实现 (8)   readers · home · seed · chat · retrievers · response_synthesizers · evaluation · question_gen
+├── 🚧  部分实现 (9)   readers · home · seed · chat · retrievers · response_synthesizers · evaluation · question_gen · acquisition
+├── 🆕  新建 (1)       report (Sprint Demo MVP)
 └── ❌  缺前端 (4)     chunking · toc · embeddings · access
 
-Sprint 分期 (120 Stories, ~357h)
-├── 🔴 Hotfix (P0, 1w, 7 stories, 20h) **上传→摄取管线修通** — Books.pdfMedia · afterChange修复 · PDF下载 · MinerU解析集成 · useUpload修正 · 批量推送 · 端到端验证
-├── S1 (P0, 3w, 17 stories, 52h)   readers上传 · question_gen推荐 · chat流式+推荐 · query_engine前端 · response_synthesizers编辑  → ✅ 17/17 完成 (100%)
-├── S2 (P0→P1, 3w, 30 stories, 78h)  **question_gen生成闭环** ✅ · **Citation UX升级** ✅ · **evaluation统一评估中枢** ✅ · **chat持久化** ✅ · retrievers UI · home仪表盘 · seed日志
-├── S3 (P2, 3w, 8 stories, 24h)   evaluation图表+反馈循环 · question_gen多题型 · toc前端
-├── S4 (P3, 2w, 11 stories, 29h)   chunking前端 · embeddings前端 · llms增强 · access UI
-├── S5 🆕 (P0, 2w, 10 stories, 30h)  **StreamEvent统一流式** · **smart_retrieve多查询** · **Deep Solve多步推理** ← DeepTutor Tier 1
-├── S6 🆕 (P1, 2w, 9 stories, 28h)   **Deep Question Mimic** · **Web Search fallback** · **Reason前端** ← DeepTutor Tier 2
-├── S7 🆕 (P2, 3w, 11 stories, 40h)  **UnifiedContext** · **Tool/Capability插件** · **用户记忆** ← DeepTutor Tier 3
-├── S8 🆕 (P1, 3w, 17 stories, 56h)  **多角色报告模板** · **数据收集+分析** · **图表可视化** · **报告合成+PDF导出** · **报告中心UI**
-└── Pipeline 🆕 (P1, 2w, 10 stories, 30h)  **Prefect @flow/@task 集成** · **Pipeline UI 重构 (Prefect UI 风格)** · **StateBadge/FlowRunCard/TaskRunLog**
+Sprint 分期 (147 Stories, ~401.5h)
+├── Hotfix (P0, 1w, 7 stories, 20h)   管线修通 → 🚧 6/7 完成 (仅剩端到端验证 HF-07)
+├── S1 (P0, 3w, 17 stories, 52h)      readers上传 · question_gen推荐 · chat流式+推荐 · query_engine前端 · response_synthesizers编辑  → ✅ 100%
+├── S2 (P0→P1, 3w, 30 stories, 78h)   ✅qgen(5/5) ✅citation(7/7) ✅eval(5/5) ✅chat持久化(4/4) ❌retrievers(0/4) ❌home(0/3) ❌seed(0/2) → 🚧 21/30
+├── Demo (P0, 1d, 14 stories, 10.5h)  全书搜索 · 暖色主题 · 建议问题 · Citation Score · Report MVP · Admin分离 → 🆕
+├── Acquisition (P1, 2w, 13 stories, 34h)  5-Tab导入模块 (AQ-08 Pipeline Tab 进行中) → 🚧 5/13
+├── S3 (P2, 3w, 8 stories, 24h)       evaluation图表+反馈循环 · question_gen多题型 · toc前端 → ❌
+├── S4 (P3, 2w, 11 stories, 29h)      chunking前端 · embeddings前端 · llms增强 · access UI → ❌
+├── S5 (P0, 2w, 10 stories, 30h)      StreamEvent统一流式 · smart_retrieve多查询 · Deep Solve多步推理 → ❌
+├── S6 (P1, 2w, 9 stories, 28h)       Deep Question Mimic · Web Search fallback · Reason前端 → ❌
+├── S7 (P2, 3w, 11 stories, 40h)      UnifiedContext · Tool/Capability插件 · 用户记忆 → ❌
+└── S8 (P1, 3w, 17 stories, 56h)      多角色报告模板 · 数据收集+分析 · 图表可视化 · 报告合成+PDF导出 → ❌
 
-关键路径 (十二条线)
-├── 🔴 上传链: UploadZone → Books.pdfMedia(HF-01) → afterChange(HF-02) → PDF下载(HF-03) → MinerU解析(HF-04) → IngestionPipeline → ChromaDB → 可对话
-├── 数据链: auth ✅ → readers ✅ → ingestion ✅ → 数据就绪
-├── 检索链: ingestion ✅ → retrievers(S2) → query_engine ✅ → chat
-├── 问题链: readers ✅ → question_gen ✅推荐 → chat ✅流式+推荐
-├── 生成链: generator(S2-BE-06) → API(S2-BE-07) → 前端(S2-FE-09) → QuestionsPage(S2-FE-10)
-├── 引用链: Prompt段落化(CX-BE-01) → full_content(CX-BE-02) → AnswerBlock(CX-FE-02) → CitationChip(CX-FE-03) → 段落高亮(CX-FE-04)
-├── 持久化链: ChatSessions集合(CH-BE-01) ✅ → useChatHistory重构(CH-FE-01) ✅ → ChatPanel适配(CH-FE-02) ✅ → evaluation去重接入(CH-FE-03) ✅
-├── 评估链: 5维评估(EV-BE-01) ✅ → 问题深度+去重(EV-BE-02) ✅ → 质量API(EV-BE-03) ✅ → 反馈循环(EV-BE-04) → 趋势仪表盘(EV-FE-02)
-├── 🆕 智能检索链: StreamEvent(S5) → smart_retrieve(S5) → Deep Solve(S5) → 前端trace(S5)
-├── 🆕 问题升级链: Mimic解析(S6) → 模板生成(S6) → 前端UI(S6)
-├── 🆕 架构链: UnifiedContext(S7) → Tool/Capability注册(S7) → Orchestrator(S7) → Memory(S7)
-├── 🆕 报告链: 模板Registry(S8) → 数据收集(S8) → LLM分析+图表(S8) → 报告合成(S8) → PDF导出(S8) → 报告中心UI(S8)
-└── 🆕 编排链: Prefect安装(PF-01) → pipeline.py @flow/@task(PF-02) → ingest route适配(PF-03) → StateBadge(UI-01) → FlowRunCard(UI-02) → Results重构(UI-03)
+关键路径 (十一条线)
+├── ✅ 上传链: UploadZone → Books.pdfMedia(HF-01) ✅ → afterChange(HF-02) ✅ → PDF下载(HF-03) ✅ → MinerU解析(HF-04) ✅ → IngestionPipeline → ChromaDB → 可对话
+├── ✅ 数据链: auth ✅ → readers ✅ → ingestion ✅ → 数据就绪
+├── 🚧 检索链: ingestion ✅ → retrievers(S2 剩余) → query_engine ✅ → chat
+├── ✅ 问题链: readers ✅ → question_gen ✅推荐 → chat ✅流式+推荐
+├── ✅ 生成链: generator(S2-BE-06) ✅ → API(S2-BE-07) ✅ → 前端(S2-FE-09) ✅ → QuestionsPage(S2-FE-10) ✅
+├── ✅ 引用链: Prompt段落化(CX-BE-01) ✅ → full_content(CX-BE-02) ✅ → AnswerBlock(CX-FE-02) ✅ → CitationChip(CX-FE-03) ✅ → 段落高亮(CX-FE-04) ✅
+├── ✅ 持久化链: ChatSessions集合(CH-BE-01) ✅ → useChatHistory重构(CH-FE-01) ✅ → ChatPanel适配(CH-FE-02) ✅ → evaluation去重接入(CH-FE-03) ✅
+├── 🚧 评估链: 5维评估(EV-BE-01) ✅ → 问题深度+去重(EV-BE-02) ✅ → 质量API(EV-BE-03) ✅ → 反馈循环(EV-BE-04) ❌ → 趋势仪表盘(EV-FE-02) ✅
+├── ❌ 智能检索链: StreamEvent(S5) → smart_retrieve(S5) → Deep Solve(S5) → 前端trace(S5)
+├── 🆕 报告链(MVP): Reports集合(Demo) → 生成API(Demo) → ReportPage(Demo) → Sidebar入口(Demo)  ← Sprint Demo MVP
+├── ❌ 报告链(完整): 模板Registry(S8) → 数据收集(S8) → LLM分析+图表(S8) → 报告合成(S8) → PDF导出(S8) → 报告中心UI(S8)
+└── ❌ 架构链: UnifiedContext(S7) → Tool/Capability注册(S7) → Orchestrator(S7) → Memory(S7)
 ```
 
 ---

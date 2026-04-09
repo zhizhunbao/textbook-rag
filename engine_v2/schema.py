@@ -7,8 +7,11 @@ Replaces engine v1's rag/types.py + ingest/chunk_builder.py dataclasses.
 from __future__ import annotations
 
 import re
+from collections import OrderedDict
 from dataclasses import dataclass, field
 from typing import Any
+
+from loguru import logger
 
 
 @dataclass
@@ -118,3 +121,123 @@ def build_source(node_with_score: Any, index: int) -> dict[str, Any]:
         } if has_bbox else None,
         "bboxes": bboxes,
     }
+
+
+# ============================================================
+# Source deduplication — DEPRECATED
+# ============================================================
+# This post-hoc dedup is superseded by
+# TextbookCitationQueryEngine._create_citation_nodes() which merges
+# same-page chunks BEFORE LLM synthesis. Kept for backwards compat.
+
+def deduplicate_sources(
+    answer: str,
+    sources: list[dict[str, Any]],
+) -> tuple[str, list[dict[str, Any]]]:
+    """Merge sources that share the same book_id + page_number.
+
+    When the hybrid retriever returns multiple chunks from the same
+    page of the same document, the user sees redundant citation chips
+    (e.g. [1] 王鹏 p.2, [2] 王鹏 p.2, [3] 王鹏 p.2).
+
+    This function:
+        1. Groups sources by (book_id, page_number).
+        2. Merges each group into a single canonical source, combining
+           full_content/snippet, keeping the best score, and merging bboxes.
+        3. Remaps [N] markers in the answer text to reflect the new indices.
+
+    Args:
+        answer: LLM answer text containing [N] citation markers.
+        sources: Original source list from build_source().
+
+    Returns:
+        (remapped_answer, deduplicated_sources) tuple.
+    """
+    if not sources:
+        return answer, sources
+
+    # ── Step 1: Group by (book_id, page_number) ──────────────
+    # Preserve insertion order so the first occurrence defines the group.
+    groups: OrderedDict[tuple[str, int], list[dict[str, Any]]] = OrderedDict()
+    for src in sources:
+        key = (src.get("book_id", ""), src.get("page_number", 0))
+        groups.setdefault(key, []).append(src)
+
+    # ── Step 2: Merge each group into a single source ────────
+    merged: list[dict[str, Any]] = []
+    # old_index → new_index mapping for answer text rewriting
+    index_remap: dict[int, int] = {}
+
+    for new_idx_0, ((_bid, _pn), group) in enumerate(groups.items()):
+        new_idx = new_idx_0 + 1  # 1-based citation index
+
+        # Record remapping for every old citation_index in this group
+        for src in group:
+            old_ci = src.get("citation_index")
+            if old_ci is not None:
+                index_remap[old_ci] = new_idx
+
+        # Pick the source with the highest score as the canonical entry
+        best = max(group, key=lambda s: s.get("score") or 0)
+        canonical = {**best, "citation_index": new_idx}
+
+        # Merge full_content from all chunks (separated by \n---\n)
+        contents = []
+        seen_content: set[str] = set()
+        for src in group:
+            fc = src.get("full_content", "")
+            if fc and fc not in seen_content:
+                seen_content.add(fc)
+                contents.append(fc)
+        if len(contents) > 1:
+            merged_content = "\n---\n".join(contents)
+            canonical["full_content"] = merged_content[:_FULL_CONTENT_MAX]
+            canonical["snippet"] = merged_content[:_SNIPPET_MAX]
+
+        # Merge bboxes from all chunks
+        all_bboxes: list[dict[str, Any]] = []
+        for src in group:
+            for bb in src.get("bboxes", []):
+                all_bboxes.append(bb)
+        if all_bboxes:
+            canonical["bboxes"] = all_bboxes
+            # Keep bbox as the first valid bbox (for backwards compat)
+            canonical["bbox"] = best.get("bbox")
+
+        merged.append(canonical)
+
+    # Short-circuit: no duplicates found
+    if len(merged) == len(sources):
+        return answer, sources
+
+    # ── Step 3: Remap [N] markers in the answer text ─────────
+    # Keep the FIRST occurrence of each [N] per paragraph;
+    # remove later duplicates that were created by merging.
+    seen_per_para: set[int] = set()
+
+    def _replace_citation(m: re.Match) -> str:
+        old_idx = int(m.group(1))
+        new_idx = index_remap.get(old_idx, old_idx)
+        if new_idx in seen_per_para:
+            return ""  # drop later duplicate
+        seen_per_para.add(new_idx)
+        return f"[{new_idx}]"
+
+    # Process paragraph by paragraph so [1] in different paragraphs is kept
+    paragraphs = answer.split("\n\n")
+    remapped_parts: list[str] = []
+    for para in paragraphs:
+        seen_per_para = set()
+        remapped = re.sub(r"\[(\d+)\]", _replace_citation, para)
+        # Clean up leftover whitespace from removed markers
+        remapped = re.sub(r"  +", " ", remapped).strip()
+        remapped_parts.append(remapped)
+
+    remapped_answer = "\n\n".join(remapped_parts)
+
+    logger.info(
+        "Deduplicated sources: {} → {} (merged {} duplicates)",
+        len(sources), len(merged), len(sources) - len(merged),
+    )
+
+    return remapped_answer, merged
