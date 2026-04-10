@@ -3,11 +3,11 @@ import { afterChangeHook } from '../hooks/books/afterChange'
 import { isEditorOrAdmin } from '../access/isEditorOrAdmin'
 import { isAdmin } from '../access/isAdmin'
 import { isAdminOrApiKey } from '../access/isAdminOrApiKey'
-import { syncEngineEndpoint } from './endpoints'
+import { importUrlEndpoint, syncEngineEndpoint } from './endpoints'
 
 export const Books: CollectionConfig = {
   slug: 'books',
-  endpoints: [syncEngineEndpoint],
+  endpoints: [syncEngineEndpoint, importUrlEndpoint],
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['title', 'authors', 'category', 'subcategory', 'status', 'chunkCount', 'updatedAt'],

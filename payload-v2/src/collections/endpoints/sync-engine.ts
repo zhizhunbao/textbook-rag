@@ -33,6 +33,7 @@ export const syncEngineEndpoint: Endpoint = {
         category: string
         page_count: number
         chunk_count: number
+        pdf_size_bytes: number
       }> = await engineRes.json()
 
       const results = { created: 0, updated: 0, errors: [] as string[], total: engineBooks.length }
@@ -55,6 +56,7 @@ export const syncEngineEndpoint: Endpoint = {
           },
           metadata: {
             pageCount: eb.page_count || 0,
+            fileSize: eb.pdf_size_bytes || 0,
           },
         }
 

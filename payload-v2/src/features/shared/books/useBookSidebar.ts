@@ -1,4 +1,4 @@
-﻿/**
+/**
  * useBookSidebar — builds SidebarItem[] from a book list.
  *
  * Two modes:
@@ -195,8 +195,36 @@ function buildByBook(books: BookBase[], opts: ByBookOptions): SidebarItem[] {
         })
       }
 
-      // Sort books within group: books with questions first, then alphabetical
+      // Sort books: newest first (by year+quarter or year+month), then by count, then alphabetical
+      const MONTH_MAP: Record<string, number> = {
+        january: 1, february: 2, march: 3, april: 4, may: 5, june: 6,
+        july: 7, august: 8, september: 9, october: 10, november: 11, december: 12,
+      }
       const sorted = [...subBooks].sort((a, b) => {
+        // Extract a comparable date value from the title
+        const dateVal = (title: string): number => {
+          // Quarterly: "Q4 2024" → 2024*100 + 4*8 = 202432
+          const qm = title.match(/Q(\d)\s+(\d{4})/i)
+          if (qm) return parseInt(qm[2]) * 100 + parseInt(qm[1]) * 8
+
+          // Monthly with 2-digit year: "May25", "January26"
+          const mm2 = title.match(/(january|february|march|april|may|june|july|august|september|october|november|december)\s*(\d{2})(?:\b|$)/i)
+          if (mm2) {
+            const yr = parseInt(mm2[2])
+            const fullYear = yr < 50 ? 2000 + yr : 1900 + yr
+            return fullYear * 100 + (MONTH_MAP[mm2[1].toLowerCase()] || 0)
+          }
+
+          // Monthly with 4-digit year: "July 2014", "March 2013"
+          const mm4 = title.match(/(january|february|march|april|may|june|july|august|september|october|november|december)\s*(\d{4})/i)
+          if (mm4) return parseInt(mm4[2]) * 100 + (MONTH_MAP[mm4[1].toLowerCase()] || 0)
+
+          return 0
+        }
+        const da = dateVal(a.title)
+        const db = dateVal(b.title)
+        if (da !== db) return db - da  // newest first
+
         const ca = countMap.get(a.book_id) || 0
         const cb = countMap.get(b.book_id) || 0
         if (cb !== ca) return cb - ca

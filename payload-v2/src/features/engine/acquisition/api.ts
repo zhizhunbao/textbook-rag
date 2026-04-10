@@ -11,6 +11,7 @@
  */
 
 import type { ClassifyResult, ParseStats, MediaFile } from './types'
+import { authFetch } from '@/features/shared/authFetch'
 
 // ============================================================
 // Constants
@@ -65,7 +66,7 @@ export async function fetchParseStats(bookId: string): Promise<ParseStats> {
  * Filters by mimeType=application/pdf.
  */
 export async function fetchPdfMedia(): Promise<MediaFile[]> {
-  const res = await fetch(
+  const res = await authFetch(
     '/api/media?where[mimeType][equals]=application/pdf&limit=100&sort=-createdAt',
   )
   if (!res.ok) {
@@ -99,9 +100,11 @@ export async function deleteBookWithCleanup(
   engineBookId?: string,
 ): Promise<void> {
   // Step 1: Engine-side cleanup (best-effort)
-  if (engineBookId) {
+  // engineBookId is a filename stem (e.g. "economic_update_q1_2022_en")
+  // Skip if it looks like a URL (legacy records before the fix)
+  if (engineBookId && !engineBookId.startsWith('http')) {
     try {
-      await fetch(`${ENGINE_URL}/engine/books/${engineBookId}`, {
+      await fetch(`${ENGINE_URL}/engine/books/${encodeURIComponent(engineBookId)}`, {
         method: 'DELETE',
       })
     } catch {
@@ -110,7 +113,7 @@ export async function deleteBookWithCleanup(
   }
 
   // Step 2: Delete Payload CMS record
-  const res = await fetch(`/api/books/${payloadBookId}`, {
+  const res = await authFetch(`/api/books/${payloadBookId}`, {
     method: 'DELETE',
   })
   if (!res.ok) throw new Error(`Failed to delete book: ${res.status}`)
@@ -124,7 +127,7 @@ export async function deleteBookWithCleanup(
  * Delete an uploaded media file from Payload CMS (media collection).
  */
 export async function deleteMediaFile(mediaId: number): Promise<void> {
-  const res = await fetch(`/api/media/${mediaId}`, {
+  const res = await authFetch(`/api/media/${mediaId}`, {
     method: 'DELETE',
   })
   if (!res.ok) throw new Error(`Failed to delete media: ${res.status}`)
@@ -134,7 +137,7 @@ export async function deleteMediaFile(mediaId: number): Promise<void> {
  * Delete an uploaded PDF file from Payload CMS (pdf-uploads collection).
  */
 export async function deletePdfUpload(uploadId: number): Promise<void> {
-  const res = await fetch(`/api/pdf-uploads/${uploadId}`, {
+  const res = await authFetch(`/api/pdf-uploads/${uploadId}`, {
     method: 'DELETE',
   })
   if (!res.ok) throw new Error(`Failed to delete PDF upload: ${res.status}`)

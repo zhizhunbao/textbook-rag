@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ImportPage — Acquisition module main page with 5-tab layout + SidebarLayout.
  *
  * Layout: SidebarLayout (shared book sidebar) wraps a tab-bar + content area.
@@ -17,7 +17,7 @@
 
 'use client'
 
-import { Suspense, useMemo, useState, useCallback } from 'react'
+import { Suspense, useMemo, useState, useCallback, useEffect, useRef } from 'react'
 import {
   Download,
   FileText,
@@ -28,6 +28,7 @@ import {
   BookOpen,
   Trash2,
   RefreshCw,
+  Globe,
 } from 'lucide-react'
 import { useI18n } from '@/features/shared/i18n'
 import { cn } from '@/features/shared/utils'
@@ -40,6 +41,7 @@ import FileUploadCard from './FileUploadCard'
 import UrlImportCard from './UrlImportCard'
 import MediaTab from './MediaTab'
 import PipelineTab from './PipelineTab'
+import SourcesTab from './SourcesTab'
 
 
 // ============================================================
@@ -53,6 +55,7 @@ interface TabConfig {
 }
 
 const TABS: TabConfig[] = [
+  { key: 'sources',  label: 'Sources',  labelFr: '数据源',  icon: Globe },
   { key: 'import',   label: 'Import',   labelFr: '导入',   icon: Download },
   { key: 'files',    label: 'Files',    labelFr: '文件',   icon: FileText },
   { key: 'pipeline', label: 'Pipeline', labelFr: '管线',   icon: Activity },
@@ -72,12 +75,51 @@ export default function ImportPage() {
 function ImportPageInner() {
   const { locale } = useI18n()
   const isFr = locale === 'fr'
-  const [activeTab, setActiveTab] = useQueryState('tab', 'import') as [ImportTab, (v: string) => void]
+  const [activeTab, setActiveTab] = useQueryState('tab', 'files') as [ImportTab, (v: string) => void]
   const [filter, setFilter] = useQueryState('filter', 'all')
   const [deleting, setDeleting] = useState(false)
 
-  // ── Book data (shared hooks — same as LibraryPage) ──
+  // ── Book data (shared hooks) ──
   const { books, loading, error, refetch } = useBooks()
+
+  // ── One-time metadata backfill from engine ──
+  const syncedRef = useRef(false)
+  useEffect(() => {
+    if (syncedRef.current || books.length === 0) return
+    // Only sync books missing pageCount or fileSize
+    const missing = books.filter((b) => b.pageCount === 0 && b.fileSize === 0 && b.status === 'indexed')
+    if (missing.length === 0) { syncedRef.current = true; return }
+    syncedRef.current = true
+    ;(async () => {
+      try {
+        const ENGINE_URL = process.env.NEXT_PUBLIC_ENGINE_URL || 'http://localhost:8001'
+        const res = await fetch(`${ENGINE_URL}/engine/books`)
+        if (!res.ok) return
+        const engineBooks: Array<{ book_id: string; page_count?: number; chunk_count?: number; pdf_size_bytes?: number }> = await res.json()
+        const engineMap = new Map(engineBooks.map((eb) => [eb.book_id, eb]))
+        let patched = 0
+        for (const book of missing) {
+          const eb = engineMap.get(book.book_id)
+          if (!eb || (!eb.page_count && !eb.pdf_size_bytes)) continue
+          try {
+            await fetch(`/api/books/${book.id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({
+                metadata: { pageCount: eb.page_count ?? 0, fileSize: eb.pdf_size_bytes ?? 0 },
+                chunkCount: eb.chunk_count ?? 0,
+              }),
+            })
+            patched++
+          } catch { /* best-effort */ }
+        }
+        if (patched > 0) refetch()
+      } catch (e) {
+        console.warn('Metadata backfill failed:', e)
+      }
+    })()
+  }, [books])
 
   const booksForSidebar = useMemo(() =>
     books.map((b) => ({
@@ -94,7 +136,7 @@ function ImportPageInner() {
     return buildCategoryIcons(cats)
   }, [booksForSidebar])
 
-  const { sidebarItems, filterBooks } = useBookSidebar(booksForSidebar, {
+  const { sidebarItems: rawSidebarItems, filterBooks } = useBookSidebar(booksForSidebar, {
     mode: 'by-book',
     isFr,
     allLabel: isFr ? '全部' : 'All',
@@ -113,20 +155,22 @@ function ImportPageInner() {
     return books.find((b) => b.book_id === bookId) ?? null
   }, [filter, books])
 
-  // ── Delete handler ──
-  const handleDelete = useCallback(async () => {
-    if (!selectedBook) return
+  // ── Delete handler (works for any book) ──
+  const handleDeleteBook = useCallback(async (book: { id: number; book_id: string; title: string }) => {
     const confirmed = window.confirm(
       isFr
-        ? `确定删除「${selectedBook.title}」？\n将同时清除 Engine 侧数据（向量、MinerU 输出）。此操作不可撤销。`
-        : `Delete "${selectedBook.title}"?\nThis will also clean up Engine-side data (vectors, MinerU output). This cannot be undone.`,
+        ? `确定删除「${book.title}」？\n将同时清除 Engine 侧数据（向量、MinerU 输出）。此操作不可撤销。`
+        : `Delete "${book.title}"?\nThis will also clean up Engine-side data (vectors, MinerU output). This cannot be undone.`,
     )
     if (!confirmed) return
 
     setDeleting(true)
     try {
-      await deleteBookWithCleanup(selectedBook.id, selectedBook.book_id)
-      setFilter('all') // reset sidebar filter after delete
+      await deleteBookWithCleanup(book.id, book.book_id)
+      // If the deleted book was selected, reset to "all"
+      if (filter === `book::${book.book_id}`) {
+        setFilter('all')
+      }
       refetch()
     } catch (err) {
       console.error('Delete failed:', err)
@@ -138,12 +182,28 @@ function ImportPageInner() {
     } finally {
       setDeleting(false)
     }
-  }, [selectedBook, isFr, refetch, setFilter])
+  }, [isFr, refetch, setFilter, filter])
+
+  // ── Add delete action to book-level sidebar items ──
+  const sidebarItems = useMemo(() =>
+    rawSidebarItems.map((item) => {
+      if (!item.key.startsWith('book::')) return item
+      const bookId = item.key.slice(6)
+      const book = books.find((b) => b.book_id === bookId)
+      if (!book) return item
+      return {
+        ...item,
+        onAction: () => handleDeleteBook(book),
+      }
+    }),
+    [rawSidebarItems, books, handleDeleteBook],
+  )
+
 
   return (
     <SidebarLayout
-      title={isFr ? '数据导入' : 'Data Import'}
-      icon={<Download className="h-4 w-4 text-primary" />}
+      title={isFr ? '数据源管理' : 'Data Sources'}
+      icon={<Globe className="h-4 w-4 text-primary" />}
       sidebarItems={sidebarItems}
       activeFilter={filter}
       onFilterChange={setFilter}
@@ -157,15 +217,15 @@ function ImportPageInner() {
       error={error?.message ?? null}
       onRetry={refetch}
       subtitle={isFr
-        ? '上传 → 文件 → 管线'
-        : 'Upload → Files → Pipeline'}
+        ? '数据源 → 导入 → 文件 → 管线'
+        : 'Sources → Import → Files → Pipeline'}
       toolbar={
         <div className="flex items-center gap-2">
           {/* Delete button — visible when a specific book is selected */}
           {selectedBook && (
             <button
               type="button"
-              onClick={handleDelete}
+              onClick={() => handleDeleteBook(selectedBook)}
               disabled={deleting}
               className={cn(
                 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors',
@@ -218,8 +278,9 @@ function ImportPageInner() {
       </div>
 
       {/* ── Tab content ── */}
+      {activeTab === 'sources' && <SourcesTab onBooksRefresh={refetch} />}
       {activeTab === 'import' && <ImportTabContent onBooksRefresh={refetch} />}
-      {activeTab === 'files' && <MediaTab books={filteredBooks} filter={filter} />}
+      {activeTab === 'files' && <MediaTab books={filteredBooks} filter={filter} onBooksRefresh={refetch} />}
       {activeTab === 'pipeline' && <PipelineTab books={filteredBooks} filter={filter} onBooksRefresh={refetch} />}
     </SidebarLayout>
   )

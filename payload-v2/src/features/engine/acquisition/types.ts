@@ -45,7 +45,7 @@ export interface UrlImportState {
 // ============================================================
 // Import Tab type
 // ============================================================
-export type ImportTab = 'import' | 'files' | 'pipeline'
+export type ImportTab = 'sources' | 'import' | 'files' | 'pipeline'
 
 // ============================================================
 // Parse preview types (AQ-03)

@@ -1,0 +1,81 @@
+
+============================================================
+ EXPLORATION REPORT
+ Generated: 2026-04-09 16:29:38
+============================================================
+
+[SOURCE] Ottawa Real Estate Board (OREB)
+   Pages crawled: 21
+   Total PDF links (all): 59
+   Matching pattern: 59
+
+   [members.oreb.ca] (1 PDFs):
+      - OREB_MarketUpdate_HLP_November25.pdf
+        https://members.oreb.ca/wp-content/uploads/2025/12/OREB_MarketUpdate_HLP_November25.pdf
+
+   [www.oreb.ca] (58 PDFs):
+      - April2012NewsRelease_Stats.pdf
+        https://www.oreb.ca/wp-content/themes/OREB/uploads/news_archive/2012-ALL/April2012NewsRelease_Stats.pdf
+      - August2012NewsRelease_Stats.pdf
+        https://www.oreb.ca/wp-content/themes/OREB/uploads/news_archive/2012-ALL/August2012NewsRelease_Stats.pdf
+      - January2012NewsRelease.pdf
+        https://www.oreb.ca/wp-content/themes/OREB/uploads/news_archive/2012-ALL/January2012NewsRelease.pdf
+      - July2012NewsRelease_Stats.pdf
+        https://www.oreb.ca/wp-content/themes/OREB/uploads/news_archive/2012-ALL/July2012NewsRelease_Stats.pdf
+      - March2012NewsRelease_Stats.pdf
+        https://www.oreb.ca/wp-content/themes/OREB/uploads/news_archive/2012-ALL/March2012NewsRelease_Stats.pdf
+      - May2012NewsRelease_Stats.pdf
+        https://www.oreb.ca/wp-content/themes/OREB/uploads/news_archive/2012-ALL/May2012NewsRelease_Stats.pdf
+      - MediaNewsRelease_StatsFeb2012.pdf
+        https://www.oreb.ca/wp-content/themes/OREB/uploads/news_archive/2012-ALL/MediaNewsRelease_StatsFeb2012.pdf
+      - NewsReleaseJune2012_Stats.pdf
+        https://www.oreb.ca/wp-content/themes/OREB/uploads/news_archive/2012-ALL/NewsReleaseJune2012_Stats.pdf
+      - OREBNewsRelease-December2012.pdf
+        https://www.oreb.ca/wp-content/themes/OREB/uploads/news_archive/2012-ALL/OREBNewsRelease-December2012.pdf
+      - OREBNewsRelease-November2012.pdf
+        https://www.oreb.ca/wp-content/themes/OREB/uploads/news_archive/2012-ALL/OREBNewsRelease-November2012.pdf
+      - OREBNewsRelease-October2012.pdf
+        https://www.oreb.ca/wp-content/themes/OREB/uploads/news_archive/2012-ALL/OREBNewsRelease-October2012.pdf
+      - September2012NewsRelease_Stats.pdf
+        https://www.oreb.ca/wp-content/themes/OREB/uploads/news_archive/2012-ALL/September2012NewsRelease_Stats.pdf
+      - OREBNewsRelease-April2013.pdf
+        https://www.oreb.ca/wp-content/themes/OREB/uploads/news_archive/2013-ALL/OREBNewsRelease-April2013.pdf
+      - OREBNewsRelease-August2013.pdf
+        https://www.oreb.ca/wp-content/themes/OREB/uploads/news_archive/2013-ALL/OREBNewsRelease-August2013.pdf
+      - OREBNewsRelease-December2013.pdf
+        https://www.oreb.ca/wp-content/themes/OREB/uploads/news_archive/2013-ALL/OREBNewsRelease-December2013.pdf
+      - OREBNewsRelease-February2013.pdf
+        https://www.oreb.ca/wp-content/themes/OREB/uploads/news_archive/2013-ALL/OREBNewsRelease-February2013.pdf
+      - OREBNewsRelease-January2013.pdf
+        https://www.oreb.ca/wp-content/themes/OREB/uploads/news_archive/2013-ALL/OREBNewsRelease-January2013.pdf
+      - OREBNewsRelease-July2013.pdf
+        https://www.oreb.ca/wp-content/themes/OREB/uploads/news_archive/2013-ALL/OREBNewsRelease-July2013.pdf
+      - OREBNewsRelease-June2013.pdf
+        https://www.oreb.ca/wp-content/themes/OREB/uploads/news_archive/2013-ALL/OREBNewsRelease-June2013.pdf
+      - OREBNewsRelease-March2013.pdf
+        https://www.oreb.ca/wp-content/themes/OREB/uploads/news_archive/2013-ALL/OREBNewsRelease-March2013.pdf
+      - OREBNewsRelease-May2013.pdf
+        https://www.oreb.ca/wp-content/themes/OREB/uploads/news_archive/2013-ALL/OREBNewsRelease-May2013.pdf
+      - OREBNewsRelease-November2013.pdf
+        https://www.oreb.ca/wp-content/themes/OREB/uploads/news_archive/2013-ALL/OREBNewsRelease-November2013.pdf
+      - OREBNewsRelease-October2013.pdf
+        https://www.oreb.ca/wp-content/themes/OREB/uploads/news_archive/2013-ALL/OREBNewsRelease-October2013.pdf
+      - OREBNewsRelease-September2013.pdf
+        https://www.oreb.ca/wp-content/themes/OREB/uploads/news_archive/2013-ALL/OREBNewsRelease-September2013.pdf
+      - OREBNewsRelease-April2014.pdf
+        https://www.oreb.ca/wp-content/themes/OREB/uploads/news_archive/2014-ALL/OREBNewsRelease-April2014.pdf
+      - OREBNewsRelease-August2014.pdf
+        https://www.oreb.ca/wp-content/themes/OREB/uploads/news_archive/2014-ALL/OREBNewsRelease-August2014.pdf
+      - OREBNewsRelease-December2014.pdf
+        https://www.oreb.ca/wp-content/themes/OREB/uploads/news_archive/2014-ALL/OREBNewsRelease-December2014.pdf
+      - OREBNewsRelease-February2014.pdf
+        https://www.oreb.ca/wp-content/themes/OREB/uploads/news_archive/2014-ALL/OREBNewsRelease-February2014.pdf
+      - OREBNewsRelease-January2014.pdf
+        https://www.oreb.ca/wp-content/themes/OREB/uploads/news_archive/2014-ALL/OREBNewsRelease-January2014.pdf
+      - OREBNewsRelease-July2014.pdf
+        https://www.oreb.ca/wp-content/themes/OREB/uploads/news_archive/2014-ALL/OREBNewsRelease-July2014.pdf
+      ... and 28 more
+
+____________________________________________________________
+Total PDFs discovered: 59
+____________________________________________________________

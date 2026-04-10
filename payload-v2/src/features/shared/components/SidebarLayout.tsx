@@ -20,7 +20,7 @@
 'use client'
 
 import { useState, type ReactNode } from 'react'
-import { LayoutGrid, List, Loader2, AlertCircle, RefreshCw, Folder, FolderOpen, ChevronRight } from 'lucide-react'
+import { LayoutGrid, List, Loader2, AlertCircle, RefreshCw, Folder, FolderOpen, ChevronRight, Trash2 } from 'lucide-react'
 import { cn } from '@/features/shared/utils'
 import ResizeHandle from '@/features/shared/ResizeHandle'
 
@@ -51,6 +51,10 @@ export interface SidebarItem {
   checkable?: boolean
   /** Whether the checkbox is checked (only relevant when checkable=true). */
   checked?: boolean
+  /** Action callback (e.g. delete) — renders a small icon button on hover. */
+  onAction?: () => void
+  /** Icon for the action button (defaults to Trash2). */
+  actionIcon?: ReactNode
 }
 
 export interface SidebarLayoutProps {
@@ -141,8 +145,14 @@ export function SidebarLayout({
   // ── Resizable sidebar width ──
   const [sbWidth, setSbWidth] = useState(sidebarWidthPx)
 
-  // ── Collapsible state (default: all collapsed) ──
-  const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  // ── Collapsible state (default: all expanded) ──
+  const [expanded, setExpanded] = useState<Set<string>>(() => {
+    const keys = new Set<string>()
+    for (const item of sidebarItems) {
+      if (item.collapsible) keys.add(item.key)
+    }
+    return keys
+  })
 
   // ── Full-page loading ──
   if (loading) {
@@ -198,17 +208,16 @@ export function SidebarLayout({
             // Determine if this item is a child of a collapsed parent
             const itemLevel = item.indentLevel ?? (item.indent ? 1 : 0)
             if (itemLevel > 0) {
-              // Walk backward to find the nearest collapsible ancestor
-              let parentKey: string | null = null
-              for (let i = idx - 1; i >= 0; i--) {
+              // Walk backward checking ALL collapsible ancestors — hide if any is collapsed
+              let checkLevel = itemLevel
+              for (let i = idx - 1; i >= 0 && checkLevel > 0; i--) {
                 const prev = sidebarItems[i]
                 const prevLevel = prev.indentLevel ?? (prev.indent ? 1 : 0)
-                if (prevLevel < itemLevel) {
-                  if (prev.collapsible) parentKey = prev.key
-                  break
+                if (prevLevel < checkLevel) {
+                  if (prev.collapsible && !expanded.has(prev.key)) return null
+                  checkLevel = prevLevel
                 }
               }
-              if (parentKey && !expanded.has(parentKey)) return null
             }
 
             return (
@@ -216,20 +225,42 @@ export function SidebarLayout({
                 {item.dividerBefore && (
                   <div className="my-2 mx-2 border-t border-border" />
                 )}
-                <button
+                <div
+                  role="button"
+                  tabIndex={0}
                   onClick={() => {
                     if (item.collapsible) {
+                      // Folders: toggle expand/collapse AND filter content
                       setExpanded((prev) => {
                         const next = new Set(prev)
                         if (next.has(item.key)) next.delete(item.key)
                         else next.add(item.key)
                         return next
                       })
+                      onFilterChange(item.key)
+                    } else {
+                      // Books (leaf items): navigate/filter
+                      onFilterChange(item.key)
                     }
-                    onFilterChange(item.key)
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      if (item.collapsible) {
+                        setExpanded((prev) => {
+                          const next = new Set(prev)
+                          if (next.has(item.key)) next.delete(item.key)
+                          else next.add(item.key)
+                          return next
+                        })
+                        onFilterChange(item.key)
+                      } else {
+                        onFilterChange(item.key)
+                      }
+                    }
                   }}
                   className={cn(
-                    'flex items-center gap-2 w-full rounded-md px-2.5 text-left transition-colors mb-0.5',
+                    'group/sidebar-item flex items-center gap-2 w-full rounded-md px-2.5 text-left transition-colors mb-0.5 cursor-pointer select-none',
                     item.checkable ? 'py-1' : 'py-2',
                     item.indent && !item.indentLevel && 'pl-7',
                     item.indentLevel === 1 && 'pl-7',
@@ -277,7 +308,19 @@ export function SidebarLayout({
                       {item.count}
                     </span>
                   )}
-                </button>
+                  {item.onAction && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        item.onAction?.()
+                      }}
+                      className="opacity-0 group-hover/sidebar-item:opacity-100 p-0.5 rounded text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-all"
+                      title="Delete"
+                    >
+                      {item.actionIcon ?? <Trash2 className="h-3 w-3" />}
+                    </button>
+                  )}
+                </div>
               </div>
             )
           })}

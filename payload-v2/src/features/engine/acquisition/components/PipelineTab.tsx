@@ -1,4 +1,4 @@
-﻿/**
+/**
  * PipelineTab — 3-column pipeline status + execution + output viewer.
  *
  * Layout: Pipeline Stepper (220px) │ Execute Panel (~300px) │ Output Panel (~400px)
@@ -36,6 +36,11 @@ import {
   Radio,
   Maximize2,
   Minimize2,
+  CheckSquare,
+  SquareDashedBottom,
+  Layers,
+  SkipForward,
+  BookOpen,
 } from 'lucide-react'
 import { useI18n } from '@/features/shared/i18n'
 import { cn } from '@/features/shared/utils'
@@ -266,10 +271,10 @@ export default function PipelineTab({ books, filter, onBooksRefresh }: PipelineT
     const bookDirName = selectedBook.book_id !== String(selectedBook.id)
       ? selectedBook.book_id
       : (selectedBook.title || '').toLowerCase()
-          .replace(/[^\p{L}\p{N}\s_-]/gu, '')
-          .replace(/[\s-]+/g, '_')
-          .replace(/_+/g, '_')
-          .replace(/^_|_$/g, '') || `book_${selectedBook.id}`
+        .replace(/[^\p{L}\p{N}\s_-]/gu, '')
+        .replace(/[\s-]+/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_|_$/g, '') || `book_${selectedBook.id}`
     const pdfName = (selectedBook as any)?.pdfMedia?.filename || `${bookDirName}.pdf`
     return tpl
       .replace(/\{filename\}/g, pdfName.replace(/\.pdf$/i, ''))
@@ -420,6 +425,35 @@ export default function PipelineTab({ books, filter, onBooksRefresh }: PipelineT
       setPipelineOverride({ parse: 'done' as const, ingest: 'done' as const })
       // Refresh tasks to get final status
       fetchTasks()
+
+      // Sync pageCount + fileSize from engine → Payload metadata
+      if (selectedBook) {
+        ; (async () => {
+          try {
+            const engineRes = await fetch(`${ENGINE_URL}/engine/books`)
+            if (engineRes.ok) {
+              const engineBooks: Array<{ book_id: string; page_count?: number; chunk_count?: number; pdf_size_bytes?: number }> = await engineRes.json()
+              const match = engineBooks.find((eb) => eb.book_id === selectedBook.book_id)
+              if (match && (match.page_count || match.pdf_size_bytes)) {
+                await authFetch(`/api/books/${selectedBook.id}`, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    metadata: {
+                      pageCount: match.page_count ?? 0,
+                      fileSize: match.pdf_size_bytes ?? 0,
+                    },
+                    chunkCount: match.chunk_count ?? 0,
+                  }),
+                })
+              }
+            }
+          } catch (e) {
+            console.warn('Failed to sync engine metadata:', e)
+          }
+        })()
+      }
+
       // Re-fetch books so DB pipeline status persists across page refreshes
       setTimeout(() => onBooksRefresh?.(), 1500)
     })
@@ -826,23 +860,16 @@ export default function PipelineTab({ books, filter, onBooksRefresh }: PipelineT
   }
 
   // ==========================================================
-  // No book selected
+  // No book selected → Batch Pipeline View
   // ==========================================================
   if (!selectedBook) {
     return (
-      <div className="flex flex-col items-center justify-center py-20">
-        <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mb-4">
-          <Activity className="h-7 w-7 text-muted-foreground" />
-        </div>
-        <h3 className="text-sm font-semibold text-foreground mb-1">
-          {isFr ? '请选择一本书' : 'Select a book'}
-        </h3>
-        <p className="text-xs text-muted-foreground text-center max-w-xs">
-          {isFr
-            ? '从侧栏选择书籍以查看 Pipeline 状态。'
-            : 'Choose a book from the sidebar to view pipeline status.'}
-        </p>
-      </div>
+      <BatchPipelineView
+        books={books}
+        filter={filter}
+        isFr={isFr}
+        onBooksRefresh={onBooksRefresh}
+      />
     )
   }
 
@@ -1307,6 +1334,903 @@ export default function PipelineTab({ books, filter, onBooksRefresh }: PipelineT
             </div>
           )}
         </div>
+      </div>
+    </div>
+  )
+}
+
+// ============================================================
+// BatchPipelineView — batch pipeline execution for directories
+// ============================================================
+
+type BatchBookStatus = 'idle' | 'queued' | 'running' | 'done' | 'error' | 'skipped'
+
+// ── Module-level batch state cache (survives component unmount/remount) ──
+interface BatchCache {
+  running: boolean
+  log: string[]
+  statusMap: Map<number, BatchBookStatus>
+  progress: { done: number; total: number }
+  currentBookId: number | null
+  filterKey: string
+  /** Writable refs that the async loop uses to push updates */
+  setters: {
+    setBatchRunning: (v: boolean) => void
+    setBatchStatus: (fn: (prev: Map<number, BatchBookStatus>) => Map<number, BatchBookStatus>) => void
+    setBatchLog: (fn: (prev: string[]) => string[]) => void
+    setBatchProgress: (v: { done: number; total: number }) => void
+    setCurrentBookId: (v: number | null) => void
+  } | null
+}
+
+let _batchCache: BatchCache | null = null
+
+interface BatchPipelineViewProps {
+  books: BookBase[]
+  filter: string
+  isFr: boolean
+  onBooksRefresh?: () => void
+}
+
+function BatchPipelineView({ books, filter, isFr, onBooksRefresh }: BatchPipelineViewProps) {
+  const ENGINE_URL = process.env.NEXT_PUBLIC_ENGINE_URL || 'http://localhost:8001'
+
+  // ── State (initialise from cache if available) ──
+  const [selected, setSelected] = useState<Set<number>>(new Set())
+  const [batchRunning, setBatchRunning] = useState(() => _batchCache?.running ?? false)
+  const [batchStatus, setBatchStatus] = useState<Map<number, BatchBookStatus>>(
+    () => _batchCache?.statusMap ?? new Map(),
+  )
+  const [batchLog, setBatchLog] = useState<string[]>(() => _batchCache?.log ?? [])
+  const [currentBookId, setCurrentBookId] = useState<number | null>(
+    () => _batchCache?.currentBookId ?? null,
+  )
+  const [batchProgress, setBatchProgress] = useState(
+    () => _batchCache?.progress ?? { done: 0, total: 0 },
+  )
+  const [skipDone, setSkipDone] = useState(true)
+  const cancelRef = useRef(false)
+  const logRef = useRef<HTMLPreElement>(null)
+
+  // ── Re-attach setters so the running async loop can push to THIS component instance ──
+  useEffect(() => {
+    if (_batchCache) {
+      _batchCache.setters = {
+        setBatchRunning,
+        setBatchStatus,
+        setBatchLog,
+        setBatchProgress,
+        setCurrentBookId,
+      }
+    }
+    return () => {
+      // Detach setters on unmount (loop will write to cache only)
+      if (_batchCache) _batchCache.setters = null
+    }
+  }, [])
+
+  // Auto-select pending books on mount; reconnect to active engine pipelines
+  const reconnectSSERef = useRef<EventSource | null>(null)
+
+  useEffect(() => {
+    if (books.length === 0) return
+
+    // Cleanup on unmount
+    return () => {
+      if (reconnectSSERef.current) {
+        reconnectSSERef.current.close()
+        reconnectSSERef.current = null
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (books.length === 0) return
+
+    const bookIds = books.map(b => b.id)
+    const checkRunning = async () => {
+      try {
+        const res = await authFetch(
+          `/api/ingest-tasks?where[status][in]=running,queued&where[book][in]=${bookIds.join(',')}&limit=20&sort=-createdAt&depth=1`,
+        )
+        if (!res.ok) return
+
+        const data = await res.json()
+        const runningTasks = (data.docs || []).filter(
+          (t: any) => t.status === 'running' || t.status === 'queued',
+        )
+
+        if (runningTasks.length > 0) {
+          const runningBookIds = runningTasks
+            .map((t: any) => (typeof t.book === 'object' ? t.book?.id : t.book))
+            .filter(Boolean) as number[]
+
+          setBatchRunning(true)
+          const statusMap = new Map<number, BatchBookStatus>()
+          for (const bid of runningBookIds) {
+            statusMap.set(bid, 'running')
+          }
+          setBatchStatus(statusMap)
+          setSelected(new Set(runningBookIds))
+          setBatchProgress({ done: 0, total: runningBookIds.length })
+          pushLog(() => [`🔄 Reconnected to ${runningBookIds.length} active pipeline(s)...`])
+
+          // Try to reconnect SSE for the first running book
+          const activeBookId = runningBookIds[0]
+          if (activeBookId) {
+            setCurrentBookId(activeBookId)
+
+            // First, check if engine actually has an active stream (avoid loop)
+            try {
+              const probe = await fetch(`${ENGINE_URL}/engine/ingest/stream/${activeBookId}`, {
+                headers: { 'Accept': 'text/event-stream' },
+                signal: AbortSignal.timeout(3000),
+              })
+              // Read a bit to see if it's a valid stream or an error
+              const reader = probe.body?.getReader()
+              if (reader) {
+                const { value } = await reader.read()
+                const text = new TextDecoder().decode(value)
+                reader.releaseLock()
+                probe.body?.cancel()
+
+                if (text.includes('No active pipeline')) {
+                  // Pipeline already finished — clean up stale tasks in Payload
+                  pushLog(prev => [...prev, `ℹ️ Pipeline already finished`])
+
+                  // Mark stale running/queued tasks as done
+                  for (const bid of runningBookIds) {
+                    try {
+                      const staleRes = await authFetch(
+                        `/api/ingest-tasks?where[book][equals]=${bid}&where[status][in]=running,queued&limit=10`,
+                      )
+                      if (staleRes.ok) {
+                        const staleData = await staleRes.json()
+                        for (const doc of staleData.docs || []) {
+                          await authFetch(`/api/ingest-tasks/${doc.id}`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ status: 'done', progress: 100 }),
+                          }).catch(() => {})
+                        }
+                      }
+                    } catch { /* ignore */ }
+                  }
+
+                  // Update batch status to done for all reconnected books
+                  setBatchStatus(prev => {
+                    const next = new Map(prev)
+                    for (const bid of runningBookIds) next.set(bid, 'done')
+                    return next
+                  })
+                  setBatchRunning(false)
+                  setCurrentBookId(null)
+                  setTimeout(() => onBooksRefresh?.(), 1000)
+                  return
+                }
+              }
+            } catch {
+              // Probe failed — pipeline not running, clean up stale tasks
+              pushLog(prev => [...prev, `ℹ️ Could not reconnect to stream`])
+
+              for (const bid of runningBookIds) {
+                try {
+                  const staleRes = await authFetch(
+                    `/api/ingest-tasks?where[book][equals]=${bid}&where[status][in]=running,queued&limit=10`,
+                  )
+                  if (staleRes.ok) {
+                    const staleData = await staleRes.json()
+                    for (const doc of staleData.docs || []) {
+                      await authFetch(`/api/ingest-tasks/${doc.id}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status: 'done', progress: 100 }),
+                      }).catch(() => {})
+                    }
+                  }
+                } catch { /* ignore */ }
+              }
+
+              setBatchStatus(prev => {
+                const next = new Map(prev)
+                for (const bid of runningBookIds) next.set(bid, 'done')
+                return next
+              })
+              setBatchRunning(false)
+              setCurrentBookId(null)
+              setTimeout(() => onBooksRefresh?.(), 1000)
+              return
+            }
+
+            // Stream is active, connect properly via EventSource
+            const url = `${ENGINE_URL}/engine/ingest/stream/${activeBookId}`
+            const es = new EventSource(url)
+            reconnectSSERef.current = es
+
+            let noDataDetected = false
+
+            es.onmessage = (ev) => {
+              const msg = ev.data as string
+              if (msg && msg.trim()) {
+                // Detect "No active pipeline" message and stop
+                if (msg.includes('No active pipeline')) {
+                  noDataDetected = true
+                  es.close()
+                  reconnectSSERef.current = null
+                  pushLog(prev => [...prev, `ℹ️ Pipeline finished`])
+                  setBatchRunning(false)
+                  setCurrentBookId(null)
+                  setTimeout(() => onBooksRefresh?.(), 1000)
+                  return
+                }
+                pushLog(prev => {
+                  const next = [...prev, `  ${msg}`]
+                  return next.length > 800 ? next.slice(-800) : next
+                })
+              }
+            }
+
+            es.addEventListener('done', () => {
+              es.close()
+              reconnectSSERef.current = null
+              pushStatus(prev => new Map(prev).set(activeBookId, 'done'))
+              pushLog(prev => [...prev, `✅ Pipeline completed`])
+              setBatchRunning(false)
+              setCurrentBookId(null)
+              setTimeout(() => onBooksRefresh?.(), 2000)
+            })
+
+            es.addEventListener('error', () => {
+              // Always close to prevent auto-reconnect loop
+              es.close()
+              reconnectSSERef.current = null
+              if (!noDataDetected) {
+                pushLog(prev => [...prev, `ℹ️ Stream ended`])
+                setBatchRunning(false)
+                setCurrentBookId(null)
+                setTimeout(() => onBooksRefresh?.(), 2000)
+              }
+            })
+          }
+          return
+        }
+      } catch {
+        // Silently ignore
+      }
+
+      // No running tasks — auto-select pending books
+      if (!batchRunning && selected.size === 0) {
+        const pendingIds = books
+          .filter(b => !b.pipeline || b.pipeline.ingest !== 'done')
+          .map(b => b.id)
+        setSelected(new Set(pendingIds.length > 0 ? pendingIds : books.map(b => b.id)))
+      }
+    }
+
+    checkRunning()
+  }, [books.length]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-scroll log
+  useEffect(() => {
+    if (logRef.current) {
+      logRef.current.scrollTop = logRef.current.scrollHeight
+    }
+  }, [batchLog])
+
+  // ── Derived label for the current filter ──
+  const filterLabel = useMemo(() => {
+    if (filter === 'all') return isFr ? '全部' : 'All'
+    if (filter.includes('::')) {
+      const [cat, sub] = filter.split('::')
+      return sub || cat
+    }
+    return filter.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+  }, [filter, isFr])
+
+  // ── Selection helpers ──
+  const toggleSelect = useCallback((id: number) => {
+    setSelected(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }, [])
+
+  const selectAll = useCallback(() => {
+    setSelected(new Set(books.map(b => b.id)))
+  }, [books])
+
+  const selectNone = useCallback(() => {
+    setSelected(new Set())
+  }, [])
+
+  const selectPending = useCallback(() => {
+    setSelected(new Set(
+      books.filter(b => !b.pipeline || b.pipeline.ingest !== 'done').map(b => b.id)
+    ))
+  }, [books])
+
+  // ── Helper: update both React state AND cache ──
+  const pushLog = useCallback((fn: (prev: string[]) => string[]) => {
+    if (_batchCache) {
+      _batchCache.log = fn(_batchCache.log)
+      _batchCache.setters?.setBatchLog(() => [..._batchCache!.log])
+    } else {
+      setBatchLog(fn)
+    }
+  }, [])
+
+  const pushStatus = useCallback((fn: (prev: Map<number, BatchBookStatus>) => Map<number, BatchBookStatus>) => {
+    if (_batchCache) {
+      _batchCache.statusMap = fn(_batchCache.statusMap)
+      _batchCache.setters?.setBatchStatus(() => new Map(_batchCache!.statusMap))
+    } else {
+      setBatchStatus(fn)
+    }
+  }, [])
+
+  const pushProgress = useCallback((v: { done: number; total: number }) => {
+    if (_batchCache) {
+      _batchCache.progress = v
+      _batchCache.setters?.setBatchProgress(v)
+    } else {
+      setBatchProgress(v)
+    }
+  }, [])
+
+  const pushCurrentBook = useCallback((v: number | null) => {
+    if (_batchCache) {
+      _batchCache.currentBookId = v
+      _batchCache.setters?.setCurrentBookId(v)
+    } else {
+      setCurrentBookId(v)
+    }
+  }, [])
+
+  const pushRunning = useCallback((v: boolean) => {
+    if (_batchCache) {
+      _batchCache.running = v
+      _batchCache.setters?.setBatchRunning(v)
+    } else {
+      setBatchRunning(v)
+    }
+  }, [])
+
+  // ── Batch run — sequential execution ──
+  const runBatch = useCallback(async () => {
+    if (selected.size === 0) return
+    cancelRef.current = false
+
+    // Initialise module-level cache
+    _batchCache = {
+      running: true,
+      log: [],
+      statusMap: new Map(),
+      progress: { done: 0, total: 0 },
+      currentBookId: null,
+      filterKey: filter,
+      setters: {
+        setBatchRunning,
+        setBatchStatus,
+        setBatchLog,
+        setBatchProgress,
+        setCurrentBookId,
+      },
+    }
+
+    pushRunning(true)
+    pushLog(() => [])
+
+    const booksToRun = books.filter(b => selected.has(b.id))
+    const initialStatus = new Map<number, BatchBookStatus>()
+
+    // Mark selected books as queued, skip already-done if flag is set
+    for (const b of booksToRun) {
+      if (skipDone && b.pipeline?.parse === 'done' && b.pipeline?.ingest === 'done') {
+        initialStatus.set(b.id, 'skipped')
+      } else {
+        initialStatus.set(b.id, 'queued')
+      }
+    }
+    pushStatus(() => initialStatus)
+
+    const toProcess = booksToRun.filter(b => initialStatus.get(b.id) === 'queued')
+    const skippedCount = booksToRun.length - toProcess.length
+    pushProgress({ done: skippedCount, total: booksToRun.length })
+
+    if (skippedCount > 0) {
+      pushLog(prev => [...prev,
+      `⏩ ${isFr ? `跳过 ${skippedCount} 本已完成的书` : `Skipped ${skippedCount} already-completed book(s)`}`
+      ])
+    }
+
+    let completed = skippedCount
+    for (const book of toProcess) {
+      if (cancelRef.current) {
+        pushStatus(prev => {
+          const next = new Map(prev)
+          for (const [id, st] of next) {
+            if (st === 'queued') next.set(id, 'idle')
+          }
+          return next
+        })
+        pushLog(prev => [...prev, `⛔ ${isFr ? '批量处理已取消' : 'Batch cancelled by user'}`])
+        break
+      }
+
+      pushCurrentBook(book.id)
+      pushStatus(prev => new Map(prev).set(book.id, 'running'))
+      pushLog(prev => [...prev,
+      `\n━━━ [${completed + 1}/${booksToRun.length}] ${book.title} ━━━`
+      ])
+
+      try {
+        // 1. Fetch book with pdfMedia populated
+        const bookRes = await authFetch(`/api/books/${book.id}?depth=1`)
+        if (!bookRes.ok) throw new Error(`Failed to fetch book: ${bookRes.status}`)
+        const bookDoc = await bookRes.json()
+        // Resolve PDF filename: pdfMedia (uploaded) → metadata.pdfFilename (URL-imported)
+        const pdfFilename = (typeof bookDoc.pdfMedia === 'object' ? bookDoc.pdfMedia?.filename : undefined)
+          || bookDoc.metadata?.pdfFilename
+          || undefined
+
+        // 2. Create IngestTask
+        const taskRes = await authFetch('/api/ingest-tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            taskType: 'ingest',
+            book: book.id,
+            status: 'queued',
+            progress: 0,
+          }),
+        })
+        const taskDoc = taskRes.ok ? await taskRes.json() : null
+        const taskId = taskDoc?.doc?.id ?? null
+
+        pushLog(prev => [...prev, `📋 Task created: #${taskId}`])
+
+        // 3. POST to Engine
+        const engineRes = await fetch(`${ENGINE_URL}/engine/ingest`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            book_id: book.id,
+            pdf_filename: pdfFilename,
+            title: book.title,
+            category: book.category,
+            task_id: taskId,
+            force_parse: false,
+          }),
+        })
+
+        if (!engineRes.ok) {
+          throw new Error(`Engine returned ${engineRes.status}`)
+        }
+
+        pushLog(prev => [...prev, `🚀 ${isFr ? '流水线已启动，等待完成...' : 'Pipeline started, waiting for completion...'}`])
+
+        // 4. Wait for engine thread to register its log queue, then connect SSE
+        await new Promise<void>((r) => setTimeout(r, 1500))
+
+        // Track whether the pipeline reported errors via SSE
+        let sseHadError = false
+
+        await new Promise<void>((resolve) => {
+          const url = `${ENGINE_URL}/engine/ingest/stream/${book.id}`
+          let resolved = false
+          let retryCount = 0
+          const maxRetries = 2
+
+          const connectSSE = () => {
+            const es = new EventSource(url)
+
+            const timeout = setTimeout(() => {
+              if (!resolved) {
+                resolved = true
+                es.close()
+                pushLog(prev => [...prev, `⏱️ ${isFr ? '超时，继续下一本' : 'Timeout, moving to next book'}`])
+                resolve()
+              }
+            }, 30 * 60 * 1000) // 30 minutes max per book
+
+            es.onmessage = (ev) => {
+              const msg = ev.data as string
+              // Show all SSE messages in real-time
+              if (msg && msg.trim()) {
+                // Detect real error messages from engine pipeline
+                // Match log-level errors like "| ERROR |" and specific failure patterns
+                // but NOT benign strings like "0 errors" or "errors so far)"
+                if (
+                  /\|\s*ERROR\s*\|/.test(msg)
+                  || msg.includes('No PDF found')
+                  || msg.includes('Pipeline failed')
+                  || msg.includes('Traceback')
+                ) {
+                  sseHadError = true
+                }
+                pushLog(prev => {
+                  const next = [...prev, `  ${msg}`]
+                  return next.length > 800 ? next.slice(-800) : next
+                })
+              }
+            }
+
+            es.addEventListener('done', () => {
+              if (!resolved) {
+                resolved = true
+                clearTimeout(timeout)
+                es.close()
+                resolve()
+              }
+            })
+
+            es.addEventListener('error', () => {
+              if (es.readyState === EventSource.CLOSED && !resolved) {
+                es.close()
+                clearTimeout(timeout)
+                // Retry if engine queue wasn't ready yet
+                if (retryCount < maxRetries) {
+                  retryCount++
+                  pushLog(prev => [...prev, `  ⟳ ${isFr ? '重连 SSE...' : 'Reconnecting SSE...'}`])
+                  setTimeout(connectSSE, 2000)
+                } else {
+                  resolved = true
+                  resolve()
+                }
+              }
+            })
+          }
+
+          connectSSE()
+        })
+
+        // Determine outcome based on SSE error detection
+        if (sseHadError) {
+          pushStatus(prev => new Map(prev).set(book.id, 'error'))
+          pushLog(prev => [...prev, `❌ ${book.title} ${isFr ? '失败（引擎报错）' : 'failed (engine error)'}`])
+        } else {
+          pushStatus(prev => new Map(prev).set(book.id, 'done'))
+          pushLog(prev => [...prev, `✅ ${book.title} ${isFr ? '完成' : 'completed'}`])
+        }
+        completed++
+
+      } catch (e) {
+        pushStatus(prev => new Map(prev).set(book.id, 'error'))
+        pushLog(prev => [...prev, `❌ ${book.title}: ${e instanceof Error ? e.message : String(e)}`])
+        completed++
+      }
+
+      pushProgress({ done: completed, total: booksToRun.length })
+    }
+
+    pushCurrentBook(null)
+    pushRunning(false)
+    pushLog(prev => [...prev, `\n🏁 ${isFr ? '批量处理完成' : 'Batch processing finished'}`])
+    // Refresh book list to pick up pipeline status changes
+    setTimeout(() => onBooksRefresh?.(), 2000)
+  }, [selected, books, skipDone, isFr, onBooksRefresh, filter])
+
+  const cancelBatch = useCallback(() => {
+    cancelRef.current = true
+  }, [])
+
+  // ── Pipeline status badge ──
+  const StatusBadge = ({ stage }: { stage?: PipelineStage }) => {
+    const s = stage || 'pending'
+    const cfg = STAGE_STATUS[s]
+    const Icon = cfg.icon
+    return (
+      <span className={cn(
+        'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium',
+        cfg.bg, cfg.color,
+      )}>
+        <Icon className="h-2.5 w-2.5" />
+        {isFr ? cfg.labelFr : cfg.label}
+      </span>
+    )
+  }
+
+  const BatchStatusBadge = ({ status }: { status?: BatchBookStatus }) => {
+    if (!status || status === 'idle') return null
+    const cfgMap: Record<BatchBookStatus, { icon: React.ElementType; color: string; bg: string; label: string; labelFr: string }> = {
+      idle: { icon: Clock, color: 'text-muted-foreground', bg: 'bg-muted/50', label: '', labelFr: '' },
+      queued: { icon: Clock, color: 'text-muted-foreground', bg: 'bg-muted/50', label: 'Queued', labelFr: '排队中' },
+      running: { icon: Loader2, color: 'text-amber-400', bg: 'bg-amber-500/10', label: 'Running', labelFr: '运行中' },
+      done: { icon: CheckCircle2, color: 'text-emerald-400', bg: 'bg-emerald-500/10', label: 'Done', labelFr: '完成' },
+      error: { icon: AlertTriangle, color: 'text-red-400', bg: 'bg-red-500/10', label: 'Error', labelFr: '错误' },
+      skipped: { icon: SkipForward, color: 'text-muted-foreground', bg: 'bg-muted/50', label: 'Skipped', labelFr: '跳过' },
+    }
+    const c = cfgMap[status]
+    const Icon = c.icon
+    return (
+      <span className={cn(
+        'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium',
+        c.bg, c.color,
+      )}>
+        <Icon className={cn('h-2.5 w-2.5', status === 'running' && 'animate-spin')} />
+        {isFr ? c.labelFr : c.label}
+      </span>
+    )
+  }
+
+  // ── Summary stats ──
+  const stats = useMemo(() => {
+    let pending = 0, done = 0, error = 0
+    for (const b of books) {
+      if (b.pipeline?.ingest === 'done') done++
+      else if (b.pipeline?.ingest === 'error' || b.pipeline?.parse === 'error') error++
+      else pending++
+    }
+    return { pending, done, error, total: books.length }
+  }, [books])
+
+  // ── Render ──
+  return (
+    <div className="space-y-4">
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Layers className="h-4 w-4 text-primary" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-foreground">
+              {isFr ? '批量 Pipeline' : 'Batch Pipeline'}
+            </h3>
+            <p className="text-[10px] text-muted-foreground">
+              {filterLabel} · {books.length} {isFr ? '本' : 'book(s)'}
+            </p>
+          </div>
+        </div>
+
+        {/* Summary badges */}
+        <div className="flex items-center gap-2">
+          {stats.done > 0 && (
+            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-500/10 text-[10px] font-medium text-emerald-400">
+              <CheckCircle2 className="h-3 w-3" />
+              {stats.done} {isFr ? '已完成' : 'done'}
+            </span>
+          )}
+          {stats.pending > 0 && (
+            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-muted text-[10px] font-medium text-muted-foreground">
+              <Clock className="h-3 w-3" />
+              {stats.pending} {isFr ? '待处理' : 'pending'}
+            </span>
+          )}
+          {stats.error > 0 && (
+            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-red-500/10 text-[10px] font-medium text-red-400">
+              <AlertTriangle className="h-3 w-3" />
+              {stats.error} {isFr ? '错误' : 'error'}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* ── Controls bar ── */}
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={selectAll}
+            disabled={batchRunning}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-border
+                       text-[10px] text-muted-foreground hover:text-foreground hover:bg-secondary/50
+                       disabled:opacity-40 transition-colors"
+          >
+            <CheckSquare className="h-3 w-3" />
+            {isFr ? '全选' : 'All'}
+          </button>
+          <button
+            onClick={selectPending}
+            disabled={batchRunning}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-border
+                       text-[10px] text-muted-foreground hover:text-foreground hover:bg-secondary/50
+                       disabled:opacity-40 transition-colors"
+          >
+            <Clock className="h-3 w-3" />
+            {isFr ? '待处理' : 'Pending'}
+          </button>
+          <button
+            onClick={selectNone}
+            disabled={batchRunning}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-border
+                       text-[10px] text-muted-foreground hover:text-foreground hover:bg-secondary/50
+                       disabled:opacity-40 transition-colors"
+          >
+            <SquareDashedBottom className="h-3 w-3" />
+            {isFr ? '取消全选' : 'None'}
+          </button>
+          <div className="h-4 w-px bg-border mx-1" />
+          <label className="inline-flex items-center gap-1.5 text-[10px] text-muted-foreground cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={skipDone}
+              onChange={(e) => setSkipDone(e.target.checked)}
+              disabled={batchRunning}
+              className="rounded border-border"
+            />
+            {isFr ? '跳过已完成' : 'Skip completed'}
+          </label>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {batchRunning ? (
+            <button
+              onClick={cancelBatch}
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md
+                         bg-red-600 text-white text-xs font-medium
+                         hover:bg-red-700 transition-colors"
+            >
+              <Square className="h-3.5 w-3.5" />
+              {isFr ? '取消批量' : 'Cancel Batch'}
+            </button>
+          ) : (
+            <button
+              onClick={runBatch}
+              disabled={selected.size === 0}
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md
+                         bg-primary text-primary-foreground text-xs font-medium
+                         hover:bg-primary/90 disabled:opacity-40 transition-colors"
+            >
+              <Play className="h-3.5 w-3.5" />
+              {isFr
+                ? `批量运行 (${selected.size})`
+                : `Run Batch (${selected.size})`}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ── Batch progress bar ── */}
+      {batchRunning && (
+        <div>
+          <div className="h-2 rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full rounded-full bg-primary transition-all duration-500"
+              style={{ width: `${batchProgress.total > 0 ? (batchProgress.done / batchProgress.total) * 100 : 0}%` }}
+            />
+          </div>
+          <div className="flex items-center justify-between mt-1">
+            <span className="text-[10px] text-muted-foreground tabular-nums">
+              {batchProgress.done} / {batchProgress.total}
+            </span>
+            <span className="text-[10px] text-muted-foreground">
+              {isFr ? '处理中...' : 'Processing...'}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* ── Book table + log ── */}
+      <div className="flex gap-3" style={{ height: 'calc(100vh - 380px)', minHeight: '300px' }}>
+
+        {/* LEFT: Book selection table */}
+        <div className="flex-1 overflow-auto rounded-lg border border-border">
+          <table className="w-full text-xs">
+            <thead className="sticky top-0 bg-secondary/80 backdrop-blur z-10">
+              <tr>
+                <th className="w-8 px-2 py-2">
+                  <input
+                    type="checkbox"
+                    checked={selected.size === books.length && books.length > 0}
+                    onChange={() => selected.size === books.length ? selectNone() : selectAll()}
+                    disabled={batchRunning}
+                    className="rounded border-border"
+                  />
+                </th>
+                <th className="text-left px-2 py-2 font-medium text-muted-foreground">
+                  {isFr ? '书名' : 'Title'}
+                </th>
+                <th className="text-center px-2 py-2 font-medium text-muted-foreground w-20">
+                  Parse
+                </th>
+                <th className="text-center px-2 py-2 font-medium text-muted-foreground w-20">
+                  Ingest
+                </th>
+                {batchRunning && (
+                  <th className="text-center px-2 py-2 font-medium text-muted-foreground w-24">
+                    {isFr ? '批量状态' : 'Batch'}
+                  </th>
+                )}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {[...books].sort((a, b) => {
+                // Natural sort: extract year + quarter (e.g. "Q3 2024" → 2024.3)
+                const re = /Q(\d)\s*(\d{4})/i
+                const ma = re.exec(a.title)
+                const mb = re.exec(b.title)
+                if (ma && mb) {
+                  const va = Number(ma[2]) * 10 + Number(ma[1])
+                  const vb = Number(mb[2]) * 10 + Number(mb[1])
+                  return vb - va
+                }
+                return b.title.localeCompare(a.title)
+              }).map((book) => {
+                const isRunning = currentBookId === book.id
+                const bs = batchStatus.get(book.id)
+                return (
+                  <tr
+                    key={book.id}
+                    className={cn(
+                      'transition-colors',
+                      isRunning ? 'bg-primary/5' : 'hover:bg-secondary/30',
+                      bs === 'done' && 'bg-emerald-500/3',
+                      bs === 'error' && 'bg-red-500/3',
+                    )}
+                  >
+                    <td className="px-2 py-1.5 text-center">
+                      <input
+                        type="checkbox"
+                        checked={selected.has(book.id)}
+                        onChange={() => toggleSelect(book.id)}
+                        disabled={batchRunning}
+                        className="rounded border-border"
+                      />
+                    </td>
+                    <td className="px-2 py-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <BookOpen className="h-3 w-3 text-muted-foreground/50 shrink-0" />
+                        <span className={cn(
+                          'text-[11px] truncate max-w-[200px]',
+                          isRunning ? 'font-semibold text-primary' : 'text-foreground',
+                        )}>
+                          {book.title}
+                        </span>
+                        {isRunning && <Loader2 className="h-3 w-3 text-primary animate-spin shrink-0" />}
+                      </div>
+                    </td>
+                    <td className="px-2 py-1.5 text-center">
+                      <StatusBadge stage={book.pipeline?.parse} />
+                    </td>
+                    <td className="px-2 py-1.5 text-center">
+                      <StatusBadge stage={book.pipeline?.ingest} />
+                    </td>
+                    {batchRunning && (
+                      <td className="px-2 py-1.5 text-center">
+                        <BatchStatusBadge status={bs} />
+                      </td>
+                    )}
+                  </tr>
+                )
+              })}
+              {books.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="text-center py-8 text-muted-foreground text-xs">
+                    {isFr ? '此目录下没有书籍' : 'No books in this directory'}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* RIGHT: Batch log */}
+        {batchLog.length > 0 && (
+          <div className="w-[340px] shrink-0 flex flex-col rounded-lg border border-border overflow-hidden">
+            <div className="flex items-center justify-between px-3 py-1.5 bg-secondary/50 border-b border-border">
+              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                {batchRunning && <Radio className="h-2.5 w-2.5 text-emerald-400 animate-pulse" />}
+                {isFr ? '批量日志' : 'Batch Log'}
+                {batchRunning && <span className="text-emerald-400 font-normal">LIVE</span>}
+              </span>
+              <button
+                onClick={() => navigator.clipboard.writeText(batchLog.join('\n'))}
+                className="text-muted-foreground hover:text-foreground p-0.5"
+                title={isFr ? '复制日志' : 'Copy log'}
+              >
+                <Copy className="h-2.5 w-2.5" />
+              </button>
+            </div>
+            <pre
+              ref={logRef}
+              className="flex-1 text-[10px] text-muted-foreground bg-[#0a0d14] p-2.5
+                         whitespace-pre-wrap font-mono leading-relaxed overflow-auto"
+            >
+              {batchLog.join('\n')}
+            </pre>
+          </div>
+        )}
       </div>
     </div>
   )

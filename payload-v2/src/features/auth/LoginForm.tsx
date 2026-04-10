@@ -21,7 +21,7 @@ export default function LoginForm() {
   const [formError, setFormError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (status === 'loggedIn') window.location.href = '/readers'
+    if (status === 'loggedIn') window.location.href = '/chat'
   }, [status])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -34,7 +34,7 @@ export default function LoginForm() {
       setFormError(null)
       setIsLoading(true)
       await login({ email: email.trim(), password })
-      window.location.href = '/readers'
+      window.location.href = '/chat'
     } catch {
       setFormError(t.loginErrorFailed)
     } finally {

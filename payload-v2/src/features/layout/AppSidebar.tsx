@@ -4,7 +4,6 @@ import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   Plus,
-  Library,
   BarChart3,
   LineChart,
   ThumbsUp,
@@ -17,7 +16,7 @@ import {
   Trash2,
   MessageSquareDot,
   Database,
-  Download,
+  Globe,
 } from 'lucide-react'
 import { useState } from 'react'
 import { useI18n } from '@/features/shared/i18n'
@@ -95,8 +94,7 @@ export default function AppSidebar() {
   // ── Admin nav: single flat list ordered by RAG pipeline execution flow ──
   // Import → Library → LLMs → Prompts → Query Engine → Evaluation → Feedback → Analytics → Seed
   const adminLinks = [
-    { titleKey: 'navAcquisition', icon: Download, href: '/engine/acquisition' },
-    { titleKey: 'navReaders', icon: Library, href: '/readers' },
+    { titleKey: 'navAcquisition', icon: Globe, href: '/engine/acquisition' },
     { titleKey: 'navLlms', icon: Brain, href: '/engine/llms' },
     { titleKey: 'navResponseSynthesizers', icon: FileText, href: '/engine/response_synthesizers' },
     { titleKey: 'navQueryEngine', icon: MessageSquare, href: '/engine/query_engine' },

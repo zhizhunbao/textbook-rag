@@ -6,5 +6,6 @@
  * - Collection endpoints are registered in the collection config → { endpoints }
  */
 
+export { importUrlEndpoint } from './import-url'
 export { seedEndpoint } from './seed'
 export { syncEngineEndpoint } from './sync-engine'

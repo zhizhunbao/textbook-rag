@@ -3,6 +3,7 @@
 > 目标：明天展示前的高优先级冲刺。按 **impact/effort** 排序，聚焦 6 个任务让 demo 效果最大化。
 >
 > 前置条件：S1 ✅ + S2 🚧 (21/30) + Hotfix 🚧 (6/7) + Acquisition 🚧 (5/13) 已具备基本可用的 RAG 管线。
+> **状态**: ✅ 10/14 完成 — T1/T2/T3/T4-01/T6 已实现。T4-02/T4-03/T5 待做。
 >
 > Project Brief 对齐：`docs/project-brief.md` 中明确要求「每个回答包含 source tracking + trustability indicator」「产出 narrative summaries + tables + graphs」
 
@@ -40,10 +41,10 @@
 **改为**: 页面加载时 `sessionBookIds = books.map(b => b.id)`；BookPicker 变为收缩/筛选工具。
 
 **验收标准**:
-- [ ] 进入 `/chat` 后直接进入对话模式，无需选书
-- [ ] `sessionBookIds` 默认包含所有已 ingest 的书
-- [ ] ChatHeader 显示 "Searching all N documents" 或列出具体书名
-- [ ] 旧有 BookPicker 按钮保留但改为可选 Filter
+- [x] 进入 `/chat` 后直接进入对话模式，无需选书
+- [x] `sessionBookIds` 默认包含所有已 ingest 的书
+- [x] ChatHeader 显示 "Searching all N documents" 或列出具体书名
+- [x] 旧有 BookPicker 按钮保留但改为可选 Filter
 
 **文件**: `features/chat/ChatPage.tsx`
 
@@ -57,8 +58,8 @@
 **改为**: 当 `sessionBookIds` 等于全部 `books` 时，`filters = undefined`（搜全库）。
 
 **验收标准**:
-- [ ] 全书模式下后端搜索不限定 book_id
-- [ ] 筛选模式下仍然按选定书籍过滤
+- [x] 全书模式下后端搜索不限定 book_id
+- [x] 筛选模式下仍然按选定书籍过滤
 
 **文件**: `features/chat/panel/ChatPanel.tsx`
 
@@ -72,8 +73,8 @@
 **改为**: "Searching across all N Ottawa Economic Development reports (Q1 2022 – Q4 2024)"
 
 **验收标准**:
-- [ ] 显示文档总数和覆盖范围
-- [ ] 当用户筛选后显示 "Searching N of M documents"
+- [x] 显示文档总数和覆盖范围
+- [x] 当用户筛选后显示 "Searching N of M documents"
 
 **文件**: `features/chat/panel/WelcomeScreen.tsx`
 
@@ -104,10 +105,10 @@
 ```
 
 **验收标准**:
-- [ ] Light 主题下背景为暖米色 `#FAF9F6`
-- [ ] 卡片/popover 仍为白色，与背景有层次感
-- [ ] Primary 色保持 Ottawa 蓝 `#004890`
-- [ ] Dark 主题不受影响
+- [x] Light 主题下背景为暖米色 `#FAF9F6`
+- [x] 卡片/popover 仍为白色，与背景有层次感
+- [x] Primary 色保持 Ottawa 蓝 `#004890`
+- [x] Dark 主题不受影响
 
 **文件**: `app/(frontend)/globals.css`
 
@@ -125,9 +126,9 @@
 **目标**: `payload-v2/src/features/chat/data/suggested_questions.json`
 
 **验收标准**:
-- [ ] 7 个类别: Labour Market, Housing Starts, Resale Market, Inflation & CPI, Commercial Vacancy, Construction & Permits, Policy & Highlights
-- [ ] 120+ 条真实 Ottawa 经济问题
-- [ ] JSON 结构: `{ categories: [{ id, label, icon, questions: string[] }] }`
+- [x] 7 个类别: Labour Market, Housing Starts, Resale Market, Inflation & CPI, Commercial Vacancy, Construction & Permits, Policy & Highlights
+- [x] 120+ 条真实 Ottawa 经济问题
+- [x] JSON 结构: `{ categories: [{ id, label, icon, questions: string[] }] }`
 
 **文件**: `features/chat/data/suggested_questions.json`
 
@@ -144,10 +145,10 @@
 - 点击问题直接提交到 chat
 
 **验收标准**:
-- [ ] 问题按类别分组，每类显示 emoji 图标 + 标签
-- [ ] 每次随机展示 3-5 个问题（不重复）
-- [ ] 点击问题调用 `onSubmitQuestion(question)`
-- [ ] 响应式: 移动端垂直排列，桌面端网格
+- [x] 问题按类别分组，每类显示 emoji 图标 + 标签
+- [x] 每次随机展示 3-5 个问题（不重复）
+- [x] 点击问题调用 `onSubmitQuestion(question)`
+- [x] 响应式: 移动端垂直排列，桌面端网格
 
 **参考**: `RAG-Project/frontend/src/components/SuggestedQuestionsPanel.tsx`
 **文件**: `features/chat/panel/WelcomeScreen.tsx`
@@ -174,10 +175,10 @@
 - `score < 0.5` → `bg-gray-500/20 text-gray-500` (低相关)
 
 **验收标准**:
-- [ ] `score` prop 可选，有值时显示数字徽章
-- [ ] 颜色按规则编码
-- [ ] Tooltip 显示 "Relevance Score: 0.92"
-- [ ] SourceInfo 类型添加 `score?: number` 字段
+- [x] `score` prop 可选，有值时显示数字徽章
+- [x] 颜色按规则编码
+- [x] Tooltip 显示 "Relevance Score: 0.92"
+- [x] SourceInfo 类型添加 `score?: number` 字段
 
 **文件**: `features/chat/panel/CitationChip.tsx`, `features/shared/types.ts`
 
@@ -309,10 +310,10 @@ Reports (slug: 'reports')
 **管理员侧栏**: + Data Pipeline + Query Pipeline + Quality 三个分组
 
 **验收标准**:
-- [ ] `const isAdmin = user?.role === 'admin'` (或 Payload 等效检查)
-- [ ] 普通用户只看到 Chat / Reports / Settings
-- [ ] 管理员额外看到 Data Pipeline / Query Pipeline / Quality
-- [ ] 默认 demo 账户设为 admin（保证展示时能看到全部）
+- [x] `const isAdmin = user?.role === 'admin'` (或 Payload 等效检查)
+- [x] 普通用户只看到 Chat / Reports / Settings
+- [x] 管理员额外看到 Data Pipeline / Query Pipeline / Quality
+- [x] 默认 demo 账户设为 admin（保证展示时能看到全部）
 
 **文件**: `features/layout/AppSidebar.tsx`
 

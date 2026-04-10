@@ -8,6 +8,7 @@ import sharp from 'sharp'
 import { Books } from './collections/Books'
 import { Chapters } from './collections/Chapters'
 import { Chunks } from './collections/Chunks'
+import { DataSources } from './collections/DataSources'
 import { Users } from './collections/Users'
 import { IngestTasks } from './collections/IngestTasks'
 import { Llms } from './collections/Llms'
@@ -38,6 +39,7 @@ export default buildConfig({
     Books,
     Chapters,
     Chunks,
+    DataSources,
     IngestTasks,
     Llms,
     Prompts,

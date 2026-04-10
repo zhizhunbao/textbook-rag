@@ -9,7 +9,7 @@ import {
 } from 'lucide-react'
 import type { BookStatus, StageStatus, PipelineStageKey } from '../types'
 import { PIPELINE_STAGE_CONFIGS } from '../types'
-import type { PipelineStages } from '../types'
+import type { PipelineInfo } from '@/features/shared/books'
 import { cn } from '@/features/shared/utils'
 
 /**
@@ -122,7 +122,7 @@ const stageStyle: Record<StageStatus, {
  * Renders: [✓ Chunked] [✓ TOC] [✓ Vector]
  * Each pill is self-descriptive — no hover required.
  */
-export function PipelineProgress({ pipeline }: { pipeline: PipelineStages }) {
+export function PipelineProgress({ pipeline }: { pipeline: PipelineInfo }) {
   return (
     <div className="flex items-center gap-1 flex-wrap">
       {PIPELINE_STAGE_CONFIGS.map((cfg) => {

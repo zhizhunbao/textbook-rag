@@ -29,7 +29,7 @@ export function useBooks(opts?: FetchBooksOptions) {
   const optKey = JSON.stringify(opts ?? {})
 
   // ==========================================================
-  // Data loading
+  // Data loading — initial load shows spinner
   // ==========================================================
   const load = useCallback(async () => {
     try {
@@ -46,6 +46,22 @@ export function useBooks(opts?: FetchBooksOptions) {
   }, [optKey])
 
   // ==========================================================
+  // Background refetch — silently updates without loading spinner.
+  // Prevents the full-page loading overlay from flashing during
+  // incremental imports, which would destroy child component state.
+  // ==========================================================
+  const refetch = useCallback(async () => {
+    try {
+      const data = await fetchBooks(opts)
+      setBooks(data)
+      setError(null)
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error(String(err)))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [optKey])
+
+  // ==========================================================
   // Effects
   // ==========================================================
   useEffect(() => { load() }, [load])
@@ -53,5 +69,5 @@ export function useBooks(opts?: FetchBooksOptions) {
   // ==========================================================
   // Return
   // ==========================================================
-  return { books, loading, error, refetch: load }
+  return { books, loading, error, refetch }
 }
