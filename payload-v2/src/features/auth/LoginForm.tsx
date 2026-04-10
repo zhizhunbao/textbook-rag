@@ -45,23 +45,26 @@ export default function LoginForm() {
   return (
     <div
       className="min-h-screen flex items-center justify-center p-5 relative overflow-hidden
-        bg-[linear-gradient(135deg,#1d4ed8_0%,#2563eb_50%,#3b82f6_100%)]
+        bg-[linear-gradient(135deg,#004890_0%,#0066cc_50%,#004890_100%)]
         dark:bg-[linear-gradient(135deg,#0a1628_0%,#0d2240_40%,#1a3a5c_70%,#0d2240_100%)]
         transition-colors duration-500"
     >
+      {/* Top-left logo */}
+      <div className="fixed top-4 left-5 z-50">
+        <img src="/ottawa-logo.jpg" alt="City of Ottawa" className="h-14 md:h-16 rounded-lg" />
+      </div>
+
       {/* Top-right controls */}
       <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
         <LanguageToggle className="bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm" />
         <ThemeToggle className="bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm" />
       </div>
 
-      {/* Background decorations */}
-      <div className="absolute inset-0 pointer-events-none"
-        style={{ background: 'radial-gradient(circle at 20% 20%, rgba(255,255,255,0.1), transparent 50%), radial-gradient(circle at 80% 80%, rgba(255,255,255,0.05), transparent 50%)' }}
-      />
-      <div className="absolute top-[20%] left-[10%] w-20 h-20 rounded-full bg-white/8 animate-bounce opacity-70 pointer-events-none" />
-      <div className="absolute top-[60%] right-[15%] w-14 h-14 rounded-full bg-white/6 animate-pulse opacity-70 pointer-events-none" />
-      <div className="absolute bottom-[20%] left-[20%] w-28 h-28 rounded-full bg-white/4 animate-bounce opacity-50 pointer-events-none" style={{ animationDelay: '2s' }} />
+      {/* Background decorations — blur orbs */}
+      <div className="absolute inset-0 z-0 opacity-10 pointer-events-none">
+        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-white rounded-full blur-[150px] -translate-y-1/2 translate-x-1/3" />
+        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-white rounded-full blur-[120px] translate-y-1/3 -translate-x-1/4" />
+      </div>
 
       {/* Login card */}
       <div className="relative z-10 w-full max-w-[440px] backdrop-blur-xl rounded-3xl shadow-[0_32px_64px_rgba(0,0,0,0.3)] p-10
@@ -151,8 +154,8 @@ export default function LoginForm() {
           <button
             type="submit" disabled={isLoading}
             className="mt-1 flex items-center justify-center gap-2.5 px-6 py-4 rounded-xl text-base font-semibold text-white
-              bg-[linear-gradient(135deg,#1d4ed8,#2563eb)] shadow-[0_8px_30px_rgba(37,99,235,0.3)]
-              hover:translate-y-[-2px] hover:shadow-[0_12px_40px_rgba(37,99,235,0.4)]
+              bg-[linear-gradient(135deg,#003d7a,#004890)] shadow-[0_8px_30px_rgba(0,72,144,0.3)]
+              hover:translate-y-[-2px] hover:shadow-[0_12px_40px_rgba(0,72,144,0.4)]
               active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0
               transition-all duration-300 relative overflow-hidden"
           >

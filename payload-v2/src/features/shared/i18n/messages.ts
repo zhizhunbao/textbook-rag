@@ -91,6 +91,7 @@ export interface Messages {
   navRetrievers: string
   navQueryEngine: string
   navSeed: string
+  navReports: string
 
   // ── Upload ──
   uploadPdf: string
@@ -154,10 +155,10 @@ const en: Messages = {
   heroSubtitle: 'Ask questions about City of Ottawa economic reports and get instant, accurate answers with deep source tracing and page-level citations.',
 
   // Stats
-  statMultiTextbook: 'Multi-Document Support',
-  statDeepTrace: 'Deep Source Tracing',
-  statPageCitations: 'Page-Level Citations',
-  statMultiModels: 'Multiple AI Models',
+  statMultiTextbook: 'Documents',
+  statDeepTrace: 'Conversations',
+  statPageCitations: 'Questions Asked',
+  statMultiModels: 'AI Models',
 
   // Features
   featuresTitle: 'Powerful Features',
@@ -214,6 +215,7 @@ const en: Messages = {
   navRetrievers: 'Retrievers',
   navQueryEngine: 'Query Engine',
   navSeed: 'Seed Database',
+  navReports: 'Reports',
 
   // Upload
   uploadPdf: 'Upload PDF',
@@ -261,10 +263,10 @@ const fr: Messages = {
   heroSubtitle: 'Posez des questions sur les rapports économiques de la Ville d\'Ottawa et obtenez des réponses instantanées et précises avec traçabilité des sources et citations au niveau de la page.',
 
   // Stats
-  statMultiTextbook: 'Support multi-documents',
-  statDeepTrace: 'Traçabilité approfondie',
-  statPageCitations: 'Citations par page',
-  statMultiModels: 'Multiples modèles IA',
+  statMultiTextbook: 'Documents',
+  statDeepTrace: 'Conversations',
+  statPageCitations: 'Questions posées',
+  statMultiModels: 'Modèles IA',
 
   // Features
   featuresTitle: 'Fonctionnalités',
@@ -321,6 +323,7 @@ const fr: Messages = {
   navRetrievers: 'Récupérateurs',
   navQueryEngine: 'Moteur de requêtes',
   navSeed: 'Base de données initiale',
+  navReports: 'Rapports',
 
   // Upload
   uploadPdf: 'Téléverser un PDF',

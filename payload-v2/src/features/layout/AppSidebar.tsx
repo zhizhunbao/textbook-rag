@@ -334,6 +334,7 @@ export default function AppSidebar() {
           </p>
           <nav className="flex flex-col gap-0.5">
             {navLink('/engine/question_gen', MessageSquareDot, String(t.navQuestionGen))}
+            {navLink('/reports', FileText, String(t.navReports))}
             {navLink('/settings', Settings, String(t.settings))}
           </nav>
         </div>

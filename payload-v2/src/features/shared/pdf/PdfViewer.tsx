@@ -64,11 +64,19 @@ const PdfPageCanvas = memo(function PdfPageCanvas({
     [onPageLoadSuccess, pageNumber],
   );
 
+  // Suppress benign "TextLayer task cancelled" AbortException from pdfjs
+  const handleError = useCallback((error: Error) => {
+    if (error?.name === 'AbortException' || error?.message?.includes('TextLayer task cancelled')) return;
+    console.error('[PdfPageCanvas] Page render error:', error);
+  }, []);
+
   return (
     <Page
       pageNumber={pageNumber}
       width={renderWidth}
       onLoadSuccess={handleLoadSuccess}
+      onRenderError={handleError}
+      onGetTextError={handleError}
       loading={<Loading />}
       renderTextLayer
       renderAnnotationLayer={false}
@@ -411,7 +419,7 @@ export default function PdfViewer() {
     setRenderWidth(0);
     setZoomScale(1);
     setSelectedTocEntryId(null);
-    setRenderedPages(new Set([1]));
+    setRenderedPages(new Set([1, currentPage]));
     setLoadedPages(new Set());
     pageRefs.current.clear();
 
@@ -597,9 +605,7 @@ export default function PdfViewer() {
       nonce: selectedSourceNonce,
     };
     skipNextScrollRef.current = false;
-    startTransition(() => {
-      markPagesRendered(selectedSource.page_number, VISIBLE_RENDER_RADIUS);
-    });
+    markPagesRendered(selectedSource.page_number, VISIBLE_RENDER_RADIUS);
   }, [
     currentBookId,
     markPagesRendered,
@@ -615,7 +621,37 @@ export default function PdfViewer() {
     if (!pending) return;
 
     const pageNode = pageRefs.current.get(pending.pageNumber);
-    if (!pageNode) return;
+
+    // If page node doesn't exist yet (lazy-rendered), poll until it appears
+    if (!pageNode) {
+      let rafId: number;
+      let elapsed = 0;
+      const POLL_INTERVAL = 50;
+      const MAX_WAIT = 2000;
+
+      const poll = () => {
+        elapsed += POLL_INTERVAL;
+        const node = pageRefs.current.get(pending.pageNumber);
+        if (node) {
+          node.scrollIntoView({
+            block: "start",
+            inline: "nearest",
+            behavior: "smooth",
+          });
+          const hasMinerUBboxes = selectedSource?.bboxes && selectedSource.bboxes.length > 0;
+          if (!pending.hasBbox || hasMinerUBboxes) {
+            pendingSourceScrollRef.current = null;
+          }
+          return;
+        }
+        if (elapsed < MAX_WAIT) {
+          rafId = window.setTimeout(poll, POLL_INTERVAL) as unknown as number;
+        }
+      };
+
+      rafId = window.setTimeout(poll, POLL_INTERVAL) as unknown as number;
+      return () => window.clearTimeout(rafId);
+    }
 
     pageNode.scrollIntoView({
       block: "start",

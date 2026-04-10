@@ -1,4 +1,4 @@
-﻿/**
+/**
  * EvaluationPage — Data-driven RAG evaluation hub.
  *
  * Route: /engine/evaluation
@@ -534,7 +534,7 @@ export default function EvaluationPage() {
     return (
       <div className={cn('rounded-lg border p-2.5 space-y-2', group.border, 'bg-gradient-to-br', group.gradient)}>
         <div className="flex items-center gap-1.5">
-          <span className="text-sm">{group.icon}</span>
+          <group.Icon className={cn('h-3.5 w-3.5', group.accentText)} />
           <span className="text-[10px] font-semibold text-foreground flex-1">
             {isFr ? group.labelFr : group.label}
           </span>

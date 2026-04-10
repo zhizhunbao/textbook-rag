@@ -26,6 +26,8 @@ dependencies = [
     "llama-index-llms-azure-openai>=0.3.4",
     "llama-index-vector-stores-chroma>=0.4.2",
     "llama-index-retrievers-bm25>=0.5.2",
+    "xhtml2pdf>=0.2.17",
+    "markdown>=3.10.2",
 ]
 
 [project.optional-dependencies]

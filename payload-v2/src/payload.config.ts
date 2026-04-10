@@ -20,6 +20,7 @@ import { ChatSessions } from './collections/ChatSessions'
 import { ChatMessages } from './collections/ChatMessages'
 import { Media } from './collections/Media'
 import { PdfUploads } from './collections/PdfUploads'
+import { Reports } from './collections/Reports'
 import { seedEndpoint } from './collections/endpoints'
 
 const filename = fileURLToPath(import.meta.url)
@@ -48,6 +49,7 @@ export default buildConfig({
     Evaluations,
     ChatSessions,
     ChatMessages,
+    Reports,
   ],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
