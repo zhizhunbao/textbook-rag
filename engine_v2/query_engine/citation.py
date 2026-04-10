@@ -41,7 +41,7 @@ from llama_index.core.settings import Settings
 
 from engine_v2.response_synthesizers.citation import get_citation_synthesizer
 from engine_v2.retrievers.hybrid import get_hybrid_retriever
-from engine_v2.schema import RAGResponse, build_source
+from engine_v2.schema import RAGResponse, build_source, normalize_scores
 from engine_v2.settings import TOP_K
 
 
@@ -255,6 +255,7 @@ def get_query_engine(
     streaming: bool = False,
     book_id_strings: list[str] | None = None,
     model: str | None = None,
+    provider: str | None = None,
 ) -> TextbookCitationQueryEngine:
     """Build a TextbookCitationQueryEngine.
 
@@ -281,7 +282,7 @@ def get_query_engine(
         similarity_top_k=similarity_top_k,
         book_id_strings=book_id_strings,
     )
-    synthesizer = get_citation_synthesizer(streaming=streaming, model=model)
+    synthesizer = get_citation_synthesizer(streaming=streaming, model=model, provider=provider)
 
     # Book filter — drops BM25 results from out-of-scope books
     postprocessors: list[BaseNodePostprocessor] = []
@@ -336,6 +337,7 @@ def query(
         build_source(nws, i)
         for i, nws in enumerate(response.source_nodes, start=1)
     ]
+    normalize_scores(sources)
 
     answer = str(response)
 

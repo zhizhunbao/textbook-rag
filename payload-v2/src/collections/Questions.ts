@@ -76,6 +76,11 @@ export const Questions: CollectionConfig = {
       admin: { description: 'Book subcategory for filtering' },
     },
     {
+      name: 'questionCategory',
+      type: 'text',
+      admin: { description: 'AI-inferred topic classification (e.g. "Labour Market", "Housing Starts")' },
+    },
+    {
       name: 'sourcePage',
       type: 'number',
       admin: { description: 'Source page index (0-indexed) from ChromaDB chunk metadata' },

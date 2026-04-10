@@ -278,7 +278,7 @@ export default function PipelineTab({ books, filter, onBooksRefresh }: PipelineT
     const pdfName = (selectedBook as any)?.pdfMedia?.filename || `${bookDirName}.pdf`
     return tpl
       .replace(/\{filename\}/g, pdfName.replace(/\.pdf$/i, ''))
-      .replace(/\{category\}/g, selectedBook.category || 'textbook')
+      .replace(/\{category\}/g, selectedBook.category || 'textbooks')
       .replace(/\{book\}/g, bookDirName)
   }, [selectedBook])
 
@@ -512,7 +512,7 @@ export default function PipelineTab({ books, filter, onBooksRefresh }: PipelineT
               _type: 'path',
               path: resolvePath('data/raw_pdfs/{category}/{filename}.pdf'),
               source: 'filesystem (not uploaded via Payload)',
-              category: doc.category || 'textbook',
+              category: doc.category || 'textbooks',
               title: doc.title,
             })
           } else if (stepIdx === 0 && direction === 'out') {
@@ -1255,7 +1255,7 @@ export default function PipelineTab({ books, filter, onBooksRefresh }: PipelineT
             const rawPathStr = Array.isArray(rawPath) ? rawPath.join('\n') : rawPath
             const path = rawPathStr
               .replace(/\{filename\}/g, pdfName.replace(/\.pdf$/i, ''))
-              .replace(/\{category\}/g, selectedBook?.category || 'textbook')
+              .replace(/\{category\}/g, selectedBook?.category || 'textbooks')
               .replace(/\{book\}/g, bookDirName)
             const stepLabel = isFr ? tStep.labelFr : tStep.label
 

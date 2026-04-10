@@ -173,7 +173,7 @@ function LibraryPageInner() {
       book_id: b.engineBookId,
       title: b.title,
       authors: b.authors ?? '',
-      category: b.category ?? 'textbook',
+      category: b.category ?? 'textbooks',
       subcategory: b.subcategory ?? '',
       chunk_count: b.chunkCount ?? 0,
       status: b.status as 'pending' | 'processing' | 'indexed' | 'error',
@@ -186,7 +186,7 @@ function LibraryPageInner() {
 
   // ── Dynamic category icons from actual book data ──────────────────────────
   const categoryIcons = useMemo(() => {
-    const cats = [...new Set(booksForSidebar.map((b) => b.category || 'textbook'))]
+    const cats = [...new Set(booksForSidebar.map((b) => b.category || 'textbooks'))]
     return buildCategoryIcons(cats)
   }, [booksForSidebar])
 

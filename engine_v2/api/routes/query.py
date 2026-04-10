@@ -18,7 +18,7 @@ from pydantic import BaseModel, Field
 
 from engine_v2.api.deps import get_engine
 from engine_v2.query_engine.citation import get_query_engine, query as run_query
-from engine_v2.schema import build_source
+from engine_v2.schema import build_source, normalize_scores
 from engine_v2.settings import TOP_K
 from loguru import logger
 
@@ -144,6 +144,7 @@ async def _stream_generator(req: QueryRequest):
             streaming=True,
             book_id_strings=book_ids or None,
             model=req.model,
+            provider=req.provider,
         )
 
         logger.info("Stream query: {} (top_k={}, books={})", req.question[:80], req.top_k, book_ids or "all")
@@ -155,6 +156,9 @@ async def _stream_generator(req: QueryRequest):
         sources = []
         for i, nws in enumerate(response.source_nodes, start=1):
             sources.append(build_source(nws, i))
+
+        # Normalize RRF scores to 0-1 range for display
+        normalize_scores(sources)
 
         stats = _build_stats(sources)
 

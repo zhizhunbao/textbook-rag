@@ -61,7 +61,7 @@ export const Books: CollectionConfig = {
       name: 'category',
       type: 'text',
       required: true,
-      defaultValue: 'textbook',
+      defaultValue: 'textbooks',
       admin: {
         description: 'Book category (auto-classified by LLM, user-editable). E.g. textbook, ecdev, real_estate, research_paper',
       },

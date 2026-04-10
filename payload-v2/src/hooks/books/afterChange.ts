@@ -48,7 +48,7 @@ export const afterChangeHook: CollectionAfterChangeHook = async ({
   }
 
   // ── Move PDF to category subdirectory if it's in the root ──
-  const category = doc.category || 'textbook'
+  const category = doc.category || 'textbooks'
   const srcPath = path.join(RAW_PDF_DIR, pdfFilename)
   const destDir = path.join(RAW_PDF_DIR, category)
   const destPath = path.join(destDir, pdfFilename)

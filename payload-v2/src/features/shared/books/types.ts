@@ -8,7 +8,7 @@
 // Category & status
 // ============================================================
 
-// Dynamic — LLM-suggested, user-editable. Common: 'textbook', 'ecdev', 'real_estate'
+// Dynamic — LLM-suggested, user-editable. Common: 'textbooks', 'ecdev', 'real_estate'
 export type BookCategory = string
 export type BookStatus = 'pending' | 'processing' | 'indexed' | 'error'
 export type PipelineStage = 'pending' | 'done' | 'error'
@@ -53,7 +53,7 @@ export interface CategoryConfig {
 
 /** Well-known category display config. */
 export const CATEGORY_CONFIGS: Record<string, CategoryConfig> = {
-  textbook:    { label: 'Textbooks',      labelFr: 'Manuels',                  icon: 'BookOpen',  color: 'text-blue-400' },
+  textbooks:   { label: 'Textbooks',      labelFr: 'Manuels',                  icon: 'BookOpen',  color: 'text-blue-400' },
   ecdev:       { label: 'EC Development', labelFr: 'Développement économique', icon: 'Building2', color: 'text-emerald-400' },
   real_estate: { label: 'Real Estate',    labelFr: 'Immobilier',               icon: 'Home',      color: 'text-amber-400' },
 }

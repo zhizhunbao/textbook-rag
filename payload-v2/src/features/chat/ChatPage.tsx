@@ -61,7 +61,7 @@ function ChatPageInner() {
    * and immediately enter chat mode scanning all documents.
    */
   useEffect(() => {
-    if (books.length > 0 && !sessionStarted && !searchParams.get('session')) {
+    if (books.length > 0 && !sessionStarted && !searchParams.get('session') && !searchParams.get('books')) {
       dispatch({ type: 'START_SESSION', bookIds: books.map((b) => b.id) });
     }
   }, [books.length, sessionStarted, dispatch, searchParams]);
@@ -89,6 +89,44 @@ function ChatPageInner() {
     router.replace('/chat')
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams])
+
+  /**
+   * Handle ?books=id1,id2,id3 — start a scoped session with specific books.
+   * Used by Files tab "New Chat" action to scope chat to selected documents.
+   * Also auto-opens PDF viewers for all selected books.
+   */
+  const booksParamHandled = useRef(false)
+  useEffect(() => {
+    const booksParam = searchParams.get('books')
+    if (!booksParam || booksParamHandled.current) return
+    const ids = booksParam.split(',').map(Number).filter((n) => !isNaN(n) && n > 0)
+    if (ids.length === 0) return
+    // Wait until books are loaded so we can resolve titles for PDF tabs
+    if (books.length === 0) return
+    booksParamHandled.current = true
+
+    setActiveSessionId(null)
+    dispatch({ type: 'START_SESSION', bookIds: ids })
+
+    // Auto-open PDF tabs for each selected book
+    const tabs: PdfTab[] = ids
+      .map((id) => {
+        const book = books.find((b) => b.id === id)
+        if (!book) return null
+        return { bookId: id, title: book.title, page: 1 }
+      })
+      .filter((t): t is PdfTab => t !== null)
+
+    setPdfTabs(tabs)
+    if (tabs.length > 0) {
+      setActiveTabBookId(tabs[0].bookId)
+      dispatch({ type: 'SET_BOOK', bookId: tabs[0].bookId })
+    }
+
+    router.replace('/chat')
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, books.length])
+
 
   /**
    * Auto-open / switch PDF tab when a citation source is selected.
@@ -256,6 +294,7 @@ function ChatPageInner() {
               <ResizeHandle width={sidebarWidth} onResize={setSidebarWidth} min={220} max={480} invert />
               <QuestionsSidebar
                 bookIds={sessionBooks.map((b) => b.book_id)}
+                isScoped={sessionBookIds.length > 0 && sessionBookIds.length < books.length}
                 onSelect={(q) => {
                   submitRef.current?.(q)
                 }}

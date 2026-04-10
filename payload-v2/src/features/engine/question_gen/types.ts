@@ -17,6 +17,7 @@ export interface Question {
   likes: number
   category: string | null
   subcategory: string | null
+  questionCategory: string | null
   sourcePage: number | null
   model: string | null
   scoreRelevance: number | null
@@ -39,6 +40,7 @@ export interface GeneratedQuestion {
   book_title: string
   source_page: number
   topic_hint: string
+  question_category: string
 }
 
 // ── Payload REST API response shape ─────────────────────────────────────────

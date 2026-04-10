@@ -94,7 +94,7 @@ export function useBookSidebar(
     }
 
     // plain category key
-    return items.filter((item) => (item.category || 'textbook') === filter)
+    return items.filter((item) => (item.category || 'textbooks') === filter)
   }
 
   /** Filter books by the current sidebar filter key. */
@@ -108,10 +108,10 @@ export function useBookSidebar(
 
     if (filter.includes('::')) {
       const [cat, sub] = filter.split('::')
-      return books.filter((b) => (b.category || 'textbook') === cat && b.subcategory === sub)
+      return books.filter((b) => (b.category || 'textbooks') === cat && b.subcategory === sub)
     }
 
-    return books.filter((b) => (b.category || 'textbook') === filter)
+    return books.filter((b) => (b.category || 'textbooks') === filter)
   }
 
   // ==========================================================
@@ -140,7 +140,7 @@ function buildByBook(books: BookBase[], opts: ByBookOptions): SidebarItem[] {
   // Group books by category → subcategory
   const grouped: Record<string, Record<string, BookBase[]>> = {}
   for (const book of books) {
-    const cat = book.category || 'textbook'
+    const cat = book.category || 'textbooks'
     const sub = book.subcategory || ''
     if (!grouped[cat]) grouped[cat] = {}
     if (!grouped[cat][sub]) grouped[cat][sub] = []
@@ -254,7 +254,7 @@ function buildByCategory(books: BookBase[], opts: ByCategoryOptions): SidebarIte
   const subMap: Record<string, Set<string>> = {}
 
   for (const b of books) {
-    const cat = b.category || 'textbook'
+    const cat = b.category || 'textbooks'
     counts[cat] = (counts[cat] || 0) + 1
     if (b.subcategory) {
       const subKey = `${cat}::${b.subcategory}`

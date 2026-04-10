@@ -99,7 +99,7 @@ export function useUrlImport(options?: UrlImportOptions) {
 
       const bookData: Record<string, unknown> = {
         title: bookTitle,
-        category: category ?? 'textbook',
+        category: category ?? 'textbooks',
         status: 'pending',
       }
       if (subcategory) {
@@ -130,7 +130,7 @@ export function useUrlImport(options?: UrlImportOptions) {
         body: JSON.stringify({
           book_id: bookId,
           pdf_url: trimmed,
-          category: category ?? 'textbook',
+          category: category ?? 'textbooks',
           title: bookTitle,
         }),
       })

@@ -33,7 +33,7 @@ interface TocEntry {
 }
 
 interface GenerationPanelProps {
-  /** Current sidebar filter value (e.g. 'all', 'textbook', 'book::abc') */
+  /** Current sidebar filter value (e.g. 'all', 'textbooks', 'book::abc') */
   filter: string
   /** All indexed books (from useBooks) */
   books: BookBase[]
@@ -70,9 +70,9 @@ export default function GenerationPanel({
     }
     if (filter.includes('::')) {
       const [cat, sub] = filter.split('::')
-      return books.filter((b) => (b.category || 'textbook') === cat && b.subcategory === sub)
+      return books.filter((b) => (b.category || 'textbooks') === cat && b.subcategory === sub)
     }
-    return books.filter((b) => (b.category || 'textbook') === filter)
+    return books.filter((b) => (b.category || 'textbooks') === filter)
   }, [filter, books])
 
   const targetBookIds = useMemo(() => targetBooks.map((b) => b.book_id), [targetBooks])

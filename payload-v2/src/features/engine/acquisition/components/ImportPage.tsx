@@ -124,7 +124,7 @@ function ImportPageInner() {
   const booksForSidebar = useMemo(() =>
     books.map((b) => ({
       ...b,
-      category: b.category || 'textbook',
+      category: b.category || 'textbooks',
       subcategory: b.subcategory || '',
     })),
     [books],
@@ -132,7 +132,7 @@ function ImportPageInner() {
 
   // ── Dynamic category icons from actual book data ──
   const categoryIcons = useMemo(() => {
-    const cats = [...new Set(booksForSidebar.map((b) => b.category || 'textbook'))]
+    const cats = [...new Set(booksForSidebar.map((b) => b.category || 'textbooks'))]
     return buildCategoryIcons(cats)
   }, [booksForSidebar])
 

@@ -32,8 +32,10 @@ classify it into a category and suggest a subcategory.
 "finance", "engineering", "medical", "legal", etc.
   Use lowercase_snake_case. Keep it to 1-2 words max.
 - The **subcategory** should be a more specific tag within that category.
-  Examples: "Python", "Machine Learning", "Q4 2024 Report", "Market Analysis", \
-"Cardiovascular", "Contract Law", etc.
+  Use **Title Case** (capitalize each word, separated by spaces).
+  Examples: "Python", "Machine Learning", "Computer Vision", "Q4 2024 Report", \
+"Market Analysis", "Reinforcement Learning", "Software Engineering", etc.
+  Do NOT use snake_case for subcategory.
 - The **confidence** should be a float 0.0–1.0 indicating your certainty.
 
 ## Hints for common patterns
@@ -46,6 +48,7 @@ documents with "Ed Update" → category "ecdev"
 ## Rules
 1. Return ONLY valid JSON — no markdown, no explanation.
 2. Keep category in lowercase_snake_case, max 2 words.
+3. Keep subcategory in Title Case (e.g. "Machine Learning", NOT "machine_learning").
 
 ## Input
 Title: {title}
@@ -112,6 +115,9 @@ async def classify_book(req: ClassifyRequest):
         # Sanitize category to lowercase_snake_case
         category = category.replace(" ", "_").replace("-", "_")
 
+        # Normalize subcategory to Title Case
+        subcategory = _to_title_case(subcategory)
+
         logger.info(
             "Classification result: category={}, subcategory={}, confidence={:.2f}",
             category, subcategory, confidence,
@@ -130,6 +136,30 @@ async def classify_book(req: ClassifyRequest):
     except Exception as exc:
         logger.error("LLM classification failed: {}", exc)
         return _heuristic_classify(req.title, req.filename)
+
+
+# ============================================================
+# Subcategory normalizer
+# ============================================================
+def _to_title_case(s: str) -> str:
+    """Convert snake_case or raw string to Title Case.
+
+    'machine_vision'  → 'Machine Vision'
+    'NLP'             → 'NLP'  (all-caps preserved)
+    'q4 2024 report'  → 'Q4 2024 Report'
+    """
+    if not s:
+        return s
+    # Replace underscores/hyphens with spaces first
+    normalized = s.replace("_", " ").replace("-", " ")
+    # Title-case each word, but preserve fully uppercase tokens (e.g. NLP, API)
+    words = []
+    for w in normalized.split():
+        if w.isupper() and len(w) > 1:
+            words.append(w)          # keep acronyms as-is
+        else:
+            words.append(w.capitalize())
+    return " ".join(words)
 
 
 # ============================================================
@@ -157,7 +187,7 @@ def _heuristic_classify(title: str, filename: str | None) -> ClassifyResponse:
     ]
     if any(kw in text for kw in re_keywords):
         return ClassifyResponse(
-            category="real_estate", subcategory="", confidence=0.6,
+            category="real_estate", subcategory="Market Analysis", confidence=0.6,
         )
 
     # Default: textbook

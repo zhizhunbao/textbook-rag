@@ -33,9 +33,10 @@ QUESTION_GEN_PROMPT = """You are a textbook question generator. Given the follow
 Context:
 {context}
 
-Generate exactly {count} questions in JSON array format:
+Generate exactly {count} questions in JSON array format.
+For each question, also provide a short "question_category" label that describes the topic/domain the question belongs to (e.g. "Labour Market", "Housing Starts", "Inflation & CPI", "Resale Market", "Commercial Vacancy", "Construction & Permits", "Policy & Highlights", "Population", or any other relevant topic label).
 [
-  {{"question": "...", "difficulty": "easy|medium|hard", "type": "factual|conceptual|analytical"}}
+  {{"question": "...", "difficulty": "easy|medium|hard", "type": "factual|conceptual|analytical", "question_category": "..." }}
 ]
 
 Questions:"""
@@ -95,6 +96,7 @@ class GeneratedQuestion:
     question: str
     difficulty: str = "medium"
     question_type: str = "conceptual"
+    question_category: str = ""
     source_chunk_id: str = ""
     book_id: str = ""
     book_title: str = ""
@@ -343,6 +345,7 @@ class QuestionGenerator:
                 question=item["question"],
                 difficulty=item.get("difficulty", "medium"),
                 question_type=item.get("type", "conceptual"),
+                question_category=item.get("question_category", ""),
                 source_chunk_id=source.get("id", ""),
                 book_id=source_meta.get("book_id", ""),
                 book_title=source_meta.get("book_title", ""),

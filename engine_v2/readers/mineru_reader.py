@@ -114,6 +114,70 @@ class MinerUReader(BaseReader):
     # ------------------------------------------------------------------
 
     @staticmethod
+    def _clean_latex_artifacts(text: str) -> str:
+        """Strip LaTeX math-mode artifacts from MinerU PDF text.
+
+        MinerU wraps numbers/percentages/currency in LaTeX math delimiters:
+            $4 . 1 \\%$   →  4.1%
+            $\\$ 709,002$  →  $709,002
+            $36 . 2 \\%$  →  36.2%
+            $2 , 851$     →  2,851
+
+        Also fixes:
+            spaced decimals:  1 . 5  →  1.5
+            spaced commas:    709 , 002  →  709,002
+            dangling $:       leftover dollar signs from math mode
+            \\% outside math: \\%  →  %
+        """
+        import re
+
+        if "$" not in text and "\\%" not in text:
+            return text  # fast path: nothing to clean
+
+        # Step 1: Handle $\$ NNN$ pattern (currency)  →  $NNN
+        # e.g. $\$ 709,002$  →  $709,002
+        text = re.sub(
+            r'\$\s*\\?\$\s*([0-9][0-9, .]*)\$',
+            lambda m: "$" + m.group(1).replace(" ", ""),
+            text,
+        )
+
+        # Step 2: Handle $N . N \%$ pattern (percentages)  →  N.N%
+        # e.g. $4 . 1 \%$  →  4.1%
+        text = re.sub(
+            r'\$\s*([0-9][0-9 ,.]*)\\?%\s*\$',
+            lambda m: m.group(1).replace(" ", "") + "%",
+            text,
+        )
+
+        # Step 3: Handle remaining $number$ patterns (plain numbers in math mode)
+        # e.g. $2 , 851$  →  2,851
+        text = re.sub(
+            r'\$\s*([0-9][0-9 ,.]*[0-9])\s*\$',
+            lambda m: m.group(1).replace(" ", ""),
+            text,
+        )
+
+        # Step 4: Fix spaced decimals outside math mode: 1 . 5 → 1.5
+        text = re.sub(r'(\d)\s+\.\s+(\d)', r'\1.\2', text)
+
+        # Step 5: Fix spaced commas in numbers: 709 , 002 → 709,002
+        text = re.sub(r'(\d)\s+,\s+(\d)', r'\1,\2', text)
+
+        # Step 6: Fix standalone \% → %
+        text = text.replace("\\%", "%")
+
+        # Step 7: Clean up any remaining single $ that aren't currency
+        # (don't remove $ followed by a digit — that's likely currency like $633,000)
+        # Remove isolated $ not adjacent to digits
+        text = re.sub(r'\$(?!\d)', '', text)
+
+        # Step 8: Fix smart quote / encoding artifacts
+        text = text.replace("\u0092", "'").replace("\u0093", "\u201c").replace("\u0094", "\u201d")
+
+        return text
+
+    @staticmethod
     def _extract_text(item: dict, item_type: str) -> str:
         """Extract text content from a MinerU content item."""
         text = item.get("text", "").strip()
@@ -122,7 +186,11 @@ class MinerUReader(BaseReader):
         if not text and item_type == "image":
             captions = item.get("image_caption", [])
             text = " ".join(captions) if captions else ""
-        return text.strip()
+        text = text.strip()
+        # Clean LaTeX artifacts from MinerU output
+        if text:
+            text = MinerUReader._clean_latex_artifacts(text)
+        return text
 
     @staticmethod
     def _load_page_sizes(path: Path) -> dict[int, tuple[float, float]]:

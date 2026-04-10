@@ -81,6 +81,7 @@ async def generate_questions(req: GenerateRequest):
                 "question": q.question,
                 "difficulty": q.difficulty,
                 "type": q.question_type,
+                "question_category": q.question_category,
                 "source_chunk_id": q.source_chunk_id,
                 "book_id": q.book_id,
                 "book_title": q.book_title,

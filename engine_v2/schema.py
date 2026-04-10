@@ -57,6 +57,27 @@ _FULL_CONTENT_MAX = 2000
 _SNIPPET_MAX = 300
 
 
+def normalize_scores(sources: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Normalize raw RRF scores to 0.0–1.0 range for display.
+
+    RRF scores are naturally tiny (e.g., 0.016) because they use
+    1/(k+rank) formula with k=60. This rescales them so the top
+    result is 1.0 and others are proportional.
+    """
+    if not sources:
+        return sources
+
+    max_score = max((s.get("score", 0) or 0) for s in sources)
+    if max_score <= 0:
+        return sources
+
+    for s in sources:
+        raw = s.get("score", 0) or 0
+        s["score"] = round(raw / max_score, 2)
+
+    return sources
+
+
 def build_source(node_with_score: Any, index: int) -> dict[str, Any]:
     """Convert a LlamaIndex NodeWithScore to our source dict.
 
@@ -113,7 +134,7 @@ def build_source(node_with_score: Any, index: int) -> dict[str, Any]:
         "category": meta.get("category", "textbook"),
         "full_content": content[:_FULL_CONTENT_MAX],
         "snippet": content[:_SNIPPET_MAX],
-        "score": node_with_score.score,
+        "score": float(node_with_score.score) if node_with_score.score is not None else 0.0,
         "bbox": {
             "x0": x0, "y0": y0,
             "x1": x1, "y1": y1,

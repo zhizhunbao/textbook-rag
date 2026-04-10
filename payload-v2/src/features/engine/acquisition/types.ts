@@ -9,7 +9,7 @@
 
 // ============================================================
 // Book category (dynamic — LLM-suggested, user-editable)
-// Common values: 'textbook', 'ecdev', 'real_estate', 'research_paper', etc.
+// Common values: 'textbooks', 'ecdev', 'real_estate', 'research_paper', etc.
 // ============================================================
 export type BookCategory = string
 

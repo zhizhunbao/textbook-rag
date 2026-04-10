@@ -40,7 +40,7 @@ export async function fetchBooks(): Promise<BookSummary[]> {
     page_count: 0,
     chapter_count: 0,
     chunk_count: b.chunkCount ?? 0,
-    category: b.category ?? 'textbook',
+    category: b.category ?? 'textbooks',
     subcategory: b.subcategory ?? '',
   }))
 }
@@ -55,7 +55,7 @@ export async function fetchBook(bookId: number): Promise<BookDetail> {
     page_count: 0,
     chapter_count: 0,
     chunk_count: b.chunkCount ?? 0,
-    category: b.category ?? 'textbook',
+    category: b.category ?? 'textbooks',
     subcategory: b.subcategory ?? '',
     chapters: [],
   }
@@ -123,6 +123,7 @@ function normaliseSource(s: any): SourceInfo {
       ? { width: s.bbox.page_width, height: s.bbox.page_height }
       : null,
     confidence: s.score ?? 1,
+    score: s.score ?? undefined,
   }
 }
 

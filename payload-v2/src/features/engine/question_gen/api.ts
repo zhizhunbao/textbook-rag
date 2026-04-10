@@ -133,6 +133,7 @@ export async function saveQuestionToPayload(doc: {
   likes: number
   category?: string
   subcategory?: string
+  questionCategory?: string
   scoreRelevance?: number
   scoreClarity?: number
   scoreDifficulty?: number
@@ -159,6 +160,7 @@ function mapDoc(d: Record<string, any>): Question {
     likes: d.likes ?? 0,
     category: d.category ?? null,
     subcategory: d.subcategory ?? null,
+    questionCategory: d.questionCategory ?? null,
     sourcePage: d.sourcePage ?? null,
     model: d.model ?? null,
     scoreRelevance: d.scoreRelevance ?? null,

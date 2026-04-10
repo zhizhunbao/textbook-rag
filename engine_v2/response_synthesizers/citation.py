@@ -93,6 +93,7 @@ def get_citation_synthesizer(
     mode: ResponseMode = ResponseMode.COMPACT,
     streaming: bool = False,
     model: str | None = None,
+    provider: str | None = None,
 ) -> BaseSynthesizer:
     """Build a citation-aware response synthesizer.
 
@@ -108,7 +109,7 @@ def get_citation_synthesizer(
     Returns:
         BaseSynthesizer configured for citation-aware generation.
     """
-    llm = resolve_llm(model=model, streaming=streaming)
+    llm = resolve_llm(model=model, streaming=streaming, provider=provider)
 
     synthesizer = get_response_synthesizer(
         response_mode=mode,

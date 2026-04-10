@@ -122,7 +122,7 @@ export function useFileUpload(options?: FileUploadOptions) {
 
       const bookData: Record<string, unknown> = {
         title: bookTitle,
-        category: category ?? 'textbook',
+        category: category ?? 'textbooks',
         status: 'pending',
         metadata: { fileSize: file.size },
       }

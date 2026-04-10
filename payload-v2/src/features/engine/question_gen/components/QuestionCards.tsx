@@ -56,6 +56,8 @@ interface QuestionItem {
   question: string
   topicHint?: string | null
   topic_hint?: string
+  questionCategory?: string | null
+  question_category?: string
   scoreOverall?: number | null
 }
 
@@ -102,11 +104,18 @@ export default function QuestionCards({
                   {CARD_ICONS[index % CARD_ICONS.length]}
                 </span>
                 <div className="min-w-0 flex-1">
-                  {hint && (
-                    <span className={`mb-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${TOPIC_COLORS[index % TOPIC_COLORS.length]}`}>
-                      {hint}
-                    </span>
-                  )}
+                  <div className="flex flex-wrap gap-1 mb-1">
+                    {(q.questionCategory ?? q.question_category) && (
+                      <span className="inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
+                        {q.questionCategory ?? q.question_category}
+                      </span>
+                    )}
+                    {hint && (
+                      <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${TOPIC_COLORS[index % TOPIC_COLORS.length]}`}>
+                        {hint}
+                      </span>
+                    )}
+                  </div>
                   <div className="text-sm leading-snug text-muted-foreground group-hover:text-foreground [&_p]:my-0 [&_.katex]:text-[0.85em]">
                     <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
                       {q.question}

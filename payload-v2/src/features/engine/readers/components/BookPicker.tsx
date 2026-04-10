@@ -52,7 +52,7 @@ export default function BookPicker() {
 
   // ── Dynamic category icons from actual book data ─────────────────────────
   const categoryIcons = useMemo(() => {
-    const cats = [...new Set(books.map((b) => b.category || 'textbook'))]
+    const cats = [...new Set(books.map((b) => b.category || 'textbooks'))]
     return buildCategoryIcons(cats)
   }, [books])
 

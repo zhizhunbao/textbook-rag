@@ -84,7 +84,7 @@ function mapPayloadBook(b: Record<string, any>): BookBase {
     title: b.title ?? '(untitled)',
     authors: b.authors ?? '',
     chunk_count: b.chunkCount ?? 0,
-    category: b.category ?? 'textbook',
+    category: b.category ?? 'textbooks',
     subcategory: b.subcategory ?? '',
     status,
     pageCount: b.metadata?.pageCount ?? 0,

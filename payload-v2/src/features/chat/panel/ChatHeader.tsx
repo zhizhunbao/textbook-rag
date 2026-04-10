@@ -1,10 +1,11 @@
 /**
- * ChatHeader — Chat panel top bar with title, model selector, and questions toggle.
+ * ChatHeader — Chat panel top bar with title, model selector, scope indicator,
+ * and questions toggle.
  *
- * Usage: <ChatHeader sessionBooks={books} selectedModel={model} ... />
+ * Usage: <ChatHeader sessionBooks={books} totalBookCount={67} ... />
  */
 
-import { Lightbulb } from "lucide-react";
+import { Lightbulb, X } from "lucide-react";
 import type { ModelInfo } from "@/features/shared/types";
 import type { BookBase } from "@/features/shared/books";
 
@@ -13,11 +14,15 @@ import type { BookBase } from "@/features/shared/books";
 // ============================================================
 interface ChatHeaderProps {
   sessionBooks: BookBase[];
+  /** Total indexed book count — used to detect "scoped" vs "all" mode. */
+  totalBookCount: number;
   selectedModel: string;
   models: ModelInfo[];
   loading: boolean;
   onModelChange: (model: string, provider?: string) => void;
   onNewChat: () => void;
+  /** Clear book scope — search all documents again. */
+  onClearScope?: () => void;
   /** Questions sidebar toggle */
   showQuestions?: boolean;
   onToggleQuestions?: () => void;
@@ -28,14 +33,18 @@ interface ChatHeaderProps {
 // ============================================================
 export default function ChatHeader({
   sessionBooks,
+  totalBookCount,
   selectedModel,
   models,
   loading,
   onModelChange,
   onNewChat,
+  onClearScope,
   showQuestions,
   onToggleQuestions,
 }: ChatHeaderProps) {
+  const isScoped = sessionBooks.length < totalBookCount && totalBookCount > 0;
+
   return (
     <div className="shrink-0 border-b border-border bg-card px-4 py-2.5">
       <div className="flex items-center gap-3">
@@ -46,14 +55,35 @@ export default function ChatHeader({
           </svg>
         </div>
 
-        {/* Title */}
+        {/* Title + scope indicator */}
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-semibold text-foreground">EcDev Research</h2>
-          <p className="text-[11px] text-muted-foreground">
-            {sessionBooks.length === 1
-              ? sessionBooks[0].title
-              : `Searching all ${sessionBooks.length} documents`}
-          </p>
+          <div className="flex items-center gap-1.5">
+            {isScoped ? (
+              <>
+                <span className="text-[11px] text-primary font-medium">
+                  {sessionBooks.length === 1
+                    ? sessionBooks[0].title
+                    : `Searching ${sessionBooks.length} of ${totalBookCount} documents`}
+                </span>
+                {onClearScope && (
+                  <button
+                    type="button"
+                    onClick={onClearScope}
+                    className="flex items-center gap-0.5 text-[10px] text-muted-foreground hover:text-foreground bg-muted hover:bg-muted-foreground/20 rounded px-1.5 py-0.5 transition-colors"
+                    title="Search all documents"
+                  >
+                    <X className="h-2.5 w-2.5" />
+                    <span>All</span>
+                  </button>
+                )}
+              </>
+            ) : (
+              <p className="text-[11px] text-muted-foreground">
+                {`Searching all ${sessionBooks.length} documents`}
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Controls */}

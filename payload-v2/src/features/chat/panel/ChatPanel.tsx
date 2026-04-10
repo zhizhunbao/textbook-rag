@@ -364,11 +364,16 @@ export default function ChatPanel({
       {/* ── Header ── */}
       <ChatHeader
         sessionBooks={sessionBooks}
+        totalBookCount={books.length}
         selectedModel={selectedModel}
         models={models}
         loading={loading}
         onModelChange={(model, provider) => dispatch({ type: "SET_MODEL", model, provider })}
         onNewChat={resetConversation}
+        onClearScope={() => {
+          // Reset to all-books scope without clearing messages
+          dispatch({ type: 'START_SESSION', bookIds: books.map((b) => b.id) });
+        }}
         showQuestions={showQuestions}
         onToggleQuestions={onToggleQuestions}
       />

@@ -153,15 +153,28 @@ export default function AnswerBlockRenderer({
   const [selectedGlobalIndex, setSelectedGlobalIndex] = useState<number | null>(null);
 
   // ── Pre-compute global sequential numbering across all blocks ──
+  // Each citation index (e.g., Source 2) only appears as a chip under its
+  // FIRST paragraph — subsequent paragraphs skip already-shown citations
+  // to avoid repetitive display of the same source card.
   const blocksWithGlobalIndex = useMemo(() => {
     let globalIdx = 0;
+    const shownCitations = new Set<number>();
+
     const result = blocks.map((block) => {
       const blockSources = block.citationIndices
         .map((ci) => ({ ci, source: citationMap.get(ci) }))
         .filter(
           (entry): entry is { ci: number; source: SourceInfo } =>
             entry.source != null,
-        );
+        )
+        // Only show citations that haven't appeared in a previous block
+        .filter((entry) => !shownCitations.has(entry.ci));
+
+      // Mark these citations as shown
+      for (const entry of blockSources) {
+        shownCitations.add(entry.ci);
+      }
+
       const withGlobal = blockSources.map((entry) => ({
         ...entry,
         globalIndex: ++globalIdx,

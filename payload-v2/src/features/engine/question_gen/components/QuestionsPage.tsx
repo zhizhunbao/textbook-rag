@@ -163,7 +163,7 @@ function QuestionsPageInner() {
 
   // Dynamic category icons from actual book data
   const categoryIcons = useMemo(() => {
-    const cats = [...new Set(books.map((b) => b.category || 'textbook'))]
+    const cats = [...new Set(books.map((b) => b.category || 'textbooks'))]
     return buildCategoryIcons(cats, 'h-3.5 w-3.5')
   }, [books])
 
@@ -190,11 +190,11 @@ function QuestionsPageInner() {
     if (filter.includes('::')) {
       const [cat, sub] = filter.split('::')
       return books
-        .filter((b) => (b.category || 'textbook') === cat && b.subcategory === sub)
+        .filter((b) => (b.category || 'textbooks') === cat && b.subcategory === sub)
         .map((b) => b.book_id)
     }
     return books
-      .filter((b) => (b.category || 'textbook') === filter)
+      .filter((b) => (b.category || 'textbooks') === filter)
       .map((b) => b.book_id)
   }, [filter, books, isSingleBook, selectedBookId])
 
@@ -311,9 +311,9 @@ function QuestionsPageInner() {
       const catBooks = books.filter((b) => {
         if (filter.includes('::')) {
           const [cat, sub] = filter.split('::')
-          return (b.category || 'textbook') === cat && b.subcategory === sub
+          return (b.category || 'textbooks') === cat && b.subcategory === sub
         }
-        return (b.category || 'textbook') === filter
+        return (b.category || 'textbooks') === filter
       })
       const catBookIds = new Set(catBooks.map((b) => b.book_id))
       if (catBookIds.size > 0) {
@@ -558,6 +558,7 @@ function QuestionsPageInner() {
               topicHint: q.type || q.difficulty || '',
               source: 'ai',
               likes: 0,
+              questionCategory: q.question_category || '',
               sourcePage: q.source_page ?? pageStart ?? undefined,
               scoreRelevance: q.score_relevance || undefined,
               scoreClarity: q.score_clarity || undefined,
@@ -1152,8 +1153,13 @@ function QuestionsPageInner() {
                         )} />
 
                         <div className="p-4">
-                          {/* Header: type badge + source */}
-                          <div className="flex items-center gap-2 mb-3">
+                          {/* Header: category + type badge + source */}
+                          <div className="flex items-center gap-2 mb-3 flex-wrap">
+                            {q.questionCategory && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold rounded-full px-2 py-0.5 bg-gradient-to-r from-teal-500/20 to-cyan-500/10 text-teal-400">
+                                🏷️ {q.questionCategory}
+                              </span>
+                            )}
                             {q.topicHint && (
                               <span className={cn(
                                 'inline-flex items-center gap-1 text-[10px] font-semibold rounded-full px-2 py-0.5',

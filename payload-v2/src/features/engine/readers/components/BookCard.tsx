@@ -23,7 +23,7 @@ interface BookCardProps {
 }
 
 const KNOWN_CAT_LABELS: Record<string, { label: string; color: string }> = {
-  textbook: { label: 'Textbook', color: 'bg-brand-500/10 text-brand-400' },
+  textbook: { label: 'textbooks', color: 'bg-brand-500/10 text-brand-400' },
   ecdev: { label: 'EC Dev', color: 'bg-purple-500/10 text-purple-400' },
   real_estate: { label: 'Real Estate', color: 'bg-teal-500/10 text-teal-400' },
 }

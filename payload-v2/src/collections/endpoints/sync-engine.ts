@@ -132,7 +132,7 @@ export const syncEngineEndpoint: Endpoint = {
 /** Infer book category from engine book_id */
 function inferCategory(bookId: string): string {
   if (bookId.startsWith('ed_update') || bookId.startsWith('oreb_')) return 'ecdev'
-  return 'textbook'
+  return 'textbooks'
 }
 
 /** Infer subcategory from engine book_id for hierarchical filtering */

@@ -38,7 +38,7 @@ export interface ClassifyDialogProps {
 // Well-known categories (shown as quick-pick options)
 // ============================================================
 const COMMON_CATEGORIES = [
-  { value: 'textbook', label: 'Textbook', emoji: '📚' },
+  { value: 'textbooks', label: 'textbooks', emoji: '📚' },
   { value: 'ecdev', label: 'EC Dev', emoji: '📊' },
   { value: 'real_estate', label: 'Real Estate', emoji: '🏠' },
   { value: 'research_paper', label: 'Research', emoji: '🔬' },
@@ -94,7 +94,7 @@ export default function ClassifyDialog({
           err instanceof Error ? err.message : 'Classification failed',
         )
         // Default to textbook on error
-        setCategory('textbook')
+        setCategory('textbooks')
       } finally {
         if (!cancelled) setClassifying(false)
       }
@@ -123,7 +123,7 @@ export default function ClassifyDialog({
   const handleConfirm = useCallback(() => {
     onConfirm({
       title: title.trim() || initialTitle,
-      category: category || 'textbook',
+      category: category || 'textbooks',
       subcategory: subcategory.trim(),
     })
   }, [title, category, subcategory, initialTitle, onConfirm])

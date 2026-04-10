@@ -264,19 +264,10 @@ export default function MediaTab({ books, filter, onBooksRefresh }: MediaTabProp
   // ── Start new chat with selected books ──
   const startNewChat = useCallback(() => {
     if (selected.size === 0) return
-    // Find book_ids for selected Payload IDs
-    const selectedBookIds = books
-      .filter((b) => selected.has(b.id))
-      .map((b) => b.book_id)
-    const state = {
-      currentBookId: selectedBookIds[0],
-      sessionBookIds: [...selected],
-      sessionStarted: true,
-      currentPage: 1,
-    }
-    sessionStorage.setItem('textbook-rag-state', JSON.stringify(state))
-    router.push('/chat')
-  }, [selected, books, router])
+    // Pass selected Payload IDs via URL params — ChatPage will read and scope the session
+    const bookParams = [...selected].join(',')
+    router.push(`/chat?books=${bookParams}`)
+  }, [selected, router])
 
   // ── Edit save handler ──
   const handleEditSave = useCallback(() => {
@@ -365,14 +356,24 @@ export default function MediaTab({ books, filter, onBooksRefresh }: MediaTabProp
 
           {/* Selected count + batch actions */}
           {selected.size > 0 && (
-            <button
-              type="button"
-              onClick={handleBatchDelete}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-              {isFr ? `删除 (${selected.size})` : `Delete (${selected.size})`}
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={startNewChat}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
+                <MessageSquarePlus className="h-3.5 w-3.5" />
+                {isFr ? `开始对话 (${selected.size})` : `Chat (${selected.size})`}
+              </button>
+              <button
+                type="button"
+                onClick={handleBatchDelete}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                {isFr ? `删除 (${selected.size})` : `Delete (${selected.size})`}
+              </button>
+            </>
           )}
 
           <span className="text-[10px] tabular-nums text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
@@ -554,7 +555,7 @@ export default function MediaTab({ books, filter, onBooksRefresh }: MediaTabProp
                         authors: book.authors || null,
                         isbn: null,
                         coverImage: null,
-                        category: book.category || 'textbook',
+                        category: book.category || 'textbooks',
                         subcategory: book.subcategory || null,
                         status: book.status,
                         chunkCount: book.chunk_count ?? null,
@@ -704,32 +705,6 @@ export default function MediaTab({ books, filter, onBooksRefresh }: MediaTabProp
         )}
       </div>
 
-      {/* ── Footer: multi-select action bar ── */}
-      {selected.size > 0 && (
-        <div className="shrink-0 flex items-center gap-3 px-4 py-2.5 bg-card border-t border-border mt-4 rounded-lg animate-in slide-in-from-bottom-1 duration-200">
-          <CheckSquare className="h-4 w-4 shrink-0 text-primary" />
-          <span className="text-sm font-medium flex-1 text-foreground">
-            {isFr
-              ? `已选 ${selected.size} 本书`
-              : `${selected.size} book${selected.size > 1 ? 's' : ''} selected`}
-          </span>
-          <button
-            type="button"
-            onClick={() => setSelected(new Set())}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded"
-          >
-            {isFr ? '清除' : 'Clear'}
-          </button>
-          <button
-            type="button"
-            onClick={startNewChat}
-            className="flex items-center gap-2 bg-primary text-primary-foreground rounded-lg px-4 py-1.5 text-sm font-semibold hover:bg-primary/90 transition-colors"
-          >
-            <MessageSquarePlus className="h-4 w-4" />
-            {isFr ? '开始对话' : 'New Chat'}
-          </button>
-        </div>
-      )}
     </div>
   )
 }

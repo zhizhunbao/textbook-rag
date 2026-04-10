@@ -1,16 +1,16 @@
 /**
  * chat/QuestionsSidebar — Right-side collapsible panel for suggested questions
  *
- * Data source: Ottawa EcDev categories from data/suggested_questions.json
- * Fallback: CMS questions via useSuggestedQuestions (currently disabled)
+ * Data source priority:
+ *   1. CMS questions scoped to session bookIds (via useSuggestedQuestions)
+ *   2. Ottawa EcDev defaults from data/suggested_questions.json (fallback)
  *
  * Layout:
  *  ┌─────────────────────┐
  *  │ 💡 Questions  [X]   │  ← header
  *  │ 🔍 Search...        │  ← filter
- *  │ 📈 Labour Market    │  ← category (expandable)
+ *  │ 📖 Book Title       │  ← group (expandable)
  *  │    question text     │
- *  │ 🏠 Housing Starts   │
  *  └─────────────────────┘
  */
 'use client'
@@ -23,6 +23,7 @@ import {
   ChevronRight,
   MessageCircleQuestion,
   Loader2,
+  BookOpen,
 } from 'lucide-react'
 import { cn } from '@/features/shared/utils'
 import { useSuggestedQuestions } from '@/features/engine/question_gen'
@@ -31,8 +32,10 @@ import { useSuggestedQuestions } from '@/features/engine/question_gen'
 // Types
 // ============================================================
 interface QuestionsSidebarProps {
-  /** Active session book IDs to query questions for */
+  /** Active session book IDs (engine book_id strings) to query questions for */
   bookIds: string[]
+  /** Whether a specific book scope is active (false = "all docs" mode) */
+  isScoped?: boolean
   /** Called when user clicks a question */
   onSelect: (question: string) => void
   /** Close this panel */
@@ -42,9 +45,8 @@ interface QuestionsSidebarProps {
   style?: React.CSSProperties
 }
 
-
 // ============================================================
-// Default Ottawa EcDev questions (imported from RAG-Project)
+// Default Ottawa EcDev questions (fallback when no CMS questions)
 // ============================================================
 import suggestedQuestionsData from '../../../../../data/suggested_questions.json'
 
@@ -52,32 +54,76 @@ type QuestionCategory = { id: string; label: string; icon: string; questions: st
 const DEFAULT_CATEGORIES: QuestionCategory[] = suggestedQuestionsData.categories
 
 // ============================================================
+// Helpers
+// ============================================================
+
+/** Group CMS questions by questionCategory (preferred) or bookTitle (fallback). */
+function groupByCategory(questions: Array<{ question: string; bookTitle: string | null; questionCategory: string | null }>) {
+  const map = new Map<string, string[]>()
+  for (const q of questions) {
+    const key = q.questionCategory || q.bookTitle || 'Untitled'
+    const arr = map.get(key) ?? []
+    arr.push(q.question)
+    map.set(key, arr)
+  }
+  return [...map.entries()].map(([label, qs]) => ({ label, questions: qs }))
+}
+
+// ============================================================
 // Component
 // ============================================================
 export default function QuestionsSidebar({
   bookIds,
+  isScoped = false,
   onSelect,
   onClose,
   className,
   style,
 }: QuestionsSidebarProps) {
-  // CMS questions not used for now — Ottawa default categories are primary
-  const { loading } = useSuggestedQuestions(bookIds, 20)
+  // Only fetch CMS questions when scoped to specific books
+  const { questions: cmsQuestions, loading } = useSuggestedQuestions(isScoped ? bookIds : [], 50)
   const [search, setSearch] = useState('')
-  const [expandedBook, setExpandedBook] = useState<string | null>(null)
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(null)
 
-  // Filter default questions by search
-  const defaultGroups = useMemo(() => {
-    if (!search.trim()) return DEFAULT_CATEGORIES
-    const lower = search.toLowerCase()
-    return DEFAULT_CATEGORIES.map((cat) => ({
-      ...cat,
-      questions: cat.questions.filter((q) => q.toLowerCase().includes(lower)),
-    })).filter((cat) => cat.questions.length > 0)
-  }, [search])
+  // Decide data source: CMS questions (scoped to bookIds) vs defaults
+  const hasCmsQuestions = cmsQuestions.length > 0
 
-  const totalQuestions = defaultGroups.reduce((s, c) => s + c.questions.length, 0)
-  const effectiveExpanded = expandedBook
+  // Build display groups from CMS questions or fall back to defaults
+  const displayGroups = useMemo(() => {
+    let groups: Array<{ label: string; icon?: string; questions: string[] }>
+
+    if (hasCmsQuestions) {
+      groups = groupByCategory(cmsQuestions).map((g) => ({
+        label: g.label,
+        icon: '🏷️',
+        questions: g.questions,
+      }))
+    } else {
+      groups = DEFAULT_CATEGORIES.map((cat) => ({
+        label: cat.label,
+        icon: cat.icon,
+        questions: cat.questions,
+      }))
+    }
+
+    // Apply search filter
+    if (search.trim()) {
+      const lower = search.toLowerCase()
+      groups = groups
+        .map((g) => ({
+          ...g,
+          questions: g.questions.filter((q) => q.toLowerCase().includes(lower)),
+        }))
+        .filter((g) => g.questions.length > 0)
+    }
+
+    return groups
+  }, [hasCmsQuestions, cmsQuestions, search])
+
+  const totalQuestions = displayGroups.reduce((s, g) => s + g.questions.length, 0)
+
+  // Auto-expand first group if only one
+  const effectiveExpanded = expandedGroup ?? (displayGroups.length === 1 ? displayGroups[0].label : null)
 
   return (
     <aside
@@ -128,6 +174,16 @@ export default function QuestionsSidebar({
         </div>
       </div>
 
+      {/* ── Source label ── */}
+      {hasCmsQuestions && (
+        <div className="px-3 py-1.5 border-b border-border/50 shrink-0">
+          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+            <BookOpen size={10} />
+            <span>Scoped to {bookIds.length} book{bookIds.length > 1 ? 's' : ''} · grouped by topic</span>
+          </div>
+        </div>
+      )}
+
       {/* ── Question List ── */}
       <div className="flex-1 min-h-0 overflow-y-auto">
         {loading ? (
@@ -135,31 +191,30 @@ export default function QuestionsSidebar({
             <Loader2 size={20} className="animate-spin text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Loading questions…</span>
           </div>
-        ) : defaultGroups.length === 0 ? (
+        ) : displayGroups.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 gap-2 px-4 text-center">
             <MessageCircleQuestion size={28} className="text-muted-foreground/40" />
             <p className="text-xs text-muted-foreground">No results found</p>
           </div>
         ) : (
-          /* ── Ottawa EcDev questions grouped by category ── */
-          defaultGroups.map((cat) => {
-            const isExpanded = effectiveExpanded === cat.label
+          displayGroups.map((group) => {
+            const isExpanded = effectiveExpanded === group.label
             return (
-              <div key={cat.label} className="border-b border-border/50 last:border-b-0">
+              <div key={group.label} className="border-b border-border/50 last:border-b-0">
                 <button
                   type="button"
-                  onClick={() => setExpandedBook(isExpanded ? null : cat.label)}
+                  onClick={() => setExpandedGroup(isExpanded ? null : group.label)}
                   className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-xs">{cat.icon}</span>
+                    <span className="text-xs">{group.icon}</span>
                     <span className="text-xs font-medium text-foreground truncate">
-                      {cat.label}
+                      {group.label}
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     <span className="text-[10px] font-medium text-primary bg-primary/10 rounded-full px-1.5 py-0.5">
-                      {cat.questions.length}
+                      {group.questions.length}
                     </span>
                     <ChevronRight
                       size={14}
@@ -172,7 +227,7 @@ export default function QuestionsSidebar({
                 </button>
                 {isExpanded && (
                   <div className="pb-1">
-                    {cat.questions.map((question) => (
+                    {group.questions.map((question) => (
                       <button
                         key={question}
                         type="button"
@@ -202,8 +257,10 @@ export default function QuestionsSidebar({
       <div className="shrink-0 px-3 py-2 border-t border-border">
         <p className="text-center text-[10px] text-muted-foreground">
           {totalQuestions} suggested questions
+          {!hasCmsQuestions && ' (defaults)'}
         </p>
       </div>
     </aside>
   )
 }
+
