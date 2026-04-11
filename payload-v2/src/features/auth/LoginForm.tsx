@@ -71,11 +71,6 @@ export default function LoginForm() {
         bg-card/95 text-card-foreground border border-border/50
         animate-[slideUp_0.8s_cubic-bezier(0.34,1.56,0.64,1)]"
       >
-        {/* Logo */}
-        <div className="flex justify-center mb-5">
-          <img src="/ottawa-logo.jpg" alt="City of Ottawa" className="h-14 w-14 rounded-xl object-contain" />
-        </div>
-
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="flex flex-col gap-2">

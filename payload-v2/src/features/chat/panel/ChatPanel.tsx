@@ -84,6 +84,8 @@ export default function ChatPanel({
 
   /** Track current session id across renders inside callbacks */
   const sessionIdRef = useRef<string | null>(activeSessionId);
+  /** Track the previous session id so we detect session switches */
+  const prevSessionIdRef = useRef<string | null>(activeSessionId);
   useEffect(() => {
     sessionIdRef.current = activeSessionId;
   }, [activeSessionId]);
@@ -91,8 +93,23 @@ export default function ChatPanel({
   /** When history panel selects an old session (or page refreshes), restore its messages */
   useEffect(() => {
     if (!activeSessionId) return;
-    // Skip if we already have messages for this session
-    if (messages.length > 0) return;
+
+    // NEVER overwrite messages during an active chat (streaming / loading)
+    // This prevents appendMessages() → sessions update → effect re-run
+    // from clobbering the live conversation state.
+    if (isStreaming || loading) return;
+
+    // Detect session switch — clear stale messages from the previous session
+    const isSessionSwitch = prevSessionIdRef.current !== activeSessionId;
+    if (isSessionSwitch) {
+      prevSessionIdRef.current = activeSessionId;
+      setMessages([]);
+    }
+
+    // Only restore from cache/server on session switch or initial load (empty local state)
+    // Do NOT overwrite when sessions list updates mid-conversation (appendMessages trigger)
+    if (!isSessionSwitch && messages.length > 0) return;
+
     const session = chatHistory.getSession(activeSessionId);
     if (session && session.messages.length > 0) {
       setMessages(session.messages as Message[]);
@@ -100,6 +117,8 @@ export default function ChatPanel({
     }
     // Messages not cached — lazy-load from Payload
     chatHistory.loadSessionMessages(activeSessionId).then((msgs) => {
+      // Guard: don't overwrite if user started chatting while we were loading
+      if (sessionIdRef.current !== activeSessionId) return;
       if (msgs.length > 0) {
         setMessages(msgs as Message[]);
       }

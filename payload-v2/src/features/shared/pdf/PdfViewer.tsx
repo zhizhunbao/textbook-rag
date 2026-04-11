@@ -46,6 +46,28 @@ const INITIAL_RENDER_RADIUS = 2;
 const VISIBLE_RENDER_RADIUS = 3;
 const MIN_TEXT_MATCH_CHARS = 24;
 
+// Background progressive loading tuning
+const BG_BATCH_SIZE = 20;
+const BG_BATCH_DELAY_MS = 200;
+const BG_INITIAL_DELAY_MS = 800;
+
+/** CMap config for CJK font rendering (Chinese/Japanese/Korean) */
+const PDF_OPTIONS = {
+  cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjs.version}/cmaps/`,
+  cMapPacked: true,
+};
+
+/** Per-book cached viewer state (survives book tab switches) */
+interface BookCache {
+  numPages: number;
+  pageDimsByPage: Record<number, { width: number; height: number }>;
+  renderedPages: Set<number>;
+  loadedPages: Set<number>;
+  tocEntries: TocEntry[];
+  renderWidth: number;
+  zoomScale: number;
+}
+
 interface PdfPageCanvasProps {
   pageNumber: number;
   renderWidth: number;
@@ -303,6 +325,10 @@ export default function PdfViewer() {
     nonce: number;
   } | null>(null);
 
+  // Per-book state cache — survives tab switches within the session
+  const bookCacheRef = useRef(new Map<string, BookCache>());
+  const prevBookKeyRef = useRef<string | null>(null);
+
   const hasToc = tocEntries.length > 0;
 
   // Build a map: pageNumber → BboxEntry[] for overlay rendering
@@ -414,6 +440,43 @@ export default function PdfViewer() {
       return;
     }
 
+    const bookKey = `${currentBookId}:${pdfVariant}`;
+
+    // Save outgoing book state to cache
+    if (prevBookKeyRef.current && prevBookKeyRef.current !== bookKey) {
+      bookCacheRef.current.set(prevBookKeyRef.current, {
+        numPages,
+        pageDimsByPage,
+        renderedPages,
+        loadedPages,
+        tocEntries,
+        renderWidth,
+        zoomScale,
+      });
+    }
+    prevBookKeyRef.current = bookKey;
+
+    // Restore from cache if available
+    const cached = bookCacheRef.current.get(bookKey);
+    if (cached) {
+      setNumPages(cached.numPages);
+      setPageDimsByPage(cached.pageDimsByPage);
+      setRenderedPages(new Set([...cached.renderedPages, currentPage]));
+      setLoadedPages(cached.loadedPages);
+      setTocEntries(cached.tocEntries);
+      setRenderWidth(cached.renderWidth);
+      setZoomScale(cached.zoomScale);
+      setSelectedTocEntryId(null);
+      // pageRefs are DOM nodes — they will be re-created by React when Document mounts
+      pageRefs.current.clear();
+      didFitPageRef.current = cached.renderWidth > 0;
+      matchedTextNonceRef.current = null;
+      pendingPageJumpRef.current = null;
+      pendingSourceScrollRef.current = null;
+      return;
+    }
+
+    // No cache — fresh reset
     setPageDimsByPage({});
     setNumPages(0);
     setRenderWidth(0);
@@ -509,6 +572,30 @@ export default function PdfViewer() {
       markPagesRendered(currentPage, INITIAL_RENDER_RADIUS);
     });
   }, [currentPage, markPagesRendered, numPages]);
+
+  // Background progressive loading — render ALL pages in batches after doc loads
+  useEffect(() => {
+    if (numPages === 0) return;
+
+    let batchStart = 1;
+    let timerId: ReturnType<typeof setTimeout>;
+
+    const loadNextBatch = () => {
+      setRenderedPages((prev) => {
+        const next = new Set(prev);
+        const end = Math.min(batchStart + BG_BATCH_SIZE - 1, numPages);
+        for (let i = batchStart; i <= end; i++) next.add(i);
+        batchStart = end + 1;
+        return next;
+      });
+      if (batchStart <= numPages) {
+        timerId = setTimeout(loadNextBatch, BG_BATCH_DELAY_MS);
+      }
+    };
+
+    timerId = setTimeout(loadNextBatch, BG_INITIAL_DELAY_MS);
+    return () => clearTimeout(timerId);
+  }, [numPages]);
 
   useEffect(() => {
     const target = pageRefs.current.get(currentPage);
@@ -992,6 +1079,7 @@ export default function PdfViewer() {
               error={
                 <div className="p-4 text-sm text-destructive">Failed to load PDF.</div>
               }
+              options={PDF_OPTIONS}
             >
               <div className="flex flex-col items-center" style={{ gap: scaledPageGap }}>
                 {pageNumbers.map((pageNumber) => {

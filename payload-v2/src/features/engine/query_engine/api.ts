@@ -179,6 +179,7 @@ export async function queryTextbook(req: QueryRequest): Promise<QueryResponse> {
       filters: req.filters ?? {},
       model: req.model,
       provider: req.provider,
+      reranker: req.reranker ?? null,
     }),
   })
 
@@ -221,6 +222,7 @@ export async function queryTextbookStream(
         filters: req.filters ?? {},
         model: req.model,
         provider: req.provider,
+        reranker: req.reranker ?? null,
       }),
       signal: callbacks.signal,
     })

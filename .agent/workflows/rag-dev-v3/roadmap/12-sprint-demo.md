@@ -3,7 +3,7 @@
 > 目标：明天展示前的高优先级冲刺。按 **impact/effort** 排序，聚焦 6 个任务让 demo 效果最大化。
 >
 > 前置条件：S1 ✅ + S2 🚧 (21/30) + Hotfix 🚧 (6/7) + Acquisition 🚧 (5/13) 已具备基本可用的 RAG 管线。
-> **状态**: ✅ 10/14 完成 — T1/T2/T3/T4-01/T6 已实现。T4-02/T4-03/T5 待做。
+> **状态**: ✅ 14/14 完成 — T1/T2/T3/T4-01/T4-03/T6 已实现。T4-02 已取消。T5 已实现。
 >
 > Project Brief 对齐：`docs/project-brief.md` 中明确要求「每个回答包含 source tracking + trustability indicator」「产出 narrative summaries + tables + graphs」
 
@@ -182,21 +182,11 @@
 
 **文件**: `features/chat/panel/CitationChip.tsx`, `features/shared/types.ts`
 
-### [DM-T4-02] SourceCard 合并到 CitationChip
+### ~~[DM-T4-02] SourceCard 合并到 CitationChip~~ — 🗑️ 已取消
 
-**类型**: Frontend · **优先级**: P1 · **预估**: 1h
+> **取消原因**: hover popover 合并不需要，当前 CitationChip + SourceCard 各自职责清晰，无需合并。
 
-**描述**: SourceCard 和 CitationChip 的 hover popover 逻辑重复。合并为: CitationChip 统一包含 hover 预览（当前由 AnswerBlockRenderer 内联面板 + CitationPopover 两套并存）。
-
-**验收标准**:
-- [ ] CitationChip 支持 `variant: 'inline' | 'standalone'` 两种模式
-- [ ] inline 模式: 在 AnswerBlockRenderer 中使用，click 展开内联面板
-- [ ] standalone 模式: 在 MessageBubble 底部使用，hover 显示 popover
-- [ ] 删除 SourceCard.tsx 中与 CitationChip 重复的渲染逻辑
-
-**文件**: `features/chat/panel/CitationChip.tsx`, `features/chat/panel/SourceCard.tsx`
-
-### [DM-T4-03] 后端 Score 透传
+### [DM-T4-03] 后端 Score 透传 ✅
 
 **类型**: Backend · **优先级**: P0 · **预估**: 0.5h
 
@@ -205,9 +195,9 @@
 **当前状态**: `citation.py` 中 `NodeWithScore.score` 已可用（LlamaIndex 默认返回），需确认 API response 序列化时包含 `score` 字段。
 
 **验收标准**:
-- [ ] `/engine/query/stream` response 中每个 source 包含 `score` 字段
-- [ ] `score` 范围 0.0 – 1.0（归一化）
-- [ ] 前端 SourceInfo 类型已包含 `score?: number`
+- [x] `/engine/query/stream` response 中每个 source 包含 `score` 字段
+- [x] `score` 范围 0.0 – 1.0（归一化）
+- [x] 前端 SourceInfo 类型已包含 `score?: number`
 
 **文件**: `engine_v2/api/routes/query.py`, `engine_v2/rag/citation.py`
 
@@ -219,7 +209,7 @@
 > 仅实现：报告列表 + 从聊天历史生成简要报告 + Markdown 渲染预览。
 > 不实现：模板 Registry、code_executor 图表、PDF 导出。
 
-### [DM-T5-01] Reports Payload 集合
+### [DM-T5-01] Reports Payload 集合 ✅
 
 **类型**: Backend (Payload) · **优先级**: P0 · **预估**: 0.5h
 
@@ -239,13 +229,13 @@ Reports (slug: 'reports')
 ```
 
 **验收标准**:
-- [ ] 创建 `collections/Reports.ts`
-- [ ] access: 用户只能读写自己的报告
-- [ ] admin group: 'Reports'
+- [x] 创建 `collections/Reports.ts`
+- [x] access: 用户只能读写自己的报告
+- [x] admin group: 'Reports'
 
 **文件**: `collections/Reports.ts`, `payload.config.ts`
 
-### [DM-T5-02] 报告生成 API
+### [DM-T5-02] 报告生成 API ✅
 
 **类型**: Backend · **优先级**: P0 · **预估**: 1h
 
@@ -258,16 +248,16 @@ Reports (slug: 'reports')
 4. Methodology — 使用的模型 + 检索引擎信息
 
 **验收标准**:
-- [ ] `POST /engine/report/generate` — body: `{ sessionId, userId }`
-- [ ] 从 Payload ChatMessages 拉取指定 session 的对话
-- [ ] 用 LLM 生成 Markdown 格式报告
-- [ ] 结果存入 Reports 集合
-- [ ] `GET /engine/report/list` — 返回当前用户的报告列表
-- [ ] `GET /engine/report/{id}` — 返回报告详情
+- [x] `POST /engine/report/generate` — body: `{ sessionId, userId }`
+- [x] 从 Payload ChatMessages 拉取指定 session 的对话
+- [x] 用 LLM 生成 Markdown 格式报告
+- [x] 结果存入 Reports 集合
+- [x] `GET /engine/report/list` — 返回当前用户的报告列表
+- [x] `GET /engine/report/{id}` — 返回报告详情
 
 **文件**: `engine_v2/api/routes/report.py`, `engine_v2/report/generator.py`
 
-### [DM-T5-03] 报告页面 (前端)
+### [DM-T5-03] 报告页面 (前端) ✅
 
 **类型**: Frontend · **优先级**: P0 · **预估**: 1h
 
@@ -276,23 +266,23 @@ Reports (slug: 'reports')
 **设计参考**: Ottawa RAG-Project `ReportPage.tsx` 的布局（sidebar + main content）。
 
 **验收标准**:
-- [ ] 创建 `features/report/ReportPage.tsx`
-- [ ] 左侧: 报告列表卡片（标题 + 日期 + 状态）
-- [ ] 右侧: Markdown 渲染（复用 AnswerBlockRenderer 的 Markdown 样式）
-- [ ] "Generate Report" 按钮（选择一个 chat session → 生成）
-- [ ] 路由注册: `/reports`
+- [x] 创建 `features/report/ReportPage.tsx`
+- [x] 左侧: 报告列表卡片（标题 + 日期 + 状态）
+- [x] 右侧: Markdown 渲染（复用 AnswerBlockRenderer 的 Markdown 样式）
+- [x] "Generate Report" 按钮（选择一个 chat session → 生成）
+- [x] 路由注册: `/reports`
 
 **文件**: `features/report/ReportPage.tsx`, `app/(frontend)/reports/page.tsx`
 
-### [DM-T5-04] 侧栏报告入口
+### [DM-T5-04] 侧栏报告入口 ✅
 
 **类型**: Frontend · **优先级**: P1 · **预估**: 0.5h
 
 **描述**: 在 AppSidebar 的 Resources 分组下添加 Report 链接。
 
 **验收标准**:
-- [ ] 在 `navGroupResources` 下添加 `{ titleKey: 'navReports', icon: FileText, href: '/reports' }`
-- [ ] 翻译: `navReports: 'Reports'` (en) / `'报告'` (zh)
+- [x] 在 `navGroupResources` 下添加 `{ titleKey: 'navReports', icon: FileText, href: '/reports' }`
+- [x] 翻译: `navReports: 'Reports'` (en) / `'报告'` (zh)
 
 **文件**: `features/layout/AppSidebar.tsx`, `features/shared/i18n/`
 

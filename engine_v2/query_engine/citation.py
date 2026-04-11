@@ -11,7 +11,7 @@ Key difference from LlamaIndex default:
 
 Architecture:
     TextbookCitationQueryEngine
-    ├── retrieve()  → HybridRetriever → BookFilterPostprocessor
+    ├── retrieve()  → HybridRetriever → BookFilterPostprocessor → Reranker
     ├── _create_citation_nodes()  → merge same-page + add Source N labels
     └── synthesize() → CitationSynthesizer (COMPACT + citation prompts)
 
@@ -256,6 +256,7 @@ def get_query_engine(
     book_id_strings: list[str] | None = None,
     model: str | None = None,
     provider: str | None = None,
+    reranker: str | None = None,
 ) -> TextbookCitationQueryEngine:
     """Build a TextbookCitationQueryEngine.
 
@@ -265,7 +266,8 @@ def get_query_engine(
         ├── _create_citation_nodes  → merge same-page + Source N labels
         ├── synthesizer → CitationSynthesizer (COMPACT + citation prompts)
         └── postprocessors:
-            └── BookFilterPostprocessor (filter BM25 results by book scope)
+            ├── BookFilterPostprocessor (filter BM25 results by book scope)
+            └── Reranker (optional: LLMRerank or SentenceTransformerRerank)
 
     Args:
         similarity_top_k: Number of chunks to retrieve.
@@ -274,6 +276,10 @@ def get_query_engine(
             retrieval to. When provided, only chunks from these books
             are included in the context.
         model: Optional model name override for LLM selection.
+        provider: Optional provider override (e.g. 'ollama', 'azure').
+        reranker: Enable LLMRerank postprocessor (truthy = on).
+            Uses the active LLM to re-score and re-order retrieved chunks
+            before synthesis. Defaults to None (no reranking).
 
     Returns:
         TextbookCitationQueryEngine ready for .query() / .aquery()
@@ -284,12 +290,23 @@ def get_query_engine(
     )
     synthesizer = get_citation_synthesizer(streaming=streaming, model=model, provider=provider)
 
-    # Book filter — drops BM25 results from out-of-scope books
+    # Build postprocessor chain: BookFilter → Reranker (if enabled)
     postprocessors: list[BaseNodePostprocessor] = []
     if book_id_strings:
         postprocessors.append(
             BookFilterPostprocessor(book_id_strings=book_id_strings)
         )
+
+    # Reranker postprocessor — uses LLMRerank from llama-index-core
+    # Ref: llama_index.core.postprocessor.llm_rerank.LLMRerank
+    if reranker:
+        reranker_top_n = min(similarity_top_k, 5)
+        try:
+            from llama_index.core.postprocessor import LLMRerank
+            postprocessors.append(LLMRerank(top_n=reranker_top_n))
+            logger.info("LLMRerank enabled (top_n={})", reranker_top_n)
+        except ImportError:
+            logger.warning("LLMRerank unavailable — skipping reranker")
 
     engine = TextbookCitationQueryEngine(
         retriever=retriever,
@@ -298,8 +315,9 @@ def get_query_engine(
     )
 
     filter_desc = f", books={book_id_strings}" if book_id_strings else ""
-    logger.info("TextbookCitationQueryEngine ready (top_k={}, streaming={}, model={}{})",
-                similarity_top_k, streaming, model or 'default', filter_desc)
+    reranker_desc = f", reranker={reranker}" if reranker else ""
+    logger.info("TextbookCitationQueryEngine ready (top_k={}, streaming={}, model={}{}{})",
+                similarity_top_k, streaming, model or 'default', filter_desc, reranker_desc)
     return engine
 
 

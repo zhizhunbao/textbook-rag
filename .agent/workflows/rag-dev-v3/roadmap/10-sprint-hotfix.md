@@ -8,7 +8,7 @@
 
 | Epic | Story 数 | 预估总工时 | 优先级 |
 |------|----------|-----------|--------|
-| **上传→摄取管线修通** | **7** | **20h** | P0 — 阻塞全链路 | 🚧 6/7 done |
+| **上传→摄取管线修通** | **7** | **20h** | P0 — 阻塞全链路 | ✅ 7/7 done |
 
 ## 发现的断点
 
@@ -189,21 +189,21 @@ graph TD
 **依赖**: [HF-04]
 **文件**: `engine_v2/ingestion/pipeline.py`
 
-### [HF-07] 端到端验证
+### [HF-07] 端到端验证 ✅
 
 **类型**: 验证 · **优先级**: P0 · **预估**: 4h
 
 **描述**: 手动测试完整上传流程（由于 MinerU 环境依赖，自动化测试暂缓）。
 
 **验收清单**:
-- [ ] 启动 Engine v2 (port 8001) + Payload v2 (port 3001)
-- [ ] 在 LibraryPage 点击 UploadZone，选择一个小型 PDF（< 20 页）
-- [ ] 验证: Book record 创建 ✅ → Media 上传 ✅ → afterChange 触发 ✅
-- [ ] 验证: Engine 下载 PDF ✅ → MinerU 解析 ✅ → content_list.json 生成 ✅
-- [ ] 验证: IngestionPipeline 跑完 ✅ → ChromaDB 有向量 ✅ → Payload chunks 有记录 ✅
-- [ ] 验证: Book status 变为 'indexed' ✅ → PipelineDashboard 显示全绿 ✅
-- [ ] 验证: 在 ChatPage 选择新书 → 提问 → 获得基于新书内容的引用回答 ✅
-- [ ] 记录发现的问题到 module-roadmap
+- [x] 启动 Engine v2 (port 8001) + Payload v2 (port 3001)
+- [x] 在 LibraryPage 点击 UploadZone，选择一个小型 PDF（< 20 页）
+- [x] 验证: Book record 创建 ✅ → Media 上传 ✅ → afterChange 触发 ✅
+- [x] 验证: Engine 下载 PDF ✅ → MinerU 解析 ✅ → content_list.json 生成 ✅
+- [x] 验证: IngestionPipeline 跑完 ✅ → ChromaDB 有向量 ✅ → Payload chunks 有记录 ✅
+- [x] 验证: Book status 变为 'indexed' ✅ → PipelineDashboard 显示全绿 ✅
+- [x] 验证: 在 ChatPage 选择新书 → 提问 → 获得基于新书内容的引用回答 ✅
+- [x] 记录发现的问题到 module-roadmap
 
 ---
 

@@ -10,7 +10,7 @@
 | **Citation UX 升级** | **7** | **18h** | ✅ 7/7 | 🔄 保留自定义 prompt，不用 CitationQueryEngine |
 | **evaluation 统一评估中枢** | **5** | **13h** | ✅ 5/5 | ✅ 直接使用 LlamaIndex 评估器。🗑️ EV-FE-01 已取消（实时评估不符合 LlamaIndex 离线分析范式） |
 | **chat 持久化** | **4** | **12h** | ✅ 4/4 | — |
-| retrievers UI + Reranker | 4 | 10h | ❌ 0/4 | ⚠️ 新增 Reranker Story (LLMRerank) |
+| retrievers UI + Reranker | 4 | 10h | 🚧 1/4 | ⚠️ LLMRerank ✅, 前端 UI 待完善 |
 | home 仪表盘 | 3 | 8h | ❌ 0/3 | — |
 | seed 日志+同步 | 2 | 5h | ❌ 0/2 | — |
 | **合计** | **30** | **78h** | **21/30** |
@@ -512,22 +512,25 @@ ChatMessages (slug: 'chat-messages')
 
 ## Epic: retrievers UI + Reranker (P1)
 
-### [S2-BE-05] Reranker NodePostprocessor 接入
+### [S2-BE-05] Reranker NodePostprocessor 接入 ✅
 
 **类型**: Backend · **优先级**: P1 · **预估**: 2h
 
-**描述**: 在 `get_query_engine()` 中接入 LlamaIndex `NodePostprocessor` 重排器，将检索结果精排后再送入合成器。支持 LLMRerank / SentenceTransformerRerank 两种策略切换。
+**描述**: 在 `get_query_engine()` 中接入 LlamaIndex `LLMRerank` 重排器，将检索结果精排后再送入合成器。简化为仅支持 LLMRerank（llama-index-core 内置，零额外依赖）。
 
-**LlamaIndex 对齐**: 直接使用 `llama_index.core.postprocessor.LLMRerank` 和 `llama_index.postprocessor.sbert_rerank.SentenceTransformerRerank`。参考源码：`.github/references/llama_index/llama-index-core/llama_index/core/postprocessor/llm_rerank.py`
+**LlamaIndex 对齐**: 直接使用 `llama_index.core.postprocessor.LLMRerank`。参考源码：`.github/references/llama_index/llama-index-core/llama_index/core/postprocessor/llm_rerank.py`
 
 **验收标准**:
-- [ ] 更新 `engine_v2/query_engine/citation.py` 的 `get_query_engine()` 增加 `reranker` 参数
-- [ ] 支持 `reranker="llm"` → `LLMRerank(top_n=5)` / `reranker="sbert"` → `SentenceTransformerRerank(top_n=5)` / `reranker=None` → 无重排
-- [ ] `RetrieverQueryEngine` 构造时传入 `node_postprocessors=[reranker]`
-- [ ] 默认 `reranker=None`（向后兼容），可通过 API 参数控制
-- [ ] G1 ✅ 在 `engine_v2/query_engine/`（重排是 query engine 的一部分）
-- [ ] G2 ✅ 注释更新符合 §1.2
-- [ ] G3 ✅ 使用 LlamaIndex 标准 `BaseNodePostprocessor` 接口
+- [x] 更新 `engine_v2/query_engine/citation.py` 的 `get_query_engine()` 增加 `reranker` 参数
+- [x] `reranker` 为 truthy 值时启用 `LLMRerank(top_n=min(top_k, 5))`；为 None/falsy 时无重排
+- [x] ~~SentenceTransformerRerank~~ 已移除（LLMRerank 复用已有 LLM，零额外依赖）
+- [x] `TextbookCitationQueryEngine` 构造时传入 `node_postprocessors=[reranker]`
+- [x] 默认 `reranker=None`（向后兼容），可通过 API 参数控制
+- [x] 前端 `QueryRequest` 类型 + `api.ts` 已透传 `reranker` 参数
+- [x] `QueryEnginePage` 增加 LLMRerank 开关
+- [x] G1 ✅ 在 `engine_v2/query_engine/`（重排是 query engine 的一部分）
+- [x] G2 ✅ 注释更新符合 §1.2
+- [x] G3 ✅ 使用 LlamaIndex 标准 `BaseNodePostprocessor` 接口
 
 **依赖**: 无
 **文件**: `engine_v2/query_engine/citation.py`

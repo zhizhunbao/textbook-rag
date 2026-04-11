@@ -71,13 +71,12 @@ function ChatPageInner() {
     const sessionParam = searchParams.get('session')
     if (!sessionParam) return
     const session = getSession(sessionParam)
-    if (session) {
-      dispatch({ type: 'START_SESSION', bookIds: session.sessionBookIds })
-      setActiveSessionId(session.id)
-    }
+    if (!session) return // Sessions not loaded yet — wait for next re-render
+    dispatch({ type: 'START_SESSION', bookIds: session.sessionBookIds })
+    setActiveSessionId(session.id)
     router.replace('/chat')
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams])
+  }, [searchParams, getSession])
 
   /** Handle ?new=1 — start a fresh conversation with all books */
   useEffect(() => {

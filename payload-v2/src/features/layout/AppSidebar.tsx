@@ -17,6 +17,7 @@ import {
   MessageSquareDot,
   Database,
   Globe,
+  Search,
 } from 'lucide-react'
 import { useState } from 'react'
 import { useI18n } from '@/features/shared/i18n'
@@ -97,6 +98,7 @@ export default function AppSidebar() {
     { titleKey: 'navAcquisition', icon: Globe, href: '/engine/acquisition' },
     { titleKey: 'navLlms', icon: Brain, href: '/engine/llms' },
     { titleKey: 'navResponseSynthesizers', icon: FileText, href: '/engine/response_synthesizers' },
+    { titleKey: 'navRetrievers', icon: Search, href: '/engine/retrievers' },
     { titleKey: 'navQueryEngine', icon: MessageSquare, href: '/engine/query_engine' },
     { titleKey: 'navEvaluation', icon: LineChart, href: '/engine/evaluation' },
     { titleKey: 'navFeedback', icon: ThumbsUp, href: '/engine/feedback' },

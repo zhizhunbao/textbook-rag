@@ -124,14 +124,14 @@ graph TD
 
 ## 实施路线
 
-> 各 Sprint 详情见独立文件。总计 147 stories, ~401.5h（含 Sprint Demo 14 stories）。
+> 各 Sprint 详情见独立文件。总计 147 stories, ~401.5h（含 Sprint Demo 14 stories）。**总进度 50/147 (34%)**。
 
 | Sprint | 文件 | 目标 | 工时 | 状态 |
 |--------|------|------|------|------|
-| **Hotfix** | [10-sprint-hotfix.md](./10-sprint-hotfix.md) | **上传→摄取管线修通** (P0) | 20h (7 stories) | 🚧 6/7 |
+| **Hotfix** | [10-sprint-hotfix.md](./10-sprint-hotfix.md) | **上传→摄取管线修通** (P0) | 20h (7 stories) | ✅ 7/7 |
 | Sprint 1 | [01-sprint1.md](./01-sprint1.md) | 端到端用户旅程闭环 | 52h (17 stories) | ✅ 100% |
 | Sprint 2 | [02-sprint2.md](./02-sprint2.md) | 问题生成闭环 + 评估中枢 + 引用UX + 持久化 | 78h (30 stories) | 🚧 21/30 |
-| **Demo** | [12-sprint-demo.md](./12-sprint-demo.md) | **展示日冲刺** — 全书搜索+暖色主题+建议问题+Citation Score+Report MVP+Admin分离 | 10.5h (14 stories) | 🆕 |
+| **Demo** | [12-sprint-demo.md](./12-sprint-demo.md) | **展示日冲刺** — 全书搜索+暖色主题+建议问题+Citation Score+Report MVP+Admin分离 | 10.5h (14 stories) | ✅ 14/14 |
 | Sprint 3 | [03-sprint3.md](./03-sprint3.md) | 评估图表+反馈 + 多题型 + toc | 24h (8 stories) | ❌ |
 | Sprint 4 | [04-sprint4.md](./04-sprint4.md) | 基建补全 | 29h (11 stories) | ❌ |
 | Sprint 5 | [06-sprint5.md](./06-sprint5.md) | 智能检索 + 多步推理 (DeepTutor Tier 1) | 30h (10 stories) | ❌ |
@@ -158,10 +158,10 @@ graph TD
 └── ❌  缺前端 (4)     chunking · toc · embeddings · access
 
 Sprint 分期 (147 Stories, ~401.5h)
-├── Hotfix (P0, 1w, 7 stories, 20h)   管线修通 → 🚧 6/7 完成 (仅剩端到端验证 HF-07)
+├── Hotfix (P0, 1w, 7 stories, 20h)   管线修通 → ✅ 7/7 完成
 ├── S1 (P0, 3w, 17 stories, 52h)      readers上传 · question_gen推荐 · chat流式+推荐 · query_engine前端 · response_synthesizers编辑  → ✅ 100%
 ├── S2 (P0→P1, 3w, 30 stories, 78h)   ✅qgen(5/5) ✅citation(7/7) ✅eval(5/5) ✅chat持久化(4/4) ❌retrievers(0/4) ❌home(0/3) ❌seed(0/2) → 🚧 21/30
-├── Demo (P0, 1d, 14 stories, 10.5h)  全书搜索 · 暖色主题 · 建议问题 · Citation Score · Report MVP · Admin分离 → 🆕
+├── Demo (P0, 1d, 14 stories, 10.5h)  全书搜索 · 暖色主题 · 建议问题 · Citation Score · Report MVP · Admin分离 → ✅ 14/14 完成
 ├── Acquisition (P1, 2w, 13 stories, 34h)  5-Tab导入模块 (AQ-08 Pipeline Tab 进行中) → 🚧 5/13
 ├── S3 (P2, 3w, 8 stories, 24h)       evaluation图表+反馈循环 · question_gen多题型 · toc前端 → ❌
 ├── S4 (P3, 2w, 11 stories, 29h)      chunking前端 · embeddings前端 · llms增强 · access UI → ❌
@@ -171,7 +171,7 @@ Sprint 分期 (147 Stories, ~401.5h)
 └── S8 (P1, 3w, 17 stories, 56h)      多角色报告模板 · 数据收集+分析 · 图表可视化 · 报告合成+PDF导出 → ❌
 
 关键路径 (十一条线)
-├── ✅ 上传链: UploadZone → Books.pdfMedia(HF-01) ✅ → afterChange(HF-02) ✅ → PDF下载(HF-03) ✅ → MinerU解析(HF-04) ✅ → IngestionPipeline → ChromaDB → 可对话
+├── ✅ 上传链: UploadZone → Books.pdfMedia(HF-01) ✅ → afterChange(HF-02) ✅ → PDF下载(HF-03) ✅ → MinerU解析(HF-04) ✅ → IngestionPipeline → ChromaDB → 可对话 ✅ (HF-07 验证通过)
 ├── ✅ 数据链: auth ✅ → readers ✅ → ingestion ✅ → 数据就绪
 ├── 🚧 检索链: ingestion ✅ → retrievers(S2 剩余) → query_engine ✅ → chat
 ├── ✅ 问题链: readers ✅ → question_gen ✅推荐 → chat ✅流式+推荐

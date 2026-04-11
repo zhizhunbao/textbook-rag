@@ -26,6 +26,8 @@ export interface QueryRequest {
   top_k?: number
   model?: string
   provider?: string
+  /** Enable LLMRerank postprocessor (truthy = on). */
+  reranker?: string | null
 }
 
 /** Complete execution trace including retrieval and generation stages. */

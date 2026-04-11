@@ -236,13 +236,27 @@ def _resolve_pdf_path(req: IngestRequest) -> Path | None:
     if path.exists():
         return path
 
-    # 4. Scan all subdirectories for {book_dir_name}.pdf
+    # 4. Scan all subdirectories for {book_dir_name}.pdf (exact match)
     for subdir in RAW_PDF_DIR.iterdir():
         if subdir.is_dir():
             candidate = subdir / f"{book_dir_name}.pdf"
             if candidate.exists():
                 logger.info("Found PDF at {}", candidate)
                 return candidate
+
+    # 5. Prefix match — find PDFs whose stem starts with book_dir_name
+    #    (handles suffixed filenames like economic_update_q4_2024_en.pdf)
+    for subdir in RAW_PDF_DIR.iterdir():
+        if subdir.is_dir():
+            for candidate in sorted(subdir.glob(f"{book_dir_name}*.pdf")):
+                if candidate.is_file():
+                    logger.info("Found PDF via prefix match at {}", candidate)
+                    return candidate
+    # Also check top-level raw_pdfs/ directory for prefix matches
+    for candidate in sorted(RAW_PDF_DIR.glob(f"{book_dir_name}*.pdf")):
+        if candidate.is_file():
+            logger.info("Found PDF via prefix match at {}", candidate)
+            return candidate
 
     logger.warning("No PDF found for book_dir_name={}", book_dir_name)
     return None

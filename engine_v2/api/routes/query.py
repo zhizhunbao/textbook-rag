@@ -48,6 +48,7 @@ class QueryRequest(BaseModel):
     filters: QueryFilters = Field(default_factory=QueryFilters)
     model: str | None = None
     provider: str | None = None
+    reranker: str | None = None  # truthy = enable LLMRerank
 
 
 # ============================================================
@@ -145,6 +146,7 @@ async def _stream_generator(req: QueryRequest):
             book_id_strings=book_ids or None,
             model=req.model,
             provider=req.provider,
+            reranker=req.reranker,
         )
 
         logger.info("Stream query: {} (top_k={}, books={})", req.question[:80], req.top_k, book_ids or "all")

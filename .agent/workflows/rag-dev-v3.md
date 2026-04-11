@@ -1,5 +1,5 @@
 ---
-description: textbook-rag v3 开发工作流 — 基于 docs/ 四文档体系的精简工作流。使用 /rag-dev-v3 启动。
+description: textbook-rag v3 开发工作流 — 基于 rag-dev-v3/ 四文档体系的精简工作流。使用 /rag-dev-v3 启动。
 ---
 # Textbook RAG v3 开发工作流
 
@@ -9,7 +9,7 @@ description: textbook-rag v3 开发工作流 — 基于 docs/ 四文档体系的
 
 ## 📖 文档体系（Single Source of Truth）
 
-**所有结构、模板、清单、状态均在 `docs/` 中维护，本工作流只做编排。**
+**所有结构、模板、清单、状态均在 `rag-dev-v3/` 中维护，本工作流只做编排。**
 
 | 文档                                                   | 内容                                         | 何时查阅           |
 | ------------------------------------------------------ | -------------------------------------------- | ------------------ |
@@ -18,7 +18,7 @@ description: textbook-rag v3 开发工作流 — 基于 docs/ 四文档体系的
 | [module-manifest.md](./rag-dev-v3/module-manifest.md)     | 模块清单 (Layout/UI/UX/Func/Noun) + 文件列表 | 确认模块边界和命名 |
 | [module-roadmap.md](./rag-dev-v3/module-roadmap.md)       | 功能实现状态 (✅/❌) + 待建清单              | 选择开发目标       |
 
-> ⚠️ **不在工作流中重复 docs 内容。** 如果需要查阅，直接 `view_file` 对应文档。
+> ⚠️ **不在工作流中重复 rag-dev-v3/ 内容。** 如果需要查阅，直接 `view_file` 对应文档。
 
 ---
 
@@ -59,18 +59,9 @@ Frontend (React) →  只读 Payload /api/*，不直接调 Engine
 
 ### 代码溯源
 
-- **教科书**: `.agent/config/textbook-skill-mapping.yaml` → `data/mineru_output/` → 注释 `# Ref: Author, Book, ChN — concept`
-- **源码**: `.github/references/` 下的参考仓库 → 注释 `# Ref: source — ClassName`
-  - `llama_index/` — LlamaIndex 核心 API、基类接口
-  - `payload/` — Payload CMS Collection 模式、hooks
-  - `react/` — React 框架参考
-  - `tailwindcss/` — Tailwind CSS 参考
-  - `ui/` — shadcn/ui 组件参考
-  - `MinerU/` — PDF 解析引擎参考
-  - `loguru/` — Python 日志库参考
-  - `lucide/` — 图标库参考
-  - `vite/` — 构建工具参考
-- **无来源不生成**
+1. **模板优先**: 新建文件从 `file-templates/` 复制对应模板，模板是唯一的结构标准
+2. **参考仓库辅助**: 开发具体功能时，可查阅 `.github/references/` 下对应的参考仓库代码
+3. **教科书注释**: 涉及算法/设计模式时，标注来源 `# Ref: Author, Book, ChN — concept`
 
 ---
 

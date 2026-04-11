@@ -13,3 +13,5 @@ export * from './types'
 // ── UI components ───────────────────────────────────────────────────────────
 export { default as PdfViewer } from './components/PdfViewer'
 export { default as BboxOverlay } from './components/BboxOverlay'
+export { default as RetrieverTestPage } from './components/RetrieverTestPage'
+
