@@ -179,3 +179,65 @@ export async function fetchVectorStats(
   return res.json()
 }
 
+// ============================================================
+// TOC (Engine API) — RT-01
+// ============================================================
+
+/** Single TOC entry from Engine /books/{id}/toc. */
+export interface TocEntry {
+  id: number
+  level: number
+  number: string
+  title: string
+  pdf_page: number
+}
+
+/**
+ * Fetch table of contents for a book.
+ * Returns hierarchical heading list (level 1-3).
+ */
+export async function fetchToc(bookId: string): Promise<TocEntry[]> {
+  const res = await fetch(`${ENGINE_URL}/engine/books/${bookId}/toc`)
+  if (!res.ok) {
+    throw new Error(`Failed to fetch TOC: ${res.status}`)
+  }
+  return res.json()
+}
+
+// ============================================================
+// Chunks (Engine API) — RT-02
+// ============================================================
+
+/** Single chunk entry from Engine /books/{id}/chunks. */
+export interface ChunkEntry {
+  id: string
+  text: string
+  page_idx: number
+  content_type: string
+}
+
+export interface ChunksResponse {
+  chunks: ChunkEntry[]
+  count: number
+}
+
+/**
+ * Fetch text chunks for a book, optionally filtered by TOC entry.
+ */
+export async function fetchChunks(
+  bookId: string,
+  opts?: { tocId?: number; limit?: number },
+): Promise<ChunksResponse> {
+  const params = new URLSearchParams()
+  if (opts?.tocId != null) params.set('toc_id', String(opts.tocId))
+  if (opts?.limit != null) params.set('limit', String(opts.limit))
+
+  const qs = params.toString()
+  const url = `${ENGINE_URL}/engine/books/${bookId}/chunks${qs ? `?${qs}` : ''}`
+  const res = await fetch(url)
+  if (!res.ok) {
+    throw new Error(`Failed to fetch chunks: ${res.status}`)
+  }
+  return res.json()
+}
+

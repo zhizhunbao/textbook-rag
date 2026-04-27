@@ -320,7 +320,6 @@ async def _fetch_golden_records(
     """
     from engine_v2.evaluation.history import _get_payload_token
 
-    params: dict[str, str] = {"limit": str(limit)}
     where_clauses: list[str] = []
 
     if verified_only:

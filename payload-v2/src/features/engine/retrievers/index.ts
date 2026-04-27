@@ -9,6 +9,7 @@
 
 // ── Data layer ──────────────────────────────────────────────────────────────
 export * from './types'
+export * from './api'
 
 // ── UI components ───────────────────────────────────────────────────────────
 export { default as PdfViewer } from './components/PdfViewer'

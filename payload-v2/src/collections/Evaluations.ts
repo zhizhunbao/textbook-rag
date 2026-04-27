@@ -138,20 +138,30 @@ export const Evaluations: CollectionConfig = {
       admin: { description: 'Weighted overall: 0.3*RAG + 0.3*LLM + 0.4*Answer (0-1)' },
     },
 
-    // ── Answer sub-dimensions (EV2-T2-04) ──
+    // ── Answer sub-dimensions (EV2-T2-04 / EI-T3) ──
     {
       name: 'completeness',
       type: 'number',
       min: 0,
       max: 1,
-      admin: { description: 'Does the answer fully cover all question aspects? (0-1)' },
+      admin: { description: 'Does the answer fully cover all question aspects? (0-1) [Deprecated]' },
     },
     {
       name: 'clarity',
       type: 'number',
       min: 0,
       max: 1,
-      admin: { description: 'Is the answer clear, well-structured, readable? (0-1)' },
+      admin: { description: 'Is the answer clear, well-structured, readable? (0-1) [Deprecated]' },
+    },
+    {
+      name: 'guidelinesPass',
+      type: 'checkbox',
+      admin: { description: 'Did the answer pass all QUALITY_GUIDELINES? (EI-T3-01)' },
+    },
+    {
+      name: 'guidelinesFeedback',
+      type: 'textarea',
+      admin: { description: 'Specific feedback from the GuidelineEvaluator' },
     },
 
     // ── Retrieval strategy stats (EV2-T1 + T2-04) ──
@@ -181,6 +191,51 @@ export const Evaluations: CollectionConfig = {
       type: 'number',
       min: 0,
       admin: { description: 'Number of sources matched by both BM25 and Vector' },
+    },
+
+    // ── IR Retrieval Metrics (EI-T2) ──
+    {
+      name: 'hitRate',
+      type: 'number',
+      min: 0,
+      max: 1,
+    },
+    {
+      name: 'mrr',
+      type: 'number',
+      min: 0,
+      max: 1,
+    },
+    {
+      name: 'precisionAtK',
+      type: 'number',
+      min: 0,
+      max: 1,
+    },
+    {
+      name: 'recallAtK',
+      type: 'number',
+      min: 0,
+      max: 1,
+    },
+    {
+      name: 'ndcg',
+      type: 'number',
+      min: 0,
+      max: 1,
+    },
+    {
+      name: 'irScore',
+      type: 'number',
+      min: 0,
+      max: 1,
+      admin: { description: 'Mean of IR retrieval metrics' },
+    },
+    {
+      name: 'goldenMatchRef',
+      type: 'relationship',
+      relationTo: 'golden-dataset',
+      admin: { description: 'Matched Golden Dataset record used for IR metrics' },
     },
 
     // ── Evaluation status (EV2-T2-04) ──

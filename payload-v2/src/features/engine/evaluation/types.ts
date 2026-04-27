@@ -160,15 +160,26 @@ export interface EvaluationResult {
   answerScore: number | null
   overallScore: number | null
 
-  // Answer sub-dimensions (EV2-T2-04)
+  // Answer sub-dimensions (EV2-T2-04 / EI-T3)
   completeness: number | null
   clarity: number | null
+  guidelinesPass: boolean | null
+  guidelinesFeedback: string | null
 
   // Retrieval strategy (EV2-T1 + T2-04)
   retrievalMode: 'hybrid' | 'vector_only' | null
   bm25Hits: number | null
   vectorHits: number | null
   bothHits: number | null
+
+  // IR Retrieval Metrics (EI-T2, needs Golden Dataset)
+  hitRate: number | null
+  mrr: number | null
+  precisionAtK: number | null
+  recallAtK: number | null
+  ndcg: number | null
+  irScore: number | null
+  goldenMatchRef: number | null
 
   // Status (EV2-T3-02)
   status: EvalStatus | null
@@ -235,12 +246,23 @@ export interface FullEvalApiResult {
       answer_relevancy: number | null
       completeness: number | null
       clarity: number | null
+      guidelines_pass: boolean | null
+      guidelines_feedback: string | null
       aggregate: number | null
     }
     question: {
       depth: string | null
       depth_score: number | null
     }
+    ir: {
+      hit_rate: number | null
+      mrr: number | null
+      precision_at_k: number | null
+      recall_at_k: number | null
+      ndcg: number | null
+      aggregate: number | null
+      golden_match_id: number | null
+    } | null
   }
   overall_score: number | null
   status: EvalStatus | null

@@ -427,21 +427,35 @@ function mapEvaluation(raw: any): EvaluationResult {
     llmScore: raw.llmScore ?? null,
     answerScore: raw.answerScore ?? null,
     overallScore: raw.overallScore ?? null,
-    // Answer sub-dimensions (EV2-T2-04)
+    // Answer sub-dimensions (EV2-T2-04 / EI-T3)
     completeness: raw.completeness ?? null,
     clarity: raw.clarity ?? null,
+    guidelinesPass: raw.guidelinesPass ?? null,
+    guidelinesFeedback: raw.guidelinesFeedback ?? null,
     // Retrieval strategy (EV2-T1 + T2-04)
     retrievalMode: raw.retrievalMode ?? null,
     bm25Hits: raw.bm25Hits ?? null,
     vectorHits: raw.vectorHits ?? null,
     bothHits: raw.bothHits ?? null,
+    // IR Retrieval Metrics (EI-T2)
+    hitRate: raw.hitRate ?? null,
+    mrr: raw.mrr ?? null,
+    precisionAtK: raw.precisionAtK ?? null,
+    recallAtK: raw.recallAtK ?? null,
+    ndcg: raw.ndcg ?? null,
+    irScore: raw.irScore ?? null,
+    goldenMatchRef: typeof raw.goldenMatchRef === 'object'
+      ? (raw.goldenMatchRef?.id ?? null)
+      : (raw.goldenMatchRef ?? null),
     // Status (EV2-T3-02)
     status: raw.status ?? null,
     feedback: raw.feedback ?? null,
     model: raw.model ?? null,
     sourceCount: raw.sourceCount ?? null,
     batchId: raw.batchId ?? null,
-    queryRef: raw.queryRef ?? null,
+    queryRef: typeof raw.queryRef === 'object'
+      ? (raw.queryRef?.id ?? null)
+      : (raw.queryRef ?? null),
     createdAt: raw.createdAt ?? '',
     updatedAt: raw.updatedAt ?? '',
   }

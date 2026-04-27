@@ -524,16 +524,16 @@ async def full_evaluate(
     Returns:
         FullEvalResult with per-dimension scores, aggregates, and feedback.
     """
-    from engine_v2.evaluation.answer_evaluators import (
-        ClarityEvaluator,
-        CompletenessEvaluator,
-    )
+    from llama_index.core.evaluation import CorrectnessEvaluator, GuidelineEvaluator
     from engine_v2.evaluation.evaluator import (
         FullEvalResult,
         assess_question_depth,
         compute_aggregate_scores,
     )
     from engine_v2.llms.resolver import resolve_llm
+    from engine_v2.evaluation.golden_dataset import match_golden_record
+    from engine_v2.evaluation.retrieval_metrics import compute_retrieval_metrics
+    from engine_v2.settings import QUALITY_GUIDELINES
 
     # Resolve LLM
     llm_instance = resolve_llm(model=model) if model else None
@@ -582,39 +582,65 @@ async def full_evaluate(
     feedback["relevancy"] = relev_r.feedback or ""
     feedback["context_relevancy"] = ctx_r.feedback or ""
 
-    # ── 📝 Answer quality ──────────────────────────────
+    # ── 📝 Answer quality (Guidelines + Correctness) ──
     ans_relevancy_eval = AnswerRelevancyEvaluator(**eval_kwargs)
-    completeness_eval = CompletenessEvaluator(**eval_kwargs)
-    clarity_eval = ClarityEvaluator(**eval_kwargs)
 
     ans_r = await ans_relevancy_eval.aevaluate(
         query=record.question, response=record.answer,
     )
-    # Completeness + Clarity need (query, response, reference) via CorrectnessEvaluator
-    # Each wrapped individually — one failing must not block the other (UEP-T2-01)
-    ctx_text = "\n\n".join(contexts) if contexts else "No context available."
-    comp_score: float | None = None
-    clar_score: float | None = None
+    feedback["answer_relevancy"] = ans_r.feedback or ""
 
+    # GuidelineEvaluator (replaces Completeness/Clarity) (EI-T3-01)
+    guideline_eval = GuidelineEvaluator(
+        guidelines=QUALITY_GUIDELINES, **eval_kwargs
+    )
+    guidelines_pass: bool | None = None
     try:
-        comp_r = await completeness_eval.aevaluate(
-            query=record.question, response=record.answer, reference=ctx_text,
+        # evaluate() returns an EvaluationResult with score 1.0 (pass) or 0.0 (fail)
+        guide_r = await guideline_eval.aevaluate(
+            query=record.question, response=record.answer, contexts=contexts
         )
-        feedback["completeness"] = comp_r.feedback or ""
-        comp_score = (comp_r.score / 5.0) if comp_r.score is not None else None
+        guidelines_pass = (guide_r.score is not None and guide_r.score > 0.5)
+        feedback["guidelines"] = guide_r.feedback or ""
     except Exception as exc:
-        logger.warning("CompletenessEvaluator failed: {}", exc)
-        feedback["completeness"] = f"evaluator error: {exc}"
+        logger.warning("GuidelineEvaluator failed: {}", exc)
+        feedback["guidelines"] = f"evaluator error: {exc}"
 
-    try:
-        clar_r = await clarity_eval.aevaluate(
-            query=record.question, response=record.answer, reference=ctx_text,
+    # Golden Dataset Match (EI-T2-02)
+    # Check if there is a golden record for this query
+    golden_match = await match_golden_record(record.question)
+    
+    ir_metrics = {}
+    correctness_score: float | None = None
+    
+    if golden_match:
+        # Calculate Pure-math IR Metrics (Zero-LLM)
+        retrieved_ids = []
+        for src in record.sources:
+            if src.get("chunk_id"):
+                retrieved_ids.append(src["chunk_id"])
+        
+        ir_result = compute_retrieval_metrics(
+            retrieved_ids=retrieved_ids,
+            expected_ids=golden_match.expected_chunk_ids,
         )
-        feedback["clarity"] = clar_r.feedback or ""
-        clar_score = (clar_r.score / 5.0) if clar_r.score is not None else None
-    except Exception as exc:
-        logger.warning("ClarityEvaluator failed: {}", exc)
-        feedback["clarity"] = f"evaluator error: {exc}"
+        ir_metrics = ir_result.to_dict()
+        
+        # Calculate True Correctness via F1 vs Expected Answer
+        correctness_eval = CorrectnessEvaluator(**eval_kwargs)
+        try:
+            corr_r = await correctness_eval.aevaluate(
+                query=record.question,
+                response=record.answer,
+                reference=golden_match.expected_answer
+            )
+            feedback["correctness"] = corr_r.feedback or ""
+            correctness_score = (corr_r.score / 5.0) if corr_r.score is not None else None
+        except Exception as exc:
+            logger.warning("CorrectnessEvaluator failed: {}", exc)
+            feedback["correctness"] = f"evaluator error: {exc}"
+    else:
+        feedback["golden_match"] = "No Golden Dataset record found for this query."
 
     feedback["answer_relevancy"] = ans_r.feedback or ""
 
@@ -646,8 +672,9 @@ async def full_evaluate(
         faithfulness=faith_r.score,
         # Answer
         answer_relevancy=ans_r.score,
-        completeness=comp_score,
-        clarity=clar_score,
+        correctness=correctness_score,
+        guidelines_pass=guidelines_pass,
+        guidelines_feedback=feedback.get("guidelines", ""),
         # Question
         question_depth=q_depth,
         question_depth_score=q_depth_score,
@@ -657,6 +684,14 @@ async def full_evaluate(
         bm25_hit_count=bm25_hits,
         vector_hit_count=vector_hits,
         both_hit_count=both_hits,
+        # IR Metrics
+        hit_rate=ir_metrics.get("hit_rate"),
+        mrr=ir_metrics.get("mrr"),
+        precision_at_k=ir_metrics.get("precision_at_k"),
+        recall_at_k=ir_metrics.get("recall_at_k"),
+        ndcg=ir_metrics.get("ndcg"),
+        ir_score=ir_metrics.get("ir_score"),
+        golden_match_id=golden_match.id if golden_match else None,
         # Feedback
         feedback=feedback,
     )
@@ -741,13 +776,21 @@ async def _persist_full_evaluation(
         "answerScore": result.answer_score,
         "overallScore": result.overall_score,
         # Answer sub-dimensions
-        "completeness": result.completeness,
-        "clarity": result.clarity,
+        "guidelinesPass": result.guidelines_pass,
+        "guidelinesFeedback": result.guidelines_feedback,
         # Retrieval strategy
         "retrievalMode": result.retrieval_mode,
         "bm25Hits": result.bm25_hit_count,
         "vectorHits": result.vector_hit_count,
         "bothHits": result.both_hit_count,
+        # IR Metrics
+        "hitRate": result.hit_rate,
+        "mrr": result.mrr,
+        "precisionAtK": result.precision_at_k,
+        "recallAtK": result.recall_at_k,
+        "ndcg": result.ndcg,
+        "irScore": result.ir_score,
+        "goldenMatchRef": result.golden_match_id,
         # Status
         "status": result.status,
     }

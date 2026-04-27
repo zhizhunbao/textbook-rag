@@ -1,15 +1,16 @@
 """evaluation routes — Unified evaluation hub endpoints.
 
 Endpoints:
-    POST   /engine/evaluation/single             — 5-dimensional single query evaluation
-    POST   /engine/evaluation/batch              — batch evaluation via BatchEvalRunner
-    POST   /engine/evaluation/quality            — question cognitive depth assessment
-    POST   /engine/evaluation/dedup              — question deduplication check
-    POST   /engine/evaluation/evaluate-history   — evaluate existing query (no re-run)
-    POST   /engine/evaluation/evaluate-batch     — batch-evaluate recent queries
-    POST   /engine/evaluation/full-evaluate      — four-category evaluation (EV2-T2)
-    POST   /engine/evaluation/auto-evaluate      — auto-eval trigger (EV2-T3)
-    GET    /engine/evaluation/queries            — list recent Queries for evaluation
+    POST   /engine/evaluation/single                   — 5-dimensional single query evaluation
+    POST   /engine/evaluation/batch                    — batch evaluation via BatchEvalRunner
+    POST   /engine/evaluation/quality                  — question cognitive depth assessment
+    POST   /engine/evaluation/dedup                    — question deduplication check
+    POST   /engine/evaluation/evaluate-history         — evaluate existing query (no re-run)
+    POST   /engine/evaluation/evaluate-batch           — batch-evaluate recent queries
+    POST   /engine/evaluation/full-evaluate            — four-category evaluation (EV2-T2)
+    POST   /engine/evaluation/auto-evaluate            — auto-eval trigger (EV2-T3)
+    POST   /engine/evaluation/generate-golden-dataset  — generate Golden Dataset QA pairs (EI-T1-03)
+    GET    /engine/evaluation/queries                  — list recent Queries for evaluation
 
 Ref: llama_index.core.evaluation — CorrectnessEvaluator, SemanticSimilarityEvaluator
 """
@@ -95,6 +96,14 @@ class AutoEvalRequest(BaseModel):
     """Auto-evaluation trigger request (EV2-T3)."""
 
     query_id: int
+
+
+class GenerateGoldenDatasetRequest(BaseModel):
+    """Request to generate Golden Dataset QA pairs (EI-T1-03)."""
+
+    book_id: str
+    n_questions: int = 50
+    num_questions_per_chunk: int = 2
 
 
 # ============================================================
@@ -299,12 +308,23 @@ async def eval_full(req: FullEvalRequest):
                 "answer_relevancy": result.answer_relevancy,
                 "completeness": result.completeness,
                 "clarity": result.clarity,
+                "guidelines_pass": result.guidelines_pass,
+                "guidelines_feedback": result.guidelines_feedback,
                 "aggregate": result.answer_score,
             },
             "question": {
                 "depth": result.question_depth,
                 "depth_score": result.question_depth_score,
             },
+            "ir": {
+                "hit_rate": result.hit_rate,
+                "mrr": result.mrr,
+                "precision_at_k": result.precision_at_k,
+                "recall_at_k": result.recall_at_k,
+                "ndcg": result.ndcg,
+                "aggregate": result.ir_score,
+                "golden_match_id": result.golden_match_id,
+            } if result.golden_match_id is not None else None,
         },
         "overall_score": result.overall_score,
         "status": result.status,
@@ -368,3 +388,54 @@ async def list_llm_providers():
     from engine_v2.llms.resolver import list_providers
 
     return {"providers": list_providers()}
+
+
+# ============================================================
+# Endpoint — Golden Dataset generation (EI-T1-03)
+# ============================================================
+@router.post("/generate-golden-dataset")
+async def generate_golden_dataset_endpoint(
+    req: GenerateGoldenDatasetRequest,
+):
+    """Generate Golden Dataset QA pairs from a book's ChromaDB chunks.
+
+    Spawns RagDatasetGenerator, maps output to GoldenRecord objects,
+    and persists each record to Payload GoldenDataset collection.
+
+    Ref: EI-T1-03 — Golden Dataset 生成 API
+    """
+    from engine_v2.evaluation.golden_dataset import (
+        generate_golden_dataset,
+        persist_golden_records,
+    )
+    from engine_v2.evaluation.history import _get_payload_token
+
+    logger.info(
+        "generate-golden-dataset — book_id={}, n_questions={}, per_chunk={}",
+        req.book_id, req.n_questions, req.num_questions_per_chunk,
+    )
+
+    result = await generate_golden_dataset(
+        book_id=req.book_id,
+        n_questions=req.n_questions,
+        num_questions_per_chunk=req.num_questions_per_chunk,
+    )
+
+    if result.errors and not result.records:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            status_code=422,
+            content={"detail": result.errors[0]},
+        )
+
+    # Persist to Payload
+    token = await _get_payload_token()
+    created_ids = await persist_golden_records(result.records, token=token)
+
+    return {
+        "book_id": req.book_id,
+        "total_generated": result.total_generated,
+        "total_persisted": len(created_ids),
+        "created_ids": created_ids,
+        "errors": result.errors,
+    }

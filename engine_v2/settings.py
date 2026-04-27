@@ -92,6 +92,18 @@ AUTO_EVAL_ENABLED: bool = os.getenv("AUTO_EVAL_ENABLED", "false").lower() in (
 EVAL_PASS_FAITHFULNESS: float = float(os.getenv("EVAL_PASS_FAITHFULNESS", "0.7"))
 EVAL_PASS_ANSWER_SCORE: float = float(os.getenv("EVAL_PASS_ANSWER_SCORE", "0.6"))
 
+# ============================================================
+# Guidelines for GuidelineEvaluator (EI-T3-01)
+# ============================================================
+QUALITY_GUIDELINES = (
+    "The response MUST directly answer the user's question.\n"
+    "The response MUST cite specific evidence from the provided context.\n"
+    "The response MUST NOT include information not supported by the context.\n"
+    "The response MUST use professional, clear language.\n"
+    "The response MUST include quantitative data when available in the context.\n"
+    "The response MUST acknowledge when the context does not contain sufficient information.\n"
+)
+
 
 # ============================================================
 # Configure LlamaIndex Settings singleton

@@ -44,6 +44,8 @@ import MediaTab from './MediaTab'
 import PipelineTab from './PipelineTab'
 import SourcesTab from './SourcesTab'
 import VectorCheckTab from './VectorCheckTab'
+import TocTab from './TocTab'
+import ChunksTab from './ChunksTab'
 
 
 // ============================================================
@@ -62,6 +64,8 @@ const TABS: TabConfig[] = [
   { key: 'files',    label: 'Files',    labelFr: '文件',   icon: FileText },
   { key: 'pipeline', label: 'Pipeline', labelFr: '管线',   icon: Activity },
   { key: 'vectors',  label: 'Vectors',  labelFr: '向量',   icon: Database },
+  { key: 'toc',      label: 'TOC',      labelFr: '目录',   icon: BookOpen },
+  { key: 'chunks',   label: 'Chunks',   labelFr: '内容',   icon: Layers },
 ]
 
 // ============================================================
@@ -286,6 +290,8 @@ function ImportPageInner() {
       {activeTab === 'files' && <MediaTab books={filteredBooks} filter={filter} onBooksRefresh={refetch} />}
       {activeTab === 'pipeline' && <PipelineTab books={filteredBooks} filter={filter} onBooksRefresh={refetch} />}
       {activeTab === 'vectors' && <VectorCheckTab books={filteredBooks} filter={filter} />}
+      {activeTab === 'toc' && <TocTab books={filteredBooks} filter={filter} />}
+      {activeTab === 'chunks' && <ChunksTab books={filteredBooks} filter={filter} />}
     </SidebarLayout>
   )
 }

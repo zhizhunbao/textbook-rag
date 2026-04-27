@@ -129,8 +129,10 @@ class FullEvalResult:
     # ── 📝 Answer Score ──
     correctness: float | None = None
     answer_relevancy: float | None = None
-    completeness: float | None = None
-    clarity: float | None = None
+    completeness: float | None = None  # Deprecated in favor of guidelines
+    clarity: float | None = None       # Deprecated in favor of guidelines
+    guidelines_pass: bool | None = None
+    guidelines_feedback: str | None = None
     answer_score: float | None = None
 
     # ── ❓ Question Score ──
@@ -186,12 +188,16 @@ def compute_aggregate_scores(
     result.llm_score = result.faithfulness
 
     # Answer score = mean(correctness, answer_relevancy, completeness, clarity)
+    # Plus guidelines_pass (True=1.0, False=0.0) if present
     ans_dims = [
         v for v in (
             result.correctness, result.answer_relevancy,
             result.completeness, result.clarity,
         ) if v is not None
     ]
+    if result.guidelines_pass is not None:
+        ans_dims.append(1.0 if result.guidelines_pass else 0.0)
+
     result.answer_score = (sum(ans_dims) / len(ans_dims)) if ans_dims else None
 
     # Overall = weighted average of group scores (including IR when available)

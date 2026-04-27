@@ -1,8 +1,9 @@
 /**
- * EvalScoreCard — Four-category evaluation score card (EV2-T5-01).
+ * EvalScoreCard — Five-category evaluation score card (EV2-T5-01 / EI-T5-01).
  *
- * Displays RAG / LLM / Answer / Question scores in a compact,
+ * Displays RAG / LLM / Answer / Question / IR scores in a compact,
  * color-coded card layout with expandable detail dimensions.
+ * IR card only renders when Golden Dataset has a matched record.
  *
  * Usage: <EvalScoreCard evaluation={evalResult} locale="en" />
  */
@@ -11,10 +12,12 @@
 
 import { useState } from 'react'
 import {
-  Search, Bot, Sparkles, FileText,
+  Search, Bot, Sparkles, FileText, BarChart2,
   ChevronDown,
   CheckCircle2, XCircle, Clock,
   Shuffle, Grid3X3,
+  CircleCheck, CircleX,
+  Info,
 } from 'lucide-react'
 import { cn } from '@/features/shared/utils'
 import type { EvaluationResult, EvalStatus } from '../types'
@@ -23,8 +26,8 @@ import type { EvaluationResult, EvalStatus } from '../types'
 // Constants
 // ============================================================
 
-/** Four evaluation categories with display metadata. */
-const CATEGORIES = [
+/** Core four evaluation categories with display metadata. */
+const CORE_CATEGORIES = [
   {
     key: 'rag' as const,
     label: 'RAG',
@@ -69,8 +72,9 @@ const CATEGORIES = [
     scoreKey: 'answerScore' as const,
     dimensions: [
       { key: 'answerRelevancy', label: 'Answer Relevancy', labelFr: '答案相关性' },
-      { key: 'completeness', label: 'Completeness', labelFr: '完整度' },
-      { key: 'clarity', label: 'Clarity', labelFr: '清晰度' },
+      { key: 'correctness',     label: 'Correctness',      labelFr: '正确性' },
+      { key: 'completeness',    label: 'Completeness',     labelFr: '完整度' },
+      { key: 'clarity',         label: 'Clarity',          labelFr: '清晰度' },
     ],
   },
   {
@@ -87,6 +91,43 @@ const CATEGORIES = [
     dimensions: [],
   },
 ] as const
+
+/** IR retrieval metrics card metadata (EI-T5-01). */
+const IR_CARD = {
+  key: 'ir' as const,
+  label: 'IR',
+  labelFr: '检索指标',
+  Icon: BarChart2,
+  gradient: 'from-cyan-500/20 to-teal-500/10',
+  border: 'border-cyan-500/30',
+  accent: 'text-cyan-400',
+  accentBg: 'bg-cyan-500/10',
+  barColor: 'bg-cyan-500',
+  dimensions: [
+    { key: 'hitRate',      label: 'Hit Rate',    labelFr: '命中率' },
+    { key: 'mrr',          label: 'MRR',         labelFr: 'MRR' },
+    { key: 'precisionAtK', label: 'Precision@K', labelFr: '精确率@K' },
+    { key: 'recallAtK',    label: 'Recall@K',    labelFr: '召回率@K' },
+    { key: 'ndcg',         label: 'NDCG',        labelFr: 'NDCG' },
+  ],
+}
+
+/** Tooltip text for metric explanations (EI-T5-03). */
+const TOOLTIP_MAP: Record<string, { en: string; fr: string }> = {
+  contextRelevancy:  { en: 'Quality of retrieved context for the query', fr: '检索到的内容与问题是否相关' },
+  relevancy:         { en: 'Are the retrieved sources relevant to the query?', fr: '来源是否与问题相关' },
+  faithfulness:      { en: 'Is the answer grounded in context, no hallucination?', fr: '回答是否基于给定上下文，无幻觉' },
+  answerRelevancy:   { en: 'How relevant is the answer to the question?', fr: '答案与问题的相关程度' },
+  correctness:       { en: 'Factual overlap with the reference answer (F1)', fr: '回答与标准答案的事实重合度 (F1)' },
+  completeness:      { en: 'Does the answer cover all question aspects?', fr: '回答是否覆盖问题所有方面' },
+  clarity:           { en: 'Is the answer clear, well-structured?', fr: '回答是否清晰、结构良好' },
+  hitRate:           { en: 'Did retrieval include the correct chunk? (1=hit, 0=miss)', fr: '检索结果中是否包含正确答案 (1=命中, 0=未命中)' },
+  mrr:               { en: 'Reciprocal rank of the first correct result (1=top, 0.5=2nd)', fr: '第一个正确结果的排名倒数 (1=排第一, 0.5=排第二)' },
+  precisionAtK:      { en: 'Fraction of top-K results that are correct', fr: 'Top-K 结果中正确的比例' },
+  recallAtK:         { en: 'Fraction of correct results retrieved in top-K', fr: '正确答案被检索到的比例' },
+  ndcg:              { en: 'Are correct results ranked higher? (considers ranking quality)', fr: '正确结果是否排在前面 (考虑排序质量)' },
+  guidelines:        { en: 'Does the answer follow all predefined quality rules?', fr: '回答是否符合预设质量规则' },
+}
 
 /** Depth label display info. */
 const DEPTH_META: Record<string, { label: string; labelFr: string; color: string }> = {
@@ -121,6 +162,109 @@ const GRADE_CLS: Record<Grade, string> = {
 }
 
 // ============================================================
+// Sub-components
+// ============================================================
+
+/** Info icon with tooltip (EI-T5-03). */
+function InfoTooltip({ text }: { text: string }) {
+  return (
+    <span className="group relative inline-flex">
+      <Info className="h-2.5 w-2.5 text-muted-foreground/50 cursor-help" />
+      <span className="pointer-events-none absolute left-4 bottom-0 z-50 w-44 rounded-md bg-popover/95 border border-border px-2 py-1 text-[8px] leading-snug text-popover-foreground shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+        {text}
+      </span>
+    </span>
+  )
+}
+
+/** Single dimension progress bar row. */
+function DimBar({
+  label, labelFr, value, barColor, isFr, dimKey,
+}: {
+  label: string
+  labelFr: string
+  value: number | null | undefined
+  barColor: string
+  isFr: boolean
+  dimKey?: string
+}) {
+  const tip = dimKey ? TOOLTIP_MAP[dimKey] : null
+  return (
+    <div className="flex items-center gap-1">
+      <span className="text-[8px] text-muted-foreground w-24 shrink-0 truncate inline-flex items-center gap-0.5">
+        {isFr ? labelFr : label}
+        {tip && <InfoTooltip text={isFr ? tip.fr : tip.en} />}
+      </span>
+      <div className="flex-1 h-1 rounded-full bg-muted overflow-hidden">
+        <div
+          className={cn('h-full rounded-full transition-all duration-500', barColor)}
+          style={{ width: `${(value ?? 0) * 100}%` }}
+        />
+      </div>
+      <span className={cn('text-[9px] font-bold tabular-nums w-7 text-right', GRADE_CLS[getGrade(value)])}>
+        {value != null ? value.toFixed(2) : '—'}
+      </span>
+    </div>
+  )
+}
+
+/** Guidelines Pass/Fail row with expandable feedback (EI-T5-02). */
+function GuidelinesRow({
+  pass: guidelinesPass,
+  feedback,
+  isFr,
+}: {
+  pass: boolean
+  feedback: string | null | undefined
+  isFr: boolean
+}) {
+  const [showFeedback, setShowFeedback] = useState(false)
+  const tip = TOOLTIP_MAP.guidelines
+  const hasFeedback = !!feedback?.trim()
+
+  return (
+    <div className="pt-0.5 space-y-0.5">
+      <div className="flex items-center gap-1">
+        <span className="text-[8px] text-muted-foreground w-24 shrink-0 inline-flex items-center gap-0.5">
+          {isFr ? '质量规则' : 'Guidelines'}
+          {tip && <InfoTooltip text={isFr ? tip.fr : tip.en} />}
+        </span>
+        <button
+          type="button"
+          onClick={() => hasFeedback && setShowFeedback(v => !v)}
+          className={cn(
+            'inline-flex items-center gap-0.5 text-[9px] font-semibold',
+            hasFeedback && 'cursor-pointer hover:opacity-80',
+            guidelinesPass ? 'text-emerald-400' : 'text-red-400',
+          )}
+        >
+          {guidelinesPass
+            ? <><CircleCheck className="h-3 w-3" />{isFr ? '通过' : 'Pass'}</>
+            : <><CircleX className="h-3 w-3" />{isFr ? '未通过' : 'Fail'}</>
+          }
+          {hasFeedback && (
+            <ChevronDown className={cn(
+              'h-2.5 w-2.5 transition-transform duration-150',
+              showFeedback && 'rotate-180',
+            )} />
+          )}
+        </button>
+      </div>
+      {showFeedback && feedback && (
+        <div className={cn(
+          'rounded-md border px-2 py-1 text-[8px] leading-snug animate-in slide-in-from-top-1 fade-in duration-150',
+          guidelinesPass
+            ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-300/80'
+            : 'border-red-500/20 bg-red-500/5 text-red-300/80',
+        )}>
+          {feedback}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ============================================================
 // Props
 // ============================================================
 interface EvalScoreCardProps {
@@ -140,6 +284,9 @@ export default function EvalScoreCard({ evaluation, locale = 'en' }: EvalScoreCa
   const status = evaluation.status ?? 'pending'
   const statusMeta = STATUS_META[status]
   const overall = evaluation.overallScore
+
+  // Determine if IR metrics are available
+  const hasIR = evaluation.irScore != null || evaluation.hitRate != null
 
   return (
     <div className="space-y-2">
@@ -171,9 +318,9 @@ export default function EvalScoreCard({ evaluation, locale = 'en' }: EvalScoreCa
         </button>
       </div>
 
-      {/* ── Summary row: 4 category scores inline ── */}
+      {/* ── Summary row: category score chips ── */}
       <div className="flex items-center gap-1.5 flex-wrap">
-        {CATEGORIES.map(cat => {
+        {CORE_CATEGORIES.map(cat => {
           const score = cat.scoreKey ? evaluation[cat.scoreKey] : evaluation.questionDepthScore
           const grade = getGrade(score)
           return (
@@ -194,12 +341,28 @@ export default function EvalScoreCard({ evaluation, locale = 'en' }: EvalScoreCa
             </div>
           )
         })}
+
+        {/* IR chip — only shown when data available */}
+        {hasIR && (
+          <div className={cn(
+            'inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5',
+            IR_CARD.border, IR_CARD.accentBg,
+          )}>
+            <IR_CARD.Icon className={cn('h-3 w-3', IR_CARD.accent)} />
+            <span className="text-[9px] font-medium text-muted-foreground">
+              {isFr ? IR_CARD.labelFr : IR_CARD.label}
+            </span>
+            <span className={cn('text-[10px] font-bold tabular-nums', GRADE_CLS[getGrade(evaluation.irScore)])}>
+              {evaluation.irScore != null ? (evaluation.irScore * 100).toFixed(0) + '%' : '—'}
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* ── Expanded detail: per-dimension bars + question depth ── */}
+      {/* ── Expanded detail ── */}
       {expanded && (
         <div className="grid grid-cols-2 gap-2 animate-in slide-in-from-top-1 fade-in duration-200">
-          {CATEGORIES.map(cat => {
+          {CORE_CATEGORIES.map(cat => {
             // Question category — special depth display
             if (cat.key === 'question') {
               const depth = evaluation.questionDepth
@@ -221,7 +384,6 @@ export default function EvalScoreCard({ evaluation, locale = 'en' }: EvalScoreCa
                       </span>
                     )}
                   </div>
-                  {/* Depth label badge */}
                   {depthMeta && (
                     <div className="flex items-center gap-1.5">
                       <span className={cn(
@@ -232,28 +394,61 @@ export default function EvalScoreCard({ evaluation, locale = 'en' }: EvalScoreCa
                       </span>
                     </div>
                   )}
-                  {/* Depth score progress bar */}
                   <div className="space-y-1">
-                    <div className="flex items-center gap-1">
-                      <span className="text-[8px] text-muted-foreground w-24 shrink-0 truncate">
-                        {isFr ? '认知深度' : 'Depth'}
-                      </span>
-                      <div className="flex-1 h-1 rounded-full bg-muted overflow-hidden">
-                        <div
-                          className={cn('h-full rounded-full transition-all duration-500', cat.barColor)}
-                          style={{ width: `${(normScore ?? 0) * 100}%` }}
-                        />
-                      </div>
-                      <span className={cn('text-[9px] font-bold tabular-nums w-7 text-right', GRADE_CLS[getGrade(normScore)])}>
-                        {normScore != null ? normScore.toFixed(2) : '—'}
-                      </span>
-                    </div>
+                    <DimBar
+                      label="Depth" labelFr="认知深度"
+                      value={normScore} barColor={cat.barColor} isFr={isFr}
+                    />
                   </div>
                 </div>
               )
             }
 
-            // RAG / LLM / Answer — score bars
+            // Answer category — includes guidelinesPass + correctness
+            if (cat.key === 'answer') {
+              const aggScore = evaluation[cat.scoreKey]
+              return (
+                <div
+                  key={cat.key}
+                  className={cn('rounded-lg border p-2 space-y-1.5', cat.border, 'bg-gradient-to-br', cat.gradient)}
+                >
+                  <div className="flex items-center gap-1">
+                    <cat.Icon className={cn('h-3 w-3', cat.accent)} />
+                    <span className="text-[9px] font-semibold text-foreground flex-1">
+                      {isFr ? cat.labelFr : cat.label}
+                    </span>
+                    {aggScore != null && (
+                      <span className={cn('text-[10px] font-bold tabular-nums', GRADE_CLS[getGrade(aggScore)])}>
+                        {aggScore.toFixed(2)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    {cat.dimensions.map(dim => {
+                      const val = (evaluation as any)[dim.key] as number | null
+                      return (
+                        <DimBar
+                          key={dim.key}
+                          label={dim.label} labelFr={dim.labelFr}
+                          value={val} barColor={cat.barColor} isFr={isFr}
+                          dimKey={dim.key}
+                        />
+                      )
+                    })}
+                    {/* Guidelines Pass/Fail badge + expandable feedback (EI-T5-02) */}
+                    {evaluation.guidelinesPass != null && (
+                      <GuidelinesRow
+                        pass={evaluation.guidelinesPass}
+                        feedback={evaluation.guidelinesFeedback}
+                        isFr={isFr}
+                      />
+                    )}
+                  </div>
+                </div>
+              )
+            }
+
+            // RAG / LLM — standard score bars
             const aggScore = cat.scoreKey ? evaluation[cat.scoreKey] : null
             return (
               <div
@@ -275,26 +470,68 @@ export default function EvalScoreCard({ evaluation, locale = 'en' }: EvalScoreCa
                   {cat.dimensions.map(dim => {
                     const val = (evaluation as any)[dim.key] as number | null
                     return (
-                      <div key={dim.key} className="flex items-center gap-1">
-                        <span className="text-[8px] text-muted-foreground w-24 shrink-0 truncate">
-                          {isFr ? dim.labelFr : dim.label}
-                        </span>
-                        <div className="flex-1 h-1 rounded-full bg-muted overflow-hidden">
-                          <div
-                            className={cn('h-full rounded-full transition-all duration-500', cat.barColor)}
-                            style={{ width: `${(val ?? 0) * 100}%` }}
-                          />
-                        </div>
-                        <span className={cn('text-[9px] font-bold tabular-nums w-7 text-right', GRADE_CLS[getGrade(val)])}>
-                          {val != null ? val.toFixed(2) : '—'}
-                        </span>
-                      </div>
+                      <DimBar
+                        key={dim.key}
+                        label={dim.label} labelFr={dim.labelFr}
+                        value={val} barColor={cat.barColor} isFr={isFr}
+                        dimKey={dim.key}
+                      />
                     )
                   })}
                 </div>
               </div>
             )
           })}
+
+          {/* ── 5th card: IR Retrieval Metrics (EI-T5-01) ── */}
+          {hasIR ? (
+            <div className={cn(
+              'col-span-2 rounded-lg border p-2 space-y-1.5',
+              IR_CARD.border, 'bg-gradient-to-br', IR_CARD.gradient,
+            )}>
+              <div className="flex items-center gap-1">
+                <IR_CARD.Icon className={cn('h-3 w-3', IR_CARD.accent)} />
+                <span className="text-[9px] font-semibold text-foreground flex-1">
+                  {isFr ? IR_CARD.labelFr : IR_CARD.label}
+                  <span className="ml-1 text-[8px] font-normal text-muted-foreground">
+                    {isFr ? '(需 Golden Dataset)' : '(requires Golden Dataset)'}
+                  </span>
+                </span>
+                {evaluation.irScore != null && (
+                  <span className={cn('text-[10px] font-bold tabular-nums', GRADE_CLS[getGrade(evaluation.irScore)])}>
+                    {evaluation.irScore.toFixed(2)}
+                  </span>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                {IR_CARD.dimensions.map(dim => {
+                  const val = (evaluation as any)[dim.key] as number | null
+                  return (
+                    <DimBar
+                      key={dim.key}
+                      label={dim.label} labelFr={dim.labelFr}
+                      value={val} barColor={IR_CARD.barColor} isFr={isFr}
+                      dimKey={dim.key}
+                    />
+                  )
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className={cn(
+              'col-span-2 rounded-lg border p-2',
+              IR_CARD.border, IR_CARD.accentBg,
+            )}>
+              <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground">
+                <IR_CARD.Icon className={cn('h-3 w-3 shrink-0', IR_CARD.accent)} />
+                <span>
+                  {isFr
+                    ? 'IR 指标不可用 — 需先生成 Golden Dataset 并标记 verified'
+                    : 'IR metrics unavailable — generate & verify Golden Dataset records first'}
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Retrieval strategy breakdown */}
           {evaluation.retrievalMode && (

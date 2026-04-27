@@ -4,7 +4,7 @@
 >
 > 前置条件：Sprint EV2 ✅ 四分类评分 + 检索策略溯源 + 自动评估已完成。
 > 参考源码：`.github/references/llama_index/llama-index-core/llama_index/core/evaluation/`
-> **状态**: ❌ 0/14 完成
+> **状态**: 🚧 11/14 完成 (EI-T1-01 ✅ EI-T1-02 ✅ EI-T1-03 ✅ EI-T2-01 ✅ EI-T2-02 ✅ EI-T2-03 ✅ EI-T3-01 ✅ EI-T3-02 ✅ EI-T5-01 ✅ EI-T5-02 ✅ EI-T5-03 ✅)
 
 ## 概览
 
@@ -342,11 +342,11 @@ result = await pairwise_eval.aevaluate(
 > 当无 Golden Dataset 匹配时，显示 "No golden data — IR metrics unavailable"
 
 **验收标准**:
-- [ ] EvalScoreCard `CATEGORIES` 新增 IR 类别（颜色: cyan/teal）
-- [ ] 5 个 IR 维度各有进度条
-- [ ] 无 Golden Dataset 时显示占位提示
-- [ ] 顶部摘要条新增 IR 百分比
-- [ ] 对齐现有 RAG/LLM/Answer/Question 卡片布局
+- [x] EvalScoreCard `CATEGORIES` 新增 IR 类别（颜色: cyan/teal）
+- [x] 5 个 IR 维度各有进度条
+- [x] 无 Golden Dataset 时显示占位提示
+- [x] 顶部摘要条新增 IR 百分比
+- [x] 对齐现有 RAG/LLM/Answer/Question 卡片布局
 
 **文件**: `features/engine/evaluation/components/EvalScoreCard.tsx`, `features/engine/evaluation/types.ts`
 
@@ -357,10 +357,10 @@ result = await pairwise_eval.aevaluate(
 **描述**: Answer 卡片中显示 GuidelineEvaluator 的 pass/fail 结果和具体反馈文本。
 
 **验收标准**:
-- [ ] Answer 卡片新增 "Guidelines" 行：Pass/Fail badge
-- [ ] 点击展开显示 GuidelineEvaluator 的 feedback 文本
-- [ ] Fail 时高亮显示哪条规则未通过
-- [ ] 配色与 Answer 组一致（绿色系）
+- [x] Answer 卡片新增 "Guidelines" 行：Pass/Fail badge
+- [x] 点击展开显示 GuidelineEvaluator 的 feedback 文本
+- [x] Fail 时高亮显示哪条规则未通过
+- [x] 配色与 Answer 组一致（绿色系）
 
 **文件**: `features/engine/evaluation/components/EvalScoreCard.tsx`
 
@@ -384,9 +384,9 @@ result = await pairwise_eval.aevaluate(
 | Correctness | "回答与标准答案的事实重合度 (F1)" |
 
 **验收标准**:
-- [ ] 每个维度标签旁有 info SVG icon (lucide `Info`)
-- [ ] Hover 显示 tooltip，包含中英文解释
-- [ ] 不影响现有布局
+- [x] 每个维度标签旁有 info SVG icon (lucide `Info`)
+- [x] Hover 显示 tooltip，包含中英文解释
+- [x] 不影响现有布局
 
 **文件**: `features/engine/evaluation/components/EvalScoreCard.tsx`
 
