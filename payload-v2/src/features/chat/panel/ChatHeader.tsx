@@ -1,6 +1,6 @@
 /**
- * ChatHeader — Chat panel top bar with title, model selector, scope indicator,
- * and questions toggle.
+ * ChatHeader — Chat panel top bar with title, model selector, prompt selector,
+ * scope indicator, and questions toggle.
  *
  * Usage: <ChatHeader sessionBooks={books} totalBookCount={67} ... />
  */
@@ -8,6 +8,7 @@
 import { Lightbulb, X } from "lucide-react";
 import type { ModelInfo } from "@/features/shared/types";
 import type { BookBase } from "@/features/shared/books";
+import PromptSelector from "./PromptSelector";
 
 // ============================================================
 // Types
@@ -26,6 +27,9 @@ interface ChatHeaderProps {
   /** Questions sidebar toggle */
   showQuestions?: boolean;
   onToggleQuestions?: () => void;
+  /** Prompt mode selection */
+  selectedPromptSlug: string | null;
+  onPromptChange: (slug: string, systemPrompt: string) => void;
 }
 
 // ============================================================
@@ -42,19 +46,14 @@ export default function ChatHeader({
   onClearScope,
   showQuestions,
   onToggleQuestions,
+  selectedPromptSlug,
+  onPromptChange,
 }: ChatHeaderProps) {
   const isScoped = sessionBooks.length < totalBookCount && totalBookCount > 0;
 
   return (
     <div className="shrink-0 border-b border-border bg-card px-4 py-2.5">
       <div className="flex items-center gap-3">
-        {/* Bot avatar */}
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-4l-3 3-3-3Z" />
-          </svg>
-        </div>
-
         {/* Title + scope indicator */}
         <div className="min-w-0 flex-1">
           <h2 className="text-sm font-semibold text-foreground">EcDev Research</h2>
@@ -88,6 +87,13 @@ export default function ChatHeader({
 
         {/* Controls */}
         <div className="flex shrink-0 items-center gap-2">
+          {/* Prompt mode selector */}
+          <PromptSelector
+            selectedSlug={selectedPromptSlug}
+            onSelect={onPromptChange}
+          />
+
+          {/* Model selector */}
           <select
             className="rounded-md border border-border bg-background px-2 py-1.5 text-[12px] font-medium text-foreground outline-none transition focus:border-primary"
             value={selectedModel}
@@ -131,3 +137,4 @@ export default function ChatHeader({
     </div>
   );
 }
+

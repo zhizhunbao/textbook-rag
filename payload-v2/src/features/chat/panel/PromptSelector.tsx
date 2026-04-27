@@ -98,7 +98,7 @@ export default function PromptSelector({
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute top-full left-0 mt-1 z-50 w-64 rounded-lg border border-border bg-card shadow-lg overflow-hidden animate-in fade-in-0 zoom-in-95">
+        <div className="absolute top-full left-0 mt-1 z-50 w-48 max-h-64 overflow-y-auto rounded-lg border border-border bg-card shadow-lg animate-in fade-in-0 zoom-in-95">
           {promptModes.map((mode) => (
             <button
               key={mode.id}

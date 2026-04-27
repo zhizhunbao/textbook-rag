@@ -30,6 +30,7 @@ export interface PayloadChatMessage {
   content: string
   sources?: SourceInfo[] | null
   trace?: QueryTrace | null
+  queryId?: number | null
   createdAt: string
 }
 
@@ -158,6 +159,7 @@ export async function appendServerMessages(
     content: string
     sources?: SourceInfo[] | null
     trace?: QueryTrace | null
+    queryId?: number | null
   }>,
 ): Promise<void> {
   // Payload REST API doesn't support batch create — send sequentially
@@ -172,6 +174,7 @@ export async function appendServerMessages(
           content: msg.content,
           sources: msg.sources ?? null,
           trace: msg.trace ?? null,
+          queryId: msg.queryId ?? null,
         }),
       }),
     ),

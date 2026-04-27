@@ -34,10 +34,12 @@ import type {
   QueryListItem,
   SessionListItem,
   EvaluationResult,
+  EvalStatus,
 } from '../types'
 import type { EvalProvider } from '../api'
 import { useAuth } from '@/features/shared/AuthProvider'
 import AnswerBlockRenderer from '@/features/chat/panel/AnswerBlockRenderer'
+import EvalScoreCard from './EvalScoreCard'
 
 // ============================================================
 // Evaluation group definitions
@@ -89,6 +91,13 @@ const EVAL_GROUPS = {
     ],
   },
 } as const
+
+/** Status badge metadata (EV2-T3-03). */
+const STATUS_META: Record<string, { icon: string; label: string; labelFr: string; text: string; bg: string; border: string }> = {
+  pass: { icon: '✅', label: 'Pass', labelFr: '通过', text: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30' },
+  fail: { icon: '❌', label: 'Fail', labelFr: '未通过', text: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/30' },
+  pending: { icon: '⏳', label: 'Pending', labelFr: '待评估', text: 'text-zinc-400', bg: 'bg-zinc-500/10', border: 'border-zinc-500/30' },
+}
 
 type Grade = 'excellent' | 'good' | 'fair' | 'poor' | 'none'
 
@@ -171,6 +180,7 @@ export default function EvaluationPage() {
   // — Filters
   const [timeFilter, setTimeFilter] = useState<'all' | 'today' | '7d' | '30d'>('all')
   const [userScope, setUserScope] = useState<UserScope>('mine')
+  const [statusFilter, setStatusFilter] = useState<EvalStatus | 'all'>('all')
   const isAdmin = user?.role === 'admin'
 
   // — Model selection
@@ -652,14 +662,52 @@ export default function EvaluationPage() {
       )
     }
 
-    // Done — show 3 grouped sections
+    // Done — use EvalScoreCard if four-category data is available
+    const evalDoc = state.existing
+    const hasFourCategory = evalDoc && (evalDoc.ragScore != null || evalDoc.llmScore != null || evalDoc.answerScore != null)
+
+    if (hasFourCategory && evalDoc) {
+      return (
+        <div className="p-2.5">
+          <EvalScoreCard evaluation={evalDoc} locale={isFr ? 'fr' : 'en'} />
+          <div className="flex justify-end mt-1.5">
+            <button
+              type="button"
+              onClick={() => handleReEvaluate(queryId)}
+              className="p-1 rounded hover:bg-secondary transition-colors"
+              title={isFr ? '重新评估' : 'Re-evaluate'}
+            >
+              <RotateCcw className="h-3 w-3 text-muted-foreground" />
+            </button>
+          </div>
+        </div>
+      )
+    }
+
+    // Fallback — legacy 3-group display for evaluations without four-category data
     const scores = extractGroupedScores(state)
     const feedback = state.existing?.feedback ?? state.result?.feedback ?? {}
+    const evalStatus = state.existing?.status ?? 'pending'
+    const statusMeta = STATUS_META[evalStatus] ?? STATUS_META.pending
+    const overallScore = state.existing?.overallScore ?? null
 
     return (
       <div className="p-2.5 space-y-2">
-        {/* Re-evaluate button */}
-        <div className="flex justify-end">
+        {/* Status + Overall + Re-evaluate */}
+        <div className="flex items-center gap-2">
+          <span className={cn(
+            'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-semibold border',
+            statusMeta.text, statusMeta.bg, statusMeta.border,
+          )}>
+            <span>{statusMeta.icon}</span>
+            {isFr ? statusMeta.labelFr : statusMeta.label}
+          </span>
+          {overallScore != null && (
+            <span className={cn('text-xs font-bold tabular-nums', GRADE_STYLES[getGrade(overallScore)].text)}>
+              {(overallScore * 100).toFixed(0)}%
+            </span>
+          )}
+          <div className="flex-1" />
           <button
             type="button"
             onClick={() => handleReEvaluate(queryId)}
@@ -729,6 +777,31 @@ export default function EvaluationPage() {
             ))}
           </select>
         )}
+
+        {/* Status filter (EV2-T3-03) */}
+        <div className="flex items-center gap-0.5 rounded-lg border border-border p-0.5">
+          {(['all', 'pass', 'fail', 'pending'] as const).map(s => {
+            const meta = s === 'all'
+              ? { icon: '', label: 'All', labelFr: '全部' }
+              : STATUS_META[s]
+            return (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setStatusFilter(s)}
+                className={cn(
+                  'px-2 py-0.5 rounded text-[10px] font-medium transition-colors',
+                  statusFilter === s
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary',
+                )}
+              >
+                {meta.icon ? `${meta.icon} ` : ''}
+                {isFr ? meta.labelFr : meta.label}
+              </button>
+            )
+          })}
+        </div>
 
         {/* Methodology toggle */}
         <button

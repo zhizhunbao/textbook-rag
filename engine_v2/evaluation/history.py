@@ -5,6 +5,7 @@ Responsibilities:
     - Evaluate already-generated answers using BatchEvalRunner.aevaluate_response_strs()
     - Persist evaluation results to Payload Evaluations collection
     - Support single-query and batch evaluation modes
+    - Four-category full evaluation (RAG/LLM/Answer/Question) — EV2-T2-03
 
 Ref: llama_index.core.evaluation — BatchEvalRunner.aevaluate_response_strs()
 """
@@ -13,6 +14,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 import httpx
 from loguru import logger
@@ -25,6 +27,9 @@ from llama_index.core.evaluation import (
 )
 
 from engine_v2.settings import PAYLOAD_URL
+
+if TYPE_CHECKING:
+    from engine_v2.evaluation.evaluator import FullEvalResult
 
 
 # ============================================================
@@ -69,6 +74,12 @@ async def _get_payload_token() -> str:
 
     logger.info("Authenticated with Payload CMS as {}", PAYLOAD_ADMIN_EMAIL)
     return _payload_token
+
+
+def _invalidate_token() -> None:
+    """Clear the cached JWT token so the next request triggers re-login."""
+    global _payload_token
+    _payload_token = None
 
 
 # ============================================================
@@ -123,6 +134,13 @@ async def _fetch_query_by_id(query_id: int) -> QueryRecord:
     try:
         async with httpx.AsyncClient(timeout=PAYLOAD_TIMEOUT) as client:
             resp = await client.get(url, headers=headers)
+            # Token expired → invalidate, re-login, retry once
+            if resp.status_code == 403:
+                logger.warning("JWT expired for query_id={}, re-authenticating…", query_id)
+                _invalidate_token()
+                token = await _get_payload_token()
+                headers = {"Authorization": f"JWT {token}"}
+                resp = await client.get(url, headers=headers)
             resp.raise_for_status()
             raw = resp.json()
     except httpx.ConnectError:
@@ -151,6 +169,11 @@ async def _fetch_recent_queries(limit: int = 20) -> list[QueryRecord]:
     headers = {"Authorization": f"JWT {token}"}
     async with httpx.AsyncClient(timeout=PAYLOAD_TIMEOUT) as client:
         resp = await client.get(url, params=params, headers=headers)
+        if resp.status_code == 403:
+            _invalidate_token()
+            token = await _get_payload_token()
+            headers = {"Authorization": f"JWT {token}"}
+            resp = await client.get(url, params=params, headers=headers)
         resp.raise_for_status()
         data = resp.json()
 
@@ -215,6 +238,11 @@ async def _persist_evaluation(
         headers = {"Authorization": f"JWT {token}"}
         async with httpx.AsyncClient(timeout=PAYLOAD_TIMEOUT) as client:
             resp = await client.post(url, json=payload_data, headers=headers)
+            if resp.status_code == 403:
+                _invalidate_token()
+                token = await _get_payload_token()
+                headers = {"Authorization": f"JWT {token}"}
+                resp = await client.post(url, json=payload_data, headers=headers)
             resp.raise_for_status()
             created = resp.json()
             return created.get("doc", {}).get("id")
@@ -469,3 +497,310 @@ async def evaluate_batch_from_queries(
         batch_id,
     )
     return results
+
+
+# ============================================================
+# Four-category full evaluation (EV2-T2-03)
+# ============================================================
+async def full_evaluate(
+    query_id: int,
+    model: str | None = None,
+) -> "FullEvalResult":
+    """Run four-category evaluation on a stored query record.
+
+    Groups:
+        🔍 RAG    — context_relevancy + relevancy
+        🤖 LLM    — faithfulness
+        📝 Answer — answer_relevancy + completeness + clarity
+        ❓ Question — cognitive depth
+
+    Also extracts retrieval strategy stats from stored sources
+    (bm25_hit_count / vector_hit_count / both_hit_count).
+
+    Args:
+        query_id: Payload Queries record ID.
+        model: Optional LLM model override.
+
+    Returns:
+        FullEvalResult with per-dimension scores, aggregates, and feedback.
+    """
+    from engine_v2.evaluation.answer_evaluators import (
+        ClarityEvaluator,
+        CompletenessEvaluator,
+    )
+    from engine_v2.evaluation.evaluator import (
+        FullEvalResult,
+        assess_question_depth,
+        compute_aggregate_scores,
+    )
+    from engine_v2.llms.resolver import resolve_llm
+
+    # Resolve LLM
+    llm_instance = resolve_llm(model=model) if model else None
+    eval_kwargs = {"llm": llm_instance} if llm_instance else {}
+
+    record = await _fetch_query_by_id(query_id)
+    contexts = _extract_contexts(record.sources)
+
+    logger.info(
+        "Full-evaluate query_id={} — question={}, contexts={}, model={}",
+        query_id, record.question[:60], len(contexts), model or 'default',
+    )
+
+    feedback: dict[str, str] = {}
+
+    # ── ❓ Question quality ─────────────────────────────
+    try:
+        depth_r = await assess_question_depth(record.question, llm=llm_instance)
+        q_depth = depth_r.depth
+        q_depth_score = depth_r.score
+        q_depth_reasoning = depth_r.reasoning
+        feedback["question_depth"] = q_depth_reasoning
+    except Exception as exc:
+        logger.warning("Question depth assessment failed: {}", exc)
+        q_depth = None
+        q_depth_score = None
+        q_depth_reasoning = ""
+
+    # ── 🤖 LLM quality (faithfulness) ────────────────
+    faithfulness_eval = FaithfulnessEvaluator(**eval_kwargs)
+    faith_r = await faithfulness_eval.aevaluate(
+        query=record.question, response=record.answer, contexts=contexts,
+    )
+    feedback["faithfulness"] = faith_r.feedback or ""
+
+    # ── 🔍 RAG quality (context + relevancy) ───────────
+    relevancy_eval = RelevancyEvaluator(**eval_kwargs)
+    ctx_relevancy_eval = ContextRelevancyEvaluator(**eval_kwargs)
+
+    relev_r = await relevancy_eval.aevaluate(
+        query=record.question, response=record.answer, contexts=contexts,
+    )
+    ctx_r = await ctx_relevancy_eval.aevaluate(
+        query=record.question, contexts=contexts,
+    )
+    feedback["relevancy"] = relev_r.feedback or ""
+    feedback["context_relevancy"] = ctx_r.feedback or ""
+
+    # ── 📝 Answer quality ──────────────────────────────
+    ans_relevancy_eval = AnswerRelevancyEvaluator(**eval_kwargs)
+    completeness_eval = CompletenessEvaluator(**eval_kwargs)
+    clarity_eval = ClarityEvaluator(**eval_kwargs)
+
+    ans_r = await ans_relevancy_eval.aevaluate(
+        query=record.question, response=record.answer,
+    )
+    # Completeness + Clarity need (query, response, reference) via CorrectnessEvaluator
+    # Each wrapped individually — one failing must not block the other (UEP-T2-01)
+    ctx_text = "\n\n".join(contexts) if contexts else "No context available."
+    comp_score: float | None = None
+    clar_score: float | None = None
+
+    try:
+        comp_r = await completeness_eval.aevaluate(
+            query=record.question, response=record.answer, reference=ctx_text,
+        )
+        feedback["completeness"] = comp_r.feedback or ""
+        comp_score = (comp_r.score / 5.0) if comp_r.score is not None else None
+    except Exception as exc:
+        logger.warning("CompletenessEvaluator failed: {}", exc)
+        feedback["completeness"] = f"evaluator error: {exc}"
+
+    try:
+        clar_r = await clarity_eval.aevaluate(
+            query=record.question, response=record.answer, reference=ctx_text,
+        )
+        feedback["clarity"] = clar_r.feedback or ""
+        clar_score = (clar_r.score / 5.0) if clar_r.score is not None else None
+    except Exception as exc:
+        logger.warning("ClarityEvaluator failed: {}", exc)
+        feedback["clarity"] = f"evaluator error: {exc}"
+
+    feedback["answer_relevancy"] = ans_r.feedback or ""
+
+    # ── Retrieval strategy stats from stored sources ─────
+    bm25_hits = 0
+    vector_hits = 0
+    both_hits = 0
+    has_bm25 = False
+    for src in record.sources:
+        rs = src.get("retrieval_source", "vector")
+        if rs == "both":
+            both_hits += 1
+            has_bm25 = True
+        elif rs == "bm25":
+            bm25_hits += 1
+            has_bm25 = True
+        else:
+            vector_hits += 1
+
+    # ── Assemble FullEvalResult ─────────────────────────
+    result = FullEvalResult(
+        query_id=record.id,
+        question=record.question,
+        answer=record.answer,
+        # RAG
+        context_relevancy=ctx_r.score,
+        relevancy=relev_r.score,
+        # LLM
+        faithfulness=faith_r.score,
+        # Answer
+        answer_relevancy=ans_r.score,
+        completeness=comp_score,
+        clarity=clar_score,
+        # Question
+        question_depth=q_depth,
+        question_depth_score=q_depth_score,
+        question_depth_reasoning=q_depth_reasoning or "",
+        # Retrieval
+        retrieval_mode="hybrid" if has_bm25 else "vector_only",
+        bm25_hit_count=bm25_hits,
+        vector_hit_count=vector_hits,
+        both_hit_count=both_hits,
+        # Feedback
+        feedback=feedback,
+    )
+
+    # Compute aggregates + status
+    compute_aggregate_scores(result)
+    result.status = _compute_status(result)
+
+    # Persist to Payload Evaluations collection
+    eval_id = await _persist_full_evaluation(result)
+
+    logger.info(
+        "Full-evaluated query_id={} — rag={}, llm={}, answer={}, overall={}, status={} → eval_id={}",
+        query_id, result.rag_score, result.llm_score,
+        result.answer_score, result.overall_score, result.status, eval_id,
+    )
+    return result
+
+
+# ============================================================
+# Status computation (EV2-T3-02)
+# ============================================================
+def _compute_status(result: FullEvalResult) -> str:
+    """Determine pass/fail status based on configurable thresholds.
+
+    Rules (UEP-T2-02):
+        - Need at least faithfulness + answer_score to judge
+        - faithfulness >= threshold AND answer_score >= threshold → "pass"
+        - Otherwise → "fail"
+        - If both scores are None → "pending"
+    """
+    from engine_v2.settings import EVAL_PASS_ANSWER_SCORE, EVAL_PASS_FAITHFULNESS
+
+    # Fallback: if answer_score is None but answer_relevancy exists, use that
+    effective_answer = result.answer_score
+    if effective_answer is None:
+        effective_answer = result.answer_relevancy
+
+    if result.faithfulness is None and effective_answer is None:
+        return "pending"
+
+    # If we have at least one, we can make a judgement
+    faith_ok = result.faithfulness is None or result.faithfulness >= EVAL_PASS_FAITHFULNESS
+    answer_ok = effective_answer is None or effective_answer >= EVAL_PASS_ANSWER_SCORE
+
+    if faith_ok and answer_ok:
+        return "pass"
+
+    return "fail"
+
+
+# ============================================================
+# Persist FullEvalResult (EV2-T3-01)
+# ============================================================
+async def _persist_full_evaluation(
+    result: FullEvalResult,
+    batch_id: str | None = None,
+) -> int | None:
+    """Write a FullEvalResult to Payload Evaluations collection.
+
+    Maps all four-category fields to the extended Evaluations schema.
+    Returns the created evaluation record ID, or None on failure.
+    """
+    # Normalise question depth score (1-5) → 0-1 for consistency
+    norm_depth = (result.question_depth_score / 5.0) if result.question_depth_score else None
+
+    payload_data: dict = {
+        # Original fields
+        "query": result.question,
+        "answer": result.answer,
+        "faithfulness": result.faithfulness,
+        "relevancy": result.relevancy,
+        "contextRelevancy": result.context_relevancy,
+        "answerRelevancy": result.answer_relevancy,
+        "questionDepth": result.question_depth,
+        "questionDepthScore": norm_depth,
+        "feedback": result.feedback,
+        "queryRef": result.query_id,
+        # Four-category aggregates (EV2-T2-04)
+        "ragScore": result.rag_score,
+        "llmScore": result.llm_score,
+        "answerScore": result.answer_score,
+        "overallScore": result.overall_score,
+        # Answer sub-dimensions
+        "completeness": result.completeness,
+        "clarity": result.clarity,
+        # Retrieval strategy
+        "retrievalMode": result.retrieval_mode,
+        "bm25Hits": result.bm25_hit_count,
+        "vectorHits": result.vector_hit_count,
+        "bothHits": result.both_hit_count,
+        # Status
+        "status": result.status,
+    }
+    if batch_id:
+        payload_data["batchId"] = batch_id
+
+    url = f"{PAYLOAD_URL}/api/evaluations"
+    try:
+        token = await _get_payload_token()
+        headers = {"Authorization": f"JWT {token}"}
+        async with httpx.AsyncClient(timeout=PAYLOAD_TIMEOUT) as client:
+            resp = await client.post(url, json=payload_data, headers=headers)
+            if resp.status_code == 403:
+                _invalidate_token()
+                token = await _get_payload_token()
+                headers = {"Authorization": f"JWT {token}"}
+                resp = await client.post(url, json=payload_data, headers=headers)
+            resp.raise_for_status()
+            created = resp.json()
+            return created.get("doc", {}).get("id")
+    except Exception:
+        logger.warning(
+            "Failed to persist full evaluation for query_id={}",
+            result.query_id,
+        )
+        return None
+
+
+# ============================================================
+# Auto-eval trigger (EV2-T3-01)
+# ============================================================
+async def auto_evaluate_query(query_id: int) -> None:
+    """Fire-and-forget auto-evaluation for a newly created query.
+
+    Called by the Payload afterChange hook on the Queries collection.
+    Silently catches all exceptions to avoid disrupting the query flow.
+
+    Args:
+        query_id: Payload Queries record ID.
+    """
+    from engine_v2.settings import AUTO_EVAL_ENABLED
+
+    if not AUTO_EVAL_ENABLED:
+        logger.debug("Auto-eval disabled, skipping query_id={}", query_id)
+        return
+
+    try:
+        logger.info("Auto-eval triggered for query_id={}", query_id)
+        result = await full_evaluate(query_id)
+        logger.info(
+            "Auto-eval complete for query_id={} — overall={}, status={}",
+            query_id, result.overall_score, result.status,
+        )
+    except Exception as exc:
+        logger.warning("Auto-eval failed for query_id={}: {}", query_id, exc)
+

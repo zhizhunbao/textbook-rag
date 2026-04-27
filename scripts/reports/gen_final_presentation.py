@@ -1017,7 +1017,7 @@ def main():
     slide_16_future_work(prs)
     slide_17_thankyou(prs)
 
-    out_path = Path(__file__).resolve().parent.parent / "Final_Presentation_Textbook_RAG_v2.pptx"
+    out_path = Path(__file__).resolve().parent.parent.parent / "Final_Presentation_Textbook_RAG_v2.pptx"
     prs.save(str(out_path))
     print(f"Saved presentation: {out_path}")
     print(f"Total slides: {len(prs.slides)}")

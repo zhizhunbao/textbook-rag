@@ -7,6 +7,8 @@ Endpoints:
     POST   /engine/evaluation/dedup              — question deduplication check
     POST   /engine/evaluation/evaluate-history   — evaluate existing query (no re-run)
     POST   /engine/evaluation/evaluate-batch     — batch-evaluate recent queries
+    POST   /engine/evaluation/full-evaluate      — four-category evaluation (EV2-T2)
+    POST   /engine/evaluation/auto-evaluate      — auto-eval trigger (EV2-T3)
     GET    /engine/evaluation/queries            — list recent Queries for evaluation
 
 Ref: llama_index.core.evaluation — CorrectnessEvaluator, SemanticSimilarityEvaluator
@@ -27,6 +29,8 @@ from engine_v2.evaluation.evaluator import (
 from engine_v2.evaluation.history import (
     evaluate_batch_from_queries,
     evaluate_single_from_query,
+    full_evaluate,
+    auto_evaluate_query,
     _fetch_recent_queries,
 )
 
@@ -78,6 +82,19 @@ class BatchHistoryEvalRequest(BaseModel):
 
     n_recent: int = 20
     batch_id: str | None = None
+
+
+class FullEvalRequest(BaseModel):
+    """Four-category full evaluation request (EV2-T2/T3)."""
+
+    query_id: int
+    model: str | None = None
+
+
+class AutoEvalRequest(BaseModel):
+    """Auto-evaluation trigger request (EV2-T3)."""
+
+    query_id: int
 
 
 # ============================================================
@@ -246,6 +263,73 @@ async def eval_batch_history(req: BatchHistoryEvalRequest):
         "count": len(results),
         "batch_id": req.batch_id,
     }
+
+
+# ============================================================
+# Endpoints — Four-category evaluation (EV2-T2/T3)
+# ============================================================
+@router.post("/full-evaluate")
+async def eval_full(req: FullEvalRequest):
+    """Four-category evaluation of an existing query (RAG/LLM/Answer/Question).
+
+    Returns grouped scores, aggregates, retrieval strategy stats, and status.
+    """
+    logger.info("Full-evaluate — query_id={}, model={}", req.query_id, req.model)
+    try:
+        result = await full_evaluate(query_id=req.query_id, model=req.model)
+    except RuntimeError as exc:
+        logger.error("full-evaluate failed for query_id={}: {}", req.query_id, exc)
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=502, content={"detail": str(exc)})
+
+    return {
+        "query_id": result.query_id,
+        "question": result.question,
+        "scores": {
+            "rag": {
+                "context_relevancy": result.context_relevancy,
+                "relevancy": result.relevancy,
+                "aggregate": result.rag_score,
+            },
+            "llm": {
+                "faithfulness": result.faithfulness,
+                "aggregate": result.llm_score,
+            },
+            "answer": {
+                "answer_relevancy": result.answer_relevancy,
+                "completeness": result.completeness,
+                "clarity": result.clarity,
+                "aggregate": result.answer_score,
+            },
+            "question": {
+                "depth": result.question_depth,
+                "depth_score": result.question_depth_score,
+            },
+        },
+        "overall_score": result.overall_score,
+        "status": result.status,
+        "retrieval": {
+            "mode": result.retrieval_mode,
+            "bm25_hits": result.bm25_hit_count,
+            "vector_hits": result.vector_hit_count,
+            "both_hits": result.both_hit_count,
+        },
+        "feedback": result.feedback,
+    }
+
+
+@router.post("/auto-evaluate")
+async def eval_auto(req: AutoEvalRequest):
+    """Auto-evaluation trigger — called by Payload afterChange hook.
+
+    Runs in the background via asyncio.create_task().
+    Returns immediately with {"triggered": true}.
+    """
+    import asyncio
+
+    logger.info("Auto-evaluate trigger — query_id={}", req.query_id)
+    asyncio.create_task(auto_evaluate_query(req.query_id))
+    return {"triggered": True, "query_id": req.query_id}
 
 
 @router.get("/queries")

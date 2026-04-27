@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 import { isAdmin } from '../access/isAdmin'
 import { isOwnerOrAdmin } from '../access/isOwnerOrAdmin'
+import { afterChangeHook } from '../hooks/queries/afterChange'
 
 /**
  * Queries — query execution logs.
@@ -8,6 +9,9 @@ import { isOwnerOrAdmin } from '../access/isOwnerOrAdmin'
  */
 export const Queries: CollectionConfig = {
   slug: 'queries',
+  hooks: {
+    afterChange: [afterChangeHook],
+  },
   admin: {
     useAsTitle: 'question',
     defaultColumns: ['question', 'user', 'provider', 'latencyMs', 'createdAt'],

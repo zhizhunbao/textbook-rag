@@ -24,7 +24,7 @@ from datetime import datetime
 from pathlib import Path
 
 # ── Config ──
-PROJECT_ROOT = Path(__file__).parent.parent
+PROJECT_ROOT = Path(__file__).parent.parent.parent
 RAW_PDFS_DIR = PROJECT_ROOT / "data" / "raw_pdfs"
 OUTPUT_DIR = PROJECT_ROOT / "data" / "mineru_output"
 VENV_MINERU = PROJECT_ROOT / ".venv" / "Scripts" / "mineru"

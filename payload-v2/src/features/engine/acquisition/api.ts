@@ -10,7 +10,7 @@
  *   DELETE /api/books/{id}                  — Payload Book delete (AQ-06)
  */
 
-import type { ClassifyResult, ParseStats, MediaFile } from './types'
+import type { ClassifyResult, ParseStats, MediaFile, VectorStats } from './types'
 import { authFetch } from '@/features/shared/authFetch'
 
 // ============================================================
@@ -48,9 +48,21 @@ export async function classifyBook(
 /**
  * Fetch MinerU parse statistics for a specific book.
  * Returns item counts, page counts, type distribution, and content samples.
+ *
+ * AQ-07: supports content_type/limit/offset for sub-tab filtering.
  */
-export async function fetchParseStats(bookId: string): Promise<ParseStats> {
-  const res = await fetch(`${ENGINE_URL}/engine/books/${bookId}/parse-stats`)
+export async function fetchParseStats(
+  bookId: string,
+  opts?: { contentType?: string; limit?: number; offset?: number },
+): Promise<ParseStats> {
+  const params = new URLSearchParams()
+  if (opts?.contentType) params.set('content_type', opts.contentType)
+  if (opts?.limit != null) params.set('limit', String(opts.limit))
+  if (opts?.offset != null) params.set('offset', String(opts.offset))
+
+  const qs = params.toString()
+  const url = `${ENGINE_URL}/engine/books/${bookId}/parse-stats${qs ? `?${qs}` : ''}`
+  const res = await fetch(url)
   if (!res.ok) {
     throw new Error(`Failed to fetch parse stats: ${res.status}`)
   }
@@ -141,5 +153,29 @@ export async function deletePdfUpload(uploadId: number): Promise<void> {
     method: 'DELETE',
   })
   if (!res.ok) throw new Error(`Failed to delete PDF upload: ${res.status}`)
+}
+
+// ============================================================
+// Vector stats (Engine API) — AQ-09
+// ============================================================
+
+/**
+ * Fetch ChromaDB vector statistics for a specific book.
+ * Returns vector count, embedding dimensions, and random chunk samples.
+ */
+export async function fetchVectorStats(
+  bookId?: string,
+): Promise<VectorStats> {
+  const params = new URLSearchParams()
+  if (bookId) params.set('book_id', bookId)
+  params.set('sample_count', '5')
+
+  const qs = params.toString()
+  const url = `${ENGINE_URL}/engine/vectors/stats${qs ? `?${qs}` : ''}`
+  const res = await fetch(url)
+  if (!res.ok) {
+    throw new Error(`Failed to fetch vector stats: ${res.status}`)
+  }
+  return res.json()
 }
 

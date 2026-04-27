@@ -17,7 +17,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml.ns import qn
 
-OUTPUT = Path(__file__).resolve().parent.parent / "Final_Report_Textbook_RAG_v2.docx"
+OUTPUT = Path(__file__).resolve().parent.parent.parent / "Final_Report_Textbook_RAG_v2.docx"
 
 # ── Design ──
 ACCENT = RGBColor(47, 84, 150)

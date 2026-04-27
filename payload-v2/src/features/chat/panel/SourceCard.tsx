@@ -28,6 +28,7 @@ export default function SourceCard({ source, index, isActive }: Props) {
   const dispatch = useAppDispatch();
   const chipRef = useRef<HTMLButtonElement>(null);
   const [showPopover, setShowPopover] = useState(false);
+  const [pinned, setPinned] = useState(false);  // true when user clicked to keep open
   const [pos, setPos] = useState<{
     top?: number;
     bottom?: number;
@@ -77,9 +78,10 @@ export default function SourceCard({ source, index, isActive }: Props) {
   }, []);
 
   const scheduleHide = useCallback(() => {
+    if (pinned) return;  // don't auto-hide when pinned by click
     clearTimeout(enterTimer.current);
     leaveTimer.current = setTimeout(() => setShowPopover(false), 180);
-  }, []);
+  }, [pinned]);
 
   /* ── Close on scroll so stale position doesn't linger ── */
   useEffect(() => {
@@ -110,7 +112,7 @@ export default function SourceCard({ source, index, isActive }: Props) {
               bottom: pos.bottom != null ? `${pos.bottom}px` : undefined,
               left: `${pos.left}px`,
             }}
-            onMouseEnter={() => clearTimeout(leaveTimer.current)}
+            onMouseEnter={() => { if (!pinned) clearTimeout(leaveTimer.current); }}
             onMouseLeave={scheduleHide}
           >
             {/* ── Header ── */}
@@ -129,9 +131,39 @@ export default function SourceCard({ source, index, isActive }: Props) {
                   </span>
                 </>
               )}
-              <span className="ml-auto shrink-0 tabular-nums text-muted-foreground/60">
+              <span className="shrink-0 tabular-nums text-muted-foreground/60">
                 p.{source.page_number}
               </span>
+              {/* Open PDF button */}
+              <button
+                type="button"
+                className="ml-auto inline-flex items-center gap-1 rounded-md bg-blue-500/10 px-2 py-0.5 text-[10px] font-semibold text-blue-500 transition-colors hover:bg-blue-500/20"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  dispatch({ type: "SELECT_SOURCE", source });
+                }}
+                aria-label="Open PDF at this page"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3 w-3">
+                  <path d="M3 1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V5.414a1 1 0 0 0-.293-.707L10.293 1.293A1 1 0 0 0 9.586 1H3Zm6 1.5L12.5 6H10a1 1 0 0 1-1-1V2.5ZM4 8a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7A.5.5 0 0 1 4 8Zm.5 1.5a.5.5 0 0 0 0 1h4a.5.5 0 0 0 0-1h-4Z"/>
+                </svg>
+                PDF
+              </button>
+              {/* Close button */}
+              <button
+                type="button"
+                className="ml-1 inline-flex items-center justify-center rounded-md p-0.5 text-muted-foreground/50 transition-colors hover:text-foreground"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setPinned(false);
+                  setShowPopover(false);
+                }}
+                aria-label="Close citation"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3 w-3">
+                  <path d="M4.28 3.22a.75.75 0 0 0-1.06 1.06L6.94 8l-3.72 3.72a.75.75 0 1 0 1.06 1.06L8 9.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L9.06 8l3.72-3.72a.75.75 0 0 0-1.06-1.06L8 6.94 4.28 3.22Z"/>
+                </svg>
+              </button>
             </div>
 
             {/* ── Snippet with Markdown + KaTeX rendering ── */}
@@ -187,15 +219,45 @@ export default function SourceCard({ source, index, isActive }: Props) {
       <button
         ref={chipRef}
         type="button"
-        onClick={() => dispatch({ type: "SELECT_SOURCE", source })}
+        onClick={() => {
+          // Toggle popover on click (pinned mode)
+          if (showPopover && pinned) {
+            setPinned(false);
+            setShowPopover(false);
+          } else {
+            // Calculate position and pin open
+            if (chipRef.current) {
+              const r = chipRef.current.getBoundingClientRect();
+              const popW = 356;
+              const popH = 320;
+              const gap = 10;
+              const fitsRight = r.right + gap + popW < window.innerWidth - 8;
+              const fitsLeft = r.left - gap - popW > 8;
+              if (fitsRight) {
+                const top = Math.max(8, Math.min(r.top - 40, window.innerHeight - popH - 8));
+                setPos({ top, left: r.right + gap });
+              } else if (fitsLeft) {
+                const top = Math.max(8, Math.min(r.top - 40, window.innerHeight - popH - 8));
+                setPos({ top, left: r.left - gap - popW });
+              } else {
+                const openUp = r.top > window.innerHeight / 2;
+                const left = Math.max(8, Math.min(r.left, window.innerWidth - popW - 8));
+                if (openUp) setPos({ bottom: window.innerHeight - r.top + gap, left });
+                else setPos({ top: r.bottom + gap, left });
+              }
+            }
+            setPinned(true);
+            setShowPopover(true);
+          }
+        }}
         onMouseEnter={scheduleShow}
         onMouseLeave={scheduleHide}
         className={`source-chip inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-all duration-150 ${
-          isActive
+          isActive || (showPopover && pinned)
             ? "border-blue-400/60 bg-blue-500/10 text-blue-500 shadow-sm shadow-blue-500/10"
             : "border-border bg-card/80 text-muted-foreground hover:border-blue-300/50 hover:bg-accent/50 hover:text-foreground"
         }`}
-        aria-label={`${source.book_title} · p.${source.page_number} — click to view in PDF`}
+        aria-label={`${source.book_title} · p.${source.page_number} — click to view citation`}
       >
         <span
           className={`inline-flex h-[18px] w-[18px] items-center justify-center rounded-full text-[10px] font-bold leading-none ${

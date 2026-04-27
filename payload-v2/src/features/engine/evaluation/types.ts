@@ -1,5 +1,6 @@
 /**
  * evaluation types — 5-dimensional evaluation, question depth, and deduplication.
+ * Extended with four-category scoring (EV2-T2/T3).
  *
  * Shared type definitions for the evaluation module.
  */
@@ -135,6 +136,9 @@ export interface SessionListItem {
 // Domain types — Payload CMS records
 // ============================================================
 
+/** Evaluation pass/fail/pending status (EV2-T3-02). */
+export type EvalStatus = 'pass' | 'fail' | 'pending'
+
 /** Persisted evaluation result from Payload Evaluations collection. */
 export interface EvaluationResult {
   id: number
@@ -149,6 +153,25 @@ export interface EvaluationResult {
   answerRelevancy: number | null
   questionDepth: string | null
   questionDepthScore: number | null
+
+  // Four-category aggregates (EV2-T2-04)
+  ragScore: number | null
+  llmScore: number | null
+  answerScore: number | null
+  overallScore: number | null
+
+  // Answer sub-dimensions (EV2-T2-04)
+  completeness: number | null
+  clarity: number | null
+
+  // Retrieval strategy (EV2-T1 + T2-04)
+  retrievalMode: 'hybrid' | 'vector_only' | null
+  bm25Hits: number | null
+  vectorHits: number | null
+  bothHits: number | null
+
+  // Status (EV2-T3-02)
+  status: EvalStatus | null
 
   feedback: Record<string, string> | null
 
@@ -188,4 +211,44 @@ export interface BatchEvalResponse {
   status: 'queued' | 'running' | 'done' | 'error'
   evaluated: number
   total: number
+}
+
+// ============================================================
+// Full evaluation API types (EV2-T2/T3)
+// ============================================================
+
+/** Response from POST /engine/evaluation/full-evaluate. */
+export interface FullEvalApiResult {
+  query_id: number
+  question: string
+  scores: {
+    rag: {
+      context_relevancy: number | null
+      relevancy: number | null
+      aggregate: number | null
+    }
+    llm: {
+      faithfulness: number | null
+      aggregate: number | null
+    }
+    answer: {
+      answer_relevancy: number | null
+      completeness: number | null
+      clarity: number | null
+      aggregate: number | null
+    }
+    question: {
+      depth: string | null
+      depth_score: number | null
+    }
+  }
+  overall_score: number | null
+  status: EvalStatus | null
+  retrieval: {
+    mode: string | null
+    bm25_hits: number
+    vector_hits: number
+    both_hits: number
+  }
+  feedback: Record<string, string>
 }

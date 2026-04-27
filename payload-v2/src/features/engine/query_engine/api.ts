@@ -124,6 +124,8 @@ function normaliseSource(s: any): SourceInfo {
       : null,
     confidence: s.score ?? 1,
     score: s.score ?? undefined,
+    // EV2-T1-03: pass through retrieval strategy provenance from backend
+    retrieval_source: s.retrieval_source ?? undefined,
   }
 }
 
@@ -180,6 +182,7 @@ export async function queryTextbook(req: QueryRequest): Promise<QueryResponse> {
       model: req.model,
       provider: req.provider,
       reranker: req.reranker ?? null,
+      custom_system_prompt: req.custom_system_prompt ?? null,
     }),
   })
 
@@ -223,6 +226,7 @@ export async function queryTextbookStream(
         model: req.model,
         provider: req.provider,
         reranker: req.reranker ?? null,
+        custom_system_prompt: req.custom_system_prompt ?? null,
       }),
       signal: callbacks.signal,
     })
@@ -273,6 +277,7 @@ export async function queryTextbookStream(
                   fused_count: sources.length,
                 },
                 trace: normaliseTrace(data.trace, req, sources),
+                telemetry: data.telemetry ?? undefined,
               })
             }
           } catch {

@@ -16,7 +16,7 @@ from fastapi.responses import JSONResponse
 from engine_v2.settings import CORS_ORIGINS, init_settings
 from engine_v2.api.routes import (
     books, classify, delete, embeddings, evaluation, health, ingest, llms,
-    query, questions, report, retrievers, sources, suggest,
+    query, questions, report, retrievers, sources, suggest, vectors,
 )
 
 logger = logging.getLogger(__name__)
@@ -73,6 +73,7 @@ def create_app() -> FastAPI:
     app.include_router(sources.router, prefix="/engine")
     app.include_router(suggest.router, prefix="/engine")
     app.include_router(report.router, prefix="/engine")
+    app.include_router(vectors.router, prefix="/engine")
 
     return app
 

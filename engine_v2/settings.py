@@ -66,6 +66,32 @@ CORS_ORIGINS: list[str] = os.getenv(
 TOP_K: int = int(os.getenv("TOP_K", "5"))
 CHROMA_COLLECTION: str = os.getenv("CHROMA_COLLECTION", "textbook_chunks")
 
+# ============================================================
+# Reranker (Stage 2 — semantic reranking after retrieval)
+# ============================================================
+# CrossEncoder reranker — lightweight, ~100MB model, <100ms inference
+# Always-on by default to filter BM25 keyword noise (e.g. cross-book contamination)
+RERANKER_ENABLED: bool = os.getenv("RERANKER_ENABLED", "true").lower() in (
+    "true", "1", "yes",
+)
+RERANKER_MODEL: str = os.getenv(
+    "RERANKER_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-v2"
+)
+RERANKER_TOP_N: int = int(os.getenv("RERANKER_TOP_N", "5"))
+# Similarity cutoff — drop chunks below this threshold after reranking
+# 0.0 = keep all; increase to filter more aggressively
+SIMILARITY_CUTOFF: float = float(os.getenv("SIMILARITY_CUTOFF", "0.01"))
+
+# ============================================================
+# Auto-evaluation (EV2-T3)
+# ============================================================
+AUTO_EVAL_ENABLED: bool = os.getenv("AUTO_EVAL_ENABLED", "false").lower() in (
+    "true", "1", "yes",
+)
+# Pass thresholds: faithfulness ≥ 0.7 AND answer_score ≥ 0.6
+EVAL_PASS_FAITHFULNESS: float = float(os.getenv("EVAL_PASS_FAITHFULNESS", "0.7"))
+EVAL_PASS_ANSWER_SCORE: float = float(os.getenv("EVAL_PASS_ANSWER_SCORE", "0.6"))
+
 
 # ============================================================
 # Configure LlamaIndex Settings singleton

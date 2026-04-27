@@ -19,7 +19,7 @@ import {
   Globe,
   Search,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useI18n } from '@/features/shared/i18n'
 import { cn } from '@/features/shared/utils'
 import {
@@ -75,11 +75,13 @@ export default function AppSidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const { t } = useI18n()
-  // Persist collapsed state in localStorage so it survives refresh
-  const [collapsed, setCollapsedRaw] = useState(() => {
-    if (typeof window === 'undefined') return false
-    try { return localStorage.getItem(SIDEBAR_KEY) === '1' } catch { return false }
-  })
+  // Always start un-collapsed (matches SSR). Sync from localStorage after mount.
+  const [collapsed, setCollapsedRaw] = useState(false)
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(SIDEBAR_KEY) === '1') setCollapsedRaw(true)
+    } catch {}
+  }, [])
   const setCollapsed = (v: boolean) => {
     setCollapsedRaw(v)
     try { localStorage.setItem(SIDEBAR_KEY, v ? '1' : '0') } catch {}

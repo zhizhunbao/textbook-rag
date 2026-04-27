@@ -4,15 +4,15 @@ Endpoints:
     POST /engine/classify  — auto-classify book by title/filename
 
 Ref: AQ-05 — LLM auto-classification for uploaded PDFs
+Ref: llama_index.core.llms.llm.LLM.structured_predict — structured output
 """
 
 from __future__ import annotations
 
-import json
-
 from fastapi import APIRouter
+from llama_index.core.prompts import PromptTemplate
 from loguru import logger
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 
 # ============================================================
 # Router
@@ -20,43 +20,35 @@ from pydantic import BaseModel
 router = APIRouter(tags=["classify"])
 
 # ============================================================
-# Classification prompt (open-ended — no fixed category list)
+# Classification prompt (PromptTemplate — structured_predict auto-appends schema)
 # ============================================================
-CLASSIFY_PROMPT = """\
-You are a librarian assistant. Given a document title (and optionally a filename),
-classify it into a category and suggest a subcategory.
-
-## Guidelines
-- The **category** should be a short, broad label that groups similar documents.
-  Examples: "textbook", "ecdev", "real_estate", "research_paper", "policy", \
-"finance", "engineering", "medical", "legal", etc.
-  Use lowercase_snake_case. Keep it to 1-2 words max.
-- The **subcategory** should be a more specific tag within that category.
-  Use **Title Case** (capitalize each word, separated by spaces).
-  Examples: "Python", "Machine Learning", "Computer Vision", "Q4 2024 Report", \
-"Market Analysis", "Reinforcement Learning", "Software Engineering", etc.
-  Do NOT use snake_case for subcategory.
-- The **confidence** should be a float 0.0–1.0 indicating your certainty.
-
-## Hints for common patterns
-- Academic/technical books (programming, math, CS, ML, etc.) → category "textbook"
-- Economic development reports, market updates, quarterly reviews, fund updates, \
-documents with "Ed Update" → category "ecdev"
-- Real estate reports, property analysis, REIT materials → category "real_estate"
-- But you are NOT limited to these — use whatever category fits best.
-
-## Rules
-1. Return ONLY valid JSON — no markdown, no explanation.
-2. Keep category in lowercase_snake_case, max 2 words.
-3. Keep subcategory in Title Case (e.g. "Machine Learning", NOT "machine_learning").
-
-## Input
-Title: {title}
-Filename: {filename}
-
-## Output format
-{{"category": "...", "subcategory": "...", "confidence": 0.0}}
-"""
+CLASSIFY_PROMPT_TMPL = PromptTemplate(
+    "You are a librarian assistant. Given a document title (and optionally a filename), "
+    "classify it into a category and suggest a subcategory.\n\n"
+    "## Guidelines\n"
+    "- The **category** should be a short, broad label that groups similar documents.\n"
+    '  Examples: "textbook", "ecdev", "real_estate", "research_paper", "policy", '
+    '"finance", "engineering", "medical", "legal", etc.\n'
+    "  Use lowercase_snake_case. Keep it to 1-2 words max.\n"
+    "- The **subcategory** should be a more specific tag within that category.\n"
+    '  Use **Title Case** (capitalize each word, separated by spaces).\n'
+    '  Examples: "Python", "Machine Learning", "Computer Vision", "Q4 2024 Report", '
+    '"Market Analysis", "Reinforcement Learning", "Software Engineering", etc.\n'
+    "  Do NOT use snake_case for subcategory.\n"
+    "- The **confidence** should be a float 0.0\u20131.0 indicating your certainty.\n\n"
+    "## Hints for common patterns\n"
+    '- Academic/technical books (programming, math, CS, ML, etc.) \u2192 category "textbook"\n'
+    "- Economic development reports, market updates, quarterly reviews, fund updates, "
+    'documents with "Ed Update" \u2192 category "ecdev"\n'
+    '- Real estate reports, property analysis, REIT materials \u2192 category "real_estate"\n'
+    "- But you are NOT limited to these \u2014 use whatever category fits best.\n\n"
+    "## Rules\n"
+    "1. Keep category in lowercase_snake_case, max 2 words.\n"
+    "2. Keep subcategory in Title Case.\n\n"
+    "## Input\n"
+    "Title: {title}\n"
+    "Filename: {filename}"
+)
 
 
 # ============================================================
@@ -68,9 +60,23 @@ class ClassifyRequest(BaseModel):
 
 
 class ClassifyResponse(BaseModel):
-    category: str
-    subcategory: str
-    confidence: float
+    """LLM classification result — also used as structured_predict output_cls."""
+
+    category: str = Field(default="textbook", description="lowercase_snake_case category")
+    subcategory: str = Field(default="", description="Title Case subcategory")
+    confidence: float = Field(default=0.5, ge=0.0, le=1.0)
+
+    @field_validator("category", mode="before")
+    @classmethod
+    def normalize_category(cls, v: str) -> str:
+        """Sanitize to lowercase_snake_case."""
+        return str(v).lower().strip().replace(" ", "_").replace("-", "_")
+
+    @field_validator("subcategory", mode="before")
+    @classmethod
+    def normalize_subcategory(cls, v: str) -> str:
+        """Normalize to Title Case, preserving acronyms."""
+        return _to_title_case(str(v).strip())
 
 
 # ============================================================
@@ -81,60 +87,29 @@ async def classify_book(req: ClassifyRequest):
     """Classify a book into category + subcategory using LLM.
 
     Open-ended classification — the LLM can suggest any category,
-    not limited to a fixed list. The frontend shows the suggestion
-    in a combobox where users can accept, modify, or pick from
-    existing categories.
+    not limited to a fixed list. Uses structured_predict for robust,
+    schema-validated output.
     """
     from llama_index.core.settings import Settings
 
-    prompt = CLASSIFY_PROMPT.format(
-        title=req.title,
-        filename=req.filename or "(not provided)",
-    )
-
     logger.info("Classifying: title='{}', filename='{}'", req.title, req.filename)
 
-    raw_text = ""
     try:
-        llm = Settings.llm
-        response = llm.complete(prompt)
-        raw_text = response.text.strip()
-
-        # Strip markdown code fences if LLM wraps the JSON
-        if raw_text.startswith("```"):
-            lines = raw_text.split("\n")
-            lines = [ln for ln in lines if not ln.startswith("```")]
-            raw_text = "\n".join(lines).strip()
-
-        result = json.loads(raw_text)
-
-        category = str(result.get("category", "textbook")).lower().strip()
-        subcategory = str(result.get("subcategory", "")).strip()
-        confidence = float(result.get("confidence", 0.5))
-
-        # Sanitize category to lowercase_snake_case
-        category = category.replace(" ", "_").replace("-", "_")
-
-        # Normalize subcategory to Title Case
-        subcategory = _to_title_case(subcategory)
+        result = Settings.llm.structured_predict(
+            ClassifyResponse,
+            CLASSIFY_PROMPT_TMPL,
+            title=req.title,
+            filename=req.filename or "(not provided)",
+        )
 
         logger.info(
             "Classification result: category={}, subcategory={}, confidence={:.2f}",
-            category, subcategory, confidence,
+            result.category, result.subcategory, result.confidence,
         )
-
-        return ClassifyResponse(
-            category=category,
-            subcategory=subcategory,
-            confidence=confidence,
-        )
-
-    except (json.JSONDecodeError, KeyError, TypeError) as exc:
-        logger.warning("LLM classification parse failed: {} — raw: {}", exc, raw_text)
-        return _heuristic_classify(req.title, req.filename)
+        return result
 
     except Exception as exc:
-        logger.error("LLM classification failed: {}", exc)
+        logger.warning("structured_predict classification failed: {}", exc)
         return _heuristic_classify(req.title, req.filename)
 
 

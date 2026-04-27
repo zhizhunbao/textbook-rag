@@ -34,6 +34,33 @@ function Loading() {
   );
 }
 
+/** Full-panel overlay shown while PDF document is downloading + target page rendering */
+function PdfLoadingOverlay() {
+  return (
+    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/90 backdrop-blur-sm transition-opacity duration-300">
+      <style>{`
+        @keyframes pdf-progress-slide {
+          0%   { transform: translateX(-100%); }
+          100% { transform: translateX(300%); }
+        }
+      `}</style>
+      {/* Spinner ring */}
+      <div className="relative h-10 w-10 mb-3">
+        <div className="absolute inset-0 rounded-full border-2 border-muted" />
+        <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-primary animate-spin" />
+      </div>
+      <p className="text-sm font-medium text-foreground/80 mb-3">Loading PDF…</p>
+      {/* Indeterminate progress bar */}
+      <div className="w-40 h-1 rounded-full bg-muted overflow-hidden">
+        <div
+          className="h-full w-2/5 rounded-full bg-primary/80"
+          style={{ animation: 'pdf-progress-slide 1.4s infinite ease-in-out' }}
+        />
+      </div>
+    </div>
+  );
+}
+
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 
 const HORIZONTAL_GUTTER = 32;
@@ -97,6 +124,7 @@ const PdfPageCanvas = memo(function PdfPageCanvas({
       pageNumber={pageNumber}
       width={renderWidth}
       onLoadSuccess={handleLoadSuccess}
+      onLoadError={handleError}
       onRenderError={handleError}
       onGetTextError={handleError}
       loading={<Loading />}
@@ -306,6 +334,11 @@ export default function PdfViewer() {
   const toolbarRef = useRef<HTMLDivElement>(null);
   const [renderedPages, setRenderedPages] = useState<Set<number>>(new Set([1]));
   const [loadedPages, setLoadedPages] = useState<Set<number>>(new Set());
+  /** true while the PDF document file itself is being fetched/parsed */
+  const [docLoading, setDocLoading] = useState(true);
+  /** page number we're waiting to finish rendering before scrolling */
+  const [waitingForPage, setWaitingForPage] = useState<number | null>(null);
+  const loadedPagesRef = useRef<Set<number>>(new Set());
 
   const scrollViewportRef = useRef<HTMLDivElement>(null);
   const pageFrameRef = useRef<HTMLDivElement>(null);
@@ -423,6 +456,16 @@ export default function PdfViewer() {
     currentPageRef.current = currentPage;
   }, [currentPage]);
 
+  // Sync loadedPages into ref so polling callbacks can read latest value
+  useEffect(() => { loadedPagesRef.current = loadedPages; }, [loadedPages]);
+
+  // Clear waitingForPage once that page finishes loading
+  useEffect(() => {
+    if (waitingForPage !== null && loadedPages.has(waitingForPage)) {
+      setWaitingForPage(null);
+    }
+  }, [waitingForPage, loadedPages]);
+
   // Detect narrow toolbar for responsive collapse
   useEffect(() => {
     const node = toolbarRef.current;
@@ -467,6 +510,8 @@ export default function PdfViewer() {
       setRenderWidth(cached.renderWidth);
       setZoomScale(cached.zoomScale);
       setSelectedTocEntryId(null);
+      setDocLoading(false); // PDF is browser-cached → no overlay needed
+      setWaitingForPage(null);
       // pageRefs are DOM nodes — they will be re-created by React when Document mounts
       pageRefs.current.clear();
       didFitPageRef.current = cached.renderWidth > 0;
@@ -484,6 +529,8 @@ export default function PdfViewer() {
     setSelectedTocEntryId(null);
     setRenderedPages(new Set([1, currentPage]));
     setLoadedPages(new Set());
+    setDocLoading(true);
+    setWaitingForPage(null);
     pageRefs.current.clear();
 
     didFitPageRef.current = false;
@@ -609,6 +656,14 @@ export default function PdfViewer() {
       return;
     }
 
+    // If this is a citation-triggered jump, wait until the page content is loaded
+    if (
+      pendingPageJumpRef.current?.pageNumber === currentPage &&
+      !loadedPagesRef.current.has(currentPage)
+    ) {
+      return; // pendingSourceScroll effect will handle it once page loads
+    }
+
     target.scrollIntoView({
       block: "start",
       inline: "nearest",
@@ -692,6 +747,7 @@ export default function PdfViewer() {
       nonce: selectedSourceNonce,
     };
     skipNextScrollRef.current = false;
+    setWaitingForPage(selectedSource.page_number);
     markPagesRendered(selectedSource.page_number, VISIBLE_RENDER_RADIUS);
   }, [
     currentBookId,
@@ -708,18 +764,20 @@ export default function PdfViewer() {
     if (!pending) return;
 
     const pageNode = pageRefs.current.get(pending.pageNumber);
+    const isPageLoaded = loadedPagesRef.current.has(pending.pageNumber);
 
-    // If page node doesn't exist yet (lazy-rendered), poll until it appears
-    if (!pageNode) {
+    // Wait until the page node exists AND its content is rendered
+    if (!pageNode || !isPageLoaded) {
       let rafId: number;
       let elapsed = 0;
       const POLL_INTERVAL = 50;
-      const MAX_WAIT = 2000;
+      const MAX_WAIT = 5000;
 
       const poll = () => {
         elapsed += POLL_INTERVAL;
         const node = pageRefs.current.get(pending.pageNumber);
-        if (node) {
+        const loaded = loadedPagesRef.current.has(pending.pageNumber);
+        if (node && loaded) {
           node.scrollIntoView({
             block: "start",
             inline: "nearest",
@@ -753,6 +811,7 @@ export default function PdfViewer() {
     }
   }, [
     currentPage,
+    loadedPages,
     numPages,
     renderedPages,
     selectedSourceNonce,
@@ -847,6 +906,7 @@ export default function PdfViewer() {
   const onDocumentLoadSuccess = useCallback(
     ({ numPages: totalPages }: { numPages: number }) => {
       setNumPages(totalPages);
+      setDocLoading(false);
     },
     [],
   );
@@ -923,9 +983,11 @@ export default function PdfViewer() {
       )
       : Math.round(stableRenderWidth * 1.33);
   const scaledPageGap = Math.max(12, Math.round(PAGE_GAP * zoomScale));
+  const showLoadingOverlay = docLoading || waitingForPage !== null;
 
   return (
     <div className="relative flex h-full flex-col bg-background">
+      {showLoadingOverlay && <PdfLoadingOverlay />}
       <div ref={toolbarRef} className="flex items-center gap-1.5 border-b border-border bg-card px-2 py-1.5 text-sm text-card-foreground">
         {/* TOC toggle */}
         {hasToc && (

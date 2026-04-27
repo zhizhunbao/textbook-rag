@@ -26,7 +26,7 @@ export function usePromptModes(autoLoad = true): UsePromptModesReturn {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/prompts?limit=50&sort=name', {
+      const res = await fetch('/api/prompts?limit=50&sort=sortOrder&where[isEnabled][equals]=true&where[type][equals]=mode', {
         headers: { 'Content-Type': 'application/json' },
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)

@@ -356,15 +356,25 @@ async def get_chunks(book_id: str, toc_id: int | None = None, limit: int = 30):
 
 
 @router.get("/books/{book_id}/parse-stats")
-async def get_parse_stats(book_id: str):
+async def get_parse_stats(
+    book_id: str,
+    content_type: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+):
     """Get MinerU parse statistics for a book.
 
     Reads content_list.json and middle.json to return:
-      - totalItems / totalPages
-      - typeCounts (text, table, image, title breakdown)
-      - samples (first 20 content items for preview)
+      - totalItems / totalPages / filteredCount
+      - typeCounts (text, table, image, title, equation, discarded breakdown)
+      - samples (paginated, optionally filtered by content_type)
 
-    Ref: AQ-03 — Parse Preview Tab data source
+    Query params (AQ-07):
+      content_type — filter by type (text/image/table/equation/discarded)
+      limit — max samples to return (default 50)
+      offset — pagination offset (default 0)
+
+    Ref: AQ-03 + AQ-07 — Parse Preview Tab data source + sub-tabs
     """
     auto_dir = _get_auto_dir(book_id)
     if not auto_dir:
@@ -390,26 +400,40 @@ async def get_parse_stats(book_id: str):
     if not isinstance(content_list, list):
         content_list = []
 
-    # Type distribution
+    # Type distribution (always computed from full list)
     type_counts: dict[str, int] = {}
     for item in content_list:
         ctype = item.get("type", "unknown")
         type_counts[ctype] = type_counts.get(ctype, 0) + 1
 
-    # Content samples (first 20 non-empty items)
+    # Filter by content_type if specified (AQ-07)
+    if content_type:
+        filtered = [
+            item for item in content_list
+            if item.get("type", "unknown") == content_type
+        ]
+    else:
+        filtered = content_list
+
+    filtered_count = len(filtered)
+
+    # Paginated samples
+    page_slice = filtered[offset : offset + limit]
     samples = []
-    for item in content_list:
+    for item in page_slice:
         text = item.get("text", "").strip()
-        if not text:
-            continue
-        samples.append({
-            "text": text[:300],
+        sample: dict = {
+            "text": text[:300] if text else "",
             "pageIdx": item.get("page_idx", 0),
             "contentType": item.get("type", "text"),
             "bbox": item.get("bbox"),
-        })
-        if len(samples) >= 20:
-            break
+        }
+        # For image items, include the image path if available (AQ-07)
+        if item.get("type") == "image":
+            img_path = item.get("img_path") or item.get("image_path")
+            if img_path:
+                sample["imgPath"] = img_path
+        samples.append(sample)
 
     return {
         "bookId": book_id,
@@ -417,6 +441,10 @@ async def get_parse_stats(book_id: str):
         "totalItems": len(content_list),
         "totalPages": _count_pages(middle_json_path),
         "typeCounts": type_counts,
+        "filteredCount": filtered_count,
         "samples": samples,
+        "offset": offset,
+        "limit": limit,
     }
+
 

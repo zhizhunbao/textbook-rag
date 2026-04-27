@@ -22,7 +22,7 @@ import time
 from pathlib import Path
 
 # Ensure engine_v2 is importable
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
 import chromadb

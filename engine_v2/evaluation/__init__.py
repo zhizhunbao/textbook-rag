@@ -9,20 +9,31 @@ Public API:
     QuestionDepthEvaluator         — CorrectnessEvaluator subclass for depth scoring
     evaluate_single_from_query     — evaluate a single existing Queries record
     evaluate_batch_from_queries    — batch-evaluate recent Queries records
+    full_evaluate                  — four-category evaluation (RAG/LLM/Answer/Question) — EV2-T2
     EvalResult                     — 5-dimensional evaluation result dataclass
+    FullEvalResult                 — four-category evaluation result dataclass — EV2-T2
     DepthResult                    — depth assessment result dataclass
     DedupResult                    — deduplication result dataclass
     QueryRecord                    — fetched Queries record dataclass
     HistoryEvalResult              — history evaluation result dataclass
+    CompletenessEvaluator          — answer completeness evaluator — EV2-T2
+    ClarityEvaluator               — answer clarity evaluator — EV2-T2
+    compute_aggregate_scores       — compute rag/llm/answer/overall aggregates — EV2-T2
 """
 
+from engine_v2.evaluation.answer_evaluators import (
+    ClarityEvaluator,
+    CompletenessEvaluator,
+)
 from engine_v2.evaluation.evaluator import (
-    EvalResult,
-    DepthResult,
     DedupResult,
+    DepthResult,
+    EvalResult,
+    FullEvalResult,
     QuestionDepthEvaluator,
     assess_question_depth,
     build_evaluators,
+    compute_aggregate_scores,
     evaluate_dataset,
     evaluate_response,
     question_dedup,
@@ -30,22 +41,30 @@ from engine_v2.evaluation.evaluator import (
 from engine_v2.evaluation.history import (
     HistoryEvalResult,
     QueryRecord,
+    auto_evaluate_query,
     evaluate_batch_from_queries,
     evaluate_single_from_query,
+    full_evaluate,
 )
 
 __all__ = [
-    "EvalResult",
-    "DepthResult",
+    "ClarityEvaluator",
+    "CompletenessEvaluator",
     "DedupResult",
+    "DepthResult",
+    "EvalResult",
+    "FullEvalResult",
     "HistoryEvalResult",
     "QueryRecord",
     "QuestionDepthEvaluator",
     "assess_question_depth",
+    "auto_evaluate_query",
     "build_evaluators",
+    "compute_aggregate_scores",
     "evaluate_batch_from_queries",
     "evaluate_dataset",
     "evaluate_response",
     "evaluate_single_from_query",
+    "full_evaluate",
     "question_dedup",
 ]

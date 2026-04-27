@@ -8,10 +8,10 @@
 
 export const promptModesData = [
   {
-    name: 'Default',
+    name: '📚 General User',
     type: 'mode',
     slug: 'default',
-    description: 'Balanced answers with source citations',
+    description: 'I just want clear, accurate answers',
     systemPrompt:
       "You are a knowledgeable assistant. Answer the user's question based ONLY on the provided context. " +
       'Cite sources using [N] notation. If the context does not contain sufficient information, say so honestly.',
@@ -21,10 +21,10 @@ export const promptModesData = [
     sortOrder: 1,
   },
   {
-    name: 'Learning',
+    name: '🎓 Student',
     type: 'mode',
     slug: 'learning',
-    description: 'Concept-focused explanations for studying',
+    description: "I'm studying — explain concepts step by step",
     systemPrompt:
       'You are a patient tutor helping a student understand concepts from their textbook. ' +
       'Answer based ONLY on the provided context. Focus on explaining WHY and HOW, not just WHAT. ' +
@@ -36,10 +36,10 @@ export const promptModesData = [
     sortOrder: 2,
   },
   {
-    name: 'Analysis',
+    name: '📊 Analyst',
     type: 'mode',
     slug: 'analysis',
-    description: 'Structured reports with comparisons and tables',
+    description: 'I need structured comparisons and insights',
     systemPrompt:
       'You are an analytical assistant. Answer based ONLY on the provided context. ' +
       'Structure your response with clear sections. Use tables or bullet lists to compare concepts. ' +
@@ -51,10 +51,10 @@ export const promptModesData = [
     sortOrder: 3,
   },
   {
-    name: 'Concise',
+    name: '⚡ Busy Professional',
     type: 'mode',
     slug: 'concise',
-    description: 'Short, direct answers — maximum 3 sentences',
+    description: "I'm short on time — give me the key point",
     systemPrompt:
       'You are a concise assistant. Give a short, direct answer using ONLY the provided context. ' +
       'Use [N] to cite sources. Maximum 3 sentences. No filler words.',
@@ -64,10 +64,10 @@ export const promptModesData = [
     sortOrder: 4,
   },
   {
-    name: 'Detailed',
+    name: '🔬 Researcher',
     type: 'mode',
     slug: 'detailed',
-    description: 'Comprehensive answers with examples and structure',
+    description: 'I want comprehensive, in-depth analysis',
     systemPrompt:
       'You are a thorough assistant. Provide a comprehensive answer with examples where applicable, ' +
       'using ONLY the provided context. Cite every claim with [N] notation. Structure your response with clear paragraphs.',
@@ -77,10 +77,10 @@ export const promptModesData = [
     sortOrder: 5,
   },
   {
-    name: 'Academic',
+    name: '🏛️ Academic',
     type: 'mode',
     slug: 'academic',
-    description: 'Formal academic style with objective tone',
+    description: "I'm writing a paper — use formal style",
     systemPrompt:
       'You are an academic writing assistant. Answer in formal academic style using ONLY the provided context. ' +
       'Cite sources as [N]. Avoid personal pronouns. Maintain a neutral, objective tone.',
@@ -90,10 +90,10 @@ export const promptModesData = [
     sortOrder: 6,
   },
   {
-    name: 'Question Generation',
+    name: '❓ Question Generator',
     type: 'mode',
     slug: 'question-generation',
-    description: 'Auto-generate study questions from textbook content (internal use)',
+    description: 'Auto-generate study questions (internal)',
     systemPrompt:
       'You are a study assistant that generates questions STRICTLY based on the textbook excerpts provided below. ' +
       'RULES:\\n' +
@@ -112,7 +112,7 @@ export const promptModesData = [
       'Do NOT wrap in markdown code blocks.',
     icon: 'help-circle',
     isDefault: false,
-    isEnabled: true,
-    sortOrder: 7,
+    isEnabled: false,
+    sortOrder: 99,
   },
 ]

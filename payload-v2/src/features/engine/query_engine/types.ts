@@ -28,6 +28,8 @@ export interface QueryRequest {
   provider?: string
   /** Enable LLMRerank postprocessor (truthy = on). */
   reranker?: string | null
+  /** Custom system prompt override — from PromptSelector. */
+  custom_system_prompt?: string | null
 }
 
 /** Complete execution trace including retrieval and generation stages. */
@@ -40,12 +42,21 @@ export interface QueryTrace {
   generation: GenerationTrace
 }
 
+/** LLM usage telemetry from the query pipeline. */
+export interface LlmTelemetry {
+  llm_calls: number
+  input_tokens: number
+  output_tokens: number
+}
+
 /** Response returned from a query engine call. */
 export interface QueryResponse {
   answer: string
   sources: SourceInfo[]
   retrieval_stats: RetrievalStats
   trace: QueryTrace
+  /** LLM token usage telemetry (populated from SSE stream). */
+  telemetry?: LlmTelemetry
 }
 
 /** Lightweight book metadata used in query context selection. */

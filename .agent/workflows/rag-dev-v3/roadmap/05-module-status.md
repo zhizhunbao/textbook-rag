@@ -143,28 +143,63 @@ Func
 
 ---
 
-## `ingestion` — 数据摄取 ✅
+## `acquisition` — 数据导入全流程 ✅ (Sprint AQ)
+
+> **一页 5 Tab 展示完整导入流程** — Sources → Import → Files → Pipeline → Vectors
+> 替代原 `ingestion/` 前端模块，后者已完全删除。
 
 ```
 Layout
-✅  流程面板              PipelineDashboard (36 KB) — 三栏布局 (书本树 + 步骤导航 + 详情)
-✅  任务列表              按分类 → 子分类 → 书本的树形目录
+✅  5-Tab 页面             ImportPage — SidebarLayout + 5 Tab (Sources/Import/Files/Pipeline/Vectors)
+✅  共享书本侧栏           useBookSidebar (同 readers/LibraryPage 模式)
 
 UI
-✅  管线步骤              6 阶段可视化 (pdf_parse → chunk_build → store → vector → fts → toc)
-✅  进度条形              总进度条 + 单阶段状态图标
-✅  状态徽章              done / pending / missing / error 四态徽章
+✅  Sources Tab           SourcesTab — Web 数据源发现 + PDF 自动爬取 + 一键导入
+✅  Import Tab            FileUploadCard + UrlImportCard — 2 栏并排
+✅  Files Tab             MediaTab — Payload Media 文件详情
+✅  Pipeline Tab          PipelineTab (92 KB) — 三栏: Stepper + Execute + Data Inspector
+✅  Vectors Tab           VectorCheckTab — ChromaDB 向量统计 + 采样
+✅  Parse Sub-tabs        ParsePreviewTab — Text/Image/Table/Equation/Discarded 5 个内容类型 sub-tab
+✅  Classify Dialog       ClassifyDialog — LLM 分类建议 + 用户确认
 
 UX
-✅  实时轮询              fetchPipelinePreview 按需加载
-✅  批量操作              PipelineActions — 批量触发 ingest / reindex / full
-✅  错误重试              actionFeedback 错误提示 + 重新触发
+✅  实时 SSE 日志          Pipeline 运行时 SSE 实时日志流 + 步骤自动跟踪
+✅  Data Inspector        点击步骤 IN/OUT 查看实时数据 (PDF 元数据、content_list、Chunks、ChromaDB)
+✅  Batch Pipeline        未选书时显示批量 Pipeline 视图 + 并行执行
+✅  一键删除              书本删除 + Engine 侧清理 (向量 + MinerU 输出)
+✅  URL 参数持久           Tab 切换通过 ?tab= 持久化
 
 Func
-✅  管线编排              pipeline.py — LlamaIndex IngestionPipeline
-✅  分块切片              transformations.py — 分块转换器
-✅  向量入库              ChromaDB 向量存储
-✅  增量更新              reindex 模式支持
+✅  PDF 爬取              sources.py — Playwright 深度爬取 + URL Pattern 生成
+✅  文件上传              useFileUpload — Payload Media + afterChange hook
+✅  URL 导入              useUrlImport — Engine /ingest 直连
+✅  管线编排              pipeline.py — LlamaIndex IngestionPipeline (Parse → Ingest)
+✅  向量统计              vectors.py — ChromaDB stats API
+✅  解析预览              books.py /parse-stats — content_list.json 分页 + 过滤
+```
+
+---
+
+## `ingestion` — 数据摄取 ⛔ 已迁移至 acquisition
+
+> **前端目录已完全删除。** Pipeline Tab 和向量检查功能已迁移至 `acquisition/` 模块。
+> 后端 `pipeline.py` / `ingest.py` 等引擎代码不变，由 acquisition 前端调用。
+
+```
+Layout
+⛔  三栏布局              已迁移 → acquisition/PipelineTab.tsx
+⛔  任务列表              已迁移 → acquisition/PipelineTab.tsx (BatchPipelineView)
+
+UI
+⛔  管线步骤              已迁移 → acquisition/PipelineTab.tsx (2-stage: Parse + Ingest)
+⛔  进度条形              已迁移 → acquisition/PipelineTab.tsx (SSE + 进度条)
+⛔  状态徽章              已迁移 → acquisition/PipelineTab.tsx (done/pending/error)
+
+Func
+✅  管线编排              pipeline.py — LlamaIndex IngestionPipeline (后端不变)
+✅  分块切片              transformations.py — 分块转换器 (后端不变)
+✅  向量入库              ChromaDB 向量存储 (后端不变)
+✅  增量更新              reindex 模式支持 (后端不变)
 ```
 
 ---

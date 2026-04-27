@@ -15,7 +15,7 @@ from pathlib import Path
 import httpx
 
 # ── Config ───────────────────────────────────────────────────────────────────
-PROJECT_ROOT = Path(__file__).parent.parent
+PROJECT_ROOT = Path(__file__).parent.parent.parent
 OUTPUT_DIR = PROJECT_ROOT / "data" / "raw_pdfs" / "ecdev"
 
 # All confirmed PDF direct-links from ottawa.ca / documents.ottawa.ca

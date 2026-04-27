@@ -54,13 +54,17 @@ export interface SourceInfo {
   citation_label?: string;
   /** Retrieval relevance score (0.0–1.0, higher = more relevant) */
   score?: number;
+  /** Retrieval strategy that found this source (EV2-T1-03). */
+  retrieval_source?: 'bm25' | 'vector' | 'both';
 }
 
 export interface RetrievalStats {
   fts_hits: number;
   vector_hits: number;
+  both_hits?: number;
   toc_hits: number;
-  fused_count: number;
+  fused_count?: number;
+  retrieval_mode?: 'hybrid' | 'vector_only';
 }
 
 export interface TraceChunkHit {

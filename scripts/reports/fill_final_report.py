@@ -14,7 +14,7 @@ from docx import Document
 from docx.shared import Pt, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 TEMPLATE = PROJECT_ROOT / "Final_Report_Template_2025.docx"
 OUTPUT = PROJECT_ROOT / "Final_Report_Textbook_RAG_v2.docx"
 

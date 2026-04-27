@@ -135,6 +135,8 @@ def build_source(node_with_score: Any, index: int) -> dict[str, Any]:
         "full_content": content[:_FULL_CONTENT_MAX],
         "snippet": content[:_SNIPPET_MAX],
         "score": float(node_with_score.score) if node_with_score.score is not None else 0.0,
+        # EV2-T1-02: retrieval strategy provenance ("vector" | "bm25" | "both")
+        "retrieval_source": meta.get("retrieval_source", "vector"),
         "bbox": {
             "x0": x0, "y0": y0,
             "x1": x1, "y1": y1,

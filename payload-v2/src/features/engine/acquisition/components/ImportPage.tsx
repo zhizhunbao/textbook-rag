@@ -29,6 +29,7 @@ import {
   Trash2,
   RefreshCw,
   Globe,
+  Database,
 } from 'lucide-react'
 import { useI18n } from '@/features/shared/i18n'
 import { cn } from '@/features/shared/utils'
@@ -42,6 +43,7 @@ import UrlImportCard from './UrlImportCard'
 import MediaTab from './MediaTab'
 import PipelineTab from './PipelineTab'
 import SourcesTab from './SourcesTab'
+import VectorCheckTab from './VectorCheckTab'
 
 
 // ============================================================
@@ -59,6 +61,7 @@ const TABS: TabConfig[] = [
   { key: 'import',   label: 'Import',   labelFr: '导入',   icon: Download },
   { key: 'files',    label: 'Files',    labelFr: '文件',   icon: FileText },
   { key: 'pipeline', label: 'Pipeline', labelFr: '管线',   icon: Activity },
+  { key: 'vectors',  label: 'Vectors',  labelFr: '向量',   icon: Database },
 ]
 
 // ============================================================
@@ -217,8 +220,8 @@ function ImportPageInner() {
       error={error?.message ?? null}
       onRetry={refetch}
       subtitle={isFr
-        ? '数据源 → 导入 → 文件 → 管线'
-        : 'Sources → Import → Files → Pipeline'}
+        ? '数据源 → 导入 → 文件 → 管线 → 向量'
+        : 'Sources → Import → Files → Pipeline → Vectors'}
       toolbar={
         <div className="flex items-center gap-2">
           {/* Delete button — visible when a specific book is selected */}
@@ -282,6 +285,7 @@ function ImportPageInner() {
       {activeTab === 'import' && <ImportTabContent onBooksRefresh={refetch} />}
       {activeTab === 'files' && <MediaTab books={filteredBooks} filter={filter} onBooksRefresh={refetch} />}
       {activeTab === 'pipeline' && <PipelineTab books={filteredBooks} filter={filter} onBooksRefresh={refetch} />}
+      {activeTab === 'vectors' && <VectorCheckTab books={filteredBooks} filter={filter} />}
     </SidebarLayout>
   )
 }

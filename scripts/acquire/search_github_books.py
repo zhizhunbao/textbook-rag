@@ -229,16 +229,16 @@ KNOWN_REPOS = [
     "EbookFoundation/free-programming-books",
 ]
 
-BASE_DIR = Path(__file__).parent
+BASE_DIR = Path(__file__).parent.parent.parent / "data" / "raw_pdfs"
 CATEGORY_DIRS = {
-    "python": BASE_DIR / "python" / "_sources",
-    "ml": BASE_DIR / "ml" / "_sources",
-    "math": BASE_DIR / "math" / "_sources",
-    "rl": BASE_DIR / "rl" / "_sources",
-    "nlp": BASE_DIR / "nlp" / "_sources",
-    "cv": BASE_DIR / "cv" / "_sources",
-    "webdev": BASE_DIR / "webdev" / "_sources",
-    "uiux": BASE_DIR / "uiux" / "_sources",
+    "python": BASE_DIR / "textbooks",
+    "ml": BASE_DIR / "textbooks",
+    "math": BASE_DIR / "textbooks",
+    "rl": BASE_DIR / "textbooks",
+    "nlp": BASE_DIR / "textbooks",
+    "cv": BASE_DIR / "textbooks",
+    "webdev": BASE_DIR / "textbooks",
+    "uiux": BASE_DIR / "textbooks",
 }
 
 

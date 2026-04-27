@@ -41,7 +41,26 @@ description: textbook-rag v3 开发工作流 — 基于 rag-dev-v3/ 四文档体
 - 无 magic number，无 console.log，无硬编码密钥
 - Python: `from __future__ import annotations` + loguru
 - TypeScript: 语义 Tailwind token (`bg-card` 不是 `bg-gray-800`)
+- **图标只用 SVG**（lucide-react 或 inline `<svg>`），禁止使用 emoji 字符（跨平台渲染不一致）
 - 文件头注释格式见 `file-templates.md` § 四
+
+### Surgical Changes（精准修改）
+
+- **只改请求相关的代码** — 每一行 diff 都必须能追溯到用户需求
+- 不"顺手改进"相邻代码、注释、格式
+- 不重构没坏的东西
+- 匹配现有代码风格，即使你会写得不一样
+- 发现无关死代码 → **提一嘴，不要删**
+- 你的改动产生的孤立 import/变量/函数 → **必须清理**
+- 改动前已存在的死代码 → **不清理，除非被要求**
+
+### Simplicity First（简洁优先）
+
+- 不加没被要求的功能、抽象、"灵活性"、"可配置性"
+- 单次使用的逻辑不抽象
+- 不为不可能的场景写错误处理
+- 200 行能变 50 行 → 重写
+- 检验标准：高级工程师会说"过度设计"吗？会 → 简化
 
 ### 数据流方向
 
@@ -143,6 +162,8 @@ npx tsc --noEmit   # cwd: payload-v2
 | Payload v2 | **3001** | `npm run dev -- --port 3001` (cwd: `payload-v2`)                                     |
 | PostgreSQL | 5432           | `postgresql://payload:payload@127.0.0.1:5432/payload`                                  |
 | Ollama     | 11434          | `http://127.0.0.1:11434`                                                               |
+
+> ⚠️ **热部署**：Engine (`--reload`) 和 Payload (`npm run dev`) 均为热部署模式，代码保存后自动重载，**不需要手动重启服务**。禁止在工作流中执行 stop/restart 操作。
 
 ---
 

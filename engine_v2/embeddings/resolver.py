@@ -46,6 +46,12 @@ def resolve_embed_model(
     name = model_name or EMBEDDING_MODEL
     logger.info("Resolving embedding model: {}", name)
 
+    # 强制离线模式 — 模型已缓存在 ~/.cache/huggingface/hub/
+    # 避免每次启动都 HEAD 请求 huggingface.co 检查更新（网络不稳定时会超时卡死）
+    import os
+    os.environ.setdefault("HF_HUB_OFFLINE", "1")
+    os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
+
     # Currently only HuggingFace local is supported
     return HuggingFaceEmbedding(model_name=name)
 

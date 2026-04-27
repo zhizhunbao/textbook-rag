@@ -100,13 +100,19 @@ export async function checkQuestionDuplicate(
 // Engine FastAPI — History-based evaluation (no RAG re-run)
 // ============================================================
 
-/** Evaluate an existing query by Payload Queries record ID. */
+/** Evaluate an existing query by Payload Queries record ID.
+ *
+ * Uses the full-evaluate endpoint (EV2-T2) which computes all four
+ * categories (RAG/LLM/Answer/Question), aggregates, status, and
+ * sub-dimensions (completeness, clarity). This replaces the older
+ * evaluate-history endpoint which only ran basic evaluators.
+ */
 export async function evaluateFromHistory(
   queryId: number,
   model?: string,
 ): Promise<HistoryEvalSingleResult> {
   return request<HistoryEvalSingleResult>(
-    `${ENGINE}/engine/evaluation/evaluate-history`,
+    `${ENGINE}/engine/evaluation/full-evaluate`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -416,6 +422,21 @@ function mapEvaluation(raw: any): EvaluationResult {
     answerRelevancy: raw.answerRelevancy ?? null,
     questionDepth: raw.questionDepth ?? null,
     questionDepthScore: raw.questionDepthScore ?? null,
+    // Four-category aggregates (EV2-T2-04)
+    ragScore: raw.ragScore ?? null,
+    llmScore: raw.llmScore ?? null,
+    answerScore: raw.answerScore ?? null,
+    overallScore: raw.overallScore ?? null,
+    // Answer sub-dimensions (EV2-T2-04)
+    completeness: raw.completeness ?? null,
+    clarity: raw.clarity ?? null,
+    // Retrieval strategy (EV2-T1 + T2-04)
+    retrievalMode: raw.retrievalMode ?? null,
+    bm25Hits: raw.bm25Hits ?? null,
+    vectorHits: raw.vectorHits ?? null,
+    bothHits: raw.bothHits ?? null,
+    // Status (EV2-T3-02)
+    status: raw.status ?? null,
     feedback: raw.feedback ?? null,
     model: raw.model ?? null,
     sourceCount: raw.sourceCount ?? null,

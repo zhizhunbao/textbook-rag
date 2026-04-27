@@ -21,7 +21,6 @@ Ref: llama_index.core.query_engine.citation_query_engine
 from __future__ import annotations
 
 import re
-from collections import OrderedDict  # kept for potential future use
 from typing import List, Optional, Sequence
 
 from loguru import logger
@@ -32,7 +31,6 @@ from llama_index.core.callbacks.schema import CBEventType, EventPayload
 from llama_index.core.postprocessor.types import BaseNodePostprocessor
 from llama_index.core.response_synthesizers import BaseSynthesizer
 from llama_index.core.schema import (
-    MetadataMode,
     NodeWithScore,
     QueryBundle,
     TextNode,
@@ -257,47 +255,98 @@ def get_query_engine(
     model: str | None = None,
     provider: str | None = None,
     reranker: str | None = None,
+    custom_system_prompt: str | None = None,
 ) -> TextbookCitationQueryEngine:
-    """Build a TextbookCitationQueryEngine.
+    """Build a TextbookCitationQueryEngine with 4-layer retrieval defense.
 
     Architecture:
         TextbookCitationQueryEngine
         ├── retriever  → QueryFusionRetriever (BM25 + Vector → RRF)
-        ├── _create_citation_nodes  → merge same-page + Source N labels
+        │                Over-fetches 2× to give reranker enough candidates
+        ├── _create_citation_nodes  → dedup + Source N labels
         ├── synthesizer → CitationSynthesizer (COMPACT + citation prompts)
-        └── postprocessors:
-            ├── BookFilterPostprocessor (filter BM25 results by book scope)
-            └── Reranker (optional: LLMRerank or SentenceTransformerRerank)
+        └── postprocessors (4-layer defense):
+            Layer 1: MetadataFilters on BM25 (in hybrid.py — corpus_weight_mask)
+            Layer 2: BookFilterPostprocessor (post-filter BM25 by book scope)
+            Layer 3: SentenceTransformerRerank (CrossEncoder semantic reranking)
+            Layer 4: SimilarityPostprocessor (score cutoff for low-relevance)
+            Layer 5: LLMRerank (optional — when user explicitly enables)
 
-    Args:
-        similarity_top_k: Number of chunks to retrieve.
-        streaming: Whether to enable streaming generation.
-        book_id_strings: Optional list of book directory names to scope
-            retrieval to. When provided, only chunks from these books
-            are included in the context.
-        model: Optional model name override for LLM selection.
-        provider: Optional provider override (e.g. 'ollama', 'azure').
-        reranker: Enable LLMRerank postprocessor (truthy = on).
-            Uses the active LLM to re-score and re-order retrieved chunks
-            before synthesis. Defaults to None (no reranking).
-
-    Returns:
-        TextbookCitationQueryEngine ready for .query() / .aquery()
+    Ref: llama_index.core.postprocessor.sbert_rerank.SentenceTransformerRerank
+    Ref: llama_index.core.postprocessor.node.SimilarityPostprocessor
+    Ref: llama_index.core.postprocessor.llm_rerank.LLMRerank
     """
+    from engine_v2.settings import (
+        RERANKER_ENABLED,
+        RERANKER_MODEL,
+        RERANKER_TOP_N,
+        SIMILARITY_CUTOFF,
+    )
+
+    # Over-fetch 2× from retriever to give reranker enough candidates to filter
+    # The reranker will trim back down to similarity_top_k
+    retrieval_k = similarity_top_k * 2 if RERANKER_ENABLED else similarity_top_k
+
     retriever = get_hybrid_retriever(
-        similarity_top_k=similarity_top_k,
+        similarity_top_k=retrieval_k,
         book_id_strings=book_id_strings,
     )
-    synthesizer = get_citation_synthesizer(streaming=streaming, model=model, provider=provider)
+    synthesizer = get_citation_synthesizer(
+        streaming=streaming, model=model, provider=provider,
+        custom_system_prompt=custom_system_prompt,
+    )
 
-    # Build postprocessor chain: BookFilter → Reranker (if enabled)
+    # ── Build postprocessor chain (order matters!) ──
     postprocessors: list[BaseNodePostprocessor] = []
+
+    # Layer 2: BookFilterPostprocessor — post-filter BM25 results by book scope
+    # (Layer 1 is MetadataFilters on BM25 in hybrid.py)
     if book_id_strings:
         postprocessors.append(
             BookFilterPostprocessor(book_id_strings=book_id_strings)
         )
 
-    # Reranker postprocessor — uses LLMRerank from llama-index-core
+    # Layer 3: SentenceTransformerRerank — CrossEncoder semantic reranking
+    # Ref: llama_index.core.postprocessor.sbert_rerank.SentenceTransformerRerank
+    # This is the key defense against BM25 cross-book noise:
+    #   CrossEncoder scores (query, chunk) pairs by semantic relevance,
+    #   so "Ottawa inflation rate" vs "Bayesian exercise with inflation variable"
+    #   gets correctly distinguished.
+    if RERANKER_ENABLED:
+        reranker_top_n = min(RERANKER_TOP_N, similarity_top_k)
+        try:
+            from llama_index.core.postprocessor import SentenceTransformerRerank
+            postprocessors.append(
+                SentenceTransformerRerank(
+                    model=RERANKER_MODEL,
+                    top_n=reranker_top_n,
+                    keep_retrieval_score=True,  # preserve original score in metadata
+                )
+            )
+            logger.info(
+                "SentenceTransformerRerank enabled (model={}, top_n={})",
+                RERANKER_MODEL, reranker_top_n,
+            )
+        except ImportError:
+            logger.warning(
+                "SentenceTransformerRerank unavailable — "
+                "install sentence-transformers: pip install sentence-transformers"
+            )
+
+    # Layer 4: SimilarityPostprocessor — drop chunks below score cutoff
+    # Ref: llama_index.core.postprocessor.node.SimilarityPostprocessor
+    if SIMILARITY_CUTOFF > 0:
+        try:
+            from llama_index.core.postprocessor import SimilarityPostprocessor
+            postprocessors.append(
+                SimilarityPostprocessor(similarity_cutoff=SIMILARITY_CUTOFF)
+            )
+            logger.info("SimilarityPostprocessor enabled (cutoff={})", SIMILARITY_CUTOFF)
+        except ImportError:
+            logger.warning("SimilarityPostprocessor unavailable")
+
+    # Layer 5 (optional): LLMRerank — LLM judges chunk relevance
+    # Only activated when user explicitly requests via reranker parameter
     # Ref: llama_index.core.postprocessor.llm_rerank.LLMRerank
     if reranker:
         reranker_top_n = min(similarity_top_k, 5)
@@ -306,7 +355,7 @@ def get_query_engine(
             postprocessors.append(LLMRerank(top_n=reranker_top_n))
             logger.info("LLMRerank enabled (top_n={})", reranker_top_n)
         except ImportError:
-            logger.warning("LLMRerank unavailable — skipping reranker")
+            logger.warning("LLMRerank unavailable — skipping")
 
     engine = TextbookCitationQueryEngine(
         retriever=retriever,
@@ -316,8 +365,12 @@ def get_query_engine(
 
     filter_desc = f", books={book_id_strings}" if book_id_strings else ""
     reranker_desc = f", reranker={reranker}" if reranker else ""
-    logger.info("TextbookCitationQueryEngine ready (top_k={}, streaming={}, model={}{}{})",
-                similarity_top_k, streaming, model or 'default', filter_desc, reranker_desc)
+    pp_names = [type(pp).__name__ for pp in postprocessors]
+    logger.info(
+        "TextbookCitationQueryEngine ready (top_k={}, retrieval_k={}, streaming={}, model={}{}{}, postprocessors={})",
+        similarity_top_k, retrieval_k, streaming, model or 'default',
+        filter_desc, reranker_desc, pp_names,
+    )
     return engine
 
 

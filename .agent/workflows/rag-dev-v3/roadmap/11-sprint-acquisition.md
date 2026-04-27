@@ -14,7 +14,7 @@
 
 | Epic | Story 数 | 预估总工时 | 优先级 |
 |------|----------|-----------|--------|
-| **acquisition 5-Tab 全流程** | 10 | 26h | P1 | ✅ 5/10 done, 🚧 AQ-08 in progress |
+| **acquisition 5-Tab 全流程** | 10 | 26h | P1 | ✅ 10/10 done |
 | **readers Tab 补全** | 3 | 8h | P1 | ❌ 0/3 |
 | **合计** | **13** | **34h** | P1 |
 
@@ -133,9 +133,9 @@ graph TD
         AQ01 --> AQ03[AQ-03 解析预览 Tab 基础版 ✅]
         AQ02 --> AQ04[AQ-04 Media Tab ✅]
         AQ01 --> AQ05[AQ-05 精简 LibraryPage ✅]
-        AQ03 --> AQ07[AQ-07 解析预览 Sub-tabs]
+        AQ03 --> AQ07[AQ-07 解析预览 Sub-tabs ✅]
         AQ01 --> AQ08[AQ-08 Pipeline Tab]
-        AQ01 --> AQ09[AQ-09 向量检查 Tab + Engine API]
+        AQ01 --> AQ09[AQ-09 向量检查 Tab ✅]
         AQ08 --> AQ10[AQ-10 ImportPage 5-Tab + Sidebar 精简]
         AQ09 --> AQ10
         AQ07 --> AQ10
@@ -307,20 +307,20 @@ graph TD
 
 ---
 
-### [AQ-06] 文档更新 ❌
+### [AQ-06] 文档更新 ✅
 
 **类型**: 文档 · **优先级**: P2 · **预估**: 1h
 
 **验收标准**:
-- [ ] `05-module-status.md` 新增 acquisition 模块状态卡（含 5 Tab 描述）
-- [ ] `05-module-status.md` 更新 readers 状态卡 (新增 Tab 信息)
-- [ ] `05-module-status.md` ingestion 状态卡标注 "Pipeline/向量 Tab 已迁移至 acquisition"
-- [ ] messages.ts 新增所有 Tab 相关 i18n key
-- [ ] AppSidebar dataPipelineLinks 移除 ingestion 入口
+- [x] `05-module-status.md` 新增 acquisition 模块状态卡（含 5 Tab 描述）
+- [x] `05-module-status.md` 更新 readers 状态卡 (新增 Tab 信息)
+- [x] `05-module-status.md` ingestion 状态卡标注 "Pipeline/向量 Tab 已迁移至 acquisition"
+- [x] messages.ts 新增所有 Tab 相关 i18n key
+- [x] AppSidebar dataPipelineLinks 移除 ingestion 入口
 
 ---
 
-### [AQ-07] 解析预览 Sub-tabs — 按内容类型浏览 ❌
+### [AQ-07] 解析预览 Sub-tabs — 按内容类型浏览 ✅
 
 **类型**: Frontend + Backend · **优先级**: P1 · **预估**: 4h
 
@@ -345,15 +345,15 @@ graph TD
 - 返回的 samples 增加 `imgPath` 字段 (image 类型时提供图片相对路径)
 
 **验收标准**:
-- [ ] Backend: `/parse-stats` 支持 `content_type` / `limit` / `offset` 过滤
-- [ ] Sub-tab bar 在 ParsePreviewTab 右栏顶部，每个 tab 显示类型 + 数量 badge
-- [ ] Text tab: 文本列表 (序号 / 页码 / text 截断 300 字)
-- [ ] Image tab: 图片列表 (缩略图 + alt text + 页码)
-- [ ] Table tab: 表格内容 (尝试渲染为 HTML table，降级为 text)
-- [ ] Equation tab: 公式内容 (LaTeX 显示 or raw text)
-- [ ] Discarded tab: 被丢弃项 (text + 页码 + 丢弃原因)
-- [ ] 每个 sub-tab 支持"加载更多"分页
-- [ ] G2 ✅ G4 ✅
+- [x] Backend: `/parse-stats` 支持 `content_type` / `limit` / `offset` 过滤
+- [x] Sub-tab bar 在 ParsePreviewTab 右栏顶部，每个 tab 显示类型 + 数量 badge
+- [x] Text tab: 文本列表 (序号 / 页码 / text 截断 300 字)
+- [x] Image tab: 图片列表 (缩略图 + alt text + 页码)
+- [x] Table tab: 表格内容 (尝试渲染为 HTML table，降级为 text)
+- [x] Equation tab: 公式内容 (LaTeX 显示 or raw text)
+- [x] Discarded tab: 被丢弃项 (text + 页码 + 丢弃原因)
+- [x] 每个 sub-tab 支持"加载更多"分页
+- [x] G2 ✅ G4 ✅
 
 **依赖**: [AQ-03]
 **文件**:
@@ -367,7 +367,7 @@ graph TD
 
 ---
 
-### [AQ-08] Pipeline Tab — 三栏布局 + 管线 Stepper + 实时 Output 🚧
+### [AQ-08] Pipeline Tab — 三栏布局 + 管线 Stepper + 实时 Output ✅
 
 **类型**: Frontend + Backend · **优先级**: P1 · **预估**: 8h
 
@@ -432,11 +432,11 @@ graph TD
 - [x] 左栏：底部 "Run All" + "Run {Stage}" 两个按钮 ✅
 - [x] 中栏：步骤清单 + 进度条 + Task Log (terminal 风格) + [⏹ Cancel] ✅
 - [x] 中栏 Embeddings 阶段：**模型选择器**下拉框 ✅
-- [ ] 右栏：实时 Output 数据表（按阶段不同列） + 分页 + ● Live 指示器 — 🚧 当前显示 Task 级结果
+- [x] 右栏：Data Inspector（设计变更）— 点击步骤 IN/OUT 显示实时数据（PDF 元数据、content_list 采样、Payload chunks、ChromaDB 统计等），比原始 Output 表更灵活 ✅
 - [x] Running 状态：每 3s 轮询 IngestTasks ✅
-- [ ] Run All 模式：自动推进 Stepper + 面板跟随当前 running 阶段
+- [x] Run All 模式：SSE 驱动的自动推进（liveStepIdx + setActiveStage），Parse→Ingest 自动跟随 ✅
 - [x] error 红色高亮 + 复制按钮 ✅
-- [ ] `ingestion/` 前端目录整体删除
+- [x] `ingestion/` 前端目录整体删除 ✅
 
 **后端新增/修改 API**:
 
@@ -464,7 +464,7 @@ graph TD
 
 ---
 
-### [AQ-09] 向量检查 Tab + Engine API ❌
+### [AQ-09] 向量检查 Tab + Engine API ✅
 
 **类型**: Frontend + Backend · **优先级**: P1 · **预估**: 4h
 
@@ -479,10 +479,10 @@ graph TD
 - 随机采样 5 条: chunk text + metadata + vector 前 8 维预览
 
 **验收标准**:
-- [ ] Engine API: `GET /engine/vectors/stats?book_id={id}` — 返回 count / dimensions / sample
-- [ ] `acquisition/components/VectorCheckTab.tsx` — 2 栏: 书本选择 / 向量统计 + 采样表
-- [ ] 向量数 vs chunk 数对比 (不一致时标黄)
-- [ ] G2 ✅ G4 ✅
+- [x] Engine API: `GET /engine/vectors/stats?book_id={id}` — 返回 count / dimensions / sample
+- [x] `acquisition/components/VectorCheckTab.tsx` — 2 栏: 书本选择 / 向量统计 + 采样表
+- [x] 向量数 vs chunk 数对比 (不一致时标黄)
+- [x] G2 ✅ G4 ✅
 
 **文件**:
 ```
@@ -491,27 +491,30 @@ graph TD
 ├── engine_v2/api/routes/vectors.py  → GET /engine/vectors/stats
 修改
 ├── engine_v2/api/app.py             → 注册 vectors router
+├── features/engine/acquisition/types.ts  → VectorStats + VectorSample 类型
+├── features/engine/acquisition/api.ts    → fetchVectorStats()
+├── features/engine/acquisition/components/ImportPage.tsx → 5th tab
 ```
 
 ---
 
-### [AQ-10] ImportPage 5-Tab 升级 + Sidebar 精简 ❌
+### [AQ-10] ImportPage 5-Tab 升级 + Sidebar 精简 ✅
 
 **类型**: Frontend · **优先级**: P1 · **预估**: 2h
 
 **描述**: 将 ImportPage 从 3-Tab 升级到 5-Tab，新增 Pipeline 和向量检查 Tab。同时从 AppSidebar dataPipelineLinks 移除 Ingestion 入口。
 
 **验收标准**:
-- [ ] ImportPage Tab bar: 导入 | Media | 解析预览 | Pipeline | 向量检查 （按数据流顺序）
-- [ ] `types.ts` 的 `ImportTab` 类型新增 `'pipeline' | 'vector-check'`
-- [ ] AppSidebar `dataPipelineLinks` 移除 `{ navIngestion, Zap, /engine/ingestion }`
-- [ ] Tab 切换保持 URL 参数 (`?tab=import|media|parse-preview|pipeline|vector-check`)
+- [x] ImportPage Tab bar: Sources | Import | Files | Pipeline | Vectors （按数据流顺序，含 Sources Tab 额外新增）
+- [x] `types.ts` 的 `ImportTab` 类型: `'sources' | 'import' | 'files' | 'pipeline' | 'vectors'`
+- [x] AppSidebar 已移除 Ingestion 链接（adminLinks 不含 ingestion）
+- [x] Tab 切换保持 URL 参数 (`?tab=sources|import|files|pipeline|vectors`)
 
 **依赖**: [AQ-08], [AQ-09], [AQ-07]
 **文件**:
 ```
 修改
-├── features/engine/acquisition/components/ImportPage.tsx  → 5-Tab
+├── features/engine/acquisition/components/ImportPage.tsx  → 5-Tab (含 Sources)
 ├── features/engine/acquisition/types.ts                   → ImportTab 扩展
 ├── features/layout/AppSidebar.tsx                         → 移除 Ingestion 链接
 ├── features/shared/i18n/messages.ts                       → 新增 Tab i18n keys

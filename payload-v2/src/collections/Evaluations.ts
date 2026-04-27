@@ -108,6 +108,94 @@ export const Evaluations: CollectionConfig = {
       admin: { description: 'Evaluator feedback per dimension' },
     },
 
+    // ── Four-category aggregate scores (EV2-T2-04) ──
+    {
+      name: 'ragScore',
+      type: 'number',
+      min: 0,
+      max: 1,
+      admin: { description: 'RAG aggregate: mean(context_relevancy, relevancy) (0-1)' },
+    },
+    {
+      name: 'llmScore',
+      type: 'number',
+      min: 0,
+      max: 1,
+      admin: { description: 'LLM aggregate: faithfulness (0-1)' },
+    },
+    {
+      name: 'answerScore',
+      type: 'number',
+      min: 0,
+      max: 1,
+      admin: { description: 'Answer aggregate: mean(correctness, answer_relevancy, completeness, clarity) (0-1)' },
+    },
+    {
+      name: 'overallScore',
+      type: 'number',
+      min: 0,
+      max: 1,
+      admin: { description: 'Weighted overall: 0.3*RAG + 0.3*LLM + 0.4*Answer (0-1)' },
+    },
+
+    // ── Answer sub-dimensions (EV2-T2-04) ──
+    {
+      name: 'completeness',
+      type: 'number',
+      min: 0,
+      max: 1,
+      admin: { description: 'Does the answer fully cover all question aspects? (0-1)' },
+    },
+    {
+      name: 'clarity',
+      type: 'number',
+      min: 0,
+      max: 1,
+      admin: { description: 'Is the answer clear, well-structured, readable? (0-1)' },
+    },
+
+    // ── Retrieval strategy stats (EV2-T1 + T2-04) ──
+    {
+      name: 'retrievalMode',
+      type: 'select',
+      options: [
+        { label: 'Hybrid', value: 'hybrid' },
+        { label: 'Vector Only', value: 'vector_only' },
+      ],
+      admin: { description: 'Retrieval strategy used (hybrid BM25+Vector or vector-only)' },
+    },
+    {
+      name: 'bm25Hits',
+      type: 'number',
+      min: 0,
+      admin: { description: 'Number of sources from BM25 retriever' },
+    },
+    {
+      name: 'vectorHits',
+      type: 'number',
+      min: 0,
+      admin: { description: 'Number of sources from Vector retriever' },
+    },
+    {
+      name: 'bothHits',
+      type: 'number',
+      min: 0,
+      admin: { description: 'Number of sources matched by both BM25 and Vector' },
+    },
+
+    // ── Evaluation status (EV2-T2-04) ──
+    {
+      name: 'status',
+      type: 'select',
+      defaultValue: 'pending',
+      options: [
+        { label: 'Pass', value: 'pass' },
+        { label: 'Fail', value: 'fail' },
+        { label: 'Pending', value: 'pending' },
+      ],
+      admin: { description: 'Overall evaluation status' },
+    },
+
     // ── Meta ──
     {
       name: 'model',

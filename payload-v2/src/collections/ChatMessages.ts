@@ -27,10 +27,11 @@ export const ChatMessages: CollectionConfig = {
     },
     // Any authenticated user can create
     create: ({ req: { user } }) => !!user,
-    // Messages are append-only; only admins can update/delete
+    // Owner can update their own messages (e.g. patch queryId); admins can update all
     update: ({ req: { user } }) => {
       if (!user) return false
-      return user.role === 'admin'
+      if (user.role === 'admin') return true
+      return { 'session.user': { equals: user.id } }
     },
     delete: ({ req: { user } }) => {
       if (!user) return false
@@ -76,6 +77,13 @@ export const ChatMessages: CollectionConfig = {
       name: 'trace',
       type: 'json',
       label: 'Query trace (assistant only)',
+    },
+    {
+      name: 'queryId',
+      type: 'number',
+      label: 'Linked Queries record ID (assistant only)',
+      index: true,
+      admin: { description: 'Payload Queries doc ID for inline evaluation' },
     },
   ],
 }

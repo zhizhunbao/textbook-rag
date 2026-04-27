@@ -3,76 +3,55 @@
 Responsibilities:
     - Sample chunks from ChromaDB with multi-book / category / chapter filtering
     - Build LLM prompts from sampled context
-    - Parse structured JSON responses into GeneratedQuestion dataclasses
+    - Use LlamaIndex structured_predict for robust, schema-validated LLM outputs
     - Auto-score each question via LLM-as-Judge (relevance, clarity, difficulty)
 
 Ref: llama_index.core.evaluation.CorrectnessEvaluator — scoring pattern (1-5)
+Ref: llama_index.core.llms.llm.LLM.structured_predict — structured output
 """
 
 from __future__ import annotations
 
-import json
 import random
 from dataclasses import dataclass, field
 from typing import Any
 
 import chromadb
+from llama_index.core.program.utils import create_list_model
 from llama_index.core.settings import Settings
 from loguru import logger
+from pydantic import BaseModel, Field
 
+from engine_v2.question_gen.prompts import GEN_PROMPT_TMPL, SCORE_PROMPT_TMPL
 from engine_v2.settings import (
     CHROMA_COLLECTION,
     CHROMA_PERSIST_DIR,
 )
 
 # ============================================================
-# Prompt templates
+# Pydantic schemas for structured_predict
+# Ref: llama_index.core.output_parsers.pydantic.PydanticOutputParser
 # ============================================================
-QUESTION_GEN_PROMPT = """You are a textbook question generator. Given the following textbook excerpt, generate {count} study questions that test understanding of the key concepts.
+class QuestionItem(BaseModel):
+    """Single generated study question (LLM output schema)."""
 
-Context:
-{context}
-
-Generate exactly {count} questions in JSON array format.
-For each question, also provide a short "question_category" label that describes the topic/domain the question belongs to (e.g. "Labour Market", "Housing Starts", "Inflation & CPI", "Resale Market", "Commercial Vacancy", "Construction & Permits", "Policy & Highlights", "Population", or any other relevant topic label).
-[
-  {{"question": "...", "difficulty": "easy|medium|hard", "type": "factual|conceptual|analytical", "question_category": "..." }}
-]
-
-Questions:"""
+    question: str
+    difficulty: str = "medium"
+    type: str = "conceptual"
+    question_category: str = ""
 
 
-QUESTION_SCORE_PROMPT = """You are an expert evaluator for study questions generated from textbook content.
+class QuestionScoreOutput(BaseModel):
+    """LLM-as-Judge scoring result (LLM output schema)."""
 
-Given a question and the source textbook excerpt it was generated from, evaluate the question on three dimensions.
+    relevance: int = Field(default=1, ge=1, le=5)
+    clarity: int = Field(default=1, ge=1, le=5)
+    difficulty: int = Field(default=1, ge=1, le=5)
+    reasoning: str = ""
 
-## Source Context
-{context}
 
-## Question to Evaluate
-{question}
-
-## Scoring Criteria (1-5 each)
-
-**Relevance**: Can this question be answered using ONLY the source context?
-- 5: Directly answerable from the context
-- 3: Partially answerable; requires some outside knowledge
-- 1: Cannot be answered from the context at all (hallucination)
-
-**Clarity**: Is the question clearly written and unambiguous?
-- 5: Crystal clear, single interpretation
-- 3: Understandable but slightly vague
-- 1: Confusing, ambiguous, or grammatically broken
-
-**Difficulty**: Is the difficulty appropriate for a study question?
-- 5: Excellent difficulty — requires understanding, not just recall
-- 3: Average — simple recall or overly broad
-- 1: Trivial or impossibly hard
-
-Return your evaluation as a JSON object:
-{{"relevance": <1-5>, "clarity": <1-5>, "difficulty": <1-5>, "reasoning": "<brief explanation>"}}
-
-Evaluation:"""
+# List wrapper for structured_predict (returns single Pydantic instance)
+QuestionItemList = create_list_model(QuestionItem)
 
 
 # ============================================================
@@ -162,10 +141,19 @@ class QuestionGenerator:
             f"[Chunk {i+1}] {c['document']}" for i, c in enumerate(chunks)
         )
 
-        prompt = QUESTION_GEN_PROMPT.format(count=count, context=context)
-        response = Settings.llm.complete(prompt)
+        # structured_predict: auto-injects JSON schema + validates output
+        try:
+            result = Settings.llm.structured_predict(
+                QuestionItemList,
+                GEN_PROMPT_TMPL,
+                count=str(count),
+                context=context,
+            )
+            questions = self._map_items_to_questions(result.items, chunks)
+        except Exception as e:
+            logger.warning("structured_predict failed for generation: {}", e)
+            questions = []
 
-        questions = self._parse_response(response.text, chunks)
         logger.info("Generated {} questions", len(questions))
 
         # Auto-score each question against its source context
@@ -183,59 +171,44 @@ class QuestionGenerator:
         """Score each generated question using LLM-as-Judge.
 
         Modifies questions in-place, adding scores.
-        Uses the same Settings.llm for evaluation.
+        Uses structured_predict for robust, schema-validated output.
         """
         logger.info("Scoring {} questions via LLM-as-Judge...", len(questions))
 
         for i, q in enumerate(questions):
             try:
-                prompt = QUESTION_SCORE_PROMPT.format(
-                    context=context, question=q.question
+                parsed = Settings.llm.structured_predict(
+                    QuestionScoreOutput,
+                    SCORE_PROMPT_TMPL,
+                    context=context,
+                    question=q.question,
                 )
-                response = Settings.llm.complete(prompt)
-                scores = self._parse_scores(response.text)
-                q.scores = scores
+                # Map Pydantic output → dataclass
+                relevance = parsed.relevance
+                clarity = parsed.clarity
+                overall = (
+                    round((relevance + clarity) / 2, 1)
+                    if (relevance and clarity)
+                    else 0.0
+                )
+                q.scores = QuestionScores(
+                    relevance=relevance,
+                    clarity=clarity,
+                    difficulty=parsed.difficulty,
+                    overall=overall,
+                    reasoning=parsed.reasoning,
+                )
                 logger.debug(
                     "Q{}: relevance={}, clarity={}, difficulty={}, overall={}",
                     i + 1,
-                    scores.relevance,
-                    scores.clarity,
-                    scores.difficulty,
-                    scores.overall,
+                    q.scores.relevance,
+                    q.scores.clarity,
+                    q.scores.difficulty,
+                    q.scores.overall,
                 )
             except Exception as e:
                 logger.warning("Failed to score question {}: {}", i + 1, e)
                 q.scores = QuestionScores()
-
-    @staticmethod
-    def _parse_scores(text: str) -> QuestionScores:
-        """Parse LLM scoring response into QuestionScores."""
-        text = text.strip()
-        start = text.find("{")
-        end = text.rfind("}") + 1
-        if start == -1 or end == 0:
-            logger.warning("No JSON found in score response")
-            return QuestionScores()
-
-        try:
-            data = json.loads(text[start:end])
-        except json.JSONDecodeError as e:
-            logger.warning("Failed to parse score JSON: {}", e)
-            return QuestionScores()
-
-        relevance = int(data.get("relevance", 0))
-        clarity = int(data.get("clarity", 0))
-        difficulty = int(data.get("difficulty", 0))
-        # Overall = average of relevance + clarity (difficulty is informational)
-        overall = round((relevance + clarity) / 2, 1) if (relevance and clarity) else 0.0
-
-        return QuestionScores(
-            relevance=relevance,
-            clarity=clarity,
-            difficulty=difficulty,
-            overall=overall,
-            reasoning=data.get("reasoning", ""),
-        )
 
     # ============================================================
     # ChromaDB sampling
@@ -313,39 +286,26 @@ class QuestionGenerator:
         return {"$and": conditions}
 
     # ============================================================
-    # Response parsing
+    # Structured output → dataclass mapping
     # ============================================================
     @staticmethod
-    def _parse_response(
-        text: str, chunks: list[dict[str, Any]]
+    def _map_items_to_questions(
+        items: list[QuestionItem], chunks: list[dict[str, Any]]
     ) -> list[GeneratedQuestion]:
-        """Parse LLM response into GeneratedQuestion objects."""
-        text = text.strip()
-        start = text.find("[")
-        end = text.rfind("]") + 1
-        if start == -1 or end == 0:
-            logger.warning("Could not find JSON array in LLM response")
-            return []
-
-        try:
-            items = json.loads(text[start:end])
-        except json.JSONDecodeError as e:
-            logger.warning("Failed to parse LLM response as JSON: {}", e)
-            return []
-
+        """Map Pydantic QuestionItem list → GeneratedQuestion dataclasses."""
         questions: list[GeneratedQuestion] = []
         for idx, item in enumerate(items):
-            if not isinstance(item, dict) or "question" not in item:
+            if not item.question:
                 continue
             # Map each question to its source chunk (round-robin if more questions than chunks)
             chunk_idx = idx % len(chunks) if chunks else 0
             source = chunks[chunk_idx] if chunks else {}
             source_meta = source.get("metadata", {})
             questions.append(GeneratedQuestion(
-                question=item["question"],
-                difficulty=item.get("difficulty", "medium"),
-                question_type=item.get("type", "conceptual"),
-                question_category=item.get("question_category", ""),
+                question=item.question,
+                difficulty=item.difficulty,
+                question_type=item.type,
+                question_category=item.question_category,
                 source_chunk_id=source.get("id", ""),
                 book_id=source_meta.get("book_id", ""),
                 book_title=source_meta.get("book_title", ""),

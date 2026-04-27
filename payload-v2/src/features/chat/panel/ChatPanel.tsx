@@ -68,6 +68,9 @@ export default function ChatPanel({
   // Token accumulator — ref avoids re-renders per token; RAF batches at 60fps
   const tokenBufferRef = useRef("");
   const rafIdRef = useRef<number | null>(null);
+  // Prompt mode state — user-selected system prompt override
+  const [promptSlug, setPromptSlug] = useState<string | null>(null);
+  const [customSystemPrompt, setCustomSystemPrompt] = useState<string | null>(null);
 
   // Smooth text reveal — à la Coze/GPT typewriter effect
   const { displayText: smoothedText, isRevealing } = useSmoothText({
@@ -211,7 +214,7 @@ export default function ChatPanel({
       setError(null);
       shouldStickToBottomRef.current = true;
       setHasNewMessagesBelow(false);
-      setMessages((prev) => [...prev, { role: "user", content: trimmed }]);
+      setMessages((prev) => [...prev, { role: "user", content: trimmed, timestamp: new Date().toISOString() }]);
       setLoading(true);
       setStreamingContent("");
       setStreamingSources([]);
@@ -252,7 +255,7 @@ export default function ChatPanel({
       const filters = engineBookIdStrings.length > 0 ? { book_id_strings: engineBookIdStrings } : undefined;
 
       await queryTextbookStream(
-        { question: trimmed, filters, model: selectedModel, provider: selectedProvider, top_k: 5 },
+        { question: trimmed, filters, model: selectedModel, provider: selectedProvider, top_k: 5, custom_system_prompt: customSystemPrompt },
         {
           signal: controller.signal,
           onToken: (token) => {
@@ -302,6 +305,8 @@ export default function ChatPanel({
                 sources: enrichedSources,
                 trace: res.trace,
                 model: selectedModel || res.trace?.generation?.model || undefined,
+                timestamp: new Date().toISOString(),
+                telemetry: res.telemetry,
               },
             ]);
             setStreamingContent("");
@@ -317,12 +322,12 @@ export default function ChatPanel({
             // Persist both messages to chat history
             if (sessionId) {
               chatHistory.appendMessages(sessionId, [
-                { role: "user", content: trimmed },
-                { role: "assistant", content: res.answer, sources: enrichedSources, trace: res.trace },
+                { role: "user", content: trimmed, timestamp: new Date().toISOString() },
+                { role: "assistant", content: res.answer, sources: enrichedSources, trace: res.trace, timestamp: new Date().toISOString() },
               ]);
             }
 
-            // Log query to Payload QueryLogs (fire-and-forget)
+            // Log query to Payload QueryLogs and capture queryId for inline eval
             const latencyMs = Date.now() - startTime;
             fetch('/api/queries', {
               method: 'POST',
@@ -338,7 +343,29 @@ export default function ChatPanel({
                 model: selectedModel,
                 latencyMs,
               }),
-            }).catch(() => { /* ignore logging errors */ });
+            })
+              .then(async (r) => {
+                if (r.ok) {
+                  const doc = await r.json();
+                  // Attach queryId to the last assistant message for inline evaluation
+                  if (doc?.doc?.id) {
+                    const qId = doc.doc.id as number;
+                    setMessages((prev) => {
+                      const updated = [...prev];
+                      const last = updated[updated.length - 1];
+                      if (last?.role === 'assistant') {
+                        updated[updated.length - 1] = { ...last, queryId: qId };
+                      }
+                      return updated;
+                    });
+                    // Also persist queryId to the ChatMessages record
+                    if (sessionId) {
+                      chatHistory.updateLastAssistantQueryId(sessionId, qId);
+                    }
+                  }
+                }
+              })
+              .catch(() => { /* ignore logging errors */ });
           },
           onError: (err) => {
             setError(err.message);
@@ -354,7 +381,7 @@ export default function ChatPanel({
         },
       );
     },
-    [sessionBookIds, selectedModel, selectedProvider, currentUser, books, chatHistory, onSessionCreated],
+    [sessionBookIds, selectedModel, selectedProvider, currentUser, books, chatHistory, onSessionCreated, customSystemPrompt],
   );
 
   /** Expose submitQuestion to parent (so QuestionsSidebar can call it) */
@@ -395,6 +422,11 @@ export default function ChatPanel({
         }}
         showQuestions={showQuestions}
         onToggleQuestions={onToggleQuestions}
+        selectedPromptSlug={promptSlug}
+        onPromptChange={(slug, systemPrompt) => {
+          setPromptSlug(slug);
+          setCustomSystemPrompt(systemPrompt);
+        }}
       />
 
       {/* ── Message thread ── */}
@@ -418,6 +450,9 @@ export default function ChatPanel({
                   content={message.content}
                   sources={message.sources}
                   model={message.model}
+                  queryId={message.queryId}
+                  timestamp={message.timestamp}
+                  telemetry={message.telemetry}
                   onRetry={message.role === "user" && !loading ? (q) => void submitQuestion(q) : undefined}
                 />
               </div>

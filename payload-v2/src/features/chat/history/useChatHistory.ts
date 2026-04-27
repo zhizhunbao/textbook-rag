@@ -24,6 +24,8 @@ export interface HistoryMessage {
   content: string;
   sources?: SourceInfo[];
   trace?: QueryTrace;
+  queryId?: number;
+  timestamp?: string;
 }
 
 export interface ChatSession {
@@ -223,6 +225,8 @@ export function useChatHistory(userId?: number | null) {
           content: d.content,
           sources: d.sources ?? undefined,
           trace: d.trace ?? undefined,
+          queryId: d.queryId ?? undefined,
+          timestamp: d.createdAt ?? undefined,
         }));
 
         // Cache in state
@@ -240,6 +244,52 @@ export function useChatHistory(userId?: number | null) {
     [sessions, isLoggedIn],
   );
 
+  /**
+   * Update the queryId on the last assistant message in a session.
+   * Called when Queries POST resolves with the doc ID (async after message creation).
+   */
+  const updateLastAssistantQueryId = useCallback(
+    (sessionId: string, queryId: number) => {
+      // Update local state
+      setSessions((prev) =>
+        prev.map((s) => {
+          if (s.id !== sessionId) return s;
+          const msgs = [...s.messages];
+          for (let i = msgs.length - 1; i >= 0; i--) {
+            if (msgs[i].role === 'assistant') {
+              msgs[i] = { ...msgs[i], queryId };
+              break;
+            }
+          }
+          return { ...s, messages: msgs };
+        }),
+      );
+
+      // Persist to Payload — find the last assistant ChatMessage for this session
+      if (!isLoggedIn) return;
+      const numericId = Number(sessionId);
+      if (!numericId) return;
+
+      // Fetch the latest assistant message and patch its queryId
+      fetch(`/api/chat-messages?where[session][equals]=${numericId}&where[role][equals]=assistant&sort=-createdAt&limit=1&depth=0`, {
+        credentials: 'include',
+      })
+        .then((r) => r.json())
+        .then((data: { docs: { id: number }[] }) => {
+          if (data.docs?.[0]?.id) {
+            fetch(`/api/chat-messages/${data.docs[0].id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({ queryId }),
+            }).catch(() => { /* ignore */ });
+          }
+        })
+        .catch(() => { /* ignore */ });
+    },
+    [isLoggedIn],
+  );
+
   return {
     sessions,
     createSession,
@@ -249,5 +299,6 @@ export function useChatHistory(userId?: number | null) {
     clearHistory,
     getSession,
     loadSessionMessages,
+    updateLastAssistantQueryId,
   };
 }

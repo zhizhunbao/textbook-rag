@@ -12,7 +12,7 @@ import urllib.request
 import urllib.error
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent.parent / "data" / "raw_pdfs" / "textbooks"
+BASE_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "raw_pdfs" / "textbooks"
 
 # Books with direct PDF download links
 DIRECT_PDF_BOOKS = [

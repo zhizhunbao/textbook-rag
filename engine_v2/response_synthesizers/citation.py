@@ -12,7 +12,6 @@ from __future__ import annotations
 
 from loguru import logger
 
-from llama_index.core.prompts import PromptTemplate
 from llama_index.core.response_synthesizers import (
     BaseSynthesizer,
     get_response_synthesizer,
@@ -20,80 +19,10 @@ from llama_index.core.response_synthesizers import (
 )
 
 from engine_v2.llms.resolver import resolve_llm
-
-# ============================================================
-# Citation QA prompt — semantic-paragraph style
-# ============================================================
-CITATION_QA_TEMPLATE = PromptTemplate(
-    "You are a textbook research assistant. Your job is to answer questions "
-    "based ONLY on the provided source materials from academic textbooks.\n\n"
-    "IMPORTANT GUARDRAIL: If the user's query is casual chat, a greeting, "
-    "or clearly unrelated to the textbook content (e.g. '你好', 'hello', "
-    "'how are you', jokes, personal questions), do NOT search the sources. "
-    "Instead, respond briefly and politely:\n"
-    "- Acknowledge the greeting (e.g. '你好！')\n"
-    "- Remind them that you are a textbook research assistant\n"
-    "- Suggest they ask a specific question about the textbook content\n"
-    "Do NOT cite any sources for casual chat responses.\n\n"
-    "For actual research questions, provide a well-structured answer based "
-    "solely on the provided sources. "
-    "When referencing information from a source, "
-    "cite the appropriate source(s) using their corresponding numbers. "
-    "IMPORTANT: Every paragraph that uses information from a source MUST include "
-    "the citation number(s) inline within that paragraph — do NOT defer all citations "
-    "to the end of the answer. "
-    "Only cite a source when you are explicitly referencing it. "
-    "Do NOT repeat the same idea in multiple sentences.\n"
-    "Structure your answer with:\n"
-    "- An opening sentence that directly addresses the query\n"
-    "- Supporting paragraphs with evidence from sources (each citing its sources)\n"
-    "- A brief concluding sentence that summarizes key takeaways\n"
-    "If none of the sources are helpful, you should indicate that.\n"
-    "For example:\n"
-    "Source 1:\n"
-    "The sky is red in the evening and blue in the morning.\n"
-    "Source 2:\n"
-    "Water is wet when the sky is red.\n"
-    "Query: When is water wet?\n"
-    "Answer: Water will be wet when the sky is red [2], "
-    "which occurs in the evening [1].\n\n"
-    "The redness of the sky is a daily phenomenon observed at specific times [1]. "
-    "This means water's wetness follows a predictable pattern tied to atmospheric conditions [2].\n\n"
-    "In summary, the timing of water's wetness is directly linked to the sky's color cycle [1][2].\n"
-    "Now it's your turn. Below are several numbered sources of information:"
-    "\n------\n"
-    "{context_str}"
-    "\n------\n"
-    "Query: {query_str}\n"
-    "Answer: "
-)
-
-CITATION_REFINE_TEMPLATE = PromptTemplate(
-    "Please provide an answer based solely on the provided sources. "
-    "When referencing information from a source, "
-    "cite the appropriate source(s) using their corresponding numbers. "
-    "Every answer should include at least one source citation. "
-    "Only cite a source when you are explicitly referencing it. "
-    "If none of the sources are helpful, you should indicate that.\n"
-    "For example:\n"
-    "Source 1:\n"
-    "The sky is red in the evening and blue in the morning.\n"
-    "Source 2:\n"
-    "Water is wet when the sky is red.\n"
-    "Query: When is water wet?\n"
-    "Answer: Water will be wet when the sky is red [2], "
-    "which occurs in the evening [1].\n"
-    "Now it's your turn. "
-    "We have provided an existing answer: {existing_answer}"
-    "Below are several numbered sources of information. "
-    "Use them to refine the existing answer. "
-    "If the provided sources are not helpful, you will repeat the existing answer."
-    "\nBegin refining!"
-    "\n------\n"
-    "{context_msg}"
-    "\n------\n"
-    "Query: {query_str}\n"
-    "Answer: "
+from engine_v2.response_synthesizers.prompts import (
+    CITATION_QA_TEMPLATE,
+    CITATION_REFINE_TEMPLATE,
+    build_custom_qa_template,
 )
 
 
@@ -105,6 +34,7 @@ def get_citation_synthesizer(
     streaming: bool = False,
     model: str | None = None,
     provider: str | None = None,
+    custom_system_prompt: str | None = None,
 ) -> BaseSynthesizer:
     """Build a citation-aware response synthesizer.
 
@@ -116,20 +46,34 @@ def get_citation_synthesizer(
         mode: LlamaIndex response mode (COMPACT, REFINE, TREE_SUMMARIZE, etc.)
         streaming: Whether to enable streaming generation.
         model: Optional model name override for LLM selection.
+        provider: Optional provider override (e.g. 'ollama', 'azure').
+        custom_system_prompt: Optional user-selected system prompt override.
+            When provided, replaces the default CITATION_QA_TEMPLATE preamble
+            while keeping the citation-format instructions and context/query
+            placeholders intact.
 
     Returns:
         BaseSynthesizer configured for citation-aware generation.
     """
     llm = resolve_llm(model=model, streaming=streaming, provider=provider)
 
+    # Use custom system prompt if provided, otherwise use the default
+    qa_template = (
+        build_custom_qa_template(custom_system_prompt)
+        if custom_system_prompt
+        else CITATION_QA_TEMPLATE
+    )
+
     synthesizer = get_response_synthesizer(
         response_mode=mode,
         streaming=streaming,
         llm=llm,
-        text_qa_template=CITATION_QA_TEMPLATE,
+        text_qa_template=qa_template,
         refine_template=CITATION_REFINE_TEMPLATE,
     )
 
-    logger.info("CitationSynthesizer ready (mode={}, streaming={}, model={})",
-                mode, streaming, model or 'default')
+    logger.info("CitationSynthesizer ready (mode={}, streaming={}, model={}, custom_prompt={})",
+                mode, streaming, model or 'default', bool(custom_system_prompt))
     return synthesizer
+
+

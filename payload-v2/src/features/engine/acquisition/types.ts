@@ -45,18 +45,28 @@ export interface UrlImportState {
 // ============================================================
 // Import Tab type
 // ============================================================
-export type ImportTab = 'sources' | 'import' | 'files' | 'pipeline'
+export type ImportTab = 'sources' | 'import' | 'files' | 'pipeline' | 'vectors'
 
 // ============================================================
-// Parse preview types (AQ-03)
+// Parse preview types (AQ-03 + AQ-07)
 // ============================================================
+
+/** Content types supported by MinerU parser sub-tabs (AQ-07). */
+export type ContentFilterType = 'text' | 'image' | 'table' | 'equation' | 'discarded'
+
 export interface ParseStats {
   bookId: string
   bookTitle: string
   totalItems: number
   totalPages: number
   typeCounts: Record<string, number>
+  /** Count after content_type filter (AQ-07). */
+  filteredCount?: number
   samples: ParseSample[]
+  /** Pagination offset (AQ-07). */
+  offset?: number
+  /** Pagination limit (AQ-07). */
+  limit?: number
 }
 
 export interface ParseSample {
@@ -64,6 +74,8 @@ export interface ParseSample {
   pageIdx: number
   contentType: string
   bbox?: number[]
+  /** Image file path relative to auto/ (AQ-07, image items only). */
+  imgPath?: string
 }
 
 // ============================================================
@@ -88,3 +100,27 @@ export interface MediaFile {
   relatedBookId?: number
   relatedBookTitle?: string
 }
+
+// ============================================================
+// Vector stats types (AQ-09)
+// ============================================================
+export interface VectorSample {
+  chunkId: string
+  text: string
+  metadata: {
+    book_id: string
+    content_type: string
+    page_idx: number
+  }
+  vectorPreview?: number[]
+  dimensions?: number
+}
+
+export interface VectorStats {
+  totalVectors: number
+  bookVectors: number
+  dimensions: number
+  collectionName: string
+  samples: VectorSample[]
+}
+

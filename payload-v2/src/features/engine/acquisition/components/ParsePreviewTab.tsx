@@ -1,13 +1,16 @@
 /**
- * ParsePreviewTab — MinerU parse statistics viewer.
+ * ParsePreviewTab — MinerU parse product viewer with content-type sub-tabs.
  *
  * Data source: Engine GET /engine/books/{book_id}/parse-stats
  *
  * Layout: 2-column
  *   Left:  Book selector grouped by category folders (uses shared useBookSidebar)
- *   Right: Stats cards + content sample table
+ *   Right: Sub-tab bar (Text/Image/Table/Equation/Discarded) + paginated content
  *
- * Ref: AQ-03 — Parse Preview Tab
+ * Each sub-tab shows items filtered by content_type with count badges.
+ * Supports "Load More" pagination.
+ *
+ * Ref: AQ-03 + AQ-07 — Parse Preview Tab + Sub-tabs
  */
 
 'use client'
@@ -21,27 +24,48 @@ import {
   Image,
   Table2,
   Heading,
-  Hash,
   ChevronRight,
   Folder,
   FolderOpen,
   Trash2,
+  Calculator,
+  Ban,
+  ChevronDown,
 } from 'lucide-react'
 import { useI18n } from '@/features/shared/i18n'
 import { useBooks, useBookSidebar } from '@/features/shared/books'
 import { cn } from '@/features/shared/utils'
 import { fetchParseStats, deleteBookWithCleanup } from '../api'
-import type { ParseStats } from '../types'
+import type { ParseStats, ParseSample, ContentFilterType } from '../types'
 
 // ============================================================
-// Type icon mapping
+// Sub-tab definitions (AQ-07)
 // ============================================================
+interface SubTabDef {
+  key: ContentFilterType
+  label: string
+  icon: React.ElementType
+  color: string  // badge/icon color
+}
+
+const SUB_TABS: SubTabDef[] = [
+  { key: 'text',      label: 'Text',      icon: FileText,   color: 'blue' },
+  { key: 'image',     label: 'Image',     icon: Image,      color: 'emerald' },
+  { key: 'table',     label: 'Table',     icon: Table2,     color: 'amber' },
+  { key: 'equation',  label: 'Equation',  icon: Calculator, color: 'purple' },
+  { key: 'discarded', label: 'Discarded', icon: Ban,         color: 'red' },
+]
+
 const TYPE_ICONS: Record<string, React.ElementType> = {
   text: FileText,
   image: Image,
   table: Table2,
   title: Heading,
+  equation: Calculator,
+  discarded: Ban,
 }
+
+const PAGE_SIZE = 50
 
 // ============================================================
 // Component
@@ -52,7 +76,7 @@ export default function ParsePreviewTab() {
   const { books, loading: booksLoading, refetch } = useBooks()
 
   // Build sidebar items with category folders
-  const { sidebarItems, filterBooks } = useBookSidebar(books, {
+  const { sidebarItems } = useBookSidebar(books, {
     mode: 'by-book',
     isFr,
     bookIcon: <BookOpen className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />,
@@ -60,35 +84,90 @@ export default function ParsePreviewTab() {
   })
 
   const [selectedBookId, setSelectedBookId] = useState<string | null>(null)
-  const [stats, setStats] = useState<ParseStats | null>(null)
+  const [typeCounts, setTypeCounts] = useState<Record<string, number>>({})
+  const [totalItems, setTotalItems] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+
+  // Sub-tab state (AQ-07)
+  const [activeSubTab, setActiveSubTab] = useState<ContentFilterType>('text')
+  const [samples, setSamples] = useState<ParseSample[]>([])
+  const [filteredCount, setFilteredCount] = useState(0)
   const [loadingStats, setLoadingStats] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [deletingBookId, setDeletingBookId] = useState<string | null>(null)
 
   // ==========================================================
-  // Fetch parse stats when book is selected
+  // Fetch overview stats (type counts) when book changes
   // ==========================================================
-  const loadStats = useCallback(async (bookId: string) => {
+  const loadOverview = useCallback(async (bookId: string) => {
+    try {
+      const data = await fetchParseStats(bookId, { limit: 0 })
+      setTypeCounts(data.typeCounts)
+      setTotalItems(data.totalItems)
+      setTotalPages(data.totalPages)
+    } catch {
+      setTypeCounts({})
+      setTotalItems(0)
+      setTotalPages(0)
+    }
+  }, [])
+
+  // ==========================================================
+  // Fetch filtered samples when sub-tab or book changes
+  // ==========================================================
+  const loadSubTab = useCallback(async (bookId: string, contentType: ContentFilterType, offset = 0, append = false) => {
     setLoadingStats(true)
     setError(null)
     try {
-      const data = await fetchParseStats(bookId)
-      setStats(data)
+      const data = await fetchParseStats(bookId, {
+        contentType,
+        limit: PAGE_SIZE,
+        offset,
+      })
+      setFilteredCount(data.filteredCount ?? 0)
+      if (append) {
+        setSamples(prev => [...prev, ...data.samples])
+      } else {
+        setSamples(data.samples)
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to load'
       setError(msg)
-      setStats(null)
+      if (!append) {
+        setSamples([])
+        setFilteredCount(0)
+      }
     } finally {
       setLoadingStats(false)
     }
   }, [])
 
+  // On book selection change → load overview + first sub-tab
   useEffect(() => {
     if (selectedBookId) {
-      loadStats(selectedBookId)
+      loadOverview(selectedBookId)
+      loadSubTab(selectedBookId, activeSubTab)
     }
-  }, [selectedBookId, loadStats])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedBookId])
+
+  // On sub-tab change → reload samples
+  useEffect(() => {
+    if (selectedBookId) {
+      loadSubTab(selectedBookId, activeSubTab)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSubTab])
+
+  // ==========================================================
+  // Load more handler
+  // ==========================================================
+  const handleLoadMore = useCallback(() => {
+    if (selectedBookId) {
+      loadSubTab(selectedBookId, activeSubTab, samples.length, true)
+    }
+  }, [selectedBookId, activeSubTab, samples.length, loadSubTab])
 
   // ==========================================================
   // Collapse toggle
@@ -120,7 +199,7 @@ export default function ParsePreviewTab() {
       await deleteBookWithCleanup(book?.id ?? 0, bookId)
       if (selectedBookId === bookId) {
         setSelectedBookId(null)
-        setStats(null)
+        setSamples([])
       }
       refetch()
     } catch (err) {
@@ -134,21 +213,15 @@ export default function ParsePreviewTab() {
   // Determine visible sidebar items (respecting collapsed state)
   // ==========================================================
   const visibleItems = sidebarItems.filter((item, idx) => {
-    // "All" item always visible
     if (item.key === 'all') return true
-
-    // Category items always visible
     const indentLevel = (item as { indentLevel?: number }).indentLevel ?? 0
     if (indentLevel === 0) return true
 
-    // Find parent — walk backwards to find item with lower indent
     for (let i = idx - 1; i >= 0; i--) {
       const parent = sidebarItems[i]
       const parentIndent = (parent as { indentLevel?: number }).indentLevel ?? 0
       if (parentIndent < indentLevel) {
-        // If parent is NOT expanded, hide this item
         if (!expanded.has(parent.key)) return false
-        // Check grandparent too
         if (parentIndent > 0) {
           for (let j = i - 1; j >= 0; j--) {
             const gp = sidebarItems[j]
@@ -164,6 +237,8 @@ export default function ParsePreviewTab() {
     }
     return true
   })
+
+  const hasMore = samples.length < filteredCount
 
   return (
     <div className="flex gap-4 h-full min-h-[400px]">
@@ -195,7 +270,6 @@ export default function ParsePreviewTab() {
               const isExpanded = expanded.has(item.key)
               const bookId = isBookItem ? item.key.slice(6) : null
 
-              // Skip "all" — we show category folders
               if (item.key === 'all') return null
 
               return (
@@ -217,7 +291,6 @@ export default function ParsePreviewTab() {
                   )}
                   style={{ paddingLeft: `${10 + indentLevel * 14}px`, paddingRight: '8px' }}
                 >
-                  {/* Collapse chevron — rotates 90° when expanded */}
                   {isCollapsible && (
                     <ChevronRight className={cn(
                       'h-3 w-3 shrink-0 transition-transform duration-200',
@@ -225,7 +298,6 @@ export default function ParsePreviewTab() {
                     )} />
                   )}
 
-                  {/* Icon — Folder/FolderOpen for categories, BookOpen for books */}
                   {isBookItem ? (
                     <BookOpen className="h-4 w-4 shrink-0" />
                   ) : (
@@ -234,10 +306,8 @@ export default function ParsePreviewTab() {
                       : <Folder className="h-4 w-4 shrink-0" />
                   )}
 
-                  {/* Label */}
                   <span className="truncate flex-1">{item.label}</span>
 
-                  {/* Delete button for book items */}
                   {isBookItem && (
                     <button
                       type="button"
@@ -250,14 +320,12 @@ export default function ParsePreviewTab() {
                     </button>
                   )}
 
-                  {/* Count badge (pill style like SidebarLayout) */}
                   {item.count !== undefined && item.count > 0 && (
                     <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground shrink-0">
                       {item.count}
                     </span>
                   )}
 
-                  {/* Selected indicator */}
                   {isBookItem && selectedBookId === bookId && (
                     <ChevronRight className="h-3 w-3 shrink-0 text-primary" />
                   )}
@@ -268,116 +336,169 @@ export default function ParsePreviewTab() {
         )}
       </div>
 
-      {/* ── Right: Stats + Samples ── */}
-      <div className="flex-1 min-w-0 space-y-4 overflow-y-auto">
+      {/* ── Right: Sub-tab bar + Content ── */}
+      <div className="flex-1 min-w-0 flex flex-col overflow-y-auto">
         {!selectedBookId && (
           <EmptyState
             title={isFr ? '选择一本书查看解析数据' : 'Select a book to view parse data'}
             subtitle={isFr
-              ? '左侧选择已解析的书本，查看 MinerU 解析产物统计。'
-              : 'Choose a parsed book from the left panel to view MinerU parse statistics.'}
+              ? '左侧选择已解析的书本，按内容类型浏览 MinerU 解析产物。'
+              : 'Choose a parsed book from the left panel to browse MinerU parse products by content type.'}
             icon={FileSearch}
           />
         )}
 
-        {selectedBookId && loadingStats && (
-          <div className="flex items-center justify-center py-20">
-            <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-          </div>
-        )}
-
-        {selectedBookId && error && (
-          <EmptyState
-            title={isFr ? '未找到解析数据' : 'No parse data found'}
-            subtitle={error.includes('404')
-              ? (isFr ? '该书尚未被 MinerU 解析，请先在导入 Tab 上传并触发解析。' : 'This book has not been parsed by MinerU yet. Upload and trigger parsing in the Import tab.')
-              : error}
-            icon={FileSearch}
-          />
-        )}
-
-        {selectedBookId && !loadingStats && !error && stats && (
+        {selectedBookId && (
           <>
-            {/* Stats cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <StatCard
-                label={isFr ? '内容项' : 'Content Items'}
-                value={stats.totalItems}
-                icon={Hash}
-              />
-              <StatCard
-                label={isFr ? '页数' : 'Pages'}
-                value={stats.totalPages}
-                icon={Layers}
-              />
-              {Object.entries(stats.typeCounts).map(([type, count]) => (
-                <StatCard
-                  key={type}
-                  label={type}
-                  value={count}
-                  icon={TYPE_ICONS[type] ?? FileText}
-                />
-              ))}
+            {/* ── Sub-tab bar (AQ-07) ── */}
+            <div className="flex items-center gap-1 border-b border-border pb-2 mb-3 flex-wrap">
+              {SUB_TABS.map(tab => {
+                const count = typeCounts[tab.key] ?? 0
+                const isActive = activeSubTab === tab.key
+                const Icon = tab.icon
+                return (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setActiveSubTab(tab.key)}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150',
+                      isActive
+                        ? 'bg-primary/10 text-primary border border-primary/30'
+                        : 'text-muted-foreground hover:bg-secondary hover:text-foreground border border-transparent',
+                    )}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    <span>{tab.label}</span>
+                    <span className={cn(
+                      'text-[10px] font-bold px-1.5 py-0.5 rounded-full tabular-nums',
+                      isActive
+                        ? `bg-${tab.color}-500/15 text-${tab.color}-400`
+                        : 'bg-muted text-muted-foreground',
+                    )}>
+                      {count}
+                    </span>
+                  </button>
+                )
+              })}
+
+              {/* Totals summary */}
+              <span className="ml-auto text-[10px] text-muted-foreground tabular-nums">
+                {totalItems.toLocaleString()} items · {totalPages} pages
+              </span>
             </div>
 
-            {/* Content samples table */}
-            <div className="rounded-lg border border-border overflow-hidden">
-              <div className="px-4 py-2.5 bg-muted/50 border-b border-border">
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  {isFr ? `内容采样 (前 ${stats.samples.length} 条)` : `Content Samples (first ${stats.samples.length})`}
-                </span>
+            {/* ── Loading ── */}
+            {loadingStats && samples.length === 0 && (
+              <div className="flex items-center justify-center py-20">
+                <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
               </div>
+            )}
 
-              {stats.samples.length === 0 ? (
-                <div className="px-4 py-8 text-center text-xs text-muted-foreground">
-                  {isFr ? '无文本内容' : 'No text content found'}
+            {/* ── Error ── */}
+            {error && (
+              <EmptyState
+                title={isFr ? '未找到解析数据' : 'No parse data found'}
+                subtitle={error.includes('404')
+                  ? (isFr ? '该书尚未被 MinerU 解析，请先在导入 Tab 上传并触发解析。' : 'This book has not been parsed by MinerU yet. Upload and trigger parsing in the Import tab.')
+                  : error}
+                icon={FileSearch}
+              />
+            )}
+
+            {/* ── Content table ── */}
+            {!error && (samples.length > 0 || !loadingStats) && (
+              <div className="rounded-lg border border-border overflow-hidden flex-1">
+                <div className="px-4 py-2.5 bg-muted/50 border-b border-border flex items-center justify-between">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    {activeSubTab} ({filteredCount.toLocaleString()})
+                  </span>
+                  {samples.length > 0 && (
+                    <span className="text-[10px] text-muted-foreground tabular-nums">
+                      {isFr ? `显示 ${samples.length} / ${filteredCount}` : `Showing ${samples.length} / ${filteredCount}`}
+                    </span>
+                  )}
                 </div>
-              ) : (
-                <div className="divide-y divide-border">
-                  {/* Table header */}
-                  <div className="flex items-center gap-3 px-4 py-2 bg-muted/30 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                    <span className="w-8 shrink-0 text-center">#</span>
-                    <span className="w-16 shrink-0">Type</span>
-                    <span className="w-12 shrink-0 text-right">Page</span>
-                    <span className="flex-1">Text</span>
+
+                {samples.length === 0 && !loadingStats ? (
+                  <div className="px-4 py-8 text-center text-xs text-muted-foreground">
+                    {isFr
+                      ? `无 ${activeSubTab} 类型内容`
+                      : `No ${activeSubTab} content found`}
                   </div>
+                ) : (
+                  <div className="divide-y divide-border">
+                    {/* Table header */}
+                    <div className="flex items-center gap-3 px-4 py-2 bg-muted/30 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                      <span className="w-8 shrink-0 text-center">#</span>
+                      <span className="w-16 shrink-0">Type</span>
+                      <span className="w-12 shrink-0 text-right">Page</span>
+                      <span className="flex-1">Content</span>
+                    </div>
 
-                  {/* Table rows */}
-                  {stats.samples.map((sample, idx) => {
-                    const Icon = TYPE_ICONS[sample.contentType] ?? FileText
-                    return (
-                      <div
-                        key={idx}
-                        className="flex items-start gap-3 px-4 py-2.5 hover:bg-secondary/30 transition-colors"
-                      >
-                        <span className="w-8 shrink-0 text-center text-[10px] text-muted-foreground tabular-nums pt-0.5">
-                          {idx + 1}
-                        </span>
-                        <span className="w-16 shrink-0">
-                          <span className={cn(
-                            'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium',
-                            sample.contentType === 'title' && 'bg-purple-500/10 text-purple-400',
-                            sample.contentType === 'text' && 'bg-blue-500/10 text-blue-400',
-                            sample.contentType === 'table' && 'bg-amber-500/10 text-amber-400',
-                            sample.contentType === 'image' && 'bg-emerald-500/10 text-emerald-400',
-                            !['title', 'text', 'table', 'image'].includes(sample.contentType) && 'bg-muted text-muted-foreground',
-                          )}>
-                            <Icon className="h-2.5 w-2.5" />
-                            {sample.contentType}
+                    {/* Table rows */}
+                    {samples.map((sample, idx) => {
+                      const Icon = TYPE_ICONS[sample.contentType] ?? FileText
+                      return (
+                        <div
+                          key={`${sample.pageIdx}-${idx}`}
+                          className="flex items-start gap-3 px-4 py-2.5 hover:bg-secondary/30 transition-colors"
+                        >
+                          <span className="w-8 shrink-0 text-center text-[10px] text-muted-foreground tabular-nums pt-0.5">
+                            {idx + 1}
                           </span>
-                        </span>
-                        <span className="w-12 shrink-0 text-right text-xs text-muted-foreground tabular-nums pt-0.5">
-                          {sample.pageIdx + 1}
-                        </span>
-                        <p className="flex-1 text-xs text-foreground leading-relaxed line-clamp-2">
-                          {sample.text}
-                        </p>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
+                          <span className="w-16 shrink-0">
+                            <span className={cn(
+                              'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium',
+                              sample.contentType === 'title' && 'bg-purple-500/10 text-purple-400',
+                              sample.contentType === 'text' && 'bg-blue-500/10 text-blue-400',
+                              sample.contentType === 'table' && 'bg-amber-500/10 text-amber-400',
+                              sample.contentType === 'image' && 'bg-emerald-500/10 text-emerald-400',
+                              sample.contentType === 'equation' && 'bg-purple-500/10 text-purple-400',
+                              sample.contentType === 'discarded' && 'bg-red-500/10 text-red-400',
+                              !['title', 'text', 'table', 'image', 'equation', 'discarded'].includes(sample.contentType) && 'bg-muted text-muted-foreground',
+                            )}>
+                              <Icon className="h-2.5 w-2.5" />
+                              {sample.contentType}
+                            </span>
+                          </span>
+                          <span className="w-12 shrink-0 text-right text-xs text-muted-foreground tabular-nums pt-0.5">
+                            {sample.pageIdx + 1}
+                          </span>
+                          <p className="flex-1 text-xs text-foreground leading-relaxed line-clamp-3">
+                            {sample.text || (
+                              <span className="italic text-muted-foreground">(empty)</span>
+                            )}
+                          </p>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* Load More button */}
+                {hasMore && (
+                  <div className="px-4 py-3 border-t border-border flex justify-center">
+                    <button
+                      type="button"
+                      onClick={handleLoadMore}
+                      disabled={loadingStats}
+                      className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg border border-border bg-card text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors disabled:opacity-50"
+                    >
+                      {loadingStats ? (
+                        <div className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                      ) : (
+                        <ChevronDown className="h-3 w-3" />
+                      )}
+                      <span>{isFr ? '加载更多' : 'Load More'}</span>
+                      <span className="text-[10px] tabular-nums text-muted-foreground">
+                        ({samples.length}/{filteredCount})
+                      </span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
       </div>
@@ -388,28 +509,6 @@ export default function ParsePreviewTab() {
 // ============================================================
 // Sub-components
 // ============================================================
-
-function StatCard({
-  label,
-  value,
-  icon: Icon,
-}: {
-  label: string
-  value: number
-  icon: React.ElementType
-}) {
-  return (
-    <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-3.5 py-3">
-      <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10">
-        <Icon className="h-4 w-4 text-primary" />
-      </div>
-      <div>
-        <p className="text-lg font-bold text-foreground tabular-nums">{value.toLocaleString()}</p>
-        <p className="text-[10px] text-muted-foreground capitalize">{label}</p>
-      </div>
-    </div>
-  )
-}
 
 function EmptyState({
   title,

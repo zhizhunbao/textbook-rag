@@ -18,7 +18,7 @@ from pathlib import Path
 from collections import defaultdict
 
 # ── Configuration ──
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 MINERU_DIR = BASE_DIR / "data" / "mineru_output"
 OUTPUT_FILE = BASE_DIR / "data" / "topic_index.json"
 
