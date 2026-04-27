@@ -2,7 +2,7 @@
 
 > 本文件为 `roadmap/` 目录下各 Sprint 文件的统一索引。
 > 
-> **总进度**: 91/227 stories 完成 (40%), ~516h 总工时 (含 Sprint Demo 14 stories, Sprint MH 10 stories, Sprint EV2 16 stories ✅, Sprint RB 5 stories ✅, Sprint UEP 14 stories ✅, Sprint AQ-Epic1 10 stories ✅, Sprint EI 11/14 stories 🚧)
+> **总进度**: 106/243 stories 完成 (44%), ~530h 总工时 (含 Sprint Demo 14 stories, Sprint MH 15/16 stories 🚧, Sprint EV2 16 stories ✅, Sprint RB 5 stories ✅, Sprint UEP 14 stories ✅, Sprint AQ-Epic1 10 stories ✅, Sprint EI 11/14 stories 🚧)
 
 ## 文件索引
 
@@ -19,7 +19,7 @@
 | [17-sprint-robustness.md](./roadmap/17-sprint-robustness.md) | ✅ **Sprint RB** | ⛔ SKIP | **LLM输出防御 — structured_predict替换裸json.loads** — 5 stories, 3h ✅ 5/5 完成 |
 | [18-sprint-ux-eval-polish.md](./roadmap/18-sprint-ux-eval-polish.md) | ✅ **Sprint UEP** | ⛔ SKIP | **评分交互打磨+BM25修复+双视角模式** — 14 stories, 14.5h ✅ 14/14 完成 ✅T1 BM25全书搜索+缓存 ✅T2评分完整性+回填 ✅T3双视角评分卡 ✅T4 CitationChip+配色 |
 | [19-sprint-eval-industrial.md](./roadmap/19-sprint-eval-industrial.md) | 🚧 **Sprint EI** | 🟢 | **工业级评估升级** — 14 stories, 22.5h 🚧 11/14 ✅T1 Golden Dataset ✅T2 IR硬指标 ✅T3-01/02 Guideline+Correctness ✅T5 前端卡片+Tooltip ❌T3-03 Cross-Model(P2) ❌T4 A/B对比(P2) |
-| [15-sprint-model-hub.md](./roadmap/15-sprint-model-hub.md) | 🆕 **Sprint MH** | 🟢 | **Ollama模型库+一键拉取** — 10 stories, 10.5h ❌ 精选目录+SSE Pull+进度条+自动注册 (Admin only) |
+| [15-sprint-model-hub.md](./roadmap/15-sprint-model-hub.md) | 🚧 **Sprint MH** | 🟢 | **Ollama模型库+一键拉取+性能测试** — 16 stories, 14h 🚧 15/16 ✅精选目录 ✅SSE Pull ✅CatalogCard ✅进度条 ✅自动注册 ✅标准测试问题 ✅串行Benchmark ✅BenchmarkConsole ✅Library/Benchmark Tab ⏳useModels hook合并(延后) |
 | [03-sprint3.md](./roadmap/03-sprint3.md) | **Sprint 执行计划** | 🟢 | S3 评估图表+反馈 + 多题型 + toc — 8 stories, 24h ❌ |
 | [04-sprint4.md](./roadmap/04-sprint4.md) | **Sprint 执行计划** | 🟢 | S4 基建补全 — 11 stories, 29h ❌ |
 | [05-module-status.md](./roadmap/05-module-status.md) | **模块现状** | 🟢 | 17 个模块的 Layout/UI/UX/Func 状态卡 |
@@ -42,7 +42,7 @@
 | 🟠 P1 | **AQ-Epic2** (11) readers Tab 补全 | 3/3 待做 | 8h | RT-01 目录 Tab + RT-02 内容 Tab + RT-03 LibraryPage Tab 容器 |
 | 🟡 P2 | **QD** (13) Question Dataset | 11/11 待做 | 25h | 分层采样 + chunk 追踪，为 EI Golden Dataset 提供数据源 |
 | 🟡 P2 | **EC** (14) 回答筛选 | 9/9 待做 | 11h | 自动评估触发已在 EV2 完成，剩余为 UI 筛选 + 高分报告 |
-| 🟢 P3 | **MH** (15) 模型库 | 10/10 待做 | 10.5h | 独立功能模块，无依赖，可随时插入 |
+| 🟢 P3 | **MH** (15) 模型库 | 1/16 待做 | 1h | useModels hook 合并延后，功能完整可用 |
 | 🟢 P3 | **S3** (03) 评估图表 | 8/8 待做 | 24h | 需要 EI 的评估数据积累后才有意义 |
 | 🔵 P4 | **S4** (04) 基建补全 | 11/11 待做 | 29h | 技术债清理，非功能性需求 |
 | 🔵 P4 | **S5–S8** DeepTutor 系列 | 47/47 待做 | 154h | 长期愿景：智能检索 → Web Search → 用户记忆 → 报告引擎 |

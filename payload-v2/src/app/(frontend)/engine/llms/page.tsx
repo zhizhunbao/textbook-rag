@@ -1,40 +1,102 @@
 'use client'
 
-import { useEffect, useState, useMemo, Suspense } from 'react'
+import { useEffect, useState, useMemo, useCallback, Suspense, type ReactNode } from 'react'
 import {
   Brain, Loader2, AlertCircle, RefreshCw, CheckCircle2, XCircle,
-  Cpu, Globe, Zap, DollarSign, Activity,
+  Cpu, Globe, Zap, DollarSign, Calendar,
   Search, Wifi, WifiOff, HardDrive, Clock, Trash2, Plus, Star,
-  MessageSquare, Database,
+  BookOpen, FlaskConical, Download, Package, MessageSquare, Code, Lightbulb, Feather,
+  Sparkles, Dog, Fish, Gem, Microscope, Wind, Compass, Wheat, Mouse, BookText, Cog,
+  ChevronDown,
 } from 'lucide-react'
 import { cn } from '@/features/shared/utils'
 import { SidebarLayout, type ViewMode, type SidebarItem } from '@/features/shared/components/SidebarLayout'
 import { useModels } from '@/features/engine/llms/useModels'
-import type { RuntimeModel, DiscoveredLocalModel, ModelProvider } from '@/features/engine/llms/types'
+import type { CatalogModel, ModelProvider, PullProgress } from '@/features/engine/llms/types'
 import { PROVIDER_CONFIGS } from '@/features/engine/llms/types'
+import { searchLibrary, pullModel, registerModel } from '@/features/engine/llms/api'
 import { useQueryState } from '@/features/shared/hooks/useQueryState'
 import { useI18n } from '@/features/shared/i18n'
+import { CatalogCard } from '@/features/engine/llms/components/CatalogCard'
+import { BenchmarkConsole } from '@/features/engine/llms/components/BenchmarkConsole'
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Family display configs (SVG icons from Lucide) ───────────────────────────
+interface FamilyConfig { label: string; icon: ReactNode; color: string }
 
-/** Detect if a model name refers to an embedding model */
-function isEmbeddingModel(name: string): boolean {
-  const lower = name.toLowerCase()
-  return (
-    lower.includes('embed') ||
-    lower.includes('bge-') ||
-    lower.includes('e5-') ||
-    lower.includes('gte-') ||
-    lower.includes('instructor') ||
-    lower.includes('all-minilm') ||
-    lower.includes('nomic-embed') ||
-    lower.includes('mxbai-embed') ||
-    lower.includes('snowflake-arctic-embed') ||
-    lower.includes('text-embedding')
-  )
+const FAMILY_CONFIGS: Record<string, FamilyConfig> = {
+  qwen: { label: 'Qwen', icon: <Sparkles className="h-4 w-4" />, color: 'text-blue-400' },
+  llama: { label: 'Llama', icon: <Dog className="h-4 w-4" />, color: 'text-orange-400' },
+  deepseek: { label: 'DeepSeek', icon: <Fish className="h-4 w-4" />, color: 'text-cyan-400' },
+  gemma: { label: 'Gemma', icon: <Gem className="h-4 w-4" />, color: 'text-pink-400' },
+  phi: { label: 'Phi', icon: <Microscope className="h-4 w-4" />, color: 'text-emerald-400' },
+  mistral: { label: 'Mistral', icon: <Wind className="h-4 w-4" />, color: 'text-indigo-400' },
+  nomic: { label: 'Nomic', icon: <Compass className="h-4 w-4" />, color: 'text-teal-400' },
+  mxbai: { label: 'MixedBread', icon: <Wheat className="h-4 w-4" />, color: 'text-amber-400' },
+  smollm2: { label: 'SmolLM', icon: <Mouse className="h-4 w-4" />, color: 'text-violet-400' },
+  reader: { label: 'Jina', icon: <BookText className="h-4 w-4" />, color: 'text-rose-400' },
 }
 
-type FilterKey = 'all' | 'available' | 'discovered' | ModelProvider
+const DEFAULT_FAMILY_CONFIG: FamilyConfig = { label: 'Other', icon: <Cog className="h-4 w-4" />, color: 'text-gray-400' }
+
+/** Normalize family key for grouping (e.g. "qwen3" → "qwen", "llama32" → "llama") */
+function normalizeFamily(family: string): string {
+  const f = family.toLowerCase().replace(/[^a-z]/g, '')
+  if (f.startsWith('qwen')) return 'qwen'
+  if (f.startsWith('llama')) return 'llama'
+  if (f.startsWith('gemma')) return 'gemma'
+  if (f.startsWith('phi')) return 'phi'
+  if (f.startsWith('deepseek')) return 'deepseek'
+  if (f.startsWith('mistral') || f.startsWith('devstral')) return 'mistral'
+  if (f.startsWith('nomic')) return 'nomic'
+  if (f.startsWith('mxbai')) return 'mxbai'
+  if (f.startsWith('smollm')) return 'smollm2'
+  if (f.startsWith('reader')) return 'reader'
+  return f
+}
+
+function getFamilyConfig(family: string): FamilyConfig {
+  const key = normalizeFamily(family)
+  return FAMILY_CONFIGS[key] || DEFAULT_FAMILY_CONFIG
+}
+
+type FilterKey = 'all' | 'installed' | 'benchmark' | string // string for family keys
+
+// ── Role-based persona filter ────────────────────────────────────────────────
+// 系统角色：按使用者身份筛选最合适的模型
+// System personas: filter models by who is using the system
+interface RoleOption {
+  key: string
+  label: string
+  labelZh: string
+  labelFr: string
+  icon: ReactNode
+  keywords: string[]  // matched against bestFor tags (case-insensitive)
+}
+
+const ROLE_OPTIONS: RoleOption[] = [
+  { key: 'all', label: 'All Roles', labelZh: '全部角色', labelFr: 'Tous', icon: <BookOpen className="h-3.5 w-3.5" />, keywords: [] },
+  { key: 'analyst', label: 'Analyst', labelZh: '分析师', labelFr: 'Analyste', icon: <FlaskConical className="h-3.5 w-3.5" />, keywords: ['analysis', 'summarization', 'rag', 'report', 'data analysis', 'insight'] },
+  { key: 'student', label: 'Student', labelZh: '学生', labelFr: 'Étudiant', icon: <BookOpen className="h-3.5 w-3.5" />, keywords: ['study', 'learning', 'q&a', 'chat', 'tutoring', 'homework', 'student'] },
+  { key: 'auditor', label: 'Compliance Auditor', labelZh: '合规审计员', labelFr: 'Auditeur conformité', icon: <Compass className="h-3.5 w-3.5" />, keywords: ['compliance', 'audit', 'regulation', 'verification', 'policy', 'governance'] },
+  { key: 'math', label: 'Math / Reasoning', labelZh: '数学学习', labelFr: 'Maths / Raisonnement', icon: <Lightbulb className="h-3.5 w-3.5" />, keywords: ['math', 'reasoning', 'logic', 'step-by-step', 'proof', 'stem', 'calculation'] },
+  { key: 'developer', label: 'Developer', labelZh: '开发者', labelFr: 'Développeur', icon: <Code className="h-3.5 w-3.5" />, keywords: ['code', 'debugging', 'refactoring', 'code review', 'development', 'api'] },
+  { key: 'researcher', label: 'Researcher', labelZh: '研究员', labelFr: 'Chercheur', icon: <Microscope className="h-3.5 w-3.5" />, keywords: ['research', 'paper', 'embedding', 'semantic search', 'retrieval', 'literature'] },
+  { key: 'writer', label: 'Content Writer', labelZh: '内容创作', labelFr: 'Rédacteur', icon: <Feather className="h-3.5 w-3.5" />, keywords: ['writing', 'content', 'translation', 'long-form', 'creative', 'multilingual'] },
+]
+
+// ── Source filter options ────────────────────────────────────────────────────
+interface SourceOption {
+  key: string
+  label: string
+  labelZh: string
+  labelFr: string
+}
+
+const SOURCE_OPTIONS: SourceOption[] = [
+  { key: 'all', label: 'All Sources', labelZh: '全部来源', labelFr: 'Toutes les sources' },
+  { key: 'ollama', label: 'Ollama', labelZh: 'Ollama', labelFr: 'Ollama' },
+  { key: 'huggingface', label: 'HuggingFace', labelZh: 'HuggingFace', labelFr: 'HuggingFace' },
+]
 
 export default function Page() {
   return (
@@ -53,165 +115,147 @@ function LlmsPageInner() {
     loading,
     checking,
     error,
-    discovered,
-    discovering,
     refresh,
-    runDiscovery,
-    deleteModel,
-    registerDiscoveredModel,
     removeOllamaModel,
     setDefaultModel,
   } = useModels({ autoLoad: true, autoCheck: true, pollInterval: 0 })
 
   const [filter, setFilter] = useQueryState('filter', 'all') as [FilterKey, (v: string) => void]
-  const [viewMode, setViewMode] = useQueryState('view', 'cards') as [ViewMode, (v: string) => void]
+  const [viewMode, setViewMode] = useQueryState('view', 'table') as [ViewMode, (v: string) => void]
+  const [role, setRole] = useState('all')
+  const [sourceFilter, setSourceFilter] = useState('all')
 
-  // ── Auto-discover on first load ────────────────────────────────────────────
-  const [hasDiscovered, setHasDiscovered] = useState(false)
+  // ── Catalog state ──────────────────────────────────────────────────────────
+  const [catalog, setCatalog] = useState<CatalogModel[]>([])
+  const [catalogLoading, setCatalogLoading] = useState(false)
+  const [catalogLoaded, setCatalogLoaded] = useState(false)
+
+  // Load catalog on mount (not lazily)
   useEffect(() => {
-    if (!loading && !hasDiscovered) {
-      runDiscovery().then(() => setHasDiscovered(true))
+    if (catalogLoaded || catalogLoading) return
+    setCatalogLoading(true)
+    searchLibrary()
+      .then((data) => {
+        setCatalog(data)
+        setCatalogLoaded(true)
+      })
+      .catch(() => { })
+      .finally(() => setCatalogLoading(false))
+  }, [catalogLoaded, catalogLoading])
+
+  // Reload catalog when models change (e.g. after pull)
+  const reloadCatalog = useCallback(() => {
+    setCatalogLoading(true)
+    searchLibrary()
+      .then(setCatalog)
+      .catch(() => { })
+      .finally(() => setCatalogLoading(false))
+  }, [])
+
+  // ── Computed: group catalog by normalized family ────────────────────────────
+  const familyGroups = useMemo(() => {
+    const groups = new Map<string, FamilyConfig & { count: number; installed: number }>()
+    for (const m of catalog) {
+      const key = normalizeFamily(m.family)
+      const cfg = getFamilyConfig(m.family)
+      const existing = groups.get(key)
+      if (existing) {
+        existing.count++
+        if (m.installed) existing.installed++
+      } else {
+        groups.set(key, { ...cfg, count: 1, installed: m.installed ? 1 : 0 })
+      }
     }
-  }, [loading, hasDiscovered, runDiscovery])
+    // Sort by count (most models first)
+    return Array.from(groups.entries()).sort((a, b) => b[1].count - a[1].count)
+  }, [catalog])
 
-  // ── Stats ──────────────────────────────────────────────────────────────────
-  const availableModels = useMemo(
-    () => models.filter((m) => m.availability.status === 'available'),
-    [models],
-  )
-  const unavailableCount = useMemo(
-    () => models.filter((m) => m.availability.status === 'unavailable').length,
-    [models],
-  )
+  const installedCount = useMemo(() => catalog.filter((m) => m.installed).length, [catalog])
+  const registeredNames = useMemo(() => new Set(models.map((m) => m.name)), [models])
 
-  const providerCounts = useMemo(() => {
-    const c: Record<string, number> = {
-      all: models.length,
-      available: availableModels.length,
-      discovered: discovered.length,
-    }
-    for (const m of models) {
-      c[m.provider] = (c[m.provider] || 0) + 1
-    }
-    return c
-  }, [models, availableModels, discovered])
-
-  const visibleProviders = useMemo(() => {
-    return (Object.keys(PROVIDER_CONFIGS) as ModelProvider[]).filter(
-      (k) => (providerCounts[k] || 0) > 0,
-    )
-  }, [providerCounts])
-
-  // ── Split models into LLM vs Embedding ────────────────────────────────────
+  // ── Filter catalog models ──────────────────────────────────────────────────
   const displayModels = useMemo(() => {
-    let base: RuntimeModel[]
-    if (filter === 'available') {
-      base = availableModels
-    } else if (filter === 'all' || filter === 'discovered') {
-      base = models
+    // Step 1: sidebar filter
+    let filtered: CatalogModel[]
+    if (filter === 'installed') {
+      filtered = catalog.filter((m) => m.installed)
+    } else if (filter === 'all' || filter === 'benchmark') {
+      filtered = catalog
     } else {
-      base = models.filter((m) => m.provider === filter)
+      filtered = catalog.filter((m) => normalizeFamily(m.family) === filter)
     }
-    return [...base].sort((a, b) => {
-      const aAvail = a.availability.status === 'available' ? 0 : 1
-      const bAvail = b.availability.status === 'available' ? 0 : 1
-      if (aAvail !== bAvail) return aAvail - bAvail
-      return a.sortOrder - b.sortOrder
-    })
-  }, [models, availableModels, filter])
+    // Step 2: persona/role filter
+    if (role !== 'all') {
+      const roleOpt = ROLE_OPTIONS.find((r) => r.key === role)
+      if (roleOpt && roleOpt.keywords.length > 0) {
+        const kws = roleOpt.keywords.map((k) => k.toLowerCase())
+        filtered = filtered.filter((m) =>
+          m.bestFor?.some((tag) => kws.some((kw) => tag.toLowerCase().includes(kw)))
+        )
+      }
+    }
+    // Step 3: source filter
+    if (sourceFilter !== 'all') {
+      filtered = filtered.filter((m) => m.source === sourceFilter)
+    }
+    return filtered
+  }, [catalog, filter, role, sourceFilter])
 
-  const llmModels = useMemo(
-    () => displayModels.filter((m) => !isEmbeddingModel(m.name)),
-    [displayModels],
-  )
-  const embeddingModels = useMemo(
-    () => displayModels.filter((m) => isEmbeddingModel(m.name)),
-    [displayModels],
-  )
-
-  // ── Sidebar items ─────────────────────────────────────────────────────────
+  // ── Sidebar items ──────────────────────────────────────────────────────────
   const sidebarItems = useMemo<SidebarItem[]>(() => {
     const items: SidebarItem[] = [
       {
-        key: 'available',
-        label: isFr ? 'Disponibles' : 'Available',
-        count: providerCounts.available || 0,
-        icon: <Wifi className="h-4 w-4 shrink-0 text-emerald-500" />,
-      },
-      {
         key: 'all',
         label: isFr ? 'Tous les modèles' : 'All Models',
-        count: providerCounts.all || 0,
+        count: catalog.length,
+        icon: <BookOpen className="h-4 w-4 shrink-0 text-purple-400" />,
       },
-      ...visibleProviders.map((key) => ({
-        key,
-        label: PROVIDER_CONFIGS[key].label,
-        count: providerCounts[key] || 0,
-        indent: true,
-      })),
+      {
+        key: 'installed',
+        label: isFr ? 'Installés' : 'Installed',
+        count: installedCount,
+        icon: <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />,
+        highlight: installedCount > 0,
+      },
     ]
-    if (discovered.length > 0) {
-      items.push({
-        key: 'discovered',
-        label: isFr ? 'Découverts' : 'Discovered',
-        count: discovered.length,
-        highlight: true,
-        dividerBefore: true,
-        icon: <Search className="h-4 w-4 shrink-0" />,
-      })
+
+    // Add family groups
+    if (familyGroups.length > 0) {
+      let first = true
+      for (const [key, group] of familyGroups) {
+        items.push({
+          key,
+          label: group.label,
+          count: group.count,
+          dividerBefore: first,
+          icon: <span className={cn('shrink-0', group.color)}>{group.icon}</span>,
+        })
+        first = false
+      }
     }
+
+    // Benchmark tab
+    items.push({
+      key: 'benchmark',
+      label: isFr ? 'Test de performance' : 'Benchmark',
+      dividerBefore: true,
+      icon: <FlaskConical className="h-4 w-4 shrink-0 text-amber-400" />,
+    })
+
     return items
-  }, [providerCounts, visibleProviders, discovered, isFr])
+  }, [catalog.length, installedCount, familyGroups, isFr])
 
-  // ── Subtitle ──────────────────────────────────────────────────────────────
+  // ── Subtitle ───────────────────────────────────────────────────────────────
   const subtitle = useMemo(() => {
+    if (filter === 'benchmark') return isFr ? 'Tester la performance des modèles' : 'Test model performance'
+    const total = displayModels.length
+    const inst = displayModels.filter((m) => m.installed).length
     const parts: string[] = []
-    if (filter === 'discovered') {
-      parts.push(isFr
-        ? `${discovered.length} modèle(s) local non enregistré(s)`
-        : `${discovered.length} unregistered local model(s)`)
-    } else {
-      parts.push(isFr
-        ? `${displayModels.length} modèle(s)`
-        : `${displayModels.length} model(s)`)
-    }
-    if (checking || discovering) {
-      parts.push(discovering
-        ? (isFr ? 'Détection en cours...' : 'Discovering...')
-        : (isFr ? 'Vérification...' : 'Checking...'))
-    }
+    parts.push(isFr ? `${total} modèle(s)` : `${total} model(s)`)
+    if (inst > 0) parts.push(isFr ? `${inst} installé(s)` : `${inst} installed`)
+    if (checking) parts.push(isFr ? 'Vérification...' : 'Checking...')
     return parts.join(' · ')
-  }, [filter, discovered, displayModels, checking, discovering, isFr])
-
-  // ── Section renderer ──────────────────────────────────────────────────────
-  function renderModelSection(
-    sectionModels: RuntimeModel[],
-    title: string,
-    icon: React.ReactNode,
-    emptyText: string,
-  ) {
-    if (sectionModels.length === 0) return null
-    return (
-      <div className="mb-8 last:mb-0">
-        <div className="flex items-center gap-2 mb-4">
-          {icon}
-          <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-          <span className="px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground">
-            {sectionModels.length}
-          </span>
-        </div>
-        {viewMode === 'cards' ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-            {sectionModels.map((m) => (
-              <RegisteredModelCard key={m.id} model={m} onDelete={deleteModel} onSetDefault={setDefaultModel} isFr={isFr} />
-            ))}
-          </div>
-        ) : (
-          <ModelTable models={sectionModels} onDelete={deleteModel} onSetDefault={setDefaultModel} isFr={isFr} />
-        )}
-      </div>
-    )
-  }
+  }, [filter, displayModels, checking, isFr])
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -225,92 +269,156 @@ function LlmsPageInner() {
         <div className="space-y-1">
           <div className="flex items-center gap-1.5 text-[10px]">
             <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-            <span className="text-emerald-400">{availableModels.length} {isFr ? 'disponible(s)' : 'available'}</span>
+            <span className="text-emerald-400">{installedCount} {isFr ? 'installé(s)' : 'installed'}</span>
             <span className="text-muted-foreground mx-1">·</span>
-            <XCircle className="h-3 w-3 text-red-400" />
-            <span className="text-red-400">{unavailableCount} {isFr ? 'indisponible(s)' : 'unavailable'}</span>
+            <Package className="h-3 w-3 text-muted-foreground" />
+            <span className="text-muted-foreground">{catalog.length - installedCount} {isFr ? 'disponible(s)' : 'available'}</span>
           </div>
           <p className="text-[10px] text-muted-foreground">
-            {isFr ? `${models.length} modèle(s) enregistré(s)` : `${models.length} registered model(s)`}
+            {isFr ? `${models.length} enregistré(s) dans CMS` : `${models.length} registered in CMS`}
           </p>
         </div>
       }
       subtitle={subtitle}
-      showViewToggle={filter !== 'discovered'}
+      showViewToggle={filter !== 'benchmark'}
       viewMode={viewMode}
       onViewModeChange={setViewMode}
       toolbar={
         <div className="flex items-center gap-2">
           <button
-            onClick={() => void runDiscovery()}
-            disabled={discovering}
-            className={cn(
-              'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
-              'border border-primary/30 text-primary hover:bg-primary/10',
-              discovering && 'opacity-50 cursor-not-allowed',
-            )}
-          >
-            <Search className="h-3.5 w-3.5" />
-            {isFr ? 'Détecter les modèles' : 'Discover Local'}
-          </button>
-          <button
-            onClick={() => void refresh()}
+            onClick={() => { reloadCatalog(); void refresh() }}
             className="p-2 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+            title={isFr ? 'Actualiser' : 'Refresh'}
           >
-            <RefreshCw className={cn('h-4 w-4', checking && 'animate-spin')} />
+            <RefreshCw className={cn('h-4 w-4', (checking || catalogLoading) && 'animate-spin')} />
           </button>
         </div>
       }
-      loading={loading && models.length === 0}
-      loadingText={isFr ? 'Détection des modèles...' : 'Detecting models...'}
-      error={error && models.length === 0 ? error : null}
-      onRetry={() => void refresh()}
+      loading={(loading || catalogLoading) && catalog.length === 0}
+      loadingText={isFr ? 'Chargement du catalogue...' : 'Loading catalog...'}
+      error={error && catalog.length === 0 ? error : null}
+      onRetry={() => { reloadCatalog(); void refresh() }}
     >
-      {/* ── Discovered models view ── */}
-      {filter === 'discovered' ? (
-        <DiscoveredModelGrid models={discovered} onRegister={registerDiscoveredModel} onRemove={removeOllamaModel} isFr={isFr} />
+      {/* ── Benchmark view ── */}
+      {filter === 'benchmark' ? (
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <FlaskConical className="h-4 w-4 text-amber-400" />
+            <h2 className="text-sm font-semibold text-foreground">
+              {isFr ? 'Test de performance des modèles' : 'Model Benchmark'}
+            </h2>
+          </div>
+          <BenchmarkConsole models={models} isFr={isFr} />
+        </div>
       ) : (
+        /* ── Catalog view ── */
         <>
-          {/* ── LLM (Generation) models ── */}
-          {renderModelSection(
-            llmModels,
-            isFr ? 'Modèles de génération (LLM)' : 'Generation Models (LLM)',
-            <MessageSquare className="h-4 w-4 text-blue-400" />,
-            isFr ? 'Aucun modèle LLM' : 'No LLM models',
-          )}
+          {/* Filter dropdowns: Persona + Source / 角色 + 来源 筛选 */}
+          <div className="flex items-center gap-3 mb-4 flex-wrap">
+            {/* Persona dropdown / 角色下拉框 */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-muted-foreground">
+                {isFr ? 'Persona' : 'Persona'}
+              </span>
+              <div className="relative">
+                <select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  className={cn(
+                    'appearance-none pl-3 pr-7 py-1.5 rounded-lg text-xs font-medium transition-all border cursor-pointer',
+                    'bg-card/80 text-foreground border-border hover:border-primary/40 focus:border-primary/60',
+                    'focus:outline-none focus:ring-1 focus:ring-primary/30',
+                    role !== 'all' && 'border-primary/30 bg-primary/10 text-primary',
+                  )}
+                >
+                  {ROLE_OPTIONS.map((opt) => (
+                    <option key={opt.key} value={opt.key}>
+                      {isFr ? opt.labelFr : opt.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
+              </div>
+            </div>
 
-          {/* ── Embedding models ── */}
-          {renderModelSection(
-            embeddingModels,
-            isFr ? 'Modèles d\'embeddings' : 'Embedding Models',
-            <Database className="h-4 w-4 text-teal-400" />,
-            isFr ? 'Aucun modèle d\'embedding' : 'No embedding models',
-          )}
+            {/* Source dropdown / 来源下拉框 */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-muted-foreground">
+                {isFr ? 'Source' : 'Source'}
+              </span>
+              <div className="relative">
+                <select
+                  value={sourceFilter}
+                  onChange={(e) => setSourceFilter(e.target.value)}
+                  className={cn(
+                    'appearance-none pl-3 pr-7 py-1.5 rounded-lg text-xs font-medium transition-all border cursor-pointer',
+                    'bg-card/80 text-foreground border-border hover:border-primary/40 focus:border-primary/60',
+                    'focus:outline-none focus:ring-1 focus:ring-primary/30',
+                    sourceFilter !== 'all' && 'border-primary/30 bg-primary/10 text-primary',
+                  )}
+                >
+                  {SOURCE_OPTIONS.map((opt) => (
+                    <option key={opt.key} value={opt.key}>
+                      {isFr ? opt.labelFr : opt.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
+              </div>
+            </div>
 
-          {displayModels.length === 0 && (
-            <div className="flex flex-col items-center py-20">
-              <Brain className="h-10 w-10 text-muted-foreground mb-3" />
-              <p className="text-sm text-muted-foreground">
-                {filter === 'available'
-                  ? (isFr ? 'Aucun modèle disponible' : 'No available models')
-                  : (isFr ? 'Aucun modèle dans cette catégorie' : 'No models in this category')}
-              </p>
+            {/* Active filter count badge */}
+            {(role !== 'all' || sourceFilter !== 'all') && (
+              <button
+                onClick={() => { setRole('all'); setSourceFilter('all') }}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              >
+                <XCircle className="h-3 w-3" />
+                {isFr ? 'Réinitialiser' : 'Clear filters'}
+              </button>
+            )}
+          </div>
+
+          {catalogLoading && catalog.length > 0 && (
+            <div className="flex items-center gap-2 mb-4 text-xs text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              {isFr ? 'Actualisation...' : 'Refreshing...'}
             </div>
           )}
 
-          {/* Discovered inline when viewing "all" */}
-          {filter === 'all' && discovered.length > 0 && (
-            <div className="mt-8">
-              <div className="flex items-center gap-2 mb-4">
-                <Search className="h-4 w-4 text-primary" />
-                <h2 className="text-sm font-semibold text-foreground">
-                  {isFr ? 'Modèles locaux découverts (non enregistrés)' : 'Discovered Local Models (Unregistered)'}
-                </h2>
-                <span className="px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-primary/20 text-primary">
-                  {discovered.length}
-                </span>
-              </div>
-              <DiscoveredModelGrid models={discovered} onRegister={registerDiscoveredModel} onRemove={removeOllamaModel} isFr={isFr} />
+          {viewMode === 'cards' ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+              {displayModels.map((cm) => (
+                <CatalogCard
+                  key={cm.name}
+                  model={cm}
+                  isRegistered={registeredNames.has(cm.name)}
+                  onPulled={reloadCatalog}
+                  isFr={isFr}
+                />
+              ))}
+            </div>
+          ) : (
+            <CatalogTable
+              models={displayModels}
+              registeredNames={registeredNames}
+              onPulled={reloadCatalog}
+              onRemove={async (name) => {
+                await removeOllamaModel(name)
+                reloadCatalog()
+              }}
+              isFr={isFr}
+            />
+          )}
+
+          {displayModels.length === 0 && !catalogLoading && (
+            <div className="flex flex-col items-center py-20">
+              <Brain className="h-10 w-10 text-muted-foreground mb-3" />
+              <p className="text-sm text-muted-foreground">
+                {filter === 'installed'
+                  ? (isFr ? 'Aucun modèle installé' : 'No installed models')
+                  : (isFr ? 'Aucun modèle dans cette catégorie' : 'No models in this category')}
+              </p>
             </div>
           )}
         </>
@@ -323,173 +431,48 @@ function LlmsPageInner() {
 // Sub-components
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/** Registered model card */
-function RegisteredModelCard({ model: m, onDelete, onSetDefault, isFr }: { model: RuntimeModel; onDelete: (id: number) => Promise<void>; onSetDefault: (id: number) => Promise<void>; isFr: boolean }) {
-  const [deleting, setDeleting] = useState(false)
-  const [confirmDelete, setConfirmDelete] = useState(false)
-  const [settingDefault, setSettingDefault] = useState(false)
-  const prov = PROVIDER_CONFIGS[m.provider] || PROVIDER_CONFIGS.other
-  const avail = m.availability
-  const isAvailable = avail.status === 'available'
-  const isChecking = avail.status === 'checking'
-  const isUnavailable = avail.status === 'unavailable'
-
-  const handleDelete = async () => {
-    if (!confirmDelete) {
-      setConfirmDelete(true)
-      setTimeout(() => setConfirmDelete(false), 3000)
-      return
-    }
-    setDeleting(true)
-    try { await onDelete(m.id) } finally { setDeleting(false); setConfirmDelete(false) }
-  }
-
-  return (
-    <div
-      className={cn(
-        'rounded-xl border border-border bg-card p-5 transition-all hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5',
-        !m.isEnabled && 'opacity-50',
-      )}
-    >
-      <div className="flex items-start justify-between mb-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <h3 className="text-sm font-semibold text-foreground truncate">{m.displayName || m.name}</h3>
-            {m.isDefault && (
-              <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                {isFr ? 'Défaut' : 'Default'}
-              </span>
-            )}
-          </div>
-          <code className="text-xs text-muted-foreground font-mono">{m.name}</code>
-        </div>
-        <div className={cn('shrink-0 ml-2 px-2 py-0.5 rounded-full text-[10px] font-medium', prov.bg, prov.color)}>
-          {prov.label}
-        </div>
-      </div>
-
-      {m.description && <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{m.description}</p>}
-
-      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 mb-3">
-        {m.parameterSize && (
-          <div className="flex items-center gap-1.5 text-xs">
-            <Cpu className="h-3 w-3 text-muted-foreground shrink-0" /><span className="text-muted-foreground">{isFr ? 'Paramètres' : 'Params'}</span>
-            <span className="text-foreground font-medium ml-auto">{m.parameterSize}</span>
-          </div>
-        )}
-        {m.contextWindow && (
-          <div className="flex items-center gap-1.5 text-xs">
-            <Zap className="h-3 w-3 text-muted-foreground shrink-0" /><span className="text-muted-foreground">{isFr ? 'Contexte' : 'Context'}</span>
-            <span className="text-foreground font-medium ml-auto">{(m.contextWindow / 1000).toFixed(0)}K</span>
-          </div>
-        )}
-        {m.languages && (
-          <div className="flex items-center gap-1.5 text-xs">
-            <Globe className="h-3 w-3 text-muted-foreground shrink-0" /><span className="text-muted-foreground">{isFr ? 'Langues' : 'Languages'}</span>
-            <span className="text-foreground font-medium ml-auto truncate max-w-[80px]">{m.languages}</span>
-          </div>
-        )}
-        <div className="flex items-center gap-1.5 text-xs">
-          <DollarSign className="h-3 w-3 text-muted-foreground shrink-0" /><span className="text-muted-foreground">{isFr ? 'Coût' : 'Cost'}</span>
-          <span className={cn('font-medium ml-auto', m.isFree ? 'text-emerald-400' : 'text-amber-400')}>
-            {m.isFree ? (isFr ? 'Gratuit' : 'Free') : `$${m.costPer1kInput}/1K`}
-          </span>
-        </div>
-      </div>
-
-      {m.useCases && Array.isArray(m.useCases) && m.useCases.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-3">
-          {m.useCases.map((uc, i) => (
-            <span key={i} className="px-2 py-0.5 rounded-full text-[10px] bg-secondary text-muted-foreground">{uc}</span>
-          ))}
-        </div>
-      )}
-
-      {/* Status row */}
-      <div className="flex items-center justify-between pt-3 border-t border-border">
-        <div className="flex items-center gap-1.5 text-xs">
-          {isChecking ? (
-            <><Loader2 className="h-3 w-3 animate-spin text-primary" /><span className="text-primary">{isFr ? 'Vérification...' : 'Checking...'}</span></>
-          ) : isAvailable ? (
-            <>
-              <Wifi className="h-3 w-3 text-emerald-500" /><span className="text-emerald-400">{isFr ? 'Disponible' : 'Available'}</span>
-              {avail.latencyMs != null && <span className="text-muted-foreground ml-1">({avail.latencyMs}ms)</span>}
-            </>
-          ) : isUnavailable ? (
-            <><WifiOff className="h-3 w-3 text-red-400" /><span className="text-red-400">{isFr ? 'Indisponible' : 'Unavailable'}</span></>
-          ) : (
-            <><AlertCircle className="h-3 w-3 text-muted-foreground" /><span className="text-muted-foreground">{isFr ? 'Inconnu' : 'Unknown'}</span></>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          {m.quantization && <span className="text-[10px] text-muted-foreground font-mono">{m.quantization}</span>}
-          {!m.isEnabled && <span className="text-[10px] text-red-400">{isFr ? 'Désactivé' : 'Disabled'}</span>}
-          {isAvailable && !m.isDefault && (
-            <button
-              onClick={async () => {
-                setSettingDefault(true)
-                try { await onSetDefault(m.id) } finally { setSettingDefault(false) }
-              }}
-              disabled={settingDefault}
-              className={cn(
-                'inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium transition-colors',
-                'text-muted-foreground hover:text-amber-400 hover:bg-amber-500/10',
-                settingDefault && 'opacity-50 cursor-not-allowed',
-              )}
-              title={isFr ? 'Définir par défaut' : 'Set as default'}
-            >
-              {settingDefault ? <Loader2 className="h-3 w-3 animate-spin" /> : <Star className="h-3 w-3" />}
-              {isFr ? 'Défaut' : 'Default'}
-            </button>
-          )}
-          {isUnavailable && (
-            <button
-              onClick={handleDelete}
-              disabled={deleting}
-              className={cn(
-                'inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium transition-colors',
-                confirmDelete
-                  ? 'bg-red-500/20 text-red-400 border border-red-500/30'
-                  : 'text-muted-foreground hover:text-red-400 hover:bg-red-500/10',
-                deleting && 'opacity-50 cursor-not-allowed',
-              )}
-              title={confirmDelete ? (isFr ? 'Cliquer pour confirmer' : 'Click to confirm') : (isFr ? 'Supprimer' : 'Delete')}
-            >
-              {deleting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
-              {confirmDelete ? (isFr ? 'Sûr ?' : 'Sure?') : (isFr ? 'Supprimer' : 'Delete')}
-            </button>
-          )}
-        </div>
-      </div>
-
-      {avail.error && isUnavailable && (
-        <div className="mt-2 px-2.5 py-1.5 rounded-md bg-red-500/5 border border-red-500/10">
-          <p className="text-[10px] text-red-400 leading-relaxed">{avail.error}</p>
-        </div>
-      )}
-    </div>
-  )
-}
-
-/** Model table view */
-function ModelTable({ models, onDelete, onSetDefault, isFr }: { models: RuntimeModel[]; onDelete: (id: number) => Promise<void>; onSetDefault: (id: number) => Promise<void>; isFr: boolean }) {
+/** Catalog table view */
+function CatalogTable({
+  models,
+  registeredNames,
+  onPulled,
+  onRemove,
+  isFr,
+}: {
+  models: CatalogModel[]
+  registeredNames: Set<string>
+  onPulled: () => void
+  onRemove: (name: string) => Promise<void>
+  isFr: boolean
+}) {
+  const TH = 'text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider'
   return (
     <div className="rounded-xl border border-border overflow-hidden">
       <table className="w-full text-sm">
         <thead>
           <tr className="bg-card/80 border-b border-border">
-            <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">{isFr ? 'Modèle' : 'Model'}</th>
-            <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">Provider</th>
-            <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">{isFr ? 'Paramètres' : 'Params'}</th>
-            <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">{isFr ? 'Contexte' : 'Context'}</th>
-            <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">{isFr ? 'Coût' : 'Cost'}</th>
-            <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">{isFr ? 'Statut' : 'Status'}</th>
-            <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">{isFr ? 'Actions' : 'Actions'}</th>
+            <th className={TH}>{isFr ? 'Modèle' : 'Model'}</th>
+            <th className={TH}>{isFr ? 'Famille' : 'Family'}</th>
+            <th className={TH}>{isFr ? 'Paramètres' : 'Params'}</th>
+            <th className={TH}>{isFr ? 'RAM min.' : 'Min RAM'}</th>
+            <th className={TH}>{isFr ? 'Contexte' : 'Context'}</th>
+            <th className={TH}>Downloads</th>
+            <th className={TH}>{isFr ? 'Publié' : 'Released'}</th>
+            <th className={TH}>Source</th>
+            <th className={TH}>{isFr ? 'Statut' : 'Status'}</th>
+            <th className={cn(TH, 'text-right')}>{isFr ? 'Actions' : 'Actions'}</th>
           </tr>
         </thead>
         <tbody>
           {models.map((m) => (
-            <ModelTableRow key={m.id} model={m} onDelete={onDelete} onSetDefault={onSetDefault} isFr={isFr} />
+            <CatalogTableRow
+              key={m.name}
+              model={m}
+              isRegistered={registeredNames.has(m.name)}
+              onPulled={onPulled}
+              onRemove={onRemove}
+              isFr={isFr}
+            />
           ))}
         </tbody>
       </table>
@@ -497,245 +480,213 @@ function ModelTable({ models, onDelete, onSetDefault, isFr }: { models: RuntimeM
   )
 }
 
-function ModelTableRow({ model: m, onDelete, onSetDefault, isFr }: { model: RuntimeModel; onDelete: (id: number) => Promise<void>; onSetDefault: (id: number) => Promise<void>; isFr: boolean }) {
-  const [deleting, setDeleting] = useState(false)
-  const [settingDefault, setSettingDefault] = useState(false)
-  const prov = PROVIDER_CONFIGS[m.provider] || PROVIDER_CONFIGS.other
-  const avail = m.availability
-  const isAvailable = avail.status === 'available'
-  const isUnavailable = avail.status === 'unavailable'
-
-  const handleDelete = async () => {
-    setDeleting(true)
-    try { await onDelete(m.id) } finally { setDeleting(false) }
-  }
-
+/** Source badge component */
+function SourceBadge({ source }: { source: string }) {
+  const isOllama = source === 'ollama'
   return (
-    <tr className={cn('border-b border-border/50 hover:bg-card/50 transition-colors', !m.isEnabled && 'opacity-50')}>
-      <td className="px-4 py-3">
-        <div>
-          <span className="text-sm font-medium text-foreground">{m.displayName || m.name}</span>
-          {m.isDefault && <span className="ml-1.5 px-1 py-0.5 rounded text-[9px] font-medium bg-amber-500/10 text-amber-400">{isFr ? 'Défaut' : 'Default'}</span>}
-        </div>
-        <code className="text-[11px] text-muted-foreground font-mono">{m.name}</code>
-      </td>
-      <td className="px-4 py-3">
-        <span className={cn('px-2 py-0.5 rounded-full text-[10px] font-medium', prov.bg, prov.color)}>
-          {prov.label}
-        </span>
-      </td>
-      <td className="px-4 py-3 text-xs text-foreground">{m.parameterSize || '—'}</td>
-      <td className="px-4 py-3 text-xs text-foreground">
-        {m.contextWindow ? `${(m.contextWindow / 1000).toFixed(0)}K` : '—'}
-      </td>
-      <td className="px-4 py-3">
-        <span className={cn('text-xs font-medium', m.isFree ? 'text-emerald-400' : 'text-amber-400')}>
-          {m.isFree ? (isFr ? 'Gratuit' : 'Free') : `$${m.costPer1kInput}/1K`}
-        </span>
-      </td>
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-1.5">
-          {isAvailable ? (
-            <><Wifi className="h-3 w-3 text-emerald-500" /><span className="text-xs text-emerald-400">{isFr ? 'Disponible' : 'Available'}</span></>
-          ) : isUnavailable ? (
-            <><WifiOff className="h-3 w-3 text-red-400" /><span className="text-xs text-red-400">{isFr ? 'Indisponible' : 'Unavailable'}</span></>
-          ) : (
-            <><AlertCircle className="h-3 w-3 text-muted-foreground" /><span className="text-xs text-muted-foreground">{isFr ? 'Inconnu' : 'Unknown'}</span></>
-          )}
-        </div>
-      </td>
-        <td className="px-4 py-3 text-right">
-          <div className="flex items-center justify-end gap-1.5">
-            {m.availability.status === 'available' && !m.isDefault && (
-              <button
-                onClick={async () => {
-                  setSettingDefault(true)
-                  try { await onSetDefault(m.id) } finally { setSettingDefault(false) }
-                }}
-                disabled={settingDefault}
-                className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium text-muted-foreground hover:text-amber-400 hover:bg-amber-500/10 transition-colors disabled:opacity-50"
-                title={isFr ? 'Définir par défaut' : 'Set as default'}
-              >
-                {settingDefault ? <Loader2 className="h-3 w-3 animate-spin" /> : <Star className="h-3 w-3" />}
-                {isFr ? 'Défaut' : 'Default'}
-              </button>
-            )}
-            {isUnavailable && (
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
-                title={isFr ? 'Supprimer' : 'Delete'}
-              >
-                {deleting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
-                {isFr ? 'Supprimer' : 'Delete'}
-              </button>
-            )}
-          </div>
-        </td>
-    </tr>
+    <span className={cn(
+      'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium',
+      isOllama
+        ? 'bg-blue-500/10 text-blue-400'
+        : 'bg-amber-500/10 text-amber-400',
+    )}>
+      {isOllama ? (
+        <HardDrive className="h-2.5 w-2.5" />
+      ) : (
+        <Globe className="h-2.5 w-2.5" />
+      )}
+      {isOllama ? 'Ollama' : 'HuggingFace'}
+    </span>
   )
 }
 
-/** Discovered local models */
-function DiscoveredModelGrid({
-  models,
-  onRegister,
+// ── Unified button style ─────────────────────────────────────────────────────
+const BTN = 'inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-medium transition-colors border'
+const BTN_VARIANTS = {
+  primary: `${BTN} bg-primary/10 text-primary hover:bg-primary/20 border-primary/20`,
+  success: `${BTN} bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border-emerald-500/20`,
+  danger: `${BTN} bg-red-500/10 text-red-400 hover:bg-red-500/15 border-red-500/20`,
+  disabled: `${BTN} opacity-50 cursor-not-allowed border-border`,
+}
+
+// ── Status badge configs ─────────────────────────────────────────────────────
+type ModelState = 'available' | 'pulling' | 'pulled' | 'registered'
+
+const STATUS_CONFIGS: Record<ModelState, { icon: typeof CheckCircle2; label: string; labelFr: string; color: string }> = {
+  available: { icon: Download, label: 'Available', labelFr: 'Disponible', color: 'text-muted-foreground' },
+  pulling: { icon: Loader2, label: 'Pulling...', labelFr: 'Installation...', color: 'text-primary' },
+  pulled: { icon: HardDrive, label: 'Pulled', labelFr: 'Téléchargé', color: 'text-amber-400' },
+  registered: { icon: CheckCircle2, label: 'Registered', labelFr: 'Enregistré', color: 'text-emerald-400' },
+}
+
+function CatalogTableRow({
+  model: m,
+  isRegistered,
+  onPulled,
   onRemove,
   isFr,
 }: {
-  models: DiscoveredLocalModel[]
-  onRegister: (name: string) => Promise<any>
+  model: CatalogModel
+  isRegistered: boolean
+  onPulled: () => void
   onRemove: (name: string) => Promise<void>
   isFr: boolean
 }) {
-  if (models.length === 0) {
-    return (
-      <div className="flex flex-col items-center py-12">
-        <CheckCircle2 className="h-8 w-8 text-emerald-500 mb-3" />
-        <p className="text-sm text-muted-foreground">
-          {isFr ? 'Tous les modèles locaux sont enregistrés ✓' : 'All local models are registered ✓'}
-        </p>
-      </div>
+  const familyCfg = getFamilyConfig(m.family)
+  const [pulling, setPulling] = useState(false)
+  const [removing, setRemoving] = useState(false)
+  const [registering, setRegistering] = useState(false)
+  const [progress, setProgress] = useState<PullProgress | null>(null)
+  const [done, setDone] = useState(false)
+  const [justRegistered, setJustRegistered] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const percent = progress?.completed && progress?.total
+    ? Math.round((progress.completed / progress.total) * 100)
+    : 0
+
+  // ── Determine current state ──
+  const state: ModelState = pulling ? 'pulling'
+    : (isRegistered || justRegistered) ? 'registered'
+      : (m.installed || done) ? 'pulled'
+        : 'available'
+
+  const statusCfg = STATUS_CONFIGS[state]
+  const StatusIcon = statusCfg.icon
+
+  // ── Handlers ──
+  const handlePull = () => {
+    if (pulling || m.installed || done) return
+    setPulling(true)
+    setError(null)
+    pullModel(
+      m.name,
+      (p: any) => setProgress(p),
+      async () => {
+        setPulling(false)
+        setDone(true)
+        onPulled()
+      },
+      (err: string) => { setPulling(false); setError(err) },
     )
   }
-
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-      {models.map((m) => (
-        <DiscoveredModelCard key={m.name} model={m} onRegister={onRegister} onRemove={onRemove} isFr={isFr} />
-      ))}
-    </div>
-  )
-}
-
-/** Discovered model card with register/remove actions */
-function DiscoveredModelCard({
-  model: m,
-  onRegister,
-  onRemove,
-  isFr,
-}: {
-  model: DiscoveredLocalModel
-  onRegister: (name: string) => Promise<any>
-  onRemove: (name: string) => Promise<void>
-  isFr: boolean
-}) {
-  const [registering, setRegistering] = useState(false)
-  const [removing, setRemoving] = useState(false)
-  const [confirmRemove, setConfirmRemove] = useState(false)
 
   const handleRegister = async () => {
     setRegistering(true)
     try {
-      await onRegister(m.name)
-    } finally {
-      setRegistering(false)
-    }
+      await registerModel({ name: m.name, parameterSize: m.parameterSize, family: m.family })
+      setJustRegistered(true)
+      onPulled()
+    } catch { /* */ }
+    setRegistering(false)
   }
 
   const handleRemove = async () => {
-    if (!confirmRemove) {
-      setConfirmRemove(true)
-      setTimeout(() => setConfirmRemove(false), 3000)
-      return
-    }
     setRemoving(true)
     try {
       await onRemove(m.name)
-    } finally {
-      setRemoving(false)
-      setConfirmRemove(false)
-    }
+    } catch { /* */ }
+    setRemoving(false)
   }
 
   return (
-    <div className="rounded-xl border border-dashed border-primary/30 bg-card/50 p-5 transition-all hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5">
-      <div className="flex items-start justify-between mb-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <h3 className="text-sm font-semibold text-foreground truncate">{m.name}</h3>
-            <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary border border-primary/20">
-              {isFr ? 'Découvert' : 'Discovered'}
-            </span>
-          </div>
-          <code className="text-xs text-muted-foreground font-mono">{m.name}</code>
+    <tr className="border-b border-border/50 hover:bg-card/50 transition-colors">
+      {/* Model name */}
+      <td className="px-4 py-3">
+        <div>
+          <span className="text-sm font-medium text-foreground">{m.displayName}</span>
         </div>
-        <div className="shrink-0 ml-2 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-400">Ollama</div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 mb-3">
-        {m.parameterSize && (
-          <div className="flex items-center gap-1.5 text-xs">
-            <Cpu className="h-3 w-3 text-muted-foreground shrink-0" /><span className="text-muted-foreground">{isFr ? 'Paramètres' : 'Params'}</span>
-            <span className="text-foreground font-medium ml-auto">{m.parameterSize}</span>
+        <code className="text-[11px] text-muted-foreground font-mono">{m.name}</code>
+        {pulling && progress && (
+          <div className="mt-1">
+            <div className="w-32 h-1 rounded-full bg-secondary overflow-hidden">
+              <div className="h-full rounded-full bg-primary transition-all duration-300" style={{ width: `${percent}%` }} />
+            </div>
+            <span className="text-[9px] text-muted-foreground">{progress.status} {percent}%</span>
           </div>
         )}
-        {m.size && (
-          <div className="flex items-center gap-1.5 text-xs">
-            <HardDrive className="h-3 w-3 text-muted-foreground shrink-0" /><span className="text-muted-foreground">{isFr ? 'Taille' : 'Size'}</span>
-            <span className="text-foreground font-medium ml-auto">{m.size}</span>
+        {error && (
+          <div className="mt-1 flex items-center gap-1 text-[10px] text-red-400">
+            <XCircle className="h-3 w-3" />
+            {error}
           </div>
         )}
-        {m.quantization && (
-          <div className="flex items-center gap-1.5 text-xs">
-            <Zap className="h-3 w-3 text-muted-foreground shrink-0" /><span className="text-muted-foreground">{isFr ? 'Quantification' : 'Quantization'}</span>
-            <span className="text-foreground font-medium ml-auto font-mono">{m.quantization}</span>
-          </div>
-        )}
-        {m.family && (
-          <div className="flex items-center gap-1.5 text-xs">
-            <Globe className="h-3 w-3 text-muted-foreground shrink-0" /><span className="text-muted-foreground">{isFr ? 'Famille' : 'Family'}</span>
-            <span className="text-foreground font-medium ml-auto">{m.family}</span>
-          </div>
-        )}
-        {m.modifiedAt && (
-          <div className="flex items-center gap-1.5 text-xs">
-            <Clock className="h-3 w-3 text-muted-foreground shrink-0" /><span className="text-muted-foreground">{isFr ? 'Modifié' : 'Modified'}</span>
-            <span className="text-foreground font-medium ml-auto truncate max-w-[100px]">
-              {new Date(m.modifiedAt).toLocaleDateString()}
-            </span>
-          </div>
-        )}
-      </div>
-
-      <div className="flex items-center justify-between pt-3 border-t border-border">
-        <div className="flex items-center gap-1.5 text-xs">
-          <Wifi className="h-3 w-3 text-emerald-500" /><span className="text-emerald-400">{isFr ? 'Disponible localement' : 'Locally available'}</span>
+      </td>
+      {/* Family */}
+      <td className="px-4 py-3">
+        <span className="inline-flex items-center gap-1.5 text-xs">
+          <span className={cn('shrink-0', familyCfg.color)}>{familyCfg.icon}</span>
+          <span className={familyCfg.color}>{familyCfg.label}</span>
+        </span>
+      </td>
+      {/* Params */}
+      <td className="px-4 py-3 text-xs text-foreground">{m.parameterSize || '—'}</td>
+      {/* Min RAM */}
+      <td className="px-4 py-3 text-xs text-foreground">
+        {m.minRamGb ? `${m.minRamGb} GB` : '—'}
+      </td>
+      {/* Context */}
+      <td className="px-4 py-3 text-xs text-foreground">
+        {m.contextWindow >= 1000 ? `${(m.contextWindow / 1000).toFixed(0)}K` : m.contextWindow || '—'}
+      </td>
+      {/* Downloads */}
+      <td className="px-4 py-3 text-xs text-foreground">
+        {m.downloads > 1_000_000
+          ? `${(m.downloads / 1_000_000).toFixed(1)}M`
+          : m.downloads > 1_000
+            ? `${(m.downloads / 1_000).toFixed(0)}K`
+            : m.downloads || '—'}
+      </td>
+      {/* Released */}
+      <td className="px-4 py-3 text-xs text-muted-foreground">
+        {m.released || '—'}
+      </td>
+      {/* Source */}
+      <td className="px-4 py-3">
+        <SourceBadge source={m.source} />
+      </td>
+      {/* Status */}
+      <td className="px-4 py-3">
+        <span className={cn('inline-flex items-center gap-1 text-xs', statusCfg.color)}>
+          <StatusIcon className={cn('h-3 w-3', state === 'pulling' && 'animate-spin')} />
+          {isFr ? statusCfg.labelFr : statusCfg.label}
+        </span>
+      </td>
+      {/* Actions — always visible */}
+      <td className="px-4 py-3">
+        <div className="flex items-center justify-end gap-1.5">
+          {state === 'available' && (
+            <button onClick={handlePull} disabled={pulling} className={BTN_VARIANTS.primary}>
+              <Download className="h-3 w-3" />
+              Pull
+            </button>
+          )}
+          {state === 'pulling' && (
+            <button disabled className={BTN_VARIANTS.disabled}>
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Pulling...
+            </button>
+          )}
+          {state === 'pulled' && (
+            <>
+              <button onClick={handleRegister} disabled={registering} className={cn(BTN_VARIANTS.success, registering && 'opacity-50 cursor-not-allowed')}>
+                {registering ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+                Register
+              </button>
+              <button onClick={handleRemove} disabled={removing} className={cn(BTN_VARIANTS.danger, removing && 'opacity-50 cursor-not-allowed')}>
+                {removing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                Remove
+              </button>
+            </>
+          )}
+          {state === 'registered' && (
+            <button onClick={handleRemove} disabled={removing} className={cn(BTN_VARIANTS.danger, removing && 'opacity-50 cursor-not-allowed')}>
+              {removing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+              Remove
+            </button>
+          )}
         </div>
-        <div className="flex items-center gap-1.5">
-          {/* Register button */}
-          <button
-            onClick={handleRegister}
-            disabled={registering}
-            className={cn(
-              'inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-medium transition-colors',
-              'bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20',
-              registering && 'opacity-50 cursor-not-allowed',
-            )}
-            title={isFr ? 'Enregistrer dans le CMS' : 'Register to CMS'}
-          >
-            {registering ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
-            {isFr ? 'Enregistrer' : 'Register'}
-          </button>
-          {/* Remove button */}
-          <button
-            onClick={handleRemove}
-            disabled={removing}
-            className={cn(
-              'inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-colors',
-              confirmRemove
-                ? 'bg-red-500/20 text-red-400 border border-red-500/30'
-                : 'text-muted-foreground hover:text-red-400 hover:bg-red-500/10',
-              removing && 'opacity-50 cursor-not-allowed',
-            )}
-            title={confirmRemove ? (isFr ? 'Cliquer pour confirmer' : 'Click to confirm') : (isFr ? 'Retirer d\'Ollama' : 'Remove from Ollama')}
-          >
-            {removing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
-            {confirmRemove ? (isFr ? 'Sûr ?' : 'Sure?') : (isFr ? 'Retirer' : 'Remove')}
-          </button>
-        </div>
-      </div>
-    </div>
+      </td>
+    </tr>
   )
 }

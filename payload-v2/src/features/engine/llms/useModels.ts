@@ -5,12 +5,14 @@
  * 提供:
  *   - 自动加载已注册模型
  *   - 自动/手动触发可用性检测
+ *   - 本地模型发现（Ollama /api/tags）
  *   - 定期轮询保持状态最新
  *   - 按 provider 分组、过滤
  *
  * Provides:
  *   - Auto-load registered models
  *   - Auto/manual availability checks
+ *   - Local model discovery (Ollama /api/tags)
  *   - Periodic polling to keep status fresh
  *   - Group/filter by provider
  */
@@ -23,14 +25,13 @@ import type {
   ModelOption,
   AvailabilityStatus,
   DiscoveredLocalModel,
-  ModelDiscoveryResult,
 } from './types'
 import {
   fetchEnabledModels,
   checkAllModels,
   checkOllamaModels,
   checkCloudProviders,
-  discoverAllModels,
+  discoverLocalModels,
   deleteModel as apiDeleteModel,
   registerModel as apiRegisterModel,
   removeOllamaModel as apiRemoveOllamaModel,
@@ -69,17 +70,19 @@ export interface UseModelsReturn {
   /** 所有模型选项 / All model options */
   allOptions: ModelOption[]
 
-  /** 自动探测到的本地未注册模型 / Auto-discovered unregistered local models */
+  /** 已发现但未注册的本地模型 / Discovered but unregistered local models */
   discovered: DiscoveredLocalModel[]
-  /** 是否正在探测 / Running discovery */
+  /** 是否正在发现模型 / Discovering models */
   discovering: boolean
 
   /** 手动刷新模型列表 / Manual refresh model list */
   refresh: () => Promise<void>
   /** 手动触发可用性检测 / Manual trigger availability check */
   checkAvailability: () => Promise<void>
-  /** 运行完整探测（含本地模型发现）/ Run full discovery (including local model detection) */
-  runDiscovery: () => Promise<ModelDiscoveryResult | null>
+  /** 运行本地模型发现 / Run local model discovery */
+  runDiscovery: () => Promise<void>
+  /** 注册一个已发现的模型 / Register a discovered model to CMS */
+  registerDiscoveredModel: (name: string) => Promise<LlmModel | null>
   /** 按 provider 过滤 / Filter by provider */
   getModelsByProvider: (provider: ModelProvider) => RuntimeModel[]
   /** 获取默认模型 / Get default model */
@@ -88,9 +91,13 @@ export interface UseModelsReturn {
   findModel: (name: string) => RuntimeModel | undefined
   /** 删除不可用的模型 / Delete an unavailable model from CMS */
   deleteModel: (modelId: number) => Promise<void>
-  /** 注册发现的模型到 CMS / Register a discovered model into CMS */
-  registerDiscoveredModel: (name: string) => Promise<LlmModel | null>
-  /** 从 Ollama 移除本地模型 / Remove a model from local Ollama */
+  /** 注册模型到 CMS / Register a model into CMS */
+  registerModel: (info: {
+    name: string
+    parameterSize?: string | null
+    family?: string | null
+  }) => Promise<LlmModel | null>
+  /** 从 Ollama 移除本地模型 + CMS 记录 / Remove a model from local Ollama + CMS */
   removeOllamaModel: (name: string) => Promise<void>
   /** 设为默认模型 / Set a model as the default */
   setDefaultModel: (modelId: number) => Promise<void>
@@ -111,6 +118,8 @@ export function useModels(options: UseModelsOptions = {}): UseModelsReturn {
   const [providerHealth, setProviderHealth] = useState<
     Map<ModelProvider, ProviderHealth>
   >(new Map())
+
+  // ── Discovery state ──────────────────────────────────────────────────────────
   const [discovered, setDiscovered] = useState<DiscoveredLocalModel[]>([])
   const [discovering, setDiscovering] = useState(false)
 
@@ -173,25 +182,57 @@ export function useModels(options: UseModelsOptions = {}): UseModelsReturn {
     }
   }, [])
 
-  // ── 完整探测（含本地模型发现）/ Full discovery (including local) ───────────
-  const runDiscovery = useCallback(async (): Promise<ModelDiscoveryResult | null> => {
-    if (!mountedRef.current) return null
+  // ── 本地模型发现 / Local model discovery ───────────────────────────────────
+  const runDiscovery = useCallback(async () => {
+    if (!mountedRef.current) return
     setDiscovering(true)
-
     try {
-      const result = await discoverAllModels()
-      if (!mountedRef.current) return null
-      setModels(result.registered)
-      setDiscovered(result.discovered)
-      return result
+      const allLocal = await discoverLocalModels()
+      if (!mountedRef.current) return
+
+      // 过滤掉已注册的模型 / Filter out already-registered models
+      setModels((currentModels) => {
+        const registeredNames = new Set(currentModels.map((m) => m.name))
+        const unregistered = allLocal.filter((m) => !registeredNames.has(m.name))
+        setDiscovered(unregistered)
+        return currentModels
+      })
     } catch {
-      return null
+      // 静默失败 / Silently fail
     } finally {
       if (mountedRef.current) {
         setDiscovering(false)
       }
     }
   }, [])
+
+  // ── 注册已发现的模型 / Register a discovered model ─────────────────────────
+  const registerDiscoveredModel = useCallback(async (name: string): Promise<LlmModel | null> => {
+    // Find the discovered model info
+    const disc = discovered.find((m) => m.name === name)
+    if (!disc) return null
+
+    try {
+      const newModel = await apiRegisterModel({
+        name: disc.name,
+        parameterSize: disc.parameterSize,
+        family: disc.family,
+      })
+      if (mountedRef.current) {
+        // Add to registered models
+        const newRuntime: RuntimeModel = {
+          ...newModel,
+          availability: { status: 'available', latencyMs: null, checkedAt: Date.now(), error: null },
+        }
+        setModels((prev) => [...prev, newRuntime])
+        // Remove from discovered list
+        setDiscovered((prev) => prev.filter((m) => m.name !== name))
+      }
+      return newModel
+    } catch {
+      return null
+    }
+  }, [discovered])
 
   // ── 手动刷新 / Manual refresh ──────────────────────────────────────────────
   const refresh = useCallback(async () => {
@@ -288,21 +329,19 @@ export function useModels(options: UseModelsOptions = {}): UseModelsReturn {
     }
   }, [])
 
-  // ── 注册发现的模型 / Register discovered model ───────────────────────────
-  const registerDiscoveredModel = useCallback(async (name: string): Promise<LlmModel | null> => {
-    // 从 discovered 列表中找到对应模型信息
-    const disc = discovered.find((d) => d.name === name)
+  // ── 注册模型 / Register model ─────────────────────────────────────────────
+  const registerModel = useCallback(async (info: {
+    name: string
+    parameterSize?: string | null
+    family?: string | null
+  }): Promise<LlmModel | null> => {
     try {
       const newModel = await apiRegisterModel({
-        name,
-        parameterSize: disc?.parameterSize ?? null,
-        quantization: disc?.quantization ?? null,
-        family: disc?.family ?? null,
-        sizeBytes: disc?.sizeBytes ?? null,
+        name: info.name,
+        parameterSize: info.parameterSize ?? null,
+        family: info.family ?? null,
       })
       if (mountedRef.current) {
-        // 从 discovered 移除 / Remove from discovered
-        setDiscovered((prev) => prev.filter((d) => d.name !== name))
         // 添加到 models 列表 / Add to registered models
         const newRuntime: RuntimeModel = {
           ...newModel,
@@ -314,24 +353,25 @@ export function useModels(options: UseModelsOptions = {}): UseModelsReturn {
     } catch {
       return null
     }
-  }, [discovered])
+  }, [])
 
-  // ── 从 Ollama 移除 / Remove from Ollama ────────────────────────────────
+  // ── 从 Ollama 移除 + 同步清理 CMS / Remove from Ollama + cleanup CMS ──────
   const removeOllamaModel = useCallback(async (name: string) => {
+    // 1. Remove from Ollama local
     await apiRemoveOllamaModel(name)
     if (mountedRef.current) {
-      // 从 discovered 移除 / Remove from discovered
-      setDiscovered((prev) => prev.filter((d) => d.name !== name))
-      // 如果已注册，也标记为不可用 / If registered, mark as unavailable
-      setModels((prev) =>
-        prev.map((m) =>
-          m.name === name
-            ? { ...m, availability: { status: 'unavailable' as const, latencyMs: null, checkedAt: Date.now(), error: 'Model removed from Ollama' } }
-            : m
-        )
-      )
+      // 2. Find matching CMS record and delete it too
+      const match = models.find((m) => m.name === name)
+      if (match) {
+        try {
+          await apiDeleteModel(match.id)
+        } catch { /* non-blocking */ }
+        setModels((prev) => prev.filter((m) => m.name !== name))
+      }
+      // 3. Also remove from discovered list
+      setDiscovered((prev) => prev.filter((m) => m.name !== name))
     }
-  }, [])
+  }, [models])
 
   // ── 设为默认模型 / Set as default model ──────────────────────────────────
   const setDefaultModel = useCallback(async (modelId: number) => {
@@ -377,11 +417,12 @@ export function useModels(options: UseModelsOptions = {}): UseModelsReturn {
     refresh,
     checkAvailability,
     runDiscovery,
+    registerDiscoveredModel,
     getModelsByProvider,
     getDefaultModel,
     findModel,
     deleteModel,
-    registerDiscoveredModel,
+    registerModel,
     removeOllamaModel,
     setDefaultModel,
   }

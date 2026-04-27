@@ -1,4 +1,4 @@
-﻿/**
+/**
  * features/models/types.ts
  * LLM 模型类型定义
  * 
@@ -84,35 +84,20 @@ export interface ModelOption {
   latencyMs: number | null
 }
 
-// ── Provider 配置（前端展示用）──────────────────────────────────────────────────
-// ── 自动探测到的本地模型（未在 Payload 注册）──────────────────────────────────
+// ── 本地已发现但未注册的模型 / Discovered local model (not yet registered) ────
 export interface DiscoveredLocalModel {
   /** Ollama 模型名称 / Ollama model name (e.g. "llama3.2:3b") */
   name: string
-  /** 模型大小 / Model size (from Ollama API, e.g. "2.0 GB") */
-  size: string | null
-  /** 原始字节大小 / Raw size in bytes */
-  sizeBytes: number | null
-  /** 修改时间 / Modified time */
-  modifiedAt: string | null
-  /** 参数量 / Parameter size (e.g. "7B", "3.2B") */
+  /** 模型参数量 / Parameter size (e.g. "3B") */
   parameterSize: string | null
-  /** 量化级别 / Quantization level (e.g. "Q4_K_M") */
+  /** 量化方式 / Quantization level (e.g. "Q4_K_M") */
   quantization: string | null
-  /** 模型家族 / Model family (e.g. "qwen2", "llama") */
+  /** 模型家族 / Model family (e.g. "llama") */
   family: string | null
-  /** 是否已注册到 Payload CMS / Whether already registered in Payload CMS */
-  isRegistered: false
-}
-
-// ── 探测结果（已注册 + 发现的未注册）──────────────────────────────────────────
-export interface ModelDiscoveryResult {
-  /** 已注册模型（含可用性）/ Registered models with availability */
-  registered: RuntimeModel[]
-  /** 本地存在但未注册的模型 / Locally present but unregistered models */
-  discovered: DiscoveredLocalModel[]
-  /** 检测时间 / Detection timestamp */
-  checkedAt: number
+  /** 文件大小(可读) / File size human-readable (e.g. "2.0 GB") */
+  size: string | null
+  /** 最后修改时间 / Last modified ISO string */
+  modifiedAt: string | null
 }
 
 export interface ProviderConfig {
@@ -153,3 +138,72 @@ export const PROVIDER_CONFIGS: Record<ModelProvider, ProviderConfig> = {
     emoji: '⚙️',
   },
 }
+
+// ── 模型目录 / Model catalog (dynamic from APIs) ──────────────────────────────
+export type CatalogCategory = 'recommended' | 'reasoning' | 'lightweight' | 'specialized'
+
+export interface CatalogModel {
+  /** Ollama 模型名称 / Ollama model name (e.g. "qwen3:4b") */
+  name: string
+  displayName: string
+  family: string
+  category: CatalogCategory
+  parameterSize: string
+  description: string
+  advantages: string[]
+  bestFor: string[]
+  contextWindow: number
+  released: string
+  minRamGb: number
+  languages: string
+  /** HuggingFace 下载数 / HuggingFace download count */
+  downloads: number
+  /** HuggingFace 点赞数 / HuggingFace likes */
+  likes: number
+  /** 开源协议 / Open-source license (e.g. "apache-2.0") */
+  license: string
+  /** HuggingFace 仓库 ID / HuggingFace repository ID */
+  hfRepo: string
+  /** 是否已本地安装 / Whether model is installed locally */
+  installed: boolean
+  /** 模型来源 / Model source ("ollama", "huggingface") */
+  source: string
+}
+
+// ── 标准测试问题 / Standard benchmark questions ────────────────────────────────
+export interface BenchmarkQuestion {
+  id: string
+  question: string
+  category: string
+  expectedLength: string
+  description: string
+}
+
+// ── 测试结果 / Benchmark result ────────────────────────────────────────────────
+export interface BenchmarkResult {
+  model: string
+  question: string
+  answer: string
+  latencyMs: number
+  inputTokens: number
+  outputTokens: number
+  totalTokens: number
+  estimatedCost: number
+  error: string | null
+}
+
+// ── Pull 进度 / Pull progress (SSE events) ─────────────────────────────────────
+export interface PullProgress {
+  status: string
+  /** 已下载字节 / Bytes downloaded so far */
+  completed?: number
+  /** 文件总大小 / Total file size */
+  total?: number
+  /** 摘要 hash / Digest hash */
+  digest?: string
+  /** 错误信息 / Error message */
+  error?: string
+}
+
+// ── 批量测试运行状态 / Batch benchmark run status ──────────────────────────────
+export type BenchmarkRunStatus = 'idle' | 'running' | 'done' | 'error'
