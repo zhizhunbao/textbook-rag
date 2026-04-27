@@ -16,6 +16,7 @@ import { Prompts } from './collections/Prompts'
 import { Queries } from './collections/Queries'
 import { Questions } from './collections/Questions'
 import { Evaluations } from './collections/Evaluations'
+import { GoldenDataset } from './collections/GoldenDataset'
 import { ChatSessions } from './collections/ChatSessions'
 import { ChatMessages } from './collections/ChatMessages'
 import { Media } from './collections/Media'
@@ -47,6 +48,7 @@ export default buildConfig({
     Queries,
     Questions,
     Evaluations,
+    GoldenDataset,
     ChatSessions,
     ChatMessages,
     Reports,

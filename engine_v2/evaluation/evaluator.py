@@ -3,6 +3,7 @@
 Responsibilities:
     - 5-dimensional response evaluation (faithfulness, relevancy, correctness,
       context_relevancy, answer_relevancy)
+    - Four-category FullEvalResult (RAG / LLM / Answer / Question) — EV2-T2-02
     - Question cognitive depth assessment (surface / understanding / synthesis)
     - Question deduplication via semantic similarity
     - Factory function to build evaluator sets by mode
@@ -27,64 +28,17 @@ from llama_index.core.evaluation import (
     RelevancyEvaluator,
     SemanticSimilarityEvaluator,
 )
-from llama_index.core.prompts import (
-    ChatMessage,
-    ChatPromptTemplate,
-    MessageRole,
-)
 
 if TYPE_CHECKING:
     from llama_index.core.query_engine import RetrieverQueryEngine
 
+from engine_v2.evaluation.prompts import DEPTH_EVAL_TEMPLATE
 from engine_v2.query_engine.citation import get_query_engine
 
 
 # ============================================================
-# Constants — Question Depth Evaluation Template
+# Constants
 # ============================================================
-DEPTH_SYSTEM_TEMPLATE = """
-You are an expert evaluator of question quality for a knowledge retrieval system.
-
-You are given a user's question about a topic.
-
-Your job is to assess the **cognitive depth** of the question on a 1–5 scale.
-
-Follow these guidelines for scoring:
-- 1: Surface-level recall — asks for a definition or fact verbatim from the text.
-- 2: Basic comprehension — asks to explain or paraphrase a concept.
-- 3: Application — asks to apply a concept to a new scenario or example.
-- 4: Analysis / Synthesis — asks to compare, contrast, or combine multiple concepts.
-- 5: Evaluation / Creation — asks to critique, evaluate trade-offs, or propose new ideas.
-
-You must return your response in a line with only the score.
-Do not return answers in any other format.
-On a separate line provide your reasoning for the score as well.
-
-Example Response:
-4.0
-This question requires the user to synthesize concepts from multiple sources \
-    and analyze their interactions, demonstrating deep understanding.
-
-"""
-
-DEPTH_USER_TEMPLATE = """
-## Question
-{query}
-
-## Reference Rubric
-{reference_answer}
-
-## Assessment Criteria
-{generated_answer}
-"""
-
-DEPTH_EVAL_TEMPLATE = ChatPromptTemplate(
-    message_templates=[
-        ChatMessage(role=MessageRole.SYSTEM, content=DEPTH_SYSTEM_TEMPLATE),
-        ChatMessage(role=MessageRole.USER, content=DEPTH_USER_TEMPLATE),
-    ]
-)
-
 # Depth label thresholds: score ≥ threshold → label
 DEPTH_THRESHOLDS = {
     "synthesis": 4.0,
@@ -131,6 +85,136 @@ class DedupResult:
     most_similar: str | None  # Most similar existing question text
     similarity_score: float
     suggestion: str  # Suggested direction if duplicate
+
+
+# ============================================================
+# FullEvalResult — four-category scoring (EV2-T2-02)
+# ============================================================
+@dataclass
+class FullEvalResult:
+    """Four-category evaluation result for a single query.
+
+    Groups:
+        🔍 RAG Score   — context_relevancy, relevancy
+        🤖 LLM Score   — faithfulness
+        📝 Answer Score — correctness, answer_relevancy, completeness, clarity
+        ❓ Question     — depth, depth_score
+
+    Aggregates:
+        rag_score     — mean of RAG dimensions
+        llm_score     — faithfulness (only dimension)
+        answer_score  — mean of Answer dimensions
+        overall_score — weighted average of rag + llm + answer
+
+    Retrieval strategy (from TrackedQueryFusionRetriever):
+        retrieval_mode  — "hybrid" | "vector_only"
+        bm25_hit_count  — sources from BM25
+        vector_hit_count — sources from Vector
+        both_hit_count  — sources matched by both
+    """
+
+    query_id: int
+    question: str
+    answer: str
+
+    # ── 🔍 RAG Score ──
+    context_relevancy: float | None = None
+    relevancy: float | None = None
+    rag_score: float | None = None
+
+    # ── 🤖 LLM Score ──
+    faithfulness: float | None = None
+    llm_score: float | None = None
+
+    # ── 📝 Answer Score ──
+    correctness: float | None = None
+    answer_relevancy: float | None = None
+    completeness: float | None = None
+    clarity: float | None = None
+    answer_score: float | None = None
+
+    # ── ❓ Question Score ──
+    question_depth: str | None = None  # surface / understanding / synthesis
+    question_depth_score: float | None = None  # 1.0–5.0 raw
+    question_depth_reasoning: str = ""
+
+    # ── Overall ──
+    overall_score: float | None = None
+    status: str = "pending"  # "pass" | "fail" | "pending"
+
+    # ── Retrieval strategy (EV2-T1) ──
+    retrieval_mode: str = "vector_only"  # "hybrid" | "vector_only"
+    bm25_hit_count: int = 0
+    vector_hit_count: int = 0
+    both_hit_count: int = 0
+
+    # ── 📊 IR Retrieval Metrics (EI-T2, pure math, needs Golden Dataset) ──
+    hit_rate: float | None = None
+    mrr: float | None = None
+    precision_at_k: float | None = None
+    recall_at_k: float | None = None
+    ndcg: float | None = None
+    ir_score: float | None = None  # Mean of 5 IR metrics
+    golden_match_id: int | None = None  # Matched GoldenDataset record ID
+
+    # ── Feedback ──
+    feedback: dict[str, str] = field(default_factory=dict)
+
+
+def compute_aggregate_scores(
+    result: FullEvalResult,
+    weights: dict[str, float] | None = None,
+) -> FullEvalResult:
+    """Compute aggregate scores (rag, llm, answer, overall) in place.
+
+    Args:
+        result: FullEvalResult with individual dimension scores filled.
+        weights: Optional {"rag": w, "llm": w, "answer": w} for overall.
+            Defaults to {"rag": 0.3, "llm": 0.3, "answer": 0.4}.
+
+    Returns:
+        The same result object with aggregate fields populated.
+    """
+    if weights is None:
+        weights = {"rag": 0.3, "llm": 0.3, "answer": 0.4}
+
+    # RAG score = mean(context_relevancy, relevancy)
+    rag_dims = [v for v in (result.context_relevancy, result.relevancy) if v is not None]
+    result.rag_score = (sum(rag_dims) / len(rag_dims)) if rag_dims else None
+
+    # LLM score = faithfulness
+    result.llm_score = result.faithfulness
+
+    # Answer score = mean(correctness, answer_relevancy, completeness, clarity)
+    ans_dims = [
+        v for v in (
+            result.correctness, result.answer_relevancy,
+            result.completeness, result.clarity,
+        ) if v is not None
+    ]
+    result.answer_score = (sum(ans_dims) / len(ans_dims)) if ans_dims else None
+
+    # Overall = weighted average of group scores (including IR when available)
+    group_scores = []
+    group_weights = []
+    for key, score in [("rag", result.rag_score), ("llm", result.llm_score),
+                       ("answer", result.answer_score)]:
+        if score is not None:
+            group_scores.append(score)
+            group_weights.append(weights.get(key, 1.0))
+
+    # IR score participates in overall when Golden Dataset provides it (EI-T2)
+    if result.ir_score is not None:
+        group_scores.append(result.ir_score)
+        group_weights.append(weights.get("ir", 0.2))
+
+    if group_scores:
+        total_w = sum(group_weights)
+        result.overall_score = round(
+            sum(s * w for s, w in zip(group_scores, group_weights)) / total_w, 4
+        )
+
+    return result
 
 
 # ============================================================
