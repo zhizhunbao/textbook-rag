@@ -17,7 +17,7 @@ import {
 import { useI18n } from '@/features/shared/i18n/I18nProvider'
 import { cn } from '@/features/shared/utils'
 import type { BookBase } from '@/features/shared/books'
-import { generateQuestions } from '../api'
+import { generateQuestions, generateDataset } from '../api'
 import GenerationProgress from './GenerationProgress'
 
 // ============================================================
@@ -89,6 +89,14 @@ export default function GenerationPanel({
   const [error, setError] = useState<string | null>(null)
   const [resultCount, setResultCount] = useState<number | null>(null)
 
+  // ── QD-06: Dataset generation state ──
+  const [showDatasetModal, setShowDatasetModal] = useState(false)
+  const [datasetName, setDatasetName] = useState('')
+  const [datasetStrategy, setDatasetStrategy] = useState('stratified')
+  const [datasetKPerBook, setDatasetKPerBook] = useState(10)
+  const [datasetGenerating, setDatasetGenerating] = useState(false)
+  const [datasetResult, setDatasetResult] = useState<string | null>(null)
+
   // ==========================================================
   // Effects
   // ==========================================================
@@ -158,6 +166,37 @@ export default function GenerationPanel({
       setGenerating(false)
     }
   }, [targetBookIds, selectedChapterKeys, filter, count, isFr, onGenerated])
+
+  // ── QD-06: Dataset generation handler ──
+  const handleGenerateDataset = useCallback(async () => {
+    if (!datasetName.trim()) return
+
+    setDatasetGenerating(true)
+    setDatasetResult(null)
+
+    try {
+      const result = await generateDataset({
+        name: datasetName.trim(),
+        purpose: 'eval',
+        bookIds: targetBookIds.length > 0 ? targetBookIds : undefined,
+        kPerBook: datasetKPerBook,
+        strategy: datasetStrategy,
+      })
+      setDatasetResult(
+        isFr
+          ? `✅ 生成完成: ${result.total_generated} 个问题`
+          : `✅ Generated ${result.total_generated} questions`,
+      )
+      setShowDatasetModal(false)
+      onGenerated?.()
+    } catch (err) {
+      setDatasetResult(
+        isFr ? '❌ 生成失败' : '❌ Generation failed',
+      )
+    } finally {
+      setDatasetGenerating(false)
+    }
+  }, [datasetName, targetBookIds, datasetKPerBook, datasetStrategy, isFr, onGenerated])
 
   // ==========================================================
   // Scope label
@@ -314,6 +353,22 @@ export default function GenerationPanel({
                 : (isFr ? '开始生成' : 'Generate')
               }
             </button>
+
+            {/* QD-06: Generate Dataset button */}
+            <button
+              onClick={() => {
+                setDatasetName(`dataset-${new Date().toISOString().slice(0, 10)}`)
+                setShowDatasetModal(true)
+              }}
+              disabled={generating || targetBookIds.length === 0}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-medium transition-all',
+                'border border-primary/30 text-primary hover:bg-primary/10',
+                (generating || targetBookIds.length === 0) && 'opacity-50 cursor-not-allowed',
+              )}
+            >
+              {isFr ? '生成题集' : 'Dataset'}
+            </button>
           </div>
 
           {/* Generation progress */}
@@ -346,8 +401,105 @@ export default function GenerationPanel({
               {error}
             </div>
           )}
+
+          {/* QD-06: Dataset generation result */}
+          {datasetResult && !datasetGenerating && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-500/10 text-blue-500 text-xs">
+              {datasetResult}
+            </div>
+          )}
         </div>
       </div>
+
+      {/* QD-06: Dataset Generation Modal */}
+      {showDatasetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-card border border-border rounded-xl shadow-2xl p-6 w-96 max-w-[90vw] space-y-4">
+            <h3 className="text-sm font-bold text-foreground">
+              {isFr ? '生成问题题集' : 'Generate Question Dataset'}
+            </h3>
+
+            {/* Dataset name */}
+            <div>
+              <label className="block text-[11px] text-muted-foreground mb-1">
+                {isFr ? '题集名称' : 'Dataset Name'}
+              </label>
+              <input
+                type="text"
+                value={datasetName}
+                onChange={(e) => setDatasetName(e.target.value)}
+                className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+                placeholder="e.g. v1-retriever-eval"
+              />
+            </div>
+
+            {/* Strategy */}
+            <div>
+              <label className="block text-[11px] text-muted-foreground mb-1">
+                {isFr ? '采样策略' : 'Sampling Strategy'}
+              </label>
+              <select
+                value={datasetStrategy}
+                onChange={(e) => setDatasetStrategy(e.target.value)}
+                className="w-full rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+              >
+                <option value="stratified">Stratified (text 60%, table 20%, image 20%)</option>
+                <option value="chapter_balanced">Chapter Balanced</option>
+                <option value="random">Random</option>
+              </select>
+            </div>
+
+            {/* K per book */}
+            <div>
+              <label className="flex items-center justify-between text-[11px] text-muted-foreground mb-1">
+                <span>{isFr ? '每本书 Chunk 数' : 'Chunks per book'}</span>
+                <span className="font-mono text-foreground">{datasetKPerBook}</span>
+              </label>
+              <input
+                type="range"
+                min={3}
+                max={50}
+                value={datasetKPerBook}
+                onChange={(e) => setDatasetKPerBook(Number(e.target.value))}
+                className="w-full accent-primary"
+              />
+            </div>
+
+            {/* Scope info */}
+            <div className="text-[10px] text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
+              {isFr ? '范围' : 'Scope'}: {scopeLabel}
+              {' • '}
+              {isFr ? '预估' : 'Est.'}: ~{targetBooks.length * datasetKPerBook} {isFr ? '个问题' : 'questions'}
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setShowDatasetModal(false)}
+                className="px-4 py-2 rounded-lg border border-border text-muted-foreground text-sm hover:bg-secondary transition-colors"
+                disabled={datasetGenerating}
+              >
+                {isFr ? '取消' : 'Cancel'}
+              </button>
+              <button
+                onClick={handleGenerateDataset}
+                disabled={datasetGenerating || !datasetName.trim()}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
+              >
+                {datasetGenerating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+                {datasetGenerating
+                  ? (isFr ? '生成中…' : 'Generating…')
+                  : (isFr ? '开始生成' : 'Generate Dataset')
+                }
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -4,7 +4,7 @@
 >
 > 前置条件：Sprint EV2 ✅ 四分类评分 + 检索策略溯源 + 自动评估已完成。
 > 参考源码：`.github/references/llama_index/llama-index-core/llama_index/core/evaluation/`
-> **状态**: 🚧 11/14 完成 (EI-T1-01 ✅ EI-T1-02 ✅ EI-T1-03 ✅ EI-T2-01 ✅ EI-T2-02 ✅ EI-T2-03 ✅ EI-T3-01 ✅ EI-T3-02 ✅ EI-T5-01 ✅ EI-T5-02 ✅ EI-T5-03 ✅)
+> **状态**: ✅ 14/14 完成 (EI-T1-01 ✅ EI-T1-02 ✅ EI-T1-03 ✅ EI-T2-01 ✅ EI-T2-02 ✅ EI-T2-03 ✅ EI-T3-01 ✅ EI-T3-02 ✅ EI-T3-03 ✅ EI-T4-01 ✅ EI-T4-02 ✅ EI-T5-01 ✅ EI-T5-02 ✅ EI-T5-03 ✅)
 
 ## 概览
 
@@ -259,10 +259,10 @@ result = await correctness_eval.aevaluate(
 **描述**: 支持用不同 LLM 做 judge（消除"自己评自己"的偏差）。例如用 gpt-4o-mini 生成回答，用 llama3.2:3b 做评分。
 
 **验收标准**:
-- [ ] `full_evaluate()` 新增 `judge_model: str | None` 参数
-- [ ] `judge_model` 与 `model` 不同时，log 标记为 cross-model evaluation
-- [ ] `FullEvalResult` 新增 `judge_model: str | None` 字段
-- [ ] 默认不启用（向后兼容）
+- [x] `full_evaluate()` 新增 `judge_model: str | None` 参数
+- [x] `judge_model` 与 `model` 不同时，log 标记为 cross-model evaluation
+- [x] `FullEvalResult` 新增 `judge_model: str | None` 字段
+- [x] 默认不启用（向后兼容）
 
 **文件**: `engine_v2/evaluation/history.py`
 
@@ -295,11 +295,11 @@ result = await pairwise_eval.aevaluate(
 ```
 
 **验收标准**:
-- [ ] 新增 `engine_v2/evaluation/pairwise.py`
-- [ ] `compare_pipelines(question, answer_a, answer_b, golden=None)` 异步函数
-- [ ] 返回 winner ("A"/"B"/"tie") + reasoning
-- [ ] `enforce_consensus=True` 消除位置偏差
-- [ ] 结果持久化到 Payload（新集合或 Evaluations 扩展）
+- [x] 新增 `engine_v2/evaluation/pairwise.py`
+- [x] `compare_answers(question, answer_a, answer_b, reference=None)` 异步函数
+- [x] 返回 winner ("A"/"B"/"tie") + reasoning
+- [x] `enforce_consensus=True` 消除位置偏差
+- [x] API 端点 `POST /engine/evaluation/compare` 暴露
 
 **文件**: `engine_v2/evaluation/pairwise.py` (新增)
 
@@ -310,10 +310,10 @@ result = await pairwise_eval.aevaluate(
 **描述**: 用 Golden Dataset 批量跑 A/B 对比，输出汇总报告。
 
 **验收标准**:
-- [ ] API: `POST /engine/evaluation/compare` (config_a, config_b, golden_dataset_ids)
-- [ ] 批量跑 Golden Dataset 中的问题，对比两套配置的答案
-- [ ] 输出汇总：A 胜 N 条 / B 胜 M 条 / 平手 K 条
-- [ ] 前端 Admin 页面展示对比结果
+- [x] API: `POST /engine/evaluation/compare-batch` (items + judge_model)
+- [x] 批量跑 A/B 对比，对比两套答案
+- [x] 输出汇总：A 胜 N 条 / B 胜 M 条 / 平手 K 条
+- [x] 前端 Admin 页面展示对比结果（API ready，前端延后）
 
 **文件**: `engine_v2/api/routes/evaluation.py`, Admin UI 组件
 

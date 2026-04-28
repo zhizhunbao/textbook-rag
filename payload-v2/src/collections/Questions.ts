@@ -12,6 +12,9 @@ import type { CollectionConfig } from 'payload'
  *   - likes: thumbs-up counter
  *   - category: derived from book category for sidebar filtering
  *   - subcategory: derived from book subcategory
+ *   - sourceChunkId: chunk node ID the question was generated from (QD-01)
+ *   - referenceAnswer: LLM-generated reference answer (QD-01)
+ *   - datasetId: relationship to QuestionSets collection (QD-01)
  */
 export const Questions: CollectionConfig = {
   slug: 'questions',
@@ -79,6 +82,23 @@ export const Questions: CollectionConfig = {
       name: 'questionCategory',
       type: 'text',
       admin: { description: 'AI-inferred topic classification (e.g. "Labour Market", "Housing Starts")' },
+    },
+    // ── QD-01: chunk traceability + reference answer ──
+    {
+      name: 'sourceChunkId',
+      type: 'text',
+      admin: { description: 'ChromaDB chunk node ID that generated this question (QD-01)' },
+    },
+    {
+      name: 'referenceAnswer',
+      type: 'textarea',
+      admin: { description: 'LLM-generated reference answer for auto-evaluation (QD-01)' },
+    },
+    {
+      name: 'datasetId',
+      type: 'relationship',
+      relationTo: 'question-sets',
+      admin: { description: 'QuestionSet this question belongs to (QD-01)' },
     },
     {
       name: 'sourcePage',

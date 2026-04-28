@@ -10,9 +10,17 @@ Endpoints:
     POST   /engine/evaluation/full-evaluate            — four-category evaluation (EV2-T2)
     POST   /engine/evaluation/auto-evaluate            — auto-eval trigger (EV2-T3)
     POST   /engine/evaluation/generate-golden-dataset  — generate Golden Dataset QA pairs (EI-T1-03)
+    POST   /engine/evaluation/compare                  — pairwise A/B comparison (EI-T4-01)
+    POST   /engine/evaluation/compare-batch             — batch A/B comparison (EI-T4-02)
+    POST   /engine/evaluation/retrieval-eval           — retrieval recall evaluation on QuestionSet (QD-10)
     GET    /engine/evaluation/queries                  — list recent Queries for evaluation
 
-Ref: llama_index.core.evaluation — CorrectnessEvaluator, SemanticSimilarityEvaluator
+Ref: llama_index.core.evaluation — CorrectnessEvaluator, SemanticSimilarityEvaluator,
+     PairwiseComparisonEvaluator
+
+Cross-model evaluation (EI-T3-03):
+    full-evaluate accepts optional judge_model to use a different LLM as
+    evaluation judge, eliminating self-evaluation bias.
 """
 
 from __future__ import annotations
@@ -90,6 +98,7 @@ class FullEvalRequest(BaseModel):
 
     query_id: int
     model: str | None = None
+    judge_model: str | None = None  # Cross-model: separate judge LLM (EI-T3-03)
 
 
 class AutoEvalRequest(BaseModel):
@@ -104,6 +113,32 @@ class GenerateGoldenDatasetRequest(BaseModel):
     book_id: str
     n_questions: int = 50
     num_questions_per_chunk: int = 2
+
+
+class PairwiseRequest(BaseModel):
+    """Pairwise A/B comparison request (EI-T4-01)."""
+
+    question: str
+    answer_a: str
+    answer_b: str
+    reference: str | None = None  # Optional Golden Dataset answer
+    judge_model: str | None = None
+
+
+class CompareItemModel(BaseModel):
+    """A single question + two answers for batch comparison."""
+
+    question: str
+    answer_a: str
+    answer_b: str
+    reference: str | None = None
+
+
+class BatchPairwiseRequest(BaseModel):
+    """Batch pairwise A/B comparison request (EI-T4-02)."""
+
+    items: list[CompareItemModel]
+    judge_model: str | None = None
 
 
 # ============================================================
@@ -282,10 +317,18 @@ async def eval_full(req: FullEvalRequest):
     """Four-category evaluation of an existing query (RAG/LLM/Answer/Question).
 
     Returns grouped scores, aggregates, retrieval strategy stats, and status.
+    Supports cross-model evaluation via optional judge_model (EI-T3-03).
     """
-    logger.info("Full-evaluate — query_id={}, model={}", req.query_id, req.model)
+    logger.info(
+        "Full-evaluate — query_id={}, model={}, judge={}",
+        req.query_id, req.model, req.judge_model,
+    )
     try:
-        result = await full_evaluate(query_id=req.query_id, model=req.model)
+        result = await full_evaluate(
+            query_id=req.query_id,
+            model=req.model,
+            judge_model=req.judge_model,
+        )
     except RuntimeError as exc:
         logger.error("full-evaluate failed for query_id={}: {}", req.query_id, exc)
         from fastapi.responses import JSONResponse
@@ -294,6 +337,7 @@ async def eval_full(req: FullEvalRequest):
     return {
         "query_id": result.query_id,
         "question": result.question,
+        "judge_model": result.judge_model,
         "scores": {
             "rag": {
                 "context_relevancy": result.context_relevancy,
@@ -439,3 +483,127 @@ async def generate_golden_dataset_endpoint(
         "created_ids": created_ids,
         "errors": result.errors,
     }
+
+
+# ============================================================
+# Endpoint — Pairwise A/B comparison (EI-T4-01)
+# ============================================================
+@router.post("/compare")
+async def compare_pipelines(req: PairwiseRequest):
+    """Compare two answers via pairwise evaluation.
+
+    Uses PairwiseComparisonEvaluator with enforce_consensus=True
+    (flips answer order and runs twice to eliminate position bias).
+
+    Returns winner ("A" / "B" / "tie") + reasoning.
+    """
+    from engine_v2.evaluation.pairwise import compare_answers
+
+    logger.info(
+        "Pairwise compare — question={}, judge={}",
+        req.question[:60], req.judge_model,
+    )
+
+    result = await compare_answers(
+        question=req.question,
+        answer_a=req.answer_a,
+        answer_b=req.answer_b,
+        reference=req.reference,
+        judge_model=req.judge_model,
+    )
+
+    return {
+        "question": result.question,
+        "winner": result.winner,
+        "score": result.score,
+        "reasoning": result.reasoning,
+        "invalid": result.invalid,
+    }
+
+
+# ============================================================
+# Endpoint — Batch A/B comparison (EI-T4-02)
+# ============================================================
+@router.post("/compare-batch")
+async def compare_batch_endpoint(req: BatchPairwiseRequest):
+    """Batch A/B comparison of multiple question/answer pairs.
+
+    Runs PairwiseComparisonEvaluator on each item sequentially.
+    Returns per-item results + summary (A wins / B wins / ties).
+    """
+    from engine_v2.evaluation.pairwise import CompareItem, compare_batch
+
+    logger.info(
+        "Batch compare — {} items, judge={}",
+        len(req.items), req.judge_model,
+    )
+
+    items = [
+        CompareItem(
+            question=it.question,
+            answer_a=it.answer_a,
+            answer_b=it.answer_b,
+            reference=it.reference,
+        )
+        for it in req.items
+    ]
+
+    result = await compare_batch(items=items, judge_model=req.judge_model)
+
+    return {
+        "summary": {
+            "a_wins": result.a_wins,
+            "b_wins": result.b_wins,
+            "ties": result.ties,
+            "total": result.total,
+            "invalid_count": result.invalid_count,
+        },
+        "results": [
+            {
+                "question": r.question,
+                "winner": r.winner,
+                "score": r.score,
+                "reasoning": r.reasoning,
+                "invalid": r.invalid,
+            }
+            for r in result.results
+        ],
+    }
+
+
+# ============================================================
+# Endpoint — Retrieval Recall evaluation (QD-10)
+# ============================================================
+class RetrievalEvalRequest(BaseModel):
+    """Retrieval recall evaluation on a QuestionSet (QD-10)."""
+
+    dataset_id: int
+    top_k: int = 5
+    reranker: bool = False
+
+
+@router.post("/retrieval-eval")
+async def retrieval_eval_endpoint(req: RetrievalEvalRequest):
+    """Evaluate retrieval recall on a QuestionSet.
+
+    For each question with sourceChunkId, runs the retriever and checks
+    if the source chunk appears in the top_k results.
+
+    Returns hit_rate, mrr, and per-question hit/miss details.
+    """
+    from engine_v2.evaluation.retrieval_evaluator import (
+        evaluate_retrieval_recall,
+    )
+
+    logger.info(
+        "Retrieval eval — dataset_id={}, top_k={}, reranker={}",
+        req.dataset_id, req.top_k, req.reranker,
+    )
+
+    result = await evaluate_retrieval_recall(
+        dataset_id=req.dataset_id,
+        top_k=req.top_k,
+        reranker=req.reranker,
+    )
+
+    return result.to_dict()

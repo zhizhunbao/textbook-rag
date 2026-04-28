@@ -10,9 +10,9 @@
 | **Citation UX 升级** | **7** | **18h** | ✅ 7/7 | 🔄 保留自定义 prompt，不用 CitationQueryEngine |
 | **evaluation 统一评估中枢** | **5** | **13h** | ✅ 5/5 | ✅ 直接使用 LlamaIndex 评估器。🗑️ EV-FE-01 已取消（实时评估不符合 LlamaIndex 离线分析范式） |
 | **chat 持久化** | **4** | **12h** | ✅ 4/4 | — |
-| retrievers UI + Reranker | 4 | 10h | 🚧 1/4 | ⚠️ LLMRerank ✅, 前端 UI 待完善 |
-| home 仪表盘 | 3 | 8h | ❌ 0/3 | — |
-| seed 日志+同步 | 2 | 5h | ❌ 0/2 | — |
+| retrievers UI + Reranker | 4 | 10h | ⏸️ 1/4 | ⏸️ P4 延后 — 纯调试工具，等 S5 智能检索时一并实现 |
+| home 仪表盘 | 3 | 8h | ⏸️ 0/3 | ⏸️ P4 延后 — 纯展示 polish，不解锁新能力 |
+| seed 日志+同步 | 2 | 5h | ⏸️ 0/2 | ⏸️ P4 延后 — 锦上添花，手动同步可用 |
 | **合计** | **30** | **78h** | **21/30** |
 
 ## 质量门禁（每个 Story 交付前必做）
@@ -510,7 +510,7 @@ ChatMessages (slug: 'chat-messages')
 
 ---
 
-## Epic: retrievers UI + Reranker (P1)
+## Epic: retrievers UI + Reranker (⏸️ P4 延后)
 
 ### [S2-BE-05] Reranker NodePostprocessor 接入 ✅
 
@@ -585,7 +585,7 @@ ChatMessages (slug: 'chat-messages')
 
 ---
 
-## Epic: home 仪表盘 (P1)
+## Epic: home 仪表盘 (⏸️ P4 延后)
 
 ### [S2-BE-04] 数据汇总 API
 
@@ -636,7 +636,7 @@ ChatMessages (slug: 'chat-messages')
 
 ---
 
-## Epic: seed 日志+同步 (P2)
+## Epic: seed 日志+同步 (⏸️ P4 延后)
 
 ### [S2-FE-07] 执行日志流
 

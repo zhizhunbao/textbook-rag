@@ -6,7 +6,7 @@
  * CRUD operations via Payload CMS and generation triggers via Engine FastAPI.
  */
 
-import type { Question, GeneratedQuestion, QuestionsApiResponse } from './types'
+import type { Question, GeneratedQuestion, QuestionsApiResponse, QuestionSet, GenerateDatasetResponse } from './types'
 
 const ENGINE = process.env.NEXT_PUBLIC_ENGINE_URL || 'http://localhost:8001'
 
@@ -167,9 +167,94 @@ function mapDoc(d: Record<string, any>): Question {
     scoreClarity: d.scoreClarity ?? null,
     scoreDifficulty: d.scoreDifficulty ?? null,
     scoreOverall: d.scoreOverall ?? null,
+    // QD-01 fields
+    sourceChunkId: d.sourceChunkId ?? null,
+    referenceAnswer: d.referenceAnswer ?? null,
+    datasetId: typeof d.datasetId === 'object' ? d.datasetId?.id ?? null : d.datasetId ?? null,
     evalDepth: d.evalDepth ?? null,
     evalScore: d.evalScore ?? null,
     evalReasoning: d.evalReasoning ?? null,
     createdAt: d.createdAt ?? '',
   }
+}
+
+
+// ── QuestionSet CRUD (Payload CMS REST API) — QD-03 ─────────────────────────
+
+/** Fetch all question sets from Payload CMS */
+export async function fetchQuestionSets(limit = 50): Promise<QuestionSet[]> {
+  const res = await fetch(`/api/question-sets?limit=${limit}&sort=-createdAt`)
+  if (!res.ok) throw new Error(`Failed to fetch question sets: ${res.status}`)
+  const data = await res.json()
+  return (data.docs || []).map((d: Record<string, any>): QuestionSet => ({
+    id: d.id,
+    name: d.name,
+    purpose: d.purpose ?? 'eval',
+    bookIds: d.bookIds ?? null,
+    generationConfig: d.generationConfig ?? null,
+    questionCount: d.questionCount ?? 0,
+    status: d.status ?? 'generating',
+    createdAt: d.createdAt ?? '',
+  }))
+}
+
+/** Create a new question set */
+export async function createQuestionSet(data: {
+  name: string
+  purpose?: string
+  bookIds?: string[]
+  generationConfig?: Record<string, unknown>
+}): Promise<QuestionSet> {
+  const res = await fetch('/api/question-sets', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw new Error(`Failed to create question set: ${res.status}`)
+  const doc = await res.json()
+  return doc.doc
+}
+
+/** Fetch questions by dataset ID */
+export async function fetchQuestionsByDataset(
+  datasetId: number,
+  limit = 500,
+): Promise<Question[]> {
+  const res = await fetch(
+    `/api/questions?where[datasetId][equals]=${datasetId}&limit=${limit}&sort=-scoreOverall`,
+  )
+  if (!res.ok) throw new Error(`Failed to fetch questions by dataset: ${res.status}`)
+  const data: QuestionsApiResponse = await res.json()
+  return data.docs.map(mapDoc)
+}
+
+
+// ── Dataset generation (Engine FastAPI) — QD-05 ─────────────────────────────
+
+/** Trigger batch question dataset generation via engine */
+export async function generateDataset(options: {
+  name: string
+  purpose?: string
+  bookIds?: string[]
+  kPerBook?: number
+  strategy?: string
+}): Promise<GenerateDatasetResponse> {
+  const body: Record<string, unknown> = {
+    name: options.name,
+    purpose: options.purpose ?? 'eval',
+    k_per_book: options.kPerBook ?? 10,
+    strategy: options.strategy ?? 'stratified',
+  }
+  if (options.bookIds?.length) body.book_ids = options.bookIds
+
+  const res = await fetch(`${ENGINE}/engine/questions/generate-dataset`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '')
+    throw new Error(`generate-dataset failed: ${res.status} ${errText}`)
+  }
+  return res.json()
 }

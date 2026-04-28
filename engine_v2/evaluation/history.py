@@ -505,6 +505,7 @@ async def evaluate_batch_from_queries(
 async def full_evaluate(
     query_id: int,
     model: str | None = None,
+    judge_model: str | None = None,
 ) -> "FullEvalResult":
     """Run four-category evaluation on a stored query record.
 
@@ -520,6 +521,9 @@ async def full_evaluate(
     Args:
         query_id: Payload Queries record ID.
         model: Optional LLM model override.
+        judge_model: Optional separate LLM for evaluation (EI-T3-03).
+            When provided and different from model, enables cross-model
+            evaluation to eliminate self-evaluation bias.
 
     Returns:
         FullEvalResult with per-dimension scores, aggregates, and feedback.
@@ -535,16 +539,25 @@ async def full_evaluate(
     from engine_v2.evaluation.retrieval_metrics import compute_retrieval_metrics
     from engine_v2.settings import QUALITY_GUIDELINES
 
-    # Resolve LLM
-    llm_instance = resolve_llm(model=model) if model else None
+    # Resolve LLM for evaluators — prefer judge_model over model (EI-T3-03)
+    effective_judge = judge_model or model
+    llm_instance = resolve_llm(model=effective_judge) if effective_judge else None
     eval_kwargs = {"llm": llm_instance} if llm_instance else {}
+
+    is_cross_model = bool(judge_model and model and judge_model != model)
+    if is_cross_model:
+        logger.info(
+            "Cross-model evaluation: answer by '{}', judged by '{}'",
+            model, judge_model,
+        )
 
     record = await _fetch_query_by_id(query_id)
     contexts = _extract_contexts(record.sources)
 
     logger.info(
-        "Full-evaluate query_id={} — question={}, contexts={}, model={}",
-        query_id, record.question[:60], len(contexts), model or 'default',
+        "Full-evaluate query_id={} — question={}, contexts={}, judge={}",
+        query_id, record.question[:60], len(contexts),
+        effective_judge or 'default',
     )
 
     feedback: dict[str, str] = {}
@@ -679,6 +692,8 @@ async def full_evaluate(
         question_depth=q_depth,
         question_depth_score=q_depth_score,
         question_depth_reasoning=q_depth_reasoning or "",
+        # Cross-model (EI-T3-03)
+        judge_model=judge_model,
         # Retrieval
         retrieval_mode="hybrid" if has_bm25 else "vector_only",
         bm25_hit_count=bm25_hits,
@@ -791,6 +806,8 @@ async def _persist_full_evaluation(
         "ndcg": result.ndcg,
         "irScore": result.ir_score,
         "goldenMatchRef": result.golden_match_id,
+        # Cross-model (EI-T3-03)
+        "judgeModel": result.judge_model,
         # Status
         "status": result.status,
     }

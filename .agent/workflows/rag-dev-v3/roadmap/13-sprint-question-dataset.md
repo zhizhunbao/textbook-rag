@@ -8,11 +8,11 @@
 
 | Epic | Story 数 | 预估总工时 | 完成 | 对齐 |
 |------|----------|-----------|------|------|
-| **Question Set 数据模型** | 3 | 6h | ❌ 0/3 | LlamaIndex `LabelledRagDataset` |
-| **分层采样生成** | 3 | 8h | ❌ 0/3 | LlamaIndex `RagDatasetGenerator` |
-| **共享 QuestionPicker** | 3 | 6h | ❌ 0/3 | 前端组件复用 |
-| **自动检索评估** | 2 | 5h | ❌ 0/2 | LlamaIndex evaluators |
-| **合计** | **11** | **25h** | **0/11** |
+| **Question Set 数据模型** | 3 | 6h | ✅ 3/3 | LlamaIndex `LabelledRagDataset` |
+| **分层采样生成** | 3 | 8h | ✅ 3/3 | LlamaIndex `RagDatasetGenerator` |
+| **共享 QuestionPicker** | 3 | 6h | ✅ 3/3 | 前端组件复用 |
+| **自动检索评估** | 2 | 5h | ✅ 2/2 | LlamaIndex evaluators |
+| **合计** | **11** | **25h** | **✅ 11/11** |
 
 ## 质量门禁
 

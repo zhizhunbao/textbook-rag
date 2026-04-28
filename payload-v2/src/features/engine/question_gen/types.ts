@@ -1,9 +1,10 @@
 /**
  * engine/question_gen/types.ts
  * Aligned with: llama_index.question_gen → engine-v2/question_gen/generator.py
- *               → collections/Questions
+ *               → collections/Questions + collections/QuestionSets
  *
  * Types for AI-generated and user-submitted study questions.
+ * Extended with QD-01 fields: sourceChunkId, referenceAnswer, datasetId.
  */
 
 // ── Question record from Payload CMS ────────────────────────────────────────
@@ -24,6 +25,11 @@ export interface Question {
   scoreClarity: number | null
   scoreDifficulty: number | null
   scoreOverall: number | null
+  // ── QD-01: chunk traceability + reference answer ──
+  sourceChunkId: string | null
+  referenceAnswer: string | null
+  datasetId: number | null
+  // ── Depth evaluation ──
   evalDepth: string | null
   evalScore: number | null
   evalReasoning: string | null
@@ -52,3 +58,23 @@ export interface QuestionsApiResponse {
 }
 
 // NOTE: BookSummary moved to @/features/shared/books as BookBase
+
+// ── QuestionSet from Payload CMS (QD-02) ────────────────────────────────────
+export interface QuestionSet {
+  id: number
+  name: string
+  purpose: 'eval' | 'benchmark' | 'suggested' | 'debug'
+  bookIds: string[] | null
+  generationConfig: Record<string, unknown> | null
+  questionCount: number
+  status: 'generating' | 'ready' | 'archived'
+  createdAt: string
+}
+
+// ── Engine: generate-dataset response shape (QD-05) ─────────────────────
+export interface GenerateDatasetResponse {
+  dataset_id: number
+  name: string
+  total_generated: number
+  status: string
+}

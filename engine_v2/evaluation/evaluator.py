@@ -143,6 +143,7 @@ class FullEvalResult:
     # ── Overall ──
     overall_score: float | None = None
     status: str = "pending"  # "pass" | "fail" | "pending"
+    judge_model: str | None = None  # Cross-model: LLM used as judge (EI-T3-03)
 
     # ── Retrieval strategy (EV2-T1) ──
     retrieval_mode: str = "vector_only"  # "hybrid" | "vector_only"

@@ -27,6 +27,21 @@ GEN_PROMPT_TMPL = PromptTemplate(
 )
 
 
+
+# ============================================================
+# Reference answer generation prompt (QD-05)
+# ============================================================
+REFANSWER_PROMPT_TMPL = PromptTemplate(
+    "You are a textbook study assistant. Given the following textbook excerpt "
+    "and a study question, provide a concise, accurate reference answer using "
+    "ONLY information from the excerpt.\n\n"
+    "## Source Context\n{context}\n\n"
+    "## Question\n{question}\n\n"
+    "Write a clear, factual answer in 2-4 sentences. Cite specific data when available.\n\n"
+    "Answer:"
+)
+
+
 # ============================================================
 # Question scoring prompt (LLM-as-Judge)
 # ============================================================

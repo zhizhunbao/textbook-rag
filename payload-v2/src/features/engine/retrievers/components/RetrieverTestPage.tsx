@@ -25,6 +25,8 @@ import { useI18n } from '@/features/shared/i18n/I18nProvider'
 import { cn } from '@/features/shared/utils'
 import { useBooks } from '@/features/shared/books'
 import { retrieveSearch, type RetrieveResponse, type RetrieveResult } from '../api'
+import QuestionPicker from '@/features/shared/components/QuestionPicker'
+import type { Question } from '@/features/engine/question_gen/types'
 
 // ============================================================
 // Types
@@ -52,6 +54,10 @@ export default function RetrieverTestPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [response, setResponse] = useState<RetrieveResponse | null>(null)
+
+  // ── QuestionPicker state (QD-08) ──
+  const [activeSourceChunkId, setActiveSourceChunkId] = useState<string | null>(null)
+  const [pickerDatasetHint, setPickerDatasetHint] = useState<string | null>(null)
 
   // ── Comparison mode ──
   const [compareMode, setCompareMode] = useState(false)
@@ -195,11 +201,21 @@ export default function RetrieverTestPage() {
         {r.text}
       </p>
 
-      {/* Chunk ID */}
-      <div className="mt-2 pt-1.5 border-t border-border/50">
+      {/* Chunk ID + source hit indicator (QD-08) */}
+      <div className="mt-2 pt-1.5 border-t border-border/50 flex items-center justify-between">
         <span className="text-[9px] text-muted-foreground/60 font-mono truncate block">
           {r.chunk_id}
         </span>
+        {activeSourceChunkId && r.chunk_id === activeSourceChunkId && (
+          <span className="text-[10px] font-semibold text-emerald-500 flex items-center gap-1">
+            ✅ Source Hit
+          </span>
+        )}
+        {activeSourceChunkId && r.chunk_id !== activeSourceChunkId && (
+          <span className="text-[9px] text-muted-foreground/40">
+            ❌
+          </span>
+        )}
       </div>
     </div>
   )
@@ -277,6 +293,23 @@ export default function RetrieverTestPage() {
                   }
                 }}
               />
+            </div>
+
+            {/* QD-08: QuestionPicker — select a test question */}
+            <div>
+              <QuestionPicker
+                bookFilter={selectedBookIds.length > 0 ? selectedBookIds : undefined}
+                onSelect={(q: Question) => {
+                  setQuestion(q.question)
+                  setActiveSourceChunkId(q.sourceChunkId || null)
+                  setPickerDatasetHint(q.datasetId ? `Dataset #${q.datasetId}` : null)
+                }}
+              />
+              {pickerDatasetHint && (
+                <p className="mt-1 text-[10px] text-primary/70">
+                  Question from {pickerDatasetHint}
+                </p>
+              )}
             </div>
 
             {/* Top K slider */}

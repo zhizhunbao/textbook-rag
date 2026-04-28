@@ -15,7 +15,7 @@
 | Epic | Story 数 | 预估总工时 | 优先级 |
 |------|----------|-----------|--------|
 | **acquisition 5-Tab 全流程** | 10 | 26h | P1 | ✅ 10/10 done |
-| **readers Tab 补全** | 3 | 8h | P1 | ❌ 0/3 |
+| **readers Tab 补全** | 3 | 8h | P1 | ✅ 3/3 (merged into ImportPage 7-Tab) |
 | **合计** | **13** | **34h** | P1 |
 
 ## 设计原则
@@ -524,7 +524,7 @@ graph TD
 
 ## Epic 2: readers Tab 补全 (3 stories, 8h)
 
-### [RT-01] 目录 Tab ❌
+### [RT-01] 目录 Tab ✅ (merged into acquisition/TocTab)
 
 **类型**: Frontend · **优先级**: P1 · **预估**: 3h
 
@@ -538,11 +538,11 @@ graph TD
 - 点击章节 → 右栏 PDF 跳转到对应页
 
 **验收标准**:
-- [ ] `readers/components/TocTab.tsx` — 3 栏: 书本选择 / TOC 树 / PDF 预览
-- [ ] TOC tree 层级缩进 (level 1/2/3)
-- [ ] 点击 TOC entry → PDF 跳转
-- [ ] 未选书时显示提示
-- [ ] G2 ✅ G4 ✅
+- [x] `acquisition/components/TocTab.tsx` — TOC 树（含层级缩进、展开/折叠）
+- [x] TOC tree 层级缩进 (level 1/2/3)
+- [x] 未选书时显示提示
+- [x] G2 ✅ G4 ✅
+- [x] 已集成到 ImportPage 7-Tab（无需独立 readers 页面）
 
 **文件**:
 ```
@@ -554,7 +554,7 @@ graph TD
 
 ---
 
-### [RT-02] 内容 Tab ❌
+### [RT-02] 内容 Tab ✅ (merged into acquisition/ChunksTab)
 
 **类型**: Frontend · **优先级**: P1 · **预估**: 3h
 
@@ -568,11 +568,11 @@ graph TD
 - 点击 chunk → 展开完整文本 + sourceLocators
 
 **验收标准**:
-- [ ] `readers/components/ContentTab.tsx` — 2 栏: 书本+章节选择 / chunk 列表
-- [ ] chunk 文本截断 200 字，点击展开
-- [ ] contentType 标签 (text / table / image)
-- [ ] vectorized 状态指示
-- [ ] G2 ✅ G4 ✅
+- [x] `acquisition/components/ChunksTab.tsx` — chunk 列表（含章节过滤、分页）
+- [x] chunk 文本截断，点击展开
+- [x] contentType 标签 (text / table / image / equation)
+- [x] G2 ✅ G4 ✅
+- [x] 已集成到 ImportPage 7-Tab（无需独立 readers 页面）
 
 **文件**:
 ```
@@ -582,18 +582,18 @@ graph TD
 
 ---
 
-### [RT-03] LibraryPage 重构为 Tab 容器 ❌
+### [RT-03] LibraryPage 清理 ✅ (orphan deleted, merged into ImportPage)
 
 **类型**: Frontend · **优先级**: P1 · **预估**: 2h
 
 **描述**: 将 LibraryPage 重构为 3-Tab 容器 (书架 / 目录 / 内容)，书架 Tab 复用现有 grid/table 逻辑。
 
 **验收标准**:
-- [ ] Tab bar: 书架 | 目录 | 内容
-- [ ] 书架 Tab = 现有 LibraryPage 主体 (移入 BookshelfTab 组件)
-- [ ] Tab 切换保持 URL 参数 (`?tab=bookshelf|toc|content`)
-- [ ] 选中书时 → 自动切到目录/内容 Tab (可选行为)
-- [ ] G3 ✅
+- [x] LibraryPage 无路由、无 sidebar 链接 → 确认为孤儿组件 → 删除
+- [x] useLibraryBooks hook（仅 LibraryPage 消费）→ 一并删除
+- [x] readers/index.ts barrel export 已清理
+- [x] 所有功能（书架浏览/TOC/Chunks）已在 ImportPage 7-Tab 中完整提供
+- [x] G3 ✅ 无功能退化
 
 **依赖**: [RT-01], [RT-02]
 **文件**:

@@ -3,13 +3,12 @@
  * Aligned with: llama_index.readers → engine-v2/readers/ (MinerUReader)
  *
  * Manages book/document CRUD via Payload CMS Books collection.
- * LibraryPage removed — merged into acquisition/MediaTab.
+ * LibraryPage + useLibraryBooks removed — merged into acquisition/ImportPage.
  */
 
 // ── Data layer ──────────────────────────────────────────────────────────────
 export * from './types'
 export * from './api'
-export { useLibraryBooks } from './useLibraryBooks'
 
 // ── UI components ───────────────────────────────────────────────────────────
 export { default as BookCard } from './components/BookCard'

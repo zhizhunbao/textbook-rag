@@ -22,6 +22,8 @@ import { cn } from '@/features/shared/utils'
 import { useBooks } from '@/features/shared/books'
 import { useQueryEngine } from '../useQueryEngine'
 import type { QueryRequest, QueryResponse } from '../types'
+import QuestionPicker from '@/features/shared/components/QuestionPicker'
+import type { Question } from '@/features/engine/question_gen/types'
 
 // ============================================================
 // Component
@@ -53,6 +55,10 @@ export default function QueryEnginePage() {
   const [useStreaming, setUseStreaming] = useState(true)
   const [useReranker, setUseReranker] = useState(false)
   const [traceOpen, setTraceOpen] = useState(true)
+
+  // ── QD-09: QuestionPicker state ──
+  const [referenceAnswer, setReferenceAnswer] = useState<string | null>(null)
+  const [showRefAnswer, setShowRefAnswer] = useState(false)
 
   const { books } = useBooks({ status: 'indexed' })
 
@@ -140,6 +146,18 @@ export default function QueryEnginePage() {
                   if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                     handleSubmit(e)
                   }
+                }}
+              />
+            </div>
+
+            {/* QD-09: QuestionPicker — select a test question */}
+            <div>
+              <QuestionPicker
+                bookFilter={selectedBookIds.length > 0 ? selectedBookIds : undefined}
+                onSelect={(q: Question) => {
+                  setQuestion(q.question)
+                  setReferenceAnswer(q.referenceAnswer || null)
+                  setShowRefAnswer(false)
                 }}
               />
             </div>
@@ -317,6 +335,25 @@ export default function QueryEnginePage() {
                     <span className="inline-block w-1.5 h-4 bg-primary/60 animate-pulse ml-0.5 align-text-bottom rounded-sm" />
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* QD-09: Reference answer comparison */}
+            {referenceAnswer && displayText && !loading && (
+              <div className="mt-4 rounded-lg border border-amber-500/20 bg-amber-500/5 p-4">
+                <button
+                  type="button"
+                  onClick={() => setShowRefAnswer(!showRefAnswer)}
+                  className="flex items-center gap-2 text-xs font-semibold text-amber-600 hover:text-amber-500 transition-colors"
+                >
+                  {showRefAnswer ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                  {isFr ? '参考答案对比' : 'Reference Answer Comparison'}
+                </button>
+                {showRefAnswer && (
+                  <div className="mt-2 text-xs text-foreground/80 leading-relaxed whitespace-pre-wrap">
+                    {referenceAnswer}
+                  </div>
+                )}
               </div>
             )}
           </div>
