@@ -19,6 +19,7 @@ import type {
   AvailabilityResult,
   ProviderHealth,
   ModelProvider,
+  ModelType,
   DiscoveredLocalModel,
   CatalogModel,
   CatalogCategory,
@@ -27,7 +28,7 @@ import type {
   PullProgress,
 } from './types'
 
-const ENGINE = process.env.NEXT_PUBLIC_ENGINE_URL || 'http://localhost:8000'
+const ENGINE = process.env.NEXT_PUBLIC_ENGINE_URL || 'http://localhost:8001'
 
 // ── 基础请求工具 / Base request helper ──────────────────────────────────────────
 
@@ -57,12 +58,50 @@ export async function fetchEnabledModels(): Promise<LlmModel[]> {
   return (data.docs || []).map(mapPayloadToLlmModel)
 }
 
+/**
+ * 从 Payload CMS 数据库读取完整目录（无 Engine API 调用）
+ * Fetch the full model catalog directly from Payload CMS DB — no Engine API, no cache.
+ *
+ * Maps LlmModel → CatalogModel so the page.tsx catalog table can render it.
+ * Sorted by: downloads desc, then parameterSize asc (smaller = more accessible).
+ */
+export async function fetchCatalogFromDB(): Promise<CatalogModel[]> {
+  const data = await request<{ docs: any[] }>(
+    '/api/llms?limit=200&sort=-downloads'
+  )
+  const docs: any[] = data.docs || []
+
+  return docs.map((doc): CatalogModel => ({
+    name: doc.name ?? '',
+    displayName: doc.displayName || doc.name || '',
+    family: doc.family || '',
+    category: (doc.category || 'recommended') as CatalogModel['category'],
+    // modelType comes from DB; page.tsx uses this directly for TYPE filter
+    modelType: (doc.modelType || 'chat') as CatalogModel['modelType'],
+    parameterSize: doc.parameterSize || '',
+    description: doc.description || '',
+    advantages: Array.isArray(doc.advantages) ? doc.advantages : [],
+    bestFor: Array.isArray(doc.bestFor) ? doc.bestFor : [],
+    contextWindow: doc.contextWindow ?? 0,
+    released: doc.released || '',
+    minRamGb: doc.minRamGb ?? 0,
+    languages: doc.languages || '',
+    downloads: doc.downloads ?? 0,
+    likes: doc.likes ?? 0,
+    license: doc.license || '',
+    hfRepo: doc.hfRepo || '',
+    installed: doc.installed ?? false,
+    source: doc.source || 'ollama',
+  }))
+}
+
 function mapPayloadToLlmModel(doc: any): LlmModel {
   return {
     id: doc.id,
     name: doc.name ?? '',
     displayName: doc.displayName ?? null,
     provider: (doc.provider ?? 'other') as ModelProvider,
+    modelType: (doc.modelType ?? 'chat') as ModelType,
     description: doc.description ?? null,
     useCases: Array.isArray(doc.useCases) ? doc.useCases : null,
     languages: doc.languages ?? null,
@@ -572,7 +611,11 @@ export async function searchLibrary(opts?: {
   category?: CatalogCategory
   source?: string
   sort?: 'newest' | 'downloads' | 'name'
+  refresh?: boolean
 }): Promise<CatalogModel[]> {
+  if (opts?.refresh) {
+    await refreshLibrary().catch(() => undefined)
+  }
   const params = new URLSearchParams()
   if (opts?.q) params.set('q', opts.q)
   if (opts?.category) params.set('category', opts.category)
@@ -582,6 +625,13 @@ export async function searchLibrary(opts?: {
   const url = `${ENGINE}/engine/llms/library/search${qs ? `?${qs}` : ''}`
   const data = await request<{ models: CatalogModel[]; count: number }>(url)
   return data.models || []
+}
+
+/** Force the Engine to rebuild its live model catalog on the next search. */
+export async function refreshLibrary(): Promise<void> {
+  await request<{ status: string }>(`${ENGINE}/engine/llms/library/refresh`, {
+    method: 'POST',
+  })
 }
 
 /**

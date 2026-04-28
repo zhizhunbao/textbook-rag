@@ -46,7 +46,7 @@ const MODE_COLORS = [
   { border: 'border-rose-500/30', bg: 'bg-rose-500/10', text: 'text-rose-400' },
 ]
 
-const ENGINE = process.env.NEXT_PUBLIC_ENGINE_URL || 'http://localhost:8000'
+const ENGINE = process.env.NEXT_PUBLIC_ENGINE_URL || 'http://localhost:8001'
 
 // ============================================================
 // Component

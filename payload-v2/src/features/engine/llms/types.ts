@@ -9,6 +9,10 @@
 // ── Provider 枚举 ──────────────────────────────────────────────────────────────
 export type ModelProvider = 'ollama' | 'azure_openai' | 'openai' | 'other'
 
+// ── 模型类型枚举 / Model capability type ─────────────────────────────────────
+export type ModelType = 'chat' | 'embedding' | 'vision'
+
+
 // ── 可用性状态 ─────────────────────────────────────────────────────────────────
 export type AvailabilityStatus = 'available' | 'unavailable' | 'checking' | 'unknown'
 
@@ -30,6 +34,8 @@ export interface LlmModel {
   name: string
   displayName: string | null
   provider: ModelProvider
+  /** Chat = text generation, Embedding = vector retrieval, Vision = multimodal */
+  modelType: ModelType
   description: string | null
   useCases: string[] | null
   languages: string | null
@@ -139,7 +145,35 @@ export const PROVIDER_CONFIGS: Record<ModelProvider, ProviderConfig> = {
   },
 }
 
-// ── 模型目录 / Model catalog (dynamic from APIs) ──────────────────────────────
+export interface ModelTypeConfig {
+  label: string
+  emoji: string
+  color: string
+  bg: string
+}
+
+export const MODEL_TYPE_CONFIGS: Record<ModelType, ModelTypeConfig> = {
+  chat: {
+    label: 'Chat / LLM',
+    emoji: '💬',
+    color: 'text-indigo-400',
+    bg: 'bg-indigo-500/10',
+  },
+  embedding: {
+    label: 'Embedding',
+    emoji: '🔢',
+    color: 'text-amber-400',
+    bg: 'bg-amber-500/10',
+  },
+  vision: {
+    label: 'Vision / VLM',
+    emoji: '👁️',
+    color: 'text-rose-400',
+    bg: 'bg-rose-500/10',
+  },
+}
+
+
 export type CatalogCategory = 'recommended' | 'reasoning' | 'lightweight' | 'specialized'
 
 export interface CatalogModel {
@@ -148,6 +182,8 @@ export interface CatalogModel {
   displayName: string
   family: string
   category: CatalogCategory
+  /** 模型功能类型 / Model capability type */
+  modelType: ModelType
   parameterSize: string
   description: string
   advantages: string[]

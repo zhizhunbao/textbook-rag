@@ -14,7 +14,7 @@ import type {
   TocEntry,
 } from './types'
 
-const ENGINE = process.env.NEXT_PUBLIC_ENGINE_URL || 'http://localhost:8000'
+const ENGINE = process.env.NEXT_PUBLIC_ENGINE_URL || 'http://localhost:8001'
 
 /** Generic JSON fetch with error handling. */
 async function request<T>(url: string, init?: RequestInit): Promise<T> {

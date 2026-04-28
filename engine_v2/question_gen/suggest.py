@@ -84,7 +84,7 @@ def fetch_suggested_questions(
         resp.raise_for_status()
         docs = resp.json().get("docs", [])
     except Exception as e:
-        logger.warning("Failed to fetch questions from Payload: %s", e)
+        logger.warning("Failed to fetch questions from Payload: {}", e)
         return []
 
     questions = [
@@ -100,5 +100,5 @@ def fetch_suggested_questions(
         for d in docs
     ]
 
-    logger.info("Fetched %d suggested questions (book_id=%s)", len(questions), book_id)
+    logger.info("Fetched {} suggested questions (book_id={})", len(questions), book_id)
     return questions

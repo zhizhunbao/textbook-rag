@@ -3,7 +3,8 @@ import { isEditorOrAdmin } from '../access/isEditorOrAdmin'
 import { isAdmin } from '../access/isAdmin'
 
 /**
- * Llms — LLM model registry.
+ * Llms — Unified model registry for all model types.
+ * Covers Chat/LLM, Embedding, and Vision/VLM models.
  * Aligned with engine-v2/llms/ module.
  */
 export const Llms: CollectionConfig = {
@@ -44,6 +45,18 @@ export const Llms: CollectionConfig = {
         { label: 'Other', value: 'other' },
       ],
       defaultValue: 'ollama',
+    },
+    {
+      name: 'modelType',
+      type: 'select',
+      required: true,
+      options: [
+        { label: 'Chat / LLM', value: 'chat' },
+        { label: 'Embedding', value: 'embedding' },
+        { label: 'Vision / VLM', value: 'vision' },
+      ],
+      defaultValue: 'chat',
+      admin: { description: 'Model capability type: Chat for generation, Embedding for retrieval, Vision for multimodal.' },
     },
 
     // ── Capabilities ──
@@ -138,6 +151,116 @@ export const Llms: CollectionConfig = {
       type: 'number',
       defaultValue: 0,
       admin: { description: 'Display order (lower = first)' },
+    },
+
+    // ── Catalog Metadata (synced from engine via POST /api/llms/sync-catalog) ──
+    {
+      name: 'family',
+      type: 'text',
+      admin: {
+        description: 'Model family (e.g. "qwen", "llama"). Auto-filled by catalog sync.',
+        position: 'sidebar',
+      },
+    },
+    {
+      name: 'category',
+      type: 'select',
+      options: [
+        { label: 'Recommended', value: 'recommended' },
+        { label: 'Reasoning', value: 'reasoning' },
+        { label: 'Lightweight', value: 'lightweight' },
+        { label: 'Specialized', value: 'specialized' },
+      ],
+      admin: {
+        description: 'Catalog category. Auto-filled by catalog sync.',
+        position: 'sidebar',
+      },
+    },
+    {
+      name: 'installed',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        description: 'Whether the model is currently installed in local Ollama. Auto-filled.',
+        position: 'sidebar',
+      },
+    },
+    {
+      name: 'source',
+      type: 'select',
+      options: [
+        { label: 'Ollama Library', value: 'ollama' },
+        { label: 'HuggingFace', value: 'huggingface' },
+      ],
+      defaultValue: 'ollama',
+      admin: {
+        description: 'Where this model was discovered from. Auto-filled.',
+        position: 'sidebar',
+      },
+    },
+    {
+      name: 'released',
+      type: 'text',
+      admin: {
+        description: 'Release month (e.g. "2025-04"). Auto-filled by catalog sync.',
+        position: 'sidebar',
+      },
+    },
+    {
+      name: 'downloads',
+      type: 'number',
+      admin: {
+        description: 'HuggingFace download count. Auto-filled by catalog sync.',
+        position: 'sidebar',
+      },
+    },
+    {
+      name: 'likes',
+      type: 'number',
+      admin: {
+        description: 'HuggingFace likes. Auto-filled by catalog sync.',
+        position: 'sidebar',
+      },
+    },
+    {
+      name: 'license',
+      type: 'text',
+      admin: {
+        description: 'License identifier (e.g. "apache-2.0"). Auto-filled.',
+        position: 'sidebar',
+      },
+    },
+    {
+      name: 'hfRepo',
+      type: 'text',
+      admin: {
+        description: 'HuggingFace repo ID (e.g. "Qwen/Qwen3-8B"). Auto-filled.',
+        position: 'sidebar',
+      },
+    },
+    {
+      name: 'advantages',
+      type: 'json',
+      admin: {
+        description: 'Advantage tags (e.g. ["Vision capable", "Tool calling"]). Auto-filled.',
+      },
+    },
+    {
+      name: 'bestFor',
+      type: 'json',
+      admin: {
+        description: 'Best-use-case tags aligned with personas. Auto-filled.',
+      },
+    },
+  ],
+  endpoints: [
+    {
+      path: '/sync-catalog',
+      method: 'post',
+      handler: async (req) => {
+        const { syncCatalogEndpoint } = await import('./endpoints/sync-catalog')
+        return syncCatalogEndpoint(req)
+      },
     },
   ],
 }

@@ -9,3 +9,4 @@
 export { importUrlEndpoint } from './import-url'
 export { seedEndpoint } from './seed'
 export { syncEngineEndpoint } from './sync-engine'
+export { syncCatalogEndpoint } from './sync-catalog'

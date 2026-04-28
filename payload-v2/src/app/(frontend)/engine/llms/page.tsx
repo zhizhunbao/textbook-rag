@@ -6,58 +6,17 @@ import {
   Cpu, Globe, Zap, DollarSign, Calendar,
   Search, Wifi, WifiOff, HardDrive, Clock, Trash2, Plus, Star,
   BookOpen, FlaskConical, Download, Package, MessageSquare, Code, Lightbulb, Feather,
-  Sparkles, Dog, Fish, Gem, Microscope, Wind, Compass, Wheat, Mouse, BookText, Cog,
-  ChevronDown,
+  Microscope, Compass, ChevronDown,
 } from 'lucide-react'
 import { cn } from '@/features/shared/utils'
 import { SidebarLayout, type ViewMode, type SidebarItem } from '@/features/shared/components/SidebarLayout'
 import { useModels } from '@/features/engine/llms/useModels'
 import type { CatalogModel, ModelProvider, PullProgress } from '@/features/engine/llms/types'
 import { PROVIDER_CONFIGS } from '@/features/engine/llms/types'
-import { searchLibrary, pullModel, registerModel } from '@/features/engine/llms/api'
+import { fetchCatalogFromDB, pullModel, registerModel } from '@/features/engine/llms/api'
 import { useQueryState } from '@/features/shared/hooks/useQueryState'
 import { useI18n } from '@/features/shared/i18n'
-import { CatalogCard } from '@/features/engine/llms/components/CatalogCard'
 import { BenchmarkConsole } from '@/features/engine/llms/components/BenchmarkConsole'
-
-// ── Family display configs (SVG icons from Lucide) ───────────────────────────
-interface FamilyConfig { label: string; icon: ReactNode; color: string }
-
-const FAMILY_CONFIGS: Record<string, FamilyConfig> = {
-  qwen: { label: 'Qwen', icon: <Sparkles className="h-4 w-4" />, color: 'text-blue-400' },
-  llama: { label: 'Llama', icon: <Dog className="h-4 w-4" />, color: 'text-orange-400' },
-  deepseek: { label: 'DeepSeek', icon: <Fish className="h-4 w-4" />, color: 'text-cyan-400' },
-  gemma: { label: 'Gemma', icon: <Gem className="h-4 w-4" />, color: 'text-pink-400' },
-  phi: { label: 'Phi', icon: <Microscope className="h-4 w-4" />, color: 'text-emerald-400' },
-  mistral: { label: 'Mistral', icon: <Wind className="h-4 w-4" />, color: 'text-indigo-400' },
-  nomic: { label: 'Nomic', icon: <Compass className="h-4 w-4" />, color: 'text-teal-400' },
-  mxbai: { label: 'MixedBread', icon: <Wheat className="h-4 w-4" />, color: 'text-amber-400' },
-  smollm2: { label: 'SmolLM', icon: <Mouse className="h-4 w-4" />, color: 'text-violet-400' },
-  reader: { label: 'Jina', icon: <BookText className="h-4 w-4" />, color: 'text-rose-400' },
-}
-
-const DEFAULT_FAMILY_CONFIG: FamilyConfig = { label: 'Other', icon: <Cog className="h-4 w-4" />, color: 'text-gray-400' }
-
-/** Normalize family key for grouping (e.g. "qwen3" → "qwen", "llama32" → "llama") */
-function normalizeFamily(family: string): string {
-  const f = family.toLowerCase().replace(/[^a-z]/g, '')
-  if (f.startsWith('qwen')) return 'qwen'
-  if (f.startsWith('llama')) return 'llama'
-  if (f.startsWith('gemma')) return 'gemma'
-  if (f.startsWith('phi')) return 'phi'
-  if (f.startsWith('deepseek')) return 'deepseek'
-  if (f.startsWith('mistral') || f.startsWith('devstral')) return 'mistral'
-  if (f.startsWith('nomic')) return 'nomic'
-  if (f.startsWith('mxbai')) return 'mxbai'
-  if (f.startsWith('smollm')) return 'smollm2'
-  if (f.startsWith('reader')) return 'reader'
-  return f
-}
-
-function getFamilyConfig(family: string): FamilyConfig {
-  const key = normalizeFamily(family)
-  return FAMILY_CONFIGS[key] || DEFAULT_FAMILY_CONFIG
-}
 
 type FilterKey = 'all' | 'installed' | 'benchmark' | string // string for family keys
 
@@ -98,6 +57,75 @@ const SOURCE_OPTIONS: SourceOption[] = [
   { key: 'huggingface', label: 'HuggingFace', labelZh: 'HuggingFace', labelFr: 'HuggingFace' },
 ]
 
+// ── Type filter options ──────────────────────────────────────────────────────
+interface TypeOption {
+  key: string
+  label: string
+  labelZh: string
+  labelFr: string
+}
+
+const TYPE_OPTIONS: TypeOption[] = [
+  { key: 'all', label: 'All Types', labelZh: '全部类型', labelFr: 'Tous les types' },
+  { key: 'chat', label: 'Chat / LLM', labelZh: '对话生成 (LLM)', labelFr: 'Chat / LLM' },
+  { key: 'embedding', label: 'Embedding', labelZh: '向量嵌入 (Embedding)', labelFr: 'Embedding' },
+  { key: 'vision', label: 'Vision / VLM', labelZh: '视觉看图 (VLM)', labelFr: 'Vision / VLM' },
+]
+// ── Family descriptions (shown as info bar when a family is selected) ─────────
+const FAMILY_INFO: Record<string, { en: string; zh: string; badge: string }> = {
+  qwen: {
+    badge: '🇨🇳 Alibaba',
+    en: 'Qwen (Tongyi Qianwen) is Alibaba\'s flagship LLM family. Strong at Chinese + English, long context (128K+), tool calling, and RAG workloads. Qwen3 is the latest dense series; Qwen3.6 is a MoE variant.',
+    zh: 'Qwen（通义千问）是阿里巴巴旗舰大模型系列。中英文双语能力突出，支持长上下文（128K+）、工具调用与 RAG。Qwen3 为最新密集版，Qwen3.6 为 MoE 架构。',
+  },
+  llama: {
+    badge: '🇺🇸 Meta',
+    en: 'LLaMA (Large Language Model Meta AI) is Meta\'s open-weight model series. Llama 3.x is the current generation, widely used as a base for fine-tuning and research.',
+    zh: 'LLaMA 是 Meta 开源权重大模型系列。Llama 3.x 是现役版本，被广泛用于微调和学术研究。',
+  },
+  gemma: {
+    badge: '🇺🇸 Google',
+    en: 'Gemma is Google\'s family of lightweight open models. Gemma 4 supports multimodal inputs and is optimised for on-device and edge deployment.',
+    zh: 'Gemma 是 Google 的轻量级开放模型系列。Gemma 4 支持多模态输入，针对本地和边缘设备部署优化。',
+  },
+  phi: {
+    badge: '🇺🇸 Microsoft',
+    en: 'Phi is Microsoft\'s small-but-capable model family. Phi-4 achieves near-frontier reasoning at 14B parameters, making it ideal for resource-constrained environments.',
+    zh: 'Phi 是微软的高性能小模型系列。Phi-4 以 140 亿参数实现接近前沿的推理能力，适合资源受限场景。',
+  },
+  deepseek: {
+    badge: '🇨🇳 DeepSeek',
+    en: 'DeepSeek is a Chinese AI lab\'s model series. DeepSeek-R1 excels at step-by-step reasoning and math, rivaling much larger models in benchmarks.',
+    zh: 'DeepSeek 是中国 AI 实验室发布的模型系列。DeepSeek-R1 在数学推理和逐步思考方面表现突出，性能媲美更大的模型。',
+  },
+  mistral: {
+    badge: '🇫🇷 Mistral AI',
+    en: 'Mistral AI is a French startup specialising in efficient transformer models. Known for strong instruction-following and multilingual performance at smaller parameter counts.',
+    zh: 'Mistral AI 是法国 AI 创业公司，专注高效 Transformer 模型，以较少参数实现强指令跟随和多语言能力。',
+  },
+  llava: {
+    badge: '👁️ Vision',
+    en: 'LLaVA (Large Language and Vision Assistant) is a multimodal model series that connects vision encoders with language models for image understanding.',
+    zh: 'LLaVA 是连接视觉编码器与语言模型的多模态系列，支持图片理解和视觉问答。',
+  },
+  nomic: {
+    badge: '🔢 Embedding',
+    en: 'Nomic Embed is a high-performance text embedding model optimised for RAG retrieval. Supports 8K token context — much longer than most embedding models.',
+    zh: 'Nomic Embed 是专为 RAG 检索优化的高性能文本嵌入模型，支持 8K token 上下文，远超大多数 Embedding 模型。',
+  },
+  bge: {
+    badge: '🔢 Embedding',
+    en: 'BGE (BAAI General Embedding) is BAAI\'s embedding model series. BGE-M3 supports 100+ languages and multiple retrieval modes (dense, sparse, multi-vector).',
+    zh: 'BGE（BAAI 通用嵌入）是北京人工智能研究院的 Embedding 系列。BGE-M3 支持 100+ 语言和多种检索模式。',
+  },
+  mxbai: {
+    badge: '🔢 Embedding',
+    en: 'mxbai-embed by Mixedbread AI is a state-of-the-art embedding model that outperforms OpenAI text-embedding-3-large on MTEB at a fraction of the cost.',
+    zh: 'mxbai-embed 由 Mixedbread AI 开发，在 MTEB 基准上超越 OpenAI text-embedding-3-large，成本极低。',
+  },
+}
+
+
 export default function Page() {
   return (
     <Suspense>
@@ -121,20 +149,20 @@ function LlmsPageInner() {
   } = useModels({ autoLoad: true, autoCheck: true, pollInterval: 0 })
 
   const [filter, setFilter] = useQueryState('filter', 'all') as [FilterKey, (v: string) => void]
-  const [viewMode, setViewMode] = useQueryState('view', 'table') as [ViewMode, (v: string) => void]
   const [role, setRole] = useState('all')
   const [sourceFilter, setSourceFilter] = useState('all')
+  const [typeFilter, setTypeFilter] = useState('all')
 
   // ── Catalog state ──────────────────────────────────────────────────────────
   const [catalog, setCatalog] = useState<CatalogModel[]>([])
   const [catalogLoading, setCatalogLoading] = useState(false)
   const [catalogLoaded, setCatalogLoaded] = useState(false)
 
-  // Load catalog on mount (not lazily)
+  // Load catalog on mount — reads directly from Payload CMS DB, no Engine API call.
   useEffect(() => {
     if (catalogLoaded || catalogLoading) return
     setCatalogLoading(true)
-    searchLibrary()
+    fetchCatalogFromDB()
       .then((data) => {
         setCatalog(data)
         setCatalogLoaded(true)
@@ -143,27 +171,54 @@ function LlmsPageInner() {
       .finally(() => setCatalogLoading(false))
   }, [catalogLoaded, catalogLoading])
 
-  // Reload catalog when models change (e.g. after pull)
+  // Reload catalog (e.g. after Sync CMS, pull, or remove).
   const reloadCatalog = useCallback(() => {
     setCatalogLoading(true)
-    searchLibrary()
+    fetchCatalogFromDB()
       .then(setCatalog)
       .catch(() => { })
       .finally(() => setCatalogLoading(false))
   }, [])
 
+  // ── Sync catalog → Payload CMS ─────────────────────────────────────────────
+  const [syncing, setSyncing] = useState(false)
+  const [syncResult, setSyncResult] = useState<{ ok: boolean; msg: string } | null>(null)
+
+  const handleSync = useCallback(async () => {
+    setSyncing(true)
+    setSyncResult(null)
+    try {
+      const res = await fetch('/api/llms/sync-catalog', { method: 'POST', credentials: 'include' })
+      const data = await res.json()
+      if (data.success) {
+        const prunedPart = data.pruned > 0 ? ` · ${data.pruned} pruned` : ''
+        setSyncResult({ ok: true, msg: `+${data.created} created · ${data.updated} updated · ${data.skipped ?? 0} skipped${prunedPart}` })
+        void refresh()       // refresh registered models count in sidebar
+        reloadCatalog()      // reload catalog table from DB (now includes new models)
+      } else {
+        setSyncResult({ ok: false, msg: data.error || 'Sync failed' })
+      }
+    } catch (err) {
+      setSyncResult({ ok: false, msg: err instanceof Error ? err.message : 'Network error' })
+    } finally {
+      setSyncing(false)
+      // Auto-clear toast after 4s
+      setTimeout(() => setSyncResult(null), 4000)
+    }
+  }, [refresh, reloadCatalog])
+
   // ── Computed: group catalog by normalized family ────────────────────────────
   const familyGroups = useMemo(() => {
-    const groups = new Map<string, FamilyConfig & { count: number; installed: number }>()
+    const groups = new Map<string, { label: string; count: number; installed: number }>()
     for (const m of catalog) {
-      const key = normalizeFamily(m.family)
-      const cfg = getFamilyConfig(m.family)
+      const key = m.family?.toLowerCase() || 'other'
+      const label = m.family ? m.family.charAt(0).toUpperCase() + m.family.slice(1) : 'Other'
       const existing = groups.get(key)
       if (existing) {
         existing.count++
         if (m.installed) existing.installed++
       } else {
-        groups.set(key, { ...cfg, count: 1, installed: m.installed ? 1 : 0 })
+        groups.set(key, { label, count: 1, installed: m.installed ? 1 : 0 })
       }
     }
     // Sort by count (most models first)
@@ -175,14 +230,21 @@ function LlmsPageInner() {
 
   // ── Filter catalog models ──────────────────────────────────────────────────
   const displayModels = useMemo(() => {
+    // Step 0: hide "generic alias" entries — uninstalled models without a concrete
+    // parameter size (e.g. bare "qwen3.6" or "qwen3.6:latest" with no "7B" / "14B").
+    // Installed models are always shown regardless.
+    const hasConcreteSize = (m: CatalogModel) =>
+      m.installed || (!!m.parameterSize && /\d/.test(m.parameterSize))
+    const validCatalog = catalog.filter(hasConcreteSize)
+
     // Step 1: sidebar filter
     let filtered: CatalogModel[]
     if (filter === 'installed') {
-      filtered = catalog.filter((m) => m.installed)
+      filtered = validCatalog.filter((m) => m.installed)
     } else if (filter === 'all' || filter === 'benchmark') {
-      filtered = catalog
+      filtered = validCatalog
     } else {
-      filtered = catalog.filter((m) => normalizeFamily(m.family) === filter)
+      filtered = validCatalog.filter((m) => (m.family?.toLowerCase() || 'other') === filter)
     }
     // Step 2: persona/role filter
     if (role !== 'all') {
@@ -198,8 +260,20 @@ function LlmsPageInner() {
     if (sourceFilter !== 'all') {
       filtered = filtered.filter((m) => m.source === sourceFilter)
     }
-    return filtered
-  }, [catalog, filter, role, sourceFilter])
+    // Step 4: type filter — use modelType field from DB directly
+    if (typeFilter !== 'all') {
+      filtered = filtered.filter((m) => m.modelType === typeFilter)
+    }
+    // Step 5: prefer locally pullable Ollama models, then newest/ranking.
+    return [...filtered].sort((a, b) => {
+      if (a.installed !== b.installed) return a.installed ? -1 : 1
+      if (a.source !== b.source) return a.source === 'ollama' ? -1 : 1
+      const dateA = Number((a.released || '').replace('-', '')) || 0
+      const dateB = Number((b.released || '').replace('-', '')) || 0
+      if (dateA !== dateB) return dateB - dateA
+      return (b.likes || 0) - (a.likes || 0)
+    })
+  }, [catalog, filter, role, sourceFilter, typeFilter])
 
   // ── Sidebar items ──────────────────────────────────────────────────────────
   const sidebarItems = useMemo<SidebarItem[]>(() => {
@@ -228,7 +302,6 @@ function LlmsPageInner() {
           label: group.label,
           count: group.count,
           dividerBefore: first,
-          icon: <span className={cn('shrink-0', group.color)}>{group.icon}</span>,
         })
         first = false
       }
@@ -280,11 +353,41 @@ function LlmsPageInner() {
         </div>
       }
       subtitle={subtitle}
-      showViewToggle={filter !== 'benchmark'}
-      viewMode={viewMode}
-      onViewModeChange={setViewMode}
+      showViewToggle={false}
       toolbar={
         <div className="flex items-center gap-2">
+          {/* Sync to CMS */}
+          <div className="relative">
+            <button
+              onClick={handleSync}
+              disabled={syncing}
+              className={cn(
+                'inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors border',
+                syncing
+                  ? 'opacity-60 cursor-not-allowed border-border text-muted-foreground'
+                  : 'border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50',
+              )}
+              title={isFr ? 'Synchroniser vers Payload CMS' : 'Sync catalog to Payload CMS'}
+            >
+              {syncing
+                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                : <Package className="h-3.5 w-3.5" />}
+              {isFr ? 'Sync CMS' : 'Sync CMS'}
+            </button>
+            {syncResult && (
+              <div className={cn(
+                'absolute right-0 top-full mt-1.5 z-50 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap shadow-lg border',
+                syncResult.ok
+                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                  : 'bg-red-500/10 text-red-400 border-red-500/20',
+              )}>
+                {syncResult.ok
+                  ? <><CheckCircle2 className="inline h-3 w-3 mr-1" />{syncResult.msg}</>
+                  : <><XCircle className="inline h-3 w-3 mr-1" />{syncResult.msg}</>}
+              </div>
+            )}
+          </div>
+          {/* Refresh */}
           <button
             onClick={() => { reloadCatalog(); void refresh() }}
             className="p-2 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
@@ -313,70 +416,70 @@ function LlmsPageInner() {
       ) : (
         /* ── Catalog view ── */
         <>
-          {/* Filter dropdowns: Persona + Source / 角色 + 来源 筛选 */}
-          <div className="flex items-center gap-3 mb-4 flex-wrap">
-            {/* Persona dropdown / 角色下拉框 */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-muted-foreground">
-                {isFr ? 'Persona' : 'Persona'}
-              </span>
-              <div className="relative">
-                <select
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                  className={cn(
-                    'appearance-none pl-3 pr-7 py-1.5 rounded-lg text-xs font-medium transition-all border cursor-pointer',
-                    'bg-card/80 text-foreground border-border hover:border-primary/40 focus:border-primary/60',
-                    'focus:outline-none focus:ring-1 focus:ring-primary/30',
-                    role !== 'all' && 'border-primary/30 bg-primary/10 text-primary',
-                  )}
-                >
-                  {ROLE_OPTIONS.map((opt) => (
-                    <option key={opt.key} value={opt.key}>
-                      {isFr ? opt.labelFr : opt.label}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
+          {/* Filters: Persona, Source, Type as rows of pills */}
+          <div className="flex flex-col gap-3 mb-5 bg-card/30 p-3 rounded-lg border border-border/50">
+            {/* Persona row */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[11px] font-medium text-muted-foreground w-14 shrink-0 uppercase tracking-wider">{isFr ? 'Persona' : 'Persona'}</span>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {ROLE_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.key}
+                    onClick={() => setRole(opt.key)}
+                    className={cn(
+                      'px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors border',
+                      role === opt.key
+                        ? 'bg-primary/10 text-primary border-primary/20'
+                        : 'bg-card/50 text-muted-foreground border-border hover:border-primary/30 hover:text-foreground'
+                    )}
+                  >
+                    {isFr ? opt.labelFr : opt.label}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Source dropdown / 来源下拉框 */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-muted-foreground">
-                {isFr ? 'Source' : 'Source'}
-              </span>
-              <div className="relative">
-                <select
-                  value={sourceFilter}
-                  onChange={(e) => setSourceFilter(e.target.value)}
-                  className={cn(
-                    'appearance-none pl-3 pr-7 py-1.5 rounded-lg text-xs font-medium transition-all border cursor-pointer',
-                    'bg-card/80 text-foreground border-border hover:border-primary/40 focus:border-primary/60',
-                    'focus:outline-none focus:ring-1 focus:ring-primary/30',
-                    sourceFilter !== 'all' && 'border-primary/30 bg-primary/10 text-primary',
-                  )}
-                >
-                  {SOURCE_OPTIONS.map((opt) => (
-                    <option key={opt.key} value={opt.key}>
-                      {isFr ? opt.labelFr : opt.label}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
+            {/* Source row */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[11px] font-medium text-muted-foreground w-14 shrink-0 uppercase tracking-wider">{isFr ? 'Source' : 'Source'}</span>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {SOURCE_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.key}
+                    onClick={() => setSourceFilter(opt.key)}
+                    className={cn(
+                      'px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors border',
+                      sourceFilter === opt.key
+                        ? 'bg-primary/10 text-primary border-primary/20'
+                        : 'bg-card/50 text-muted-foreground border-border hover:border-primary/30 hover:text-foreground'
+                    )}
+                  >
+                    {isFr ? opt.labelFr : opt.label}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Active filter count badge */}
-            {(role !== 'all' || sourceFilter !== 'all') && (
-              <button
-                onClick={() => { setRole('all'); setSourceFilter('all') }}
-                className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-              >
-                <XCircle className="h-3 w-3" />
-                {isFr ? 'Réinitialiser' : 'Clear filters'}
-              </button>
-            )}
+            {/* Type row */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[11px] font-medium text-muted-foreground w-14 shrink-0 uppercase tracking-wider">{isFr ? 'Type' : 'Type'}</span>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {TYPE_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.key}
+                    onClick={() => setTypeFilter(opt.key)}
+                    className={cn(
+                      'px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors border',
+                      typeFilter === opt.key
+                        ? 'bg-primary/10 text-primary border-primary/20'
+                        : 'bg-card/50 text-muted-foreground border-border hover:border-primary/30 hover:text-foreground'
+                    )}
+                  >
+                    {isFr ? opt.labelFr : opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           {catalogLoading && catalog.length > 0 && (
@@ -386,30 +489,28 @@ function LlmsPageInner() {
             </div>
           )}
 
-          {viewMode === 'cards' ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-              {displayModels.map((cm) => (
-                <CatalogCard
-                  key={cm.name}
-                  model={cm}
-                  isRegistered={registeredNames.has(cm.name)}
-                  onPulled={reloadCatalog}
-                  isFr={isFr}
-                />
-              ))}
+          {/* Family info bar — shown when a specific family is selected */}
+          {filter !== 'all' && filter !== 'installed' && filter !== 'benchmark' && FAMILY_INFO[filter] && (
+            <div className="mb-4 flex items-start gap-3 px-4 py-3 rounded-lg bg-primary/5 border border-primary/15">
+              <span className="shrink-0 px-2 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary border border-primary/20">
+                {FAMILY_INFO[filter].badge}
+              </span>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {isFr ? FAMILY_INFO[filter].zh : FAMILY_INFO[filter].en}
+              </p>
             </div>
-          ) : (
-            <CatalogTable
-              models={displayModels}
-              registeredNames={registeredNames}
-              onPulled={reloadCatalog}
-              onRemove={async (name) => {
-                await removeOllamaModel(name)
-                reloadCatalog()
-              }}
-              isFr={isFr}
-            />
           )}
+
+          <CatalogTable
+            models={displayModels}
+            registeredNames={registeredNames}
+            onPulled={reloadCatalog}
+            onRemove={async (name) => {
+              await removeOllamaModel(name)
+              reloadCatalog()
+            }}
+            isFr={isFr}
+          />
 
           {displayModels.length === 0 && !catalogLoading && (
             <div className="flex flex-col items-center py-20">
@@ -445,22 +546,23 @@ function CatalogTable({
   onRemove: (name: string) => Promise<void>
   isFr: boolean
 }) {
-  const TH = 'text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider'
+  const TH = 'text-left px-4 py-2.5 text-xs font-medium text-muted-foreground lowercase tracking-wider'
   return (
     <div className="rounded-xl border border-border overflow-hidden">
       <table className="w-full text-sm">
         <thead>
           <tr className="bg-card/80 border-b border-border">
-            <th className={TH}>{isFr ? 'Modèle' : 'Model'}</th>
-            <th className={TH}>{isFr ? 'Famille' : 'Family'}</th>
-            <th className={TH}>{isFr ? 'Paramètres' : 'Params'}</th>
-            <th className={TH}>{isFr ? 'RAM min.' : 'Min RAM'}</th>
-            <th className={TH}>{isFr ? 'Contexte' : 'Context'}</th>
-            <th className={TH}>Downloads</th>
-            <th className={TH}>{isFr ? 'Publié' : 'Released'}</th>
-            <th className={TH}>Source</th>
-            <th className={TH}>{isFr ? 'Statut' : 'Status'}</th>
-            <th className={cn(TH, 'text-right')}>{isFr ? 'Actions' : 'Actions'}</th>
+            <th className={TH}>{isFr ? 'modèle' : 'model'}</th>
+            <th className={TH}>{isFr ? 'famille' : 'family'}</th>
+            <th className={TH}>{isFr ? 'paramètres' : 'params'}</th>
+            <th className={TH}>{isFr ? 'ram min.' : 'min ram'}</th>
+            <th className={TH}>{isFr ? 'contexte' : 'context'}</th>
+            <th className={TH}>{isFr ? 'téléchargements' : 'downloads'}</th>
+            <th className={TH}>{isFr ? 'classement' : 'ranking'}</th>
+            <th className={TH}>{isFr ? 'date' : 'date'}</th>
+            <th className={TH}>{isFr ? 'source' : 'source'}</th>
+            <th className={TH}>{isFr ? 'statut' : 'status'}</th>
+            <th className={cn(TH, 'text-right')}>{isFr ? 'actions' : 'actions'}</th>
           </tr>
         </thead>
         <tbody>
@@ -532,12 +634,12 @@ function CatalogTableRow({
   onRemove: (name: string) => Promise<void>
   isFr: boolean
 }) {
-  const familyCfg = getFamilyConfig(m.family)
   const [pulling, setPulling] = useState(false)
   const [removing, setRemoving] = useState(false)
   const [registering, setRegistering] = useState(false)
   const [progress, setProgress] = useState<PullProgress | null>(null)
   const [done, setDone] = useState(false)
+  const [uninstalled, setUninstalled] = useState(false)
   const [justRegistered, setJustRegistered] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -546,9 +648,11 @@ function CatalogTableRow({
     : 0
 
   // ── Determine current state ──
+  const isActuallyInstalled = (m.installed || done) && !uninstalled
+
   const state: ModelState = pulling ? 'pulling'
-    : (isRegistered || justRegistered) ? 'registered'
-      : (m.installed || done) ? 'pulled'
+    : (isRegistered || justRegistered) && isActuallyInstalled ? 'registered'
+      : isActuallyInstalled ? 'pulled'
         : 'available'
 
   const statusCfg = STATUS_CONFIGS[state]
@@ -556,7 +660,7 @@ function CatalogTableRow({
 
   // ── Handlers ──
   const handlePull = () => {
-    if (pulling || m.installed || done) return
+    if (pulling || isActuallyInstalled) return
     setPulling(true)
     setError(null)
     pullModel(
@@ -565,6 +669,7 @@ function CatalogTableRow({
       async () => {
         setPulling(false)
         setDone(true)
+        setUninstalled(false)
         onPulled()
       },
       (err: string) => { setPulling(false); setError(err) },
@@ -583,20 +688,32 @@ function CatalogTableRow({
 
   const handleRemove = async () => {
     setRemoving(true)
+    setError(null)
     try {
       await onRemove(m.name)
-    } catch { /* */ }
-    setRemoving(false)
+      setDone(false)
+      setJustRegistered(false)
+      setUninstalled(true)
+    } catch (err: any) {
+      setError(err.message || 'Failed to remove model')
+    } finally {
+      setRemoving(false)
+    }
   }
 
   return (
     <tr className="border-b border-border/50 hover:bg-card/50 transition-colors">
-      {/* Model name */}
-      <td className="px-4 py-3">
+      {/* Model name + description */}
+      <td className="px-4 py-3 max-w-[260px]">
         <div>
           <span className="text-sm font-medium text-foreground">{m.displayName}</span>
         </div>
         <code className="text-[11px] text-muted-foreground font-mono">{m.name}</code>
+        {m.description && (
+          <p className="mt-0.5 text-[11px] text-muted-foreground/70 leading-tight line-clamp-1">
+            {m.description}
+          </p>
+        )}
         {pulling && progress && (
           <div className="mt-1">
             <div className="w-32 h-1 rounded-full bg-secondary overflow-hidden">
@@ -613,11 +730,8 @@ function CatalogTableRow({
         )}
       </td>
       {/* Family */}
-      <td className="px-4 py-3">
-        <span className="inline-flex items-center gap-1.5 text-xs">
-          <span className={cn('shrink-0', familyCfg.color)}>{familyCfg.icon}</span>
-          <span className={familyCfg.color}>{familyCfg.label}</span>
-        </span>
+      <td className="px-4 py-3 text-xs text-foreground capitalize">
+        {m.family || 'Other'}
       </td>
       {/* Params */}
       <td className="px-4 py-3 text-xs text-foreground">{m.parameterSize || '—'}</td>
@@ -637,7 +751,18 @@ function CatalogTableRow({
             ? `${(m.downloads / 1_000).toFixed(0)}K`
             : m.downloads || '—'}
       </td>
-      {/* Released */}
+      {/* Ranking */}
+      <td className="px-4 py-3 text-xs text-foreground">
+        <span className="flex items-center gap-1">
+          <Star className="h-3 w-3 text-amber-400" />
+          {m.likes > 1_000_000
+            ? `${(m.likes / 1_000_000).toFixed(1)}M`
+            : m.likes > 1_000
+              ? `${(m.likes / 1_000).toFixed(0)}K`
+              : m.likes || '—'}
+        </span>
+      </td>
+      {/* Date */}
       <td className="px-4 py-3 text-xs text-muted-foreground">
         {m.released || '—'}
       </td>

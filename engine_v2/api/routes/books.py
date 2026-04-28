@@ -11,16 +11,14 @@ everything from the filesystem.
 from __future__ import annotations
 
 import json
-import logging
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
+from loguru import logger
 
 from engine_v2.settings import DATA_DIR, MINERU_OUTPUT_DIR
 from engine_v2.toc import extract_toc as _toc_extract, load_content_list as _toc_load, find_pdf_for_book as _toc_find_pdf
-
-logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["books"])
 
@@ -168,7 +166,7 @@ def _discover_books() -> list[dict]:
 
             content_list_path = auto_dir / f"{book_id}_content_list.json"
             if not content_list_path.exists():
-                logger.debug("Skipping %s: no content_list.json", book_id)
+                logger.debug("Skipping {}: no content_list.json", book_id)
                 continue
 
             middle_json_path = auto_dir / f"{book_id}_middle.json"
@@ -446,5 +444,4 @@ async def get_parse_stats(
         "offset": offset,
         "limit": limit,
     }
-
 

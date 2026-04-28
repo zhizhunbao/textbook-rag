@@ -15,11 +15,10 @@ Used by:
 from __future__ import annotations
 
 import json
-import logging
 import re
 from pathlib import Path
 
-logger = logging.getLogger(__name__)
+from loguru import logger
 
 # ── LaTeX artifact cleanup ───────────────────────────────────────────────────
 
@@ -99,7 +98,7 @@ def extract_toc_from_pdf(pdf_path: Path) -> list[dict]:
     try:
         doc = pymupdf.open(str(pdf_path))
     except Exception:
-        logger.warning("Failed to open PDF: %s", pdf_path, exc_info=True)
+        logger.exception("Failed to open PDF: {}", pdf_path)
         return []
 
     try:
@@ -304,16 +303,16 @@ def extract_toc(
         entries = extract_toc_from_pdf(pdf_path)
         if entries:
             logger.info(
-                "TOC from PDF bookmarks: %d entries (%s)",
+                "TOC from PDF bookmarks: {} entries ({})",
                 len(entries), pdf_path.name,
             )
             return entries
-        logger.debug("No PDF bookmarks in %s, falling back to MinerU", pdf_path.name)
+        logger.debug("No PDF bookmarks in {}, falling back to MinerU", pdf_path.name)
 
     # Strategy 2: MinerU content_list headings (filtered)
     entries = extract_toc_from_content_list(content_list)
     if entries:
-        logger.info("TOC from MinerU content_list: %d entries (filtered)", len(entries))
+        logger.info("TOC from MinerU content_list: {} entries (filtered)", len(entries))
     else:
         logger.debug("No TOC entries extracted from either source")
 

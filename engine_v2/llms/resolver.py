@@ -13,9 +13,8 @@ The resolver picks the provider based on:
 
 from __future__ import annotations
 
-import logging
-
 from llama_index.core.llms import LLM
+from loguru import logger
 
 from engine_v2.settings import (
     AZURE_OAI_API_VERSION,
@@ -25,9 +24,6 @@ from engine_v2.settings import (
     OLLAMA_BASE_URL,
     OLLAMA_MODEL,
 )
-
-logger = logging.getLogger(__name__)
-
 
 def is_azure_configured() -> bool:
     """Check if Azure OpenAI credentials are available."""
@@ -86,7 +82,7 @@ def resolve_llm(
         LLM instance ready for use.
     """
     resolved = _detect_provider(model, provider)
-    logger.info("LLM routing: model=%s, provider_hint=%s → %s", model, provider, resolved)
+    logger.info("LLM routing: model={}, provider_hint={} → {}", model, provider, resolved)
 
     if resolved == "azure":
         if not is_azure_configured():
@@ -113,7 +109,7 @@ def _create_azure_llm(model: str | None, streaming: bool) -> LLM:
     raw_model = model or AZURE_OAI_DEPLOYMENT
     deployment = DEPLOYMENT_MAP.get(raw_model, raw_model)
 
-    logger.info("Azure LLM: model=%s → deployment=%s", raw_model, deployment)
+    logger.info("Azure LLM: model={} → deployment={}", raw_model, deployment)
 
     llm = AzureOpenAI(
         engine=deployment,
@@ -121,7 +117,7 @@ def _create_azure_llm(model: str | None, streaming: bool) -> LLM:
         api_key=AZURE_OAI_KEY,
         api_version=AZURE_OAI_API_VERSION,
     )
-    logger.info("LLM resolved: AzureOpenAI (deployment=%s)", deployment)
+    logger.info("LLM resolved: AzureOpenAI (deployment={})", deployment)
     return llm
 
 
@@ -137,7 +133,7 @@ def _create_ollama_llm(model: str | None, streaming: bool) -> LLM:
         context_window=8192,
         additional_kwargs={"num_ctx": 8192},
     )
-    logger.info("LLM resolved: Ollama (model=%s, base_url=%s)", model_name, OLLAMA_BASE_URL)
+    logger.info("LLM resolved: Ollama (model={}, base_url={})", model_name, OLLAMA_BASE_URL)
     return llm
 
 

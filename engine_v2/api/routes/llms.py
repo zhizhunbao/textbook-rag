@@ -91,15 +91,61 @@ async def search_library(
     category: str | None = Query(None, description="Category filter"),
     source: str | None = Query(None, description="Source filter (e.g. 'ollama', 'huggingface')"),
     sort: str | None = Query(None, description="Sort order: 'newest' (default), 'downloads', 'name'"),
+    force: bool = Query(False, description="Bypass cache and rebuild catalog from APIs"),
+    debug: bool = Query(False, description="Include catalog debug metadata"),
 ):
     """Search the model catalog (dynamically built from APIs)."""
-    from engine_v2.llms.catalog import catalog_to_dict, search_catalog
+    from engine_v2.llms import catalog as catalog_module
+    from engine_v2.llms.catalog import build_catalog_from_apis, catalog_to_dict, get_catalog
 
-    results = await search_catalog(query=q, category=category, source=source, sort=sort)
-    return {
+    if force:
+        # Full rebuild — bypass stale-while-revalidate cache entirely
+        logger.info("Catalog force-rebuild triggered (sync path)")
+        all_models = await build_catalog_from_apis()
+        # Update cache with fresh data so subsequent page loads benefit
+        catalog_module._cache["catalog"] = all_models
+        catalog_module._cache["timestamp"] = __import__("time").time()
+    else:
+        all_models = await get_catalog()
+
+    # Apply filters
+    results = all_models
+    if category:
+        results = [m for m in results if m.category == category]
+    if source:
+        results = [m for m in results if m.source == source]
+    if q:
+        _q = q.lower()
+        results = [
+            m for m in results
+            if _q in m.name.lower()
+            or _q in m.family.lower()
+            or _q in m.display_name.lower()
+            or _q in m.description.lower()
+        ]
+    if sort == "downloads":
+        results.sort(key=lambda m: (0 if m.installed else 1, -m.downloads))
+    elif sort == "name":
+        results.sort(key=lambda m: (0 if m.installed else 1, m.name.lower()))
+
+    payload = {
         "models": [catalog_to_dict(m) for m in results],
         "count": len(results),
     }
+    if debug:
+        from engine_v2.llms._discovery import fetch_browsable_from_ollama_library
+        ollama_names = await fetch_browsable_from_ollama_library(limit=20)
+        payload["debug"] = {
+            "catalog_file": catalog_module.__file__,
+            "ollama_library_count": len(ollama_names),
+            "ollama_library_sample": ollama_names[:20],
+            "source_counts": {
+                "ollama": sum(1 for m in results if m.source == "ollama"),
+                "huggingface": sum(1 for m in results if m.source == "huggingface"),
+            },
+            "force": force,
+        }
+    return payload
 
 
 @router.get("/library/categories")
@@ -271,7 +317,8 @@ async def delete_model(name: str):
     logger.info("Delete model — name={}", name)
     try:
         async with httpx.AsyncClient(timeout=OLLAMA_TIMEOUT) as client:
-            resp = await client.delete(
+            resp = await client.request(
+                "DELETE",
                 f"{OLLAMA_BASE_URL}/api/delete",
                 json={"name": name},
             )
@@ -279,8 +326,10 @@ async def delete_model(name: str):
                 return {"status": "not_found", "name": name}
             resp.raise_for_status()
     except Exception as exc:
-        logger.error("Failed to delete model {}: {}", name, exc)
-        return {"status": "error", "name": name, "error": str(exc)}
+        import traceback
+        tb = traceback.format_exc()
+        logger.error("Failed to delete model {}:\n{}", name, tb)
+        return {"status": "error", "name": name, "error": str(exc), "tb": tb}
 
     # Force catalog rebuild so the model disappears from library
     invalidate_cache()

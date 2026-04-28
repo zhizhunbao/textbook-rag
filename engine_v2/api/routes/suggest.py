@@ -34,7 +34,7 @@ async def suggest_questions(
     Delegates to question_gen.suggest module for business logic.
     Returns existing questions from Payload CMS sorted by quality score.
     """
-    logger.info("Suggest request: book_id=%s, limit=%d", book_id, limit)
+    logger.info("Suggest request: book_id={}, limit={}", book_id, limit)
     results = fetch_suggested_questions(book_id=book_id, limit=limit)
 
     questions = [

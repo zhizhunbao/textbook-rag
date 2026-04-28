@@ -9,11 +9,10 @@ capability that MinerU doesn't provide.
 
 from __future__ import annotations
 
-import logging
 from io import BytesIO
 from pathlib import Path
 
-logger = logging.getLogger(__name__)
+from loguru import logger
 
 # Default cover dimensions (portrait book aspect ratio)
 DEFAULT_WIDTH = 400
@@ -37,7 +36,7 @@ def extract_cover(pdf_path: Path, width: int = DEFAULT_WIDTH) -> bytes | None:
         return None
 
     if not pdf_path.exists():
-        logger.warning("PDF not found for cover extraction: %s", pdf_path)
+        logger.warning("PDF not found for cover extraction: {}", pdf_path)
         return None
 
     try:
@@ -58,13 +57,13 @@ def extract_cover(pdf_path: Path, width: int = DEFAULT_WIDTH) -> bytes | None:
 
         doc.close()
         logger.info(
-            "Extracted cover from %s (%dx%d px)",
+            "Extracted cover from {} ({}x{} px)",
             pdf_path.name, pix.width, pix.height,
         )
         return png_bytes
 
     except Exception as exc:
-        logger.error("Failed to extract cover from %s: %s", pdf_path, exc)
+        logger.error("Failed to extract cover from {}: {}", pdf_path, exc)
         return None
 
 
@@ -105,5 +104,5 @@ def extract_cover_for_book(
         if raw_pdf.exists():
             return extract_cover(raw_pdf)
 
-    logger.debug("No PDF found for cover extraction: %s", book_id)
+    logger.debug("No PDF found for cover extraction: {}", book_id)
     return None

@@ -36,7 +36,7 @@ import {
   registerModel as apiRegisterModel,
   removeOllamaModel as apiRemoveOllamaModel,
 } from './api'
-import type { LlmModel } from './types'
+import type { AvailabilityResult, LlmModel } from './types'
 
 // ── 默认轮询间隔 / Default polling interval ────────────────────────────────────
 const DEFAULT_POLL_INTERVAL_MS = 60_000 // 1 分钟 / 1 minute
@@ -126,21 +126,53 @@ export function useModels(options: UseModelsOptions = {}): UseModelsReturn {
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const mountedRef = useRef(true)
 
-  // ── 加载模型列表 + 检测可用性 / Load models + check availability ──────────
-  const loadAndCheck = useCallback(async () => {
+  // ── 仅从数据库加载模型列表（不打 Engine API）/ Load from DB only ───────────
+  const loadFromDB = useCallback(async () => {
     if (!mountedRef.current) return
     setLoading(true)
     setError(null)
 
     try {
-      // 一步到位: 拉取 Payload 注册模型 + 并行检测所有 provider
-      // All-in-one: fetch Payload registered models + parallel check all providers
+      // 只读 Payload CMS，可用性先设为 unknown，等用户手动 Check 再更新
+      // Only read from Payload CMS; availability stays unknown until manually checked
+      const dbModels = await fetchEnabledModels()
+      if (!mountedRef.current) return
+
+      const unknownAvailability: AvailabilityResult = {
+        status: 'unknown',
+        latencyMs: null,
+        checkedAt: null,
+        error: null,
+      }
+      const runtimeModels = dbModels.map((m) => ({ ...m, availability: unknownAvailability }))
+      setModels(runtimeModels)
+    } catch (err) {
+      if (mountedRef.current) {
+        setError(err instanceof Error ? err.message : 'Failed to load models')
+      }
+    } finally {
+      if (mountedRef.current) {
+        setLoading(false)
+      }
+    }
+  }, [])
+
+  // 为了向后兼容保留 loadAndCheck 别名，但实际只读 DB
+  const loadAndCheck = loadFromDB
+
+  // ── 检测可用性（调用 Engine API，不重新从 DB 加载）/ Check availability via Engine ──
+  const checkAvailability = useCallback(async () => {
+    if (!mountedRef.current) return
+    setChecking(true)
+
+    try {
+      // 用当前已有的模型列表做 provider 检测，避免重复读 DB
+      // Re-use the current model list for provider check to avoid an extra DB read
       const runtimeModels = await checkAllModels()
       if (!mountedRef.current) return
       setModels(runtimeModels)
 
-      // 更新 provider 健康状态
-      // Update provider health status
+      // 同步更新 provider 健康状态
       const healthMap = new Map<ModelProvider, ProviderHealth>()
       const [ollamaH, cloudHArr] = await Promise.all([
         checkOllamaModels(),
@@ -153,26 +185,6 @@ export function useModels(options: UseModelsOptions = {}): UseModelsReturn {
       if (mountedRef.current) {
         setProviderHealth(healthMap)
       }
-    } catch (err) {
-      if (mountedRef.current) {
-        setError(err instanceof Error ? err.message : 'Failed to load models')
-      }
-    } finally {
-      if (mountedRef.current) {
-        setLoading(false)
-      }
-    }
-  }, [])
-
-  // ── 仅检测可用性（不重新加载列表）/ Check availability only ───────────────
-  const checkAvailability = useCallback(async () => {
-    if (!mountedRef.current) return
-    setChecking(true)
-
-    try {
-      const runtimeModels = await checkAllModels()
-      if (!mountedRef.current) return
-      setModels(runtimeModels)
     } catch {
       // 静默失败，保留上次状态 / Silently fail, keep previous state
     } finally {
@@ -234,21 +246,21 @@ export function useModels(options: UseModelsOptions = {}): UseModelsReturn {
     }
   }, [discovered])
 
-  // ── 手动刷新 / Manual refresh ──────────────────────────────────────────────
+  // ── 手动刷新 / Manual refresh — 只读 DB，不打 Engine ──────────────────────
   const refresh = useCallback(async () => {
-    await loadAndCheck()
-  }, [loadAndCheck])
+    await loadFromDB()
+  }, [loadFromDB])
 
-  // ── 自动加载 / Auto-load ──────────────────────────────────────────────────
+  // ── 自动加载 / Auto-load — 只从 DB 读，不打 Engine API ─────────────────────
   useEffect(() => {
     mountedRef.current = true
     if (autoLoad) {
-      loadAndCheck()
+      loadFromDB()  // 仅读 Payload CMS DB，可用性稍后由用户手动 Check
     }
     return () => {
       mountedRef.current = false
     }
-  }, [autoLoad, loadAndCheck])
+  }, [autoLoad, loadFromDB])
 
   // ── 定期轮询 / Periodic polling ────────────────────────────────────────────
   useEffect(() => {

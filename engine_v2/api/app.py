@@ -5,21 +5,23 @@ Initialises LlamaIndex Settings on startup via lifespan.
 
 from __future__ import annotations
 
-import logging
 import traceback
 from contextlib import asynccontextmanager
 
+from loguru import logger
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+
+from engine_v2.logging_config import configure_logging
+
+configure_logging()
 
 from engine_v2.settings import CORS_ORIGINS, init_settings
 from engine_v2.api.routes import (
     books, classify, delete, embeddings, evaluation, health, ingest, llms,
     query, questions, report, retrievers, sources, suggest, vectors,
 )
-
-logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -53,7 +55,7 @@ def create_app() -> FastAPI:
     @app.exception_handler(Exception)
     async def _unhandled(request: Request, exc: Exception):
         tb = traceback.format_exc()
-        logger.error("Unhandled %s %s:\n%s", request.method, request.url, tb)
+        logger.error("Unhandled {} {}:\n{}", request.method, request.url, tb)
         return JSONResponse(
             status_code=500,
             content={"detail": str(exc), "traceback": tb},

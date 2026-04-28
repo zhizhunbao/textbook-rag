@@ -11,16 +11,15 @@ Supports two discovery strategies:
 
 from __future__ import annotations
 
-import logging
 import re
 from typing import Optional
 from urllib.parse import urljoin, urlparse
 
 import httpx
 from fastapi import APIRouter
+from loguru import logger
 from pydantic import BaseModel, Field
 
-logger = logging.getLogger(__name__)
 router = APIRouter(tags=["sources"])
 
 
@@ -266,10 +265,10 @@ def _playwright_crawl_sync(url: str, max_subpages: int = 30) -> list[str]:
 
         try:
             # Load main page
-            logger.info("Playwright crawl: %s", url)
+            logger.info("Playwright crawl: {}", url)
             resp = page.goto(url, timeout=30_000, wait_until="networkidle")
             if resp and resp.status >= 400:
-                logger.warning("HTTP %d for %s", resp.status, url)
+                logger.warning("HTTP {} for {}", resp.status, url)
                 return []
 
             page.wait_for_timeout(1500)
@@ -284,7 +283,7 @@ def _playwright_crawl_sync(url: str, max_subpages: int = 30) -> list[str]:
             # Extract PDF links from the DOM
             found = page.evaluate(_PDF_EXTRACT_JS)
             pdf_links.update(found)
-            logger.info("Main page: %d PDFs found", len(found))
+            logger.info("Main page: {} PDFs found", len(found))
 
             # Load fixed crawl config for this domain
             crawl_cfg = _get_crawl_config(url)
@@ -335,12 +334,12 @@ def _playwright_crawl_sync(url: str, max_subpages: int = 30) -> list[str]:
             _collect_articles(all_links)
 
             # Phase 1: Crawl fixed sub-pages (pagination, archive, etc.)
-            logger.info("Crawling %d fixed sub-pages", len(fixed_subpages))
+            logger.info("Crawling {} fixed sub-pages", len(fixed_subpages))
             for sub_url in fixed_subpages:
                 try:
                     sub_resp = page.goto(sub_url, timeout=20_000, wait_until="domcontentloaded")
                     if sub_resp and sub_resp.status >= 400:
-                        logger.debug("  Skip %s (HTTP %d)", sub_url, sub_resp.status)
+                        logger.debug("  Skip {} (HTTP {})", sub_url, sub_resp.status)
                         continue
                     page.wait_for_timeout(1000)
                     # Scroll for lazy content
@@ -354,16 +353,16 @@ def _playwright_crawl_sync(url: str, max_subpages: int = 30) -> list[str]:
                     new_pdfs = [p for p in sub_found if p not in pdf_links]
                     pdf_links.update(sub_found)
                     if new_pdfs:
-                        logger.info("  Fixed page %s: %d new PDFs", sub_url.rsplit("/", 1)[-1][:30], len(new_pdfs))
+                        logger.info("  Fixed page {}: {} new PDFs", sub_url.rsplit("/", 1)[-1][:30], len(new_pdfs))
                     # Discover article links from this page
                     more_links = page.evaluate(_ALL_LINKS_JS)
                     _collect_articles(more_links)
                 except Exception as e:
-                    logger.debug("Fixed page failed %s: %s", sub_url, str(e)[:100])
+                    logger.debug("Fixed page failed {}: {}", sub_url, str(e)[:100])
 
             # Phase 2: Crawl discovered article/content pages
             effective_max = cfg_max_articles
-            logger.info("Crawling %d articles (max %d)", len(article_urls), effective_max)
+            logger.info("Crawling {} articles (max {})", len(article_urls), effective_max)
             for art_url in article_urls[:effective_max]:
                 try:
                     art_resp = page.goto(art_url, timeout=20_000, wait_until="domcontentloaded")
@@ -374,18 +373,18 @@ def _playwright_crawl_sync(url: str, max_subpages: int = 30) -> list[str]:
                     new_pdfs = [p for p in art_found if p not in pdf_links]
                     pdf_links.update(art_found)
                     if new_pdfs:
-                        logger.info("  Article %s: %d new PDFs", art_url.rsplit("/", 1)[-1][:40], len(new_pdfs))
+                        logger.info("  Article {}: {} new PDFs", art_url.rsplit("/", 1)[-1][:40], len(new_pdfs))
                     more_links = page.evaluate(_ALL_LINKS_JS)
                     _collect_articles(more_links)
                 except Exception as e:
-                    logger.debug("Article failed %s: %s", art_url, str(e)[:100])
+                    logger.debug("Article failed {}: {}", art_url, str(e)[:100])
 
         finally:
             page.close()
             context.close()
             browser.close()
 
-    logger.info("Playwright total: %d PDFs", len(pdf_links))
+    logger.info("Playwright total: {} PDFs", len(pdf_links))
     return list(pdf_links)
 
 
@@ -400,13 +399,13 @@ async def _playwright_crawl(url: str, max_subpages: int = 30) -> list[str]:
     try:
         return await asyncio.to_thread(_playwright_crawl_sync, url, max_subpages)
     except Exception as e:
-        logger.error("Playwright crawl failed: %s", e)
+        logger.error("Playwright crawl failed: {}", e)
         return await _httpx_crawl(url)
 
 
 async def _httpx_crawl(url: str) -> list[str]:
     """Fallback: simple httpx-based crawl for PDF links."""
-    logger.info("httpx crawl fallback: %s", url)
+    logger.info("httpx crawl fallback: {}", url)
     async with httpx.AsyncClient(
         timeout=30.0,
         follow_redirects=True,
@@ -478,10 +477,10 @@ async def discover_pdfs(req: DiscoverRequest) -> DiscoverResponse:
         domain = urlparse(req.url).netloc.lower()
 
         if req.type == "url_pattern" or "ottawa.ca" in req.url.lower():
-            logger.info("Using ED Updates URL pattern for: %s", req.url)
+            logger.info("Using ED Updates URL pattern for: {}", req.url)
             candidate_urls = _generate_ed_update_urls()
         elif "oreb.ca" in domain:
-            logger.info("Using OREB URL pattern for: %s", req.url)
+            logger.info("Using OREB URL pattern for: {}", req.url)
             oreb_result = _generate_oreb_urls()
             known_urls = oreb_result["known"]
             candidate_urls = oreb_result["candidates"]
@@ -489,11 +488,11 @@ async def discover_pdfs(req: DiscoverRequest) -> DiscoverResponse:
         # Add confirmed URLs directly (no HEAD check needed)
         if known_urls:
             pdf_urls.extend(known_urls)
-            logger.info("Added %d known/confirmed PDFs", len(known_urls))
+            logger.info("Added {} known/confirmed PDFs", len(known_urls))
 
         if candidate_urls:
             # Verify candidate URLs with HEAD requests — mark 404s as unavailable
-            logger.info("Verifying %d candidate URLs...", len(candidate_urls))
+            logger.info("Verifying {} candidate URLs...", len(candidate_urls))
             unavailable_urls: set[str] = set()
             async with httpx.AsyncClient(
                 timeout=10.0,
@@ -513,12 +512,12 @@ async def discover_pdfs(req: DiscoverRequest) -> DiscoverResponse:
                         else:
                             pdf_urls.append(url)
                             unavailable_urls.add(url)
-                            logger.debug("Unavailable: %s (HTTP %d)", url, head_resp.status_code)
+                            logger.debug("Unavailable: {} (HTTP {})", url, head_resp.status_code)
                     except Exception:
                         pdf_urls.append(url)
                         unavailable_urls.add(url)
-                        logger.debug("Unavailable: %s (unreachable)", url)
-            logger.info("Verified: %d available, %d unavailable", len(candidate_urls) - len(unavailable_urls), len(unavailable_urls))
+                        logger.debug("Unavailable: {} (unreachable)", url)
+            logger.info("Verified: {} available, {} unavailable", len(candidate_urls) - len(unavailable_urls), len(unavailable_urls))
 
         # Strategy 2: Playwright-based crawl (fallback for unknown sources)
         if not pdf_urls:
@@ -595,7 +594,7 @@ async def discover_pdfs(req: DiscoverRequest) -> DiscoverResponse:
             success=False, source_url=req.url, error=msg
         )
     except Exception as exc:
-        logger.exception("Discovery failed for %s", req.url)
+        logger.exception("Discovery failed for {}", req.url)
         return DiscoverResponse(
             success=False, source_url=req.url, error=str(exc)
         )
@@ -686,6 +685,5 @@ async def download_pdf(req: DownloadPdfRequest) -> DownloadPdfResponse:
         logger.warning(msg)
         return DownloadPdfResponse(success=False, error=msg)
     except Exception as exc:
-        logger.exception("PDF download failed for %s", req.url)
+        logger.exception("PDF download failed for {}", req.url)
         return DownloadPdfResponse(success=False, error=str(exc))
-

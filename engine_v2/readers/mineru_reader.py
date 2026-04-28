@@ -8,16 +8,14 @@ with rich metadata (page, bbox, content_type, chapter).
 from __future__ import annotations
 
 import json
-import logging
 from pathlib import Path
 from typing import Any, Iterable
 
 from llama_index.core.readers.base import BaseReader
 from llama_index.core.schema import Document
+from loguru import logger
 
 from engine_v2.chunking import assign_chapter, build_chapter_ranges, extract_chapters
-
-logger = logging.getLogger(__name__)
 
 
 class MinerUReader(BaseReader):
@@ -51,7 +49,7 @@ class MinerUReader(BaseReader):
         middle_json_path = auto_dir / f"{book_dir_name}_middle.json"
 
         if not content_list_path.exists():
-            logger.warning("content_list.json not found: %s", content_list_path)
+            logger.warning("content_list.json not found: {}", content_list_path)
             return
 
         with open(content_list_path, "r", encoding="utf-8") as f:
@@ -106,7 +104,7 @@ class MinerUReader(BaseReader):
             reading_order += 1
 
         logger.info(
-            "MinerUReader: loaded %d documents from %s", reading_order, book_dir_name
+            "MinerUReader: loaded {} documents from {}", reading_order, book_dir_name
         )
 
     # ------------------------------------------------------------------

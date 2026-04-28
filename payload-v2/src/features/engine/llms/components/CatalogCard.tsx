@@ -12,7 +12,7 @@
 import { useState, useRef } from 'react'
 import {
   Download, Loader2, CheckCircle2, Cpu, Zap, Globe, Clock,
-  XCircle, Shield,
+  XCircle, Shield, Star,
 } from 'lucide-react'
 import { cn } from '@/features/shared/utils'
 import type { CatalogModel, PullProgress } from '../types'
@@ -147,13 +147,24 @@ export function CatalogCard({
         </div>
         <div className="flex items-center gap-1.5 text-xs">
           <Download className="h-3 w-3 text-muted-foreground shrink-0" />
-          <span className="text-muted-foreground">Downloads</span>
+          <span className="text-muted-foreground">{isFr ? 'Téléchargements' : 'Downloads'}</span>
           <span className="text-foreground font-medium ml-auto">
             {m.downloads > 1_000_000
               ? `${(m.downloads / 1_000_000).toFixed(1)}M`
               : m.downloads > 1_000
                 ? `${(m.downloads / 1_000).toFixed(0)}K`
                 : m.downloads || '—'}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5 text-xs">
+          <Star className="h-3 w-3 text-amber-400 shrink-0" />
+          <span className="text-muted-foreground">{isFr ? 'Classement' : 'Ranking'}</span>
+          <span className="text-foreground font-medium ml-auto">
+            {m.likes > 1_000_000
+              ? `${(m.likes / 1_000_000).toFixed(1)}M`
+              : m.likes > 1_000
+                ? `${(m.likes / 1_000).toFixed(0)}K`
+                : m.likes || '—'}
           </span>
         </div>
       </div>

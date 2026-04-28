@@ -12,10 +12,9 @@ Extracted from readers/mineru_reader.py to allow reuse by:
 
 from __future__ import annotations
 
-import logging
 import re
 
-logger = logging.getLogger(__name__)
+from loguru import logger
 
 MAX_CHAPTERS_PER_BOOK = 80
 
