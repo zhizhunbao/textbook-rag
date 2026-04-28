@@ -92,6 +92,8 @@ export interface Messages {
   navQueryEngine: string
   navSeed: string
   navReports: string
+  navConsulting: string
+  navPersonas: string
 
   // ── Upload ──
   uploadPdf: string
@@ -115,6 +117,15 @@ export interface Messages {
   chatSendTitle: string
   chatSearching: string
   chatJumpToLatest: string
+
+  // ── Onboarding ──
+  onboardingTitle: string
+  onboardingSubtitle: string
+  onboardingConfirm: string
+  onboardingNoPersona: string
+  onboardingSaving: string
+  sidebarPersonaLabel: string
+  sidebarNoPersona: string
 }
 
 // ────────────────────────────────────────
@@ -216,6 +227,8 @@ const en: Messages = {
   navQueryEngine: 'Query Engine',
   navSeed: 'Seed Database',
   navReports: 'Reports',
+  navConsulting: 'Consulting',
+  navPersonas: 'Personas',
 
   // Upload
   uploadPdf: 'Upload PDF',
@@ -239,6 +252,15 @@ const en: Messages = {
   chatSendTitle: 'Send message (Enter)',
   chatSearching: 'Searching the documents…',
   chatJumpToLatest: '↓ Jump to latest',
+
+  // Onboarding
+  onboardingTitle: 'Welcome! Choose Your Consulting Service',
+  onboardingSubtitle: 'Select a role to get started with AI-powered consulting.',
+  onboardingConfirm: 'Confirm Selection',
+  onboardingNoPersona: 'Please select a role to continue',
+  onboardingSaving: 'Saving...',
+  sidebarPersonaLabel: 'Current Role',
+  sidebarNoPersona: 'No role selected',
 }
 
 // ────────────────────────────────────────
@@ -324,6 +346,8 @@ const fr: Messages = {
   navQueryEngine: 'Moteur de requêtes',
   navSeed: 'Base de données initiale',
   navReports: 'Rapports',
+  navConsulting: 'Consultation',
+  navPersonas: 'Personas',
 
   // Upload
   uploadPdf: 'Téléverser un PDF',
@@ -347,6 +371,15 @@ const fr: Messages = {
   chatSendTitle: 'Envoyer le message (Entrée)',
   chatSearching: 'Recherche dans les documents…',
   chatJumpToLatest: '↓ Aller au plus récent',
+
+  // Onboarding
+  onboardingTitle: 'Bienvenue ! Choisissez votre service de consultation',
+  onboardingSubtitle: 'Sélectionnez un rôle pour commencer la consultation assistée par IA.',
+  onboardingConfirm: 'Confirmer la sélection',
+  onboardingNoPersona: 'Veuillez sélectionner un rôle pour continuer',
+  onboardingSaving: 'Enregistrement...',
+  sidebarPersonaLabel: 'Rôle actuel',
+  sidebarNoPersona: 'Aucun rôle sélectionné',
 }
 
 export const messages: Record<Locale, Messages> = { en, fr }

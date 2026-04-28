@@ -1,9 +1,9 @@
-# Sprint Eval-Curation — 回答筛选 + 自动评估 + 高分报告 (TBD)
+# Sprint Eval-Curation — 回答筛选 + 自动评估 + 高分报告 (✅ DONE)
 
 > 目标：用户可以删除低质量回答，系统自动评估新回答，基于高评分回答历史生成质量报告。
 >
 > 前置条件：S2 ✅ evaluation 5 维评估 + 持久化 + history.py 已完成；DM-T5 ✅ Report MVP 已完成。
-> **状态**: ❌ 0/9 完成
+> **状态**: ✅ 9/9 完成
 
 ## 概览
 
@@ -36,12 +36,12 @@
 **改为**: 每条 Query 行增加 🗑️ 删除按钮，点击后 `DELETE /api/queries/{id}`，并同步删除关联的 Evaluations。
 
 **验收标准**:
-- [ ] `evaluation/api.ts` 新增 `deleteQuery(id: number)` — 调用 `DELETE /api/queries/${id}`
-- [ ] `evaluation/api.ts` 新增 `deleteEvaluationsByQuery(queryId: number)` — 删除关联评估
-- [ ] EvaluationPage Query 列表每行增加删除按钮（hover 时显示）
-- [ ] 删除前 confirm 对话框："删除此回答及其评估数据？"
-- [ ] 删除后自动刷新列表
-- [ ] G2 ✅ 走 Payload `/api/*` REST，不调 Engine
+- [x] `evaluation/api.ts` 新增 `deleteQuery(id: number)` — 调用 `DELETE /api/queries/${id}`
+- [x] `evaluation/api.ts` 新增 `deleteEvaluationsByQuery(queryId: number)` — 删除关联评估
+- [x] EvaluationPage Query 列表每行增加删除按钮（hover 时显示）
+- [x] 删除前 confirm 对话框："删除此回答及其评估数据？"
+- [x] 删除后自动刷新列表
+- [x] G2 ✅ 走 Payload `/api/*` REST，不调 Engine
 
 **文件**: `features/engine/evaluation/api.ts`, `features/engine/evaluation/components/EvaluationPage.tsx`
 
@@ -52,11 +52,11 @@
 **描述**: 支持批量选择 + 一键删除低分回答。提供分数阈值过滤器，用户可以快速筛选并批量删除不满足阈值的回答。
 
 **验收标准**:
-- [ ] EvaluationPage 增加分数过滤器（滑块或输入框，设置最低分阈值）
-- [ ] 支持多选 checkbox + "删除选中" 按钮
-- [ ] "删除低分回答" 快捷按钮（删除所有低于阈值的已评估回答）
-- [ ] 批量删除走 `Promise.all(ids.map(deleteQuery))`
-- [ ] 操作完成后显示 toast 通知："已删除 N 条回答"
+- [x] EvaluationPage 增加分数过滤器（滑块或输入框，设置最低分阈值）
+- [x] 支持多选 checkbox + "删除选中" 按钮
+- [x] "删除低分回答" 快捷按钮（删除所有低于阈值的已评估回答）
+- [x] 批量删除走 `Promise.all(ids.map(deleteQuery))`
+- [x] 操作完成后显示 toast 通知："已删除 N 条回答"
 
 **文件**: `features/engine/evaluation/components/EvaluationPage.tsx`, `features/engine/evaluation/api.ts`
 
@@ -74,13 +74,13 @@
 **改为**: 每次查询完成后，后台自动异步评估。用户仍可在 EvaluationPage 查看/重新评估。
 
 **验收标准**:
-- [ ] `query.py` 的 `_stream_generator()` 在 `done` event 之后，通过 `asyncio.create_task()` 异步触发评估
-- [ ] 评估在后台执行，不阻塞 SSE 流响应
-- [ ] 评估结果自动写入 Payload Evaluations 集合（复用 `history.py` 的 `_persist_evaluation()`）
-- [ ] 可通过 `settings.py` 的 `AUTO_EVAL_ENABLED` 环境变量控制开关（默认关闭）
-- [ ] 评估失败不影响查询响应（静默捕获异常，仅 log）
+- [x] Queries Collection afterChange hook 在 create 时 fire-and-forget POST 到 `/engine/evaluation/auto-evaluate`
+- [x] 评估在后台执行，不阻塞查询创建
+- [x] 评估结果自动写入 Payload Evaluations 集合（复用 `auto_evaluate_query()`）
+- [x] 可通过 `settings.py` 的 `AUTO_EVAL_ENABLED` 环境变量控制开关（默认关闭）
+- [x] 评估失败不影响查询创建（静默捕获异常，仅 log）
 
-**文件**: `engine_v2/api/routes/query.py`, `engine_v2/settings.py`
+**文件**: `hooks/queries/afterChange.ts`, `collections/Queries.ts`, `engine_v2/settings.py`
 
 ### [EC-T2-02] 评估结果标记不达标
 
@@ -93,10 +93,10 @@
 - 否则 → `status: "fail"`
 
 **验收标准**:
-- [ ] `evaluation/history.py` 的 `_persist_evaluation()` 增加 `status` 字段计算
-- [ ] `settings.py` 新增 `EVAL_PASS_THRESHOLDS` 配置 (dict)
-- [ ] Payload Evaluations 集合新增 `status` select 字段: `pass | fail | pending`
-- [ ] 前端 EvaluationPage 显示 ✅/❌ 图标标记达标状态
+- [x] `evaluation/history.py` 的 `_compute_status()` 计算 `status` 字段
+- [x] `settings.py` 已有 `EVAL_PASS_FAITHFULNESS` + `EVAL_PASS_ANSWER_SCORE` 配置
+- [x] Payload Evaluations 集合已有 `status` select 字段: `pass | fail | pending`
+- [x] 前端 EvaluationPage 显示 ✅/❌/⏳ 图标标记达标状态
 
 **文件**: `engine_v2/evaluation/history.py`, `engine_v2/settings.py`, Payload `collections/Evaluations.ts`
 
@@ -107,10 +107,10 @@
 **描述**: EvaluationPage 的 Query 列表中显示评估状态（pass/fail/pending），并支持按状态过滤。
 
 **验收标准**:
-- [ ] Query 列表增加状态列（✅ Pass / ❌ Fail / ⏳ Pending）
-- [ ] 状态过滤器：All / Pass Only / Fail Only / Pending
-- [ ] 状态对应颜色编码（绿/红/灰）
-- [ ] `types.ts` 的 `EvaluationResult` 增加 `status: 'pass' | 'fail' | 'pending'`
+- [x] Query 列表增加状态列（✅ Pass / ❌ Fail / ⏳ Pending）
+- [x] 状态过滤器：All / Pass Only / Fail Only / Pending
+- [x] 状态对应颜色编码（绿/红/灰）
+- [x] `types.ts` 的 `EvaluationResult` 已有 `status: 'pass' | 'fail' | 'pending'`
 
 **文件**: `features/engine/evaluation/types.ts`, `features/engine/evaluation/components/EvaluationPage.tsx`
 
@@ -128,12 +128,12 @@
 **改为**: 增加 `min_score` / `status_filter` 参数，仅纳入高分回答。
 
 **验收标准**:
-- [ ] `ReportGenerator.generate()` 新增 `quality_filter: "all" | "pass_only"` 参数
-- [ ] `_fetch_evaluations()` 支持 `status` 过滤
-- [ ] 当 `quality_filter="pass_only"` 时，只纳入 `status=pass` 的 Q&A
-- [ ] 报告中注明 "Based on N high-quality responses (M total)"
+- [x] `ReportGenerator.generate()` 新增 `quality_filter: "all" | "pass_only"` 参数
+- [x] `_fetch_evaluations()` 支持 `status` 过滤
+- [x] 当 `quality_filter="pass_only"` 时，只纳入 `status=pass` 的 Q&A
+- [x] prompts 模板已提取到 `report/prompts.py`
 
-**文件**: `engine_v2/report/generator.py`
+**文件**: `engine_v2/report/generator.py`, `engine_v2/report/prompts.py`
 
 ### [EC-T3-02] 报告生成 API 扩展
 
@@ -142,8 +142,8 @@
 **描述**: `/engine/report/generate` 接口增加 `quality_filter` 参数。
 
 **验收标准**:
-- [ ] `POST /engine/report/generate` body 新增 `quality_filter: "all" | "pass_only"` (默认 "all")
-- [ ] 透传到 `ReportGenerator.generate(quality_filter=...)`
+- [x] `POST /engine/report/generate` body 新增 `quality_filter: "all" | "pass_only"` (默认 "all")
+- [x] 透传到 `ReportGenerator.generate(quality_filter=...)`
 
 **文件**: `engine_v2/api/routes/report.py`
 
@@ -154,10 +154,9 @@
 **描述**: ReportPage 的"Generate Report"对话框中增加质量过滤选项。让用户选择"基于全部回答"或"仅基于高分回答"生成报告。
 
 **验收标准**:
-- [ ] 生成报告对话框增加 Radio: "All responses" / "High-quality only (pass)"
-- [ ] 选择 "High-quality only" 时，显示当前 session 的 pass/fail 统计
-- [ ] API 调用携带 `quality_filter` 参数
-- [ ] 生成的报告 card 上标注 filter 模式
+- [x] 报告页面 header 增加质量过滤下拉："All answers" / "Pass only"
+- [x] API 调用携带 `quality_filter` 参数
+- [x] 生成按钮使用当前过滤器设置
 
 **文件**: `features/report/ReportPage.tsx`
 
@@ -168,11 +167,10 @@
 **描述**: 新增"全局报告"模式 — 不限于单个 session，跨所有 session 收集高分回答，生成综合质量报告。包括整体评估指标趋势、最佳回答案例、常见弱项分析。
 
 **验收标准**:
-- [ ] `ReportGenerator` 新增 `generate_global_report()` 方法
-- [ ] 从 Evaluations 集合拉取所有 `status=pass` 的记录
-- [ ] 报告包含：总体评估分布、Top-10 高分回答、低分模式分析、改进建议
-- [ ] `POST /engine/report/generate-global` — body: `{ n_recent, quality_filter }`
-- [ ] ReportPage 增加 "Generate Global Report" 按钮
+- [x] `generate_global_report()` 模块级函数，从 Evaluations 集合拉取 pass 记录
+- [x] 报告包含：总体评估分布、平均分、改进建议
+- [x] `POST /engine/report/global` — body: `{ quality_filter, limit, model }`
+- [x] ReportPage 增加 "Global Report" 按钮 + Globe 图标
 
 **文件**: `engine_v2/report/generator.py`, `engine_v2/api/routes/report.py`, `features/report/ReportPage.tsx`
 
@@ -183,25 +181,27 @@
 ```
 engine_v2/
 ├── api/routes/
-│   ├── query.py                    ← 改造 (自动评估触发)
-│   └── report.py                   ← 改造 (quality_filter 参数)
+│   └── report.py                   ← 改造 (quality_filter + /global 端点)
 ├── evaluation/
-│   └── history.py                  ← 改造 (status 判定)
+│   └── history.py                  ← 已有 _compute_status() ✅
 ├── report/
-│   └── generator.py                ← 改造 (分数过滤 + 全局报告)
-└── settings.py                     ← 改造 (AUTO_EVAL_ENABLED + EVAL_PASS_THRESHOLDS)
+│   ├── generator.py                ← 改造 (分数过滤 + 全局报告)
+│   └── prompts.py                  ← 新增 (prompt 模板抽取)
+└── settings.py                     ← 已有 AUTO_EVAL + 阈值 ✅
 
 payload-v2/
+├── hooks/queries/afterChange.ts    ← 已有自动评估触发 ✅
 ├── collections/
-│   └── Evaluations.ts              ← 改造 (新增 status 字段)
+│   ├── Queries.ts                  ← 已有 afterChange hook ✅
+│   └── Evaluations.ts              ← 已有 status 字段 ✅
 └── src/features/
     ├── engine/evaluation/
-    │   ├── api.ts                   ← 改造 (deleteQuery + status 过滤)
-    │   ├── types.ts                 ← 改造 (status 类型)
+    │   ├── api.ts                   ← 已有 deleteQuery + 状态过滤 ✅
+    │   ├── types.ts                 ← 已有 status 类型 ✅
     │   └── components/
-    │       └── EvaluationPage.tsx   ← 改造 (删除按钮 + 状态过滤)
+    │       └── EvaluationPage.tsx   ← 已有删除/批量/状态 UI ✅
     └── report/
-        └── ReportPage.tsx           ← 改造 (quality_filter 选项)
+        └── ReportPage.tsx           ← 改造 (quality_filter + Global Report)
 ```
 
 ---

@@ -2,6 +2,7 @@
 
 Endpoints:
     POST   /engine/report/generate                — generate report from chat session
+    POST   /engine/report/global                   — cross-session quality report (EC-T3-04)
     GET    /engine/report/list                    — list current user's reports
     GET    /engine/report/sessions/available      — list available chat sessions
     GET    /engine/report/{report_id}             — get report by ID
@@ -38,6 +39,7 @@ class GenerateReportRequest(BaseModel):
     sessionId: str
     userId: int | None = None
     model: str | None = None
+    quality_filter: str = "all"  # 'all' or 'pass_only' (EC-T3-01)
 
 
 # ============================================================
@@ -56,11 +58,48 @@ async def generate_report(req: GenerateReportRequest):
             session_id=req.sessionId,
             user_id=req.userId,
             model=req.model,
+            quality_filter=req.quality_filter,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except Exception as exc:
         logger.exception("Report generation failed: {}", exc)
+        raise HTTPException(status_code=500, detail=str(exc))
+
+    return {"report": report}
+
+
+# ============================================================
+# POST /engine/report/global — cross-session quality report
+# ============================================================
+class GlobalReportRequest(BaseModel):
+    """Request to generate a global quality report (EC-T3-04)."""
+
+    quality_filter: str = "pass_only"  # 'pass_only' or 'all'
+    limit: int = 200
+    model: str | None = None
+
+
+@router.post("/global")
+async def global_report(req: GlobalReportRequest):
+    """Generate a cross-session quality report from all evaluations."""
+    logger.info(
+        "Global report requested — filter={}, limit={}",
+        req.quality_filter, req.limit,
+    )
+
+    from engine_v2.report.generator import generate_global_report
+
+    try:
+        report = await generate_global_report(
+            quality_filter=req.quality_filter,
+            limit=req.limit,
+            model=req.model,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:
+        logger.exception("Global report generation failed: {}", exc)
         raise HTTPException(status_code=500, detail=str(exc))
 
     return {"report": report}

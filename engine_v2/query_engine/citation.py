@@ -256,6 +256,7 @@ def get_query_engine(
     provider: str | None = None,
     reranker: str | None = None,
     custom_system_prompt: str | None = None,
+    collection_name: str | None = None,
 ) -> TextbookCitationQueryEngine:
     """Build a TextbookCitationQueryEngine with 4-layer retrieval defense.
 
@@ -272,6 +273,10 @@ def get_query_engine(
             Layer 4: SimilarityPostprocessor (score cutoff for low-relevance)
             Layer 5: LLMRerank (optional — when user explicitly enables)
 
+    Args:
+        collection_name: ChromaDB collection override. For consulting personas,
+            pass ``persona_{slug}`` to query per-role knowledge bases.
+
     Ref: llama_index.core.postprocessor.sbert_rerank.SentenceTransformerRerank
     Ref: llama_index.core.postprocessor.node.SimilarityPostprocessor
     Ref: llama_index.core.postprocessor.llm_rerank.LLMRerank
@@ -287,10 +292,15 @@ def get_query_engine(
     # The reranker will trim back down to similarity_top_k
     retrieval_k = similarity_top_k * 2 if RERANKER_ENABLED else similarity_top_k
 
-    retriever = get_hybrid_retriever(
-        similarity_top_k=retrieval_k,
-        book_id_strings=book_id_strings,
-    )
+    # Build retriever kwargs — pass collection_name when overriding default
+    retriever_kwargs: dict = {
+        "similarity_top_k": retrieval_k,
+        "book_id_strings": book_id_strings,
+    }
+    if collection_name:
+        retriever_kwargs["collection_name"] = collection_name
+
+    retriever = get_hybrid_retriever(**retriever_kwargs)
     synthesizer = get_citation_synthesizer(
         streaming=streaming, model=model, provider=provider,
         custom_system_prompt=custom_system_prompt,

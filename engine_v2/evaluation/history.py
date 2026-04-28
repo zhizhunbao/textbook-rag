@@ -674,6 +674,16 @@ async def full_evaluate(
             vector_hits += 1
 
     # ── Assemble FullEvalResult ─────────────────────────
+    # Count LLM calls made during this evaluation (EUX-T2-02)
+    # depth(1) + faithfulness(1) + relevancy(1) + ctx_relevancy(1)
+    # + ans_relevancy(1) + guidelines(1) + correctness(0-1)
+    llm_calls = 6  # base: depth + faith + relev + ctx + ans_relev + guidelines
+    if golden_match:
+        llm_calls += 1  # correctness evaluator
+
+    # Extract answer model from query record (EUX-T2-01)
+    answer_model = record.model if hasattr(record, 'model') else None
+
     result = FullEvalResult(
         query_id=record.id,
         question=record.question,
@@ -707,6 +717,10 @@ async def full_evaluate(
         ndcg=ir_metrics.get("ndcg"),
         ir_score=ir_metrics.get("ir_score"),
         golden_match_id=golden_match.id if golden_match else None,
+        average_precision=ir_metrics.get("average_precision"),
+        # Metadata (EUX-T2)
+        answer_model=answer_model,
+        llm_calls=llm_calls,
         # Feedback
         feedback=feedback,
     )
@@ -715,13 +729,29 @@ async def full_evaluate(
     compute_aggregate_scores(result)
     result.status = _compute_status(result)
 
+    # Generate improvement suggestions (EUX-T3)
+    from engine_v2.evaluation.suggestions import generate_suggestions
+    suggestions_data = {
+        "faithfulness": result.faithfulness,
+        "relevancy": result.relevancy,
+        "contextRelevancy": result.context_relevancy,
+        "answerRelevancy": result.answer_relevancy,
+        "completeness": result.completeness,
+        "questionDepth": result.question_depth,
+        "overallScore": result.overall_score,
+    }
+    result.suggestions = [
+        s.to_dict() for s in generate_suggestions(suggestions_data)
+    ]
+
     # Persist to Payload Evaluations collection
     eval_id = await _persist_full_evaluation(result)
 
     logger.info(
-        "Full-evaluated query_id={} — rag={}, llm={}, answer={}, overall={}, status={} → eval_id={}",
+        "Full-evaluated query_id={} — rag={}, llm={}, answer={}, overall={}, status={}, suggestions={} → eval_id={}",
         query_id, result.rag_score, result.llm_score,
-        result.answer_score, result.overall_score, result.status, eval_id,
+        result.answer_score, result.overall_score, result.status,
+        len(result.suggestions), eval_id,
     )
     return result
 
@@ -808,6 +838,13 @@ async def _persist_full_evaluation(
         "goldenMatchRef": result.golden_match_id,
         # Cross-model (EI-T3-03)
         "judgeModel": result.judge_model,
+        # Evaluation metadata (EUX-T2)
+        "answerModel": result.answer_model,
+        "llmCalls": result.llm_calls,
+        # Improvement suggestions (EUX-T3)
+        "suggestions": result.suggestions,
+        # AP metric (EUX-T4)
+        "averagePrecision": result.average_precision,
         # Status
         "status": result.status,
     }

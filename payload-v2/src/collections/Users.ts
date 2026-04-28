@@ -35,5 +35,18 @@ export const Users: CollectionConfig = {
         update: ({ req: { user } }) => user?.role === 'admin',  // only admin can change role
       },
     },
+    // ── Consulting onboarding fields ──
+    {
+      name: 'selectedPersona',
+      type: 'relationship',
+      relationTo: 'consulting-personas',
+      admin: { position: 'sidebar' },
+    },
+    {
+      name: 'isOnboarded',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: { position: 'sidebar' },
+    },
   ],
 }

@@ -32,6 +32,7 @@ class GoldenRecord:
     book_id: str | None = None
     source_page: str = ""
     verified: bool = False
+    verification_source: str | None = None  # 'auto' | 'manual' (EUX-T1-01)
     tags: list[str] = field(default_factory=list)
     id: int | None = None  # Payload record ID (set after persistence)
 
@@ -160,13 +161,19 @@ async def generate_golden_dataset(
                             page_idx = str(page_str)
                         break
 
+        # Auto-verify if we found source chunk IDs (EUX-T1-01)
+        # LlamaIndex pattern: generated QA pairs with known sources
+        # are auto-verified since we know the ground-truth chunk mapping.
+        has_source = len(chunk_ids) > 0
+
         record = GoldenRecord(
             question=example.query,
             expected_answer=example.reference_answer or "",
             expected_chunk_ids=chunk_ids,
             book_id=book_id,
             source_page=page_idx,
-            verified=False,
+            verified=has_source,  # Auto-verify when source is known
+            verification_source="auto" if has_source else None,
             tags=["auto-generated"],
         )
         records.append(record)
@@ -215,6 +222,7 @@ async def persist_golden_records(
                 "bookId": record.book_id,
                 "sourcePage": record.source_page,
                 "verified": record.verified,
+                "verificationSource": record.verification_source,
                 "tags": record.tags,
             }
 

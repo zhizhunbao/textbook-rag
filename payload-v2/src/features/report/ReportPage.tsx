@@ -27,6 +27,8 @@ import {
   Users,
   User,
   GripVertical,
+  Globe,
+  Filter,
 } from 'lucide-react'
 import Markdown from 'react-markdown'
 import remarkMath from 'remark-math'
@@ -177,15 +179,30 @@ async function fetchReports(sessionId?: number): Promise<Report[]> {
 }
 
 /** Generate a report from a session via the Engine API. */
-async function generateReport(sessionId: string): Promise<Report> {
+async function generateReport(sessionId: string, qualityFilter: string = 'all'): Promise<Report> {
   const resp = await fetch(`${ENGINE_URL}/engine/report/generate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ sessionId }),
+    body: JSON.stringify({ sessionId, quality_filter: qualityFilter }),
   })
   if (!resp.ok) {
     const err = await resp.json().catch(() => ({}))
     throw new Error(err.detail || 'Report generation failed')
+  }
+  const data = await resp.json()
+  return data.report
+}
+
+/** Generate a cross-session quality report (EC-T3-04). */
+async function generateGlobalReport(qualityFilter: string = 'pass_only'): Promise<Report> {
+  const resp = await fetch(`${ENGINE_URL}/engine/report/global`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ quality_filter: qualityFilter }),
+  })
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}))
+    throw new Error(err.detail || 'Global report generation failed')
   }
   const data = await resp.json()
   return data.report
@@ -400,6 +417,10 @@ export default function ReportPage() {
   // ── Resizable sidebar ──
   const [sidebarWidth, setSidebarWidth] = useState(280)
 
+  // ── Quality filter (EC-T3-03) ──
+  const [qualityFilter, setQualityFilter] = useState<'all' | 'pass_only'>('all')
+  const [generatingGlobal, setGeneratingGlobal] = useState(false)
+
   // ── Load sessions ──
   const loadSessions = useCallback(async () => {
     setSessionsLoading(true)
@@ -486,7 +507,7 @@ export default function ReportPage() {
     setGenerating(true)
     setError(null)
     try {
-      const report = await generateReport(String(selectedSession.id))
+      const report = await generateReport(String(selectedSession.id), qualityFilter)
       setSelectedReport(report)
       // Refresh sessions to update hasReport badges
       await loadSessions()
@@ -494,6 +515,21 @@ export default function ReportPage() {
       setError(err instanceof Error ? err.message : 'Generation failed')
     } finally {
       setGenerating(false)
+    }
+  }
+
+  /** Generate a cross-session global quality report (EC-T3-04). */
+  const handleGlobalReport = async () => {
+    setGeneratingGlobal(true)
+    setError(null)
+    try {
+      const report = await generateGlobalReport(qualityFilter)
+      setSelectedReport(report)
+      setSelectedSession(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Global report failed')
+    } finally {
+      setGeneratingGlobal(false)
     }
   }
 
@@ -515,6 +551,36 @@ export default function ReportPage() {
               ? '选择对话 → 生成结构化研究报告 → 导出 PDF'
               : 'Select a session → generate structured analysis report → export PDF'}
           </p>
+        </div>
+
+        {/* Quality filter + Global report */}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5">
+            <Filter size={13} className="text-muted-foreground" />
+            <select
+              value={qualityFilter}
+              onChange={(e) => setQualityFilter(e.target.value as 'all' | 'pass_only')}
+              className="text-xs bg-transparent text-foreground focus:outline-none cursor-pointer"
+            >
+              <option value="all">{isFr ? '全部回答' : 'All answers'}</option>
+              <option value="pass_only">{isFr ? '仅高分回答' : 'Pass only'}</option>
+            </select>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleGlobalReport}
+            disabled={generatingGlobal || generating}
+            className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted transition-colors disabled:opacity-40"
+            title={isFr ? '生成跨会话全局质量报告' : 'Generate cross-session quality report'}
+          >
+            {generatingGlobal ? (
+              <Loader2 size={13} className="animate-spin" />
+            ) : (
+              <Globe size={13} />
+            )}
+            {isFr ? '全局报告' : 'Global Report'}
+          </button>
         </div>
       </div>
 

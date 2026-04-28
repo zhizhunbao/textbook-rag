@@ -13,6 +13,8 @@ export interface AuthUser {
   email: string
   displayName?: string | null
   role: 'admin' | 'editor' | 'reader'
+  isOnboarded?: boolean
+  selectedPersona?: { id: number; name: string; slug: string; icon?: string } | number | null
 }
 
 type Login = (args: { email: string; password: string }) => Promise<AuthUser>

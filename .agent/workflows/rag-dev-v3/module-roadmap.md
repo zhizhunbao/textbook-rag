@@ -2,7 +2,7 @@
 
 > 本文件为 `roadmap/` 目录下各 Sprint 文件的统一索引。
 > 
-> **总进度**: 123/243 stories 完成 (51%), ~530h 总工时 (含 Sprint Demo 14 stories, Sprint MH 15/16 stories 🚧, Sprint EV2 16 stories ✅, Sprint RB 5 stories ✅, Sprint UEP 14 stories ✅, Sprint AQ-Epic1 10 stories ✅, Sprint AQ-Epic2 3 stories ✅, Sprint EI 14/14 stories ✅, Sprint QD 11/11 stories ✅)
+> **总进度**: 138/278 stories 完成 (50%), ~583h 总工时 (含 Sprint Demo 14 stories, Sprint MH 15/16 stories 🚧, Sprint EV2 16 stories ✅, Sprint RB 5 stories ✅, Sprint UEP 14 stories ✅, Sprint AQ-Epic1 10 stories ✅, Sprint AQ-Epic2 3 stories ✅, Sprint EI 14/14 stories ✅, Sprint QD 11/11 stories ✅, Sprint EC 9/9 stories ✅, **Sprint C1 8/8 stories ✅**, Consulting C2-C5 27 stories 新增)
 
 ## 文件索引
 
@@ -14,12 +14,18 @@
 | [02-sprint2.md](./roadmap/02-sprint2.md) | **Sprint 执行计划** | 🟢 | S2 评估中枢+引用UX+持久化 — 30 stories, 78h 🚧 22/30 ✅qgen ✅citation ✅eval ✅chat ⏸️retrievers(P4) ⏸️home(P4) ⏸️seed(P4) |
 | [12-sprint-demo.md](./roadmap/12-sprint-demo.md) | ✅ **Demo Sprint** | ⛔ SKIP | **展示日冲刺** — 14 stories, 10.5h ✅ 14/14 全书搜索+暖色主题+建议问题+Citation Score+Report MVP+Admin分离 |
 | [13-sprint-question-dataset.md](./roadmap/13-sprint-question-dataset.md) | ✅ **Sprint QD** | ⛔ SKIP | **Question Dataset Pipeline** — 11 stories, 25h ✅ 11/11 分层采样+chunk追踪+QuestionPicker+检索评估 |
-| [14-sprint-eval-curation.md](./roadmap/14-sprint-eval-curation.md) | 🆕 **Sprint EC** | 🟢 | **回答筛选+自动评估+高分报告** — 9 stories, 11h ❌ Query删除+自动评估触发+达标判定+高分报告生成 |
+| [14-sprint-eval-curation.md](./roadmap/14-sprint-eval-curation.md) | ✅ **Sprint EC** | ⛔ SKIP | **回答筛选+自动评估+高分报告** — 9 stories, 11h ✅ 9/9 完成 ✅Query删除+批量删除 ✅自动评估触发+达标判定 ✅前端状态显示 ✅quality_filter+全局报告+prompts.py |
 | [16-sprint-eval-v2.md](./roadmap/16-sprint-eval-v2.md) | ✅ **Sprint EV2** | ⛔ SKIP | **四分类评分+检索策略溯源+自动评估+Agentic RAG基座** — 16 stories, 27h ✅ 13/16 核心完成 ✅T1检索策略溯源 ✅T2四分类评分 ✅T3自动评估 ✅T4路由基座 ✅T5-01评分卡 ⏸️T4-02路由评估(P3延后) ⏸️T5-02诊断面板(P3延后) ⏸️T5-03趋势对比(P3延后) |
 | [17-sprint-robustness.md](./roadmap/17-sprint-robustness.md) | ✅ **Sprint RB** | ⛔ SKIP | **LLM输出防御 — structured_predict替换裸json.loads** — 5 stories, 3h ✅ 5/5 完成 |
 | [18-sprint-ux-eval-polish.md](./roadmap/18-sprint-ux-eval-polish.md) | ✅ **Sprint UEP** | ⛔ SKIP | **评分交互打磨+BM25修复+双视角模式** — 14 stories, 14.5h ✅ 14/14 完成 ✅T1 BM25全书搜索+缓存 ✅T2评分完整性+回填 ✅T3双视角评分卡 ✅T4 CitationChip+配色 |
 | [19-sprint-eval-industrial.md](./roadmap/19-sprint-eval-industrial.md) | ✅ **Sprint EI** | ⛔ SKIP | **工业级评估升级** — 14 stories, 22.5h ✅ 14/14 完成 ✅T1 Golden Dataset ✅T2 IR硬指标 ✅T3 Guideline+Correctness+CrossModel ✅T4 Pairwise+BatchA/B ✅T5 前端卡片+Tooltip |
 | [15-sprint-model-hub.md](./roadmap/15-sprint-model-hub.md) | 🚧 **Sprint MH** | 🟢 | **Ollama模型库+一键拉取+性能测试** — 16 stories, 14h 🚧 15/16 ✅精选目录 ✅SSE Pull ✅CatalogCard ✅进度条 ✅自动注册 ✅标准测试问题 ✅串行Benchmark ✅BenchmarkConsole ✅Library/Benchmark Tab ⏳useModels hook合并(延后) |
+| [20-sprint-consulting-c1.md](./roadmap/20-sprint-consulting-c1.md) | ✅ **Sprint C1** | ⛔ SKIP | **用户身份+首次引导** — 8 stories, 8h ✅ 8/8 完成 ✅Users扩展 ✅ConsultingPersonas ✅Seed ✅OnboardingPage ✅路由守卫 ✅Sidebar角色指示器 |
+| [21-sprint-consulting-c2.md](./roadmap/21-sprint-consulting-c2.md) | 🆕 **Sprint C2** | 🟢 | **角色管理+角色知识库** — 7 stories, 10h ❌ 0/7 personas模块+PDF灌入+Admin管理页+角色切换 |
+| [22-sprint-consulting-c3.md](./roadmap/22-sprint-consulting-c3.md) | 🆕 **Sprint C3** | 🟢 | **用户私有文档管理** — 7 stories, 9h ❌ 0/7 UserDocuments+用户PDF上传+隔离入库+文档面板 |
+| [23-sprint-consulting-c4.md](./roadmap/23-sprint-consulting-c4.md) | 🆕 **Sprint C4** | 🟢 | **双库联合检索+会话绑定** — 7 stories, 12h ❌ 0/7 双库检索器+人设Prompt注入+咨询对话页+会话管理 |
+| [24-sprint-consulting-c5.md](./roadmap/24-sprint-consulting-c5.md) | 🆕 **Sprint C5** | 🟢 | **打磨+扩展** — 6 stories, 6h ❌ 0/6 切换动效+来源着色+角色向导+咨询历史+权限收紧 |
+| [25-sprint-eval-ux.md](./roadmap/25-sprint-eval-ux.md) | 🆕 **Sprint EUX** | 🟢 | **评估体验增强** — 9 stories, 8h ❌ 0/9 Auto-Verify Golden+元数据透明+低分建议+AP指标对齐LlamaIndex |
 | [03-sprint3.md](./roadmap/03-sprint3.md) | **Sprint 执行计划** | 🟢 | S3 评估图表+反馈 + 多题型 + toc — 8 stories, 24h ❌ |
 | [04-sprint4.md](./roadmap/04-sprint4.md) | **Sprint 执行计划** | 🟢 | S4 基建补全 — 11 stories, 29h ❌ |
 | [05-module-status.md](./roadmap/05-module-status.md) | **模块现状** | 🟢 | 17 个模块的 Layout/UI/UX/Func 状态卡 |
@@ -38,7 +44,13 @@
 | 优先级 | Sprint | 剩余 | 预估 | 理由 |
 |--------|--------|------|------|------|
 | ✅ Done | **QD** (13) Question Dataset | ✅ 11/11 完成 | 25h | 分层采样 + chunk 追踪，QuestionPicker，Retrieval Recall |
-| 🟠 P1 | **EC** (14) 回答筛选 | 9/9 待做 | 11h | 自动评估触发已在 EV2 完成，剩余为 UI 筛选 + 高分报告 |
+| ✅ Done | **C1** (20) 用户身份+引导 | ✅ 8/8 完成 | 8h | Users扩展 + ConsultingPersonas + Seed + OnboardingPage + 路由守卫 |
+| ✅ Done | **C2** (21) 角色管理+知识库 | ✅ 7/7 完成 | 10h | Admin 管理角色、灌入专属 PDF 知识库、用户切换角色 |
+| ✅ Done | **C3** (22) 用户私有文档 | ✅ 7/7 完成 | 9h | 用户上传 PDF 私有文档、按用户×角色隔离入库 |
+| 🟠 P1 | **C4** (23) 双库联合检索+会话 | 7/7 待做 | 12h | 端到端咨询体验闭环：双库检索 + 人设 Prompt + 流式对话 |
+| 🟢 P2 | **C5** (24) 打磨+扩展 | 6/6 待做 | 6h | 切换动效、来源着色、角色向导、咨询历史、权限收紧 |
+| ✅ Done | **EUX** (25) 评估体验 | ✅ 9/9 完成 | 8h | Auto-Verify Golden解锁IR指标 + 元数据透明 + 低分改进建议 + AP对齐LlamaIndex |
+| ✅ Done | **EC** (14) 回答筛选 | ✅ 9/9 完成 | 11h | Query 删除+批量低分筛选+自动评估触发+达标判定+quality_filter+全局报告+prompts.py |
 | 🟢 P3 | **MH** (15) 模型库 | 1/16 待做 | 1h | useModels hook 合并延后，功能完整可用 |
 | 🟢 P3 | **S3** (03) 评估图表 | 8/8 待做 | 24h | 需要 EI 的评估数据积累后才有意义 |
 | 🔵 P4 | **S2** (02) 剩余收尾 | 8/30 待做 | ~21h | ⏸️ retrievers UI / home 仪表盘 / seed 日志 — 纯 UI polish，不解锁新能力，不阻塞下游 |
@@ -48,7 +60,8 @@
 
 ### 当前推荐动作
 
-1. **QD**: 分层采样 + chunk 追踪 → 为 EI Golden Dataset 提供数据源，评估闭环
-2. **EC**: 回答筛选 + 高分报告 → 将 EI 评估能力产品化
-3. **S3/S5**: 评估图表 / 智能检索 → 数据积累后推进
-
+1. **C1**: ✅ 已完成 — 用户身份+引导 → ConsultingPersonas + OnboardingPage + 路由守卫
+2. **C2**: 角色管理+知识库 → personas 模块 + PDF 灌入 + Admin 管理页 + 角色切换
+3. **C3 → C4**: 用户私有文档 → 双库联合检索 → 端到端咨询体验闭环
+4. **C5**: 交互打磨 → 产品化就绪
+5. **EC**: ✅ 已完成 — 回答筛选 + 高分报告 → EI 评估能力已产品化

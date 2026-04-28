@@ -159,6 +159,14 @@ class FullEvalResult:
     ndcg: float | None = None
     ir_score: float | None = None  # Mean of 5 IR metrics
     golden_match_id: int | None = None  # Matched GoldenDataset record ID
+    average_precision: float | None = None  # AP metric (EUX-T4)
+
+    # ── 📋 Evaluation metadata (EUX-T2) ──
+    answer_model: str | None = None  # LLM that generated the answer
+    llm_calls: int = 0  # Total LLM API calls during evaluation
+
+    # ── 💡 Improvement suggestions (EUX-T3) ──
+    suggestions: list[dict] = field(default_factory=list)
 
     # ── Feedback ──
     feedback: dict[str, str] = field(default_factory=dict)

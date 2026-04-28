@@ -148,20 +148,33 @@ class ReportGenerator:
         logger.info("Fetched {} messages for session {}", len(messages), session_id)
         return messages
 
-    async def _fetch_evaluations(self, messages: list[ChatMessage]) -> list[EvalScore]:
-        """Fetch evaluation records that match the user questions in this session."""
+    async def _fetch_evaluations(
+        self,
+        messages: list[ChatMessage],
+        quality_filter: str = "all",
+    ) -> list[EvalScore]:
+        """Fetch evaluation records that match the user questions in this session.
+
+        Args:
+            messages: Chat messages from the session.
+            quality_filter: 'all' to include everything, 'pass_only' to keep
+                only evaluations with status='pass'.
+        """
         user_questions = [m.content for m in messages if m.role == "user"]
         if not user_questions:
             return []
+
+        params: dict[str, str] = {"limit": "200", "sort": "-createdAt"}
+        if quality_filter == "pass_only":
+            params["where[status][equals]"] = "pass"
 
         evals: list[EvalScore] = []
         token = await _get_payload_token()
         headers = {"Authorization": f"JWT {token}"}
         async with httpx.AsyncClient(timeout=15) as client:
-            # Fetch all recent evaluations and match by question text
             resp = await client.get(
                 f"{PAYLOAD_URL}/api/evaluations",
-                params={"limit": 200, "sort": "-createdAt"},
+                params=params,
                 headers=headers,
             )
             resp.raise_for_status()
@@ -184,7 +197,10 @@ class ReportGenerator:
                     feedback=ev.get("feedback"),
                 ))
 
-        logger.info("Matched {} evaluations for {} questions", len(evals), len(user_questions))
+        logger.info(
+            "Matched {} evaluations for {} questions (filter={})",
+            len(evals), len(user_questions), quality_filter,
+        )
         return evals
 
     def _compute_stats(
@@ -224,11 +240,15 @@ class ReportGenerator:
 
         return avg_scores, depth_dist, source_books
 
-    async def collect_data(self, session_id: str) -> ReportData:
+    async def collect_data(
+        self,
+        session_id: str,
+        quality_filter: str = "all",
+    ) -> ReportData:
         """Collect all data needed for report generation."""
         session = await self._fetch_session(session_id)
         messages = await self._fetch_messages(session_id)
-        evaluations = await self._fetch_evaluations(messages)
+        evaluations = await self._fetch_evaluations(messages, quality_filter)
         avg_scores, depth_dist, source_stats = self._compute_stats(messages, evaluations)
 
         return ReportData(
@@ -246,6 +266,8 @@ class ReportGenerator:
     # ----------------------------------------------------------
     def _build_prompt(self, data: ReportData) -> str:
         """Build the report generation prompt from collected data."""
+        from engine_v2.report.prompts import SESSION_REPORT_TEMPLATE
+
         # Build conversation transcript
         transcript_lines: list[str] = []
         for m in data.messages:
@@ -288,81 +310,38 @@ class ReportGenerator:
                 )
             per_q_detail = "\n\nPer-question evaluation:\n" + "\n".join(detail_lines)
 
-        prompt = f"""You are a research report writer. Generate a professional Markdown research report based on the following chat session data and evaluation metrics.
+        message_count = len([m for m in data.messages if m.role == "user"])
+        book_titles = ", ".join(data.book_titles) if data.book_titles else "All available documents"
 
-## Session: {data.session_title}
-## Documents referenced: {', '.join(data.book_titles) if data.book_titles else 'All available documents'}
-
----
-
-### Conversation Transcript (most recent):
-
-{transcript}
-
----
-
-### Evaluation Metrics:
-
-{eval_summary}{per_q_detail}
-
----
-
-### Source Citations:
-
-{source_summary}
-
----
-
-## Instructions:
-
-Generate a structured Markdown report with EXACTLY these 5 sections:
-
-# Research Report: {data.session_title}
-
-## 1. Executive Summary
-Write a concise overview of what was discussed, key topics explored, and the overall quality of the research session. Include the number of questions asked ({len([m for m in data.messages if m.role == 'user'])} user messages) and documents referenced.
-
-## 2. Key Findings
-Extract and synthesize the most important findings and insights from the assistant's responses. Present as numbered bullet points with specific data points and conclusions drawn from the source documents.
-
-## 3. Quality Assessment
-Summarize the evaluation metrics:
-- Overall faithfulness and relevancy scores (use the average scores provided)
-- Question depth analysis (distribution of surface/understanding/synthesis questions)
-- Specific areas where the RAG system performed well or could improve
-If no evaluation data is available, state that the session has not been evaluated yet.
-
-## 4. Source Analysis
-Analyze the citation patterns:
-- Which documents were most frequently cited
-- Coverage breadth (how many unique sources were referenced)
-- Any gaps in source coverage
-
-## 5. Methodology
-Describe the research methodology:
-- RAG (Retrieval-Augmented Generation) pipeline used
-- LLM model(s) involved
-- Evaluation framework (5-dimensional: faithfulness, relevancy, correctness, context relevancy, answer relevancy)
-- Question depth classification system (surface → understanding → synthesis)
-
-Write in a professional, analytical tone. Use Markdown formatting (headers, bullet points, bold for emphasis). Keep the total report between 800-1500 words."""
-
-        return prompt
+        return SESSION_REPORT_TEMPLATE.format(
+            session_title=data.session_title,
+            book_titles=book_titles,
+            transcript=transcript,
+            eval_summary=eval_summary,
+            per_q_detail=per_q_detail,
+            source_summary=source_summary,
+            message_count=message_count,
+        )
 
     async def generate(
         self,
         session_id: str,
         user_id: int | None = None,
         model: str | None = None,
+        quality_filter: str = "all",
     ) -> dict[str, Any]:
         """Generate a report from a chat session.
+
+        Args:
+            quality_filter: 'all' or 'pass_only' — when 'pass_only',
+                only evaluations with status='pass' are included.
 
         Returns the created report document from Payload.
         """
         logger.info("Generating report for session {}", session_id)
 
         # 1. Collect data
-        data = await self.collect_data(session_id)
+        data = await self.collect_data(session_id, quality_filter=quality_filter)
         message_count = len([m for m in data.messages if m.role == "user"])
 
         if not data.messages:
@@ -455,3 +434,107 @@ Write in a professional, analytical tone. Use Markdown formatting (headers, bull
         logger.info("Calling LLM for report generation (model={})", model or "default")
         response = await llm.acomplete(prompt)
         return response.text
+
+
+# ============================================================
+# Module-level helper — Global quality report (EC-T3-04)
+# ============================================================
+async def generate_global_report(
+    quality_filter: str = "pass_only",
+    limit: int = 200,
+    model: str | None = None,
+) -> dict[str, Any]:
+    """Generate a cross-session quality report from all evaluations.
+
+    Fetches evaluations filtered by status, aggregates scores, and
+    produces a comprehensive quality summary via LLM.
+
+    Args:
+        quality_filter: 'pass_only' (default) or 'all'.
+        limit: Max evaluations to include.
+        model: Optional LLM model override.
+
+    Returns:
+        The persisted report document from Payload.
+    """
+    params: dict[str, str] = {
+        "limit": str(limit),
+        "sort": "-createdAt",
+    }
+    if quality_filter == "pass_only":
+        params["where[status][equals]"] = "pass"
+
+    token = await _get_payload_token()
+    headers = {"Authorization": f"JWT {token}"}
+
+    # 1. Fetch evaluations
+    async with httpx.AsyncClient(timeout=15) as client:
+        resp = await client.get(
+            f"{PAYLOAD_URL}/api/evaluations",
+            params=params,
+            headers=headers,
+        )
+        resp.raise_for_status()
+        evals = resp.json().get("docs", [])
+
+    if not evals:
+        raise ValueError("No evaluations match the filter criteria")
+
+    # 2. Aggregate stats
+    scores: dict[str, list[float]] = {}
+    for ev in evals:
+        for key in ("faithfulness", "relevancy", "contextRelevancy",
+                     "answerRelevancy", "overallScore"):
+            val = ev.get(key)
+            if val is not None:
+                scores.setdefault(key, []).append(float(val))
+
+    avg_scores = {k: sum(v) / len(v) for k, v in scores.items() if v}
+    status_counts = {}
+    for ev in evals:
+        s = ev.get("status", "pending")
+        status_counts[s] = status_counts.get(s, 0) + 1
+
+    # 3. Build prompt from template
+    from engine_v2.report.prompts import GLOBAL_REPORT_TEMPLATE
+
+    prompt = GLOBAL_REPORT_TEMPLATE.format(
+        eval_count=len(evals),
+        quality_filter=quality_filter,
+        status_counts=status_counts,
+        avg_scores=avg_scores,
+    )
+
+    # 4. Call LLM
+    generator = ReportGenerator()
+    content = await generator._call_llm(prompt, model=model)
+
+    # 5. Persist to Payload
+    report_payload = {
+        "title": f"Global Quality Report ({quality_filter})",
+        "content": content,
+        "sessionId": "global",
+        "sessionTitle": "Cross-Session Quality Report",
+        "status": "completed",
+        "model": model or "default",
+        "stats": {
+            "messageCount": len(evals),
+            "avgScores": avg_scores,
+        },
+    }
+    token2 = await _get_payload_token()
+    headers2 = {"Authorization": f"JWT {token2}"}
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.post(
+            f"{PAYLOAD_URL}/api/reports",
+            json=report_payload,
+            headers=headers2,
+        )
+        resp.raise_for_status()
+        report_doc = resp.json().get("doc", resp.json())
+
+    logger.info(
+        "Global report created — id={}, evals={}, filter={}",
+        report_doc.get("id"), len(evals), quality_filter,
+    )
+    return report_doc

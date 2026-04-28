@@ -23,6 +23,8 @@ import { ChatMessages } from './collections/ChatMessages'
 import { Media } from './collections/Media'
 import { PdfUploads } from './collections/PdfUploads'
 import { Reports } from './collections/Reports'
+import { ConsultingPersonas } from './collections/ConsultingPersonas'
+import { UserDocuments } from './collections/UserDocuments'
 import { seedEndpoint } from './collections/endpoints'
 
 const filename = fileURLToPath(import.meta.url)
@@ -54,6 +56,8 @@ export default buildConfig({
     ChatSessions,
     ChatMessages,
     Reports,
+    ConsultingPersonas,
+    UserDocuments,
   ],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',

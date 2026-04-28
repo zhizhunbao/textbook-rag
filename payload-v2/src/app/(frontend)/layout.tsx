@@ -3,6 +3,7 @@ import React from 'react'
 
 import { Providers } from '@/features/shared/Providers'
 import AppLayout from '@/features/layout/AppLayout'
+import AuthGuard from '@/features/layout/AuthGuard'
 import { ChatHistoryProvider } from '@/features/chat/history/ChatHistoryContext'
 
 import 'katex/dist/katex.min.css'
@@ -13,6 +14,7 @@ import './globals.css'
  * - <html>/<body> + dark-mode FOUC prevention
  * - Providers (Auth, theme, etc.)
  * - AppLayout (sidebar + header) + ChatHistoryProvider
+ * - AuthGuard (login/onboarding route guard)
  */
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -38,7 +40,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Providers>
           <ChatHistoryProvider>
             <AppLayout>
-              {children}
+              <AuthGuard>
+                {children}
+              </AuthGuard>
             </AppLayout>
           </ChatHistoryProvider>
         </Providers>

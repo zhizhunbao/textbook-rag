@@ -18,6 +18,8 @@ import {
   Database,
   Globe,
   Search,
+  UserCircle,
+  Briefcase,
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useI18n } from '@/features/shared/i18n'
@@ -95,7 +97,7 @@ export default function AppSidebar() {
   const groups = groupByDay(sessions)
 
   // ── Admin nav: single flat list ordered by RAG pipeline execution flow ──
-  // Import → Library → LLMs → Prompts → Query Engine → Evaluation → Feedback → Analytics → Seed
+  // Import → Library → LLMs → Prompts → Query Engine → Evaluation → Personas → Feedback → Analytics → Seed
   const adminLinks = [
     { titleKey: 'navAcquisition', icon: Globe, href: '/engine/acquisition' },
     { titleKey: 'navLlms', icon: Brain, href: '/engine/llms' },
@@ -103,6 +105,7 @@ export default function AppSidebar() {
     { titleKey: 'navRetrievers', icon: Search, href: '/engine/retrievers' },
     { titleKey: 'navQueryEngine', icon: MessageSquare, href: '/engine/query_engine' },
     { titleKey: 'navEvaluation', icon: LineChart, href: '/engine/evaluation' },
+    { titleKey: 'navPersonas', icon: UserCircle, href: '/engine/personas' },
     { titleKey: 'navFeedback', icon: ThumbsUp, href: '/engine/feedback' },
     { titleKey: 'navAnalytics', icon: BarChart3, href: '/engine/analytics' },
     { titleKey: 'navSeed', icon: Database, href: '/seed' },
@@ -331,12 +334,46 @@ export default function AppSidebar() {
           )}
         </div>
 
+        {/* ── Persona indicator (non-admin only) ── */}
+        {!isAdmin && (
+          <div className={cn('shrink-0 border-t border-sidebar-border py-2', collapsed ? 'px-1' : 'px-2')}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => router.push('/onboarding')}
+                  className={cn(
+                    'flex items-center gap-3 w-full h-9 rounded-lg text-sm font-medium transition-colors',
+                    'text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                    collapsed ? 'justify-center px-0' : 'px-3',
+                  )}
+                >
+                  <UserCircle size={18} className="shrink-0 text-primary" />
+                  <span className={labelCls}>
+                    {user?.selectedPersona && typeof user.selectedPersona === 'object'
+                      ? user.selectedPersona.name
+                      : String(t.sidebarNoPersona)}
+                  </span>
+                </button>
+              </TooltipTrigger>
+              {collapsed && (
+                <TooltipContent side="right" sideOffset={8}>
+                  {user?.selectedPersona && typeof user.selectedPersona === 'object'
+                    ? user.selectedPersona.name
+                    : String(t.sidebarNoPersona)}
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </div>
+        )}
+
         {/* ── Resources (all users) ── */}
         <div className={cn('shrink-0 border-t border-sidebar-border py-2', collapsed ? 'px-1' : 'px-2')}>
           <p className={cn('px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground transition-all', DURATION, collapsed ? 'h-0 opacity-0 overflow-hidden py-0' : 'opacity-100')}>
             {t.navGroupResources}
           </p>
           <nav className="flex flex-col gap-0.5">
+            {navLink('/consulting', Briefcase, String(t.navConsulting))}
             {navLink('/engine/question_gen', MessageSquareDot, String(t.navQuestionGen))}
             {navLink('/reports', FileText, String(t.navReports))}
             {navLink('/settings', Settings, String(t.settings))}

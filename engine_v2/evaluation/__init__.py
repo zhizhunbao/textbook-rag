@@ -19,6 +19,8 @@ Public API:
     CompletenessEvaluator          — answer completeness evaluator — EV2-T2
     ClarityEvaluator               — answer clarity evaluator — EV2-T2
     compute_aggregate_scores       — compute rag/llm/answer/overall aggregates — EV2-T2
+    generate_suggestions           — rule-based improvement suggestions — EUX-T3
+    Suggestion                     — improvement suggestion dataclass — EUX-T3
 """
 
 from engine_v2.evaluation.answer_evaluators import (
@@ -46,6 +48,10 @@ from engine_v2.evaluation.history import (
     evaluate_single_from_query,
     full_evaluate,
 )
+from engine_v2.evaluation.suggestions import (
+    Suggestion,
+    generate_suggestions,
+)
 
 __all__ = [
     "ClarityEvaluator",
@@ -66,5 +72,7 @@ __all__ = [
     "evaluate_response",
     "evaluate_single_from_query",
     "full_evaluate",
+    "generate_suggestions",
     "question_dedup",
+    "Suggestion",
 ]

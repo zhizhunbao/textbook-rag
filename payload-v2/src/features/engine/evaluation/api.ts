@@ -368,6 +368,22 @@ export async function fetchEvaluation(id: number): Promise<EvaluationResult> {
   return mapEvaluation(data)
 }
 
+/** Delete one Query record from Payload CMS. */
+export async function deleteQuery(id: number): Promise<void> {
+  await request<any>(`/api/queries/${id}`, { method: 'DELETE' })
+}
+
+/** Delete all persisted evaluation records linked to a Query record. */
+export async function deleteEvaluationsByQuery(queryId: number): Promise<number> {
+  const { evaluations } = await fetchEvaluations({ queryRef: queryId, limit: 500 })
+  await Promise.all(
+    evaluations.map((evaluation) => (
+      request<any>(`/api/evaluations/${evaluation.id}`, { method: 'DELETE' })
+    )),
+  )
+  return evaluations.length
+}
+
 // ============================================================
 // Aggregated statistics
 // ============================================================

@@ -11,7 +11,7 @@ import ThemeToggle from '@/features/shared/components/ThemeToggle'
  * 纯 Tailwind 语义类 + dark: 前缀，无 isDark / useTheme
  */
 export default function LoginForm() {
-  const { login, status } = useAuth()
+  const { login, status, user } = useAuth()
   const { t } = useI18n()
 
   const [email, setEmail] = useState('')
@@ -21,8 +21,11 @@ export default function LoginForm() {
   const [formError, setFormError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (status === 'loggedIn') window.location.href = '/chat'
-  }, [status])
+    if (status === 'loggedIn' && user) {
+      if (user.role === 'admin') { window.location.href = '/chat'; return }
+      window.location.href = user.isOnboarded ? '/chat' : '/onboarding'
+    }
+  }, [status, user])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -34,7 +37,7 @@ export default function LoginForm() {
       setFormError(null)
       setIsLoading(true)
       await login({ email: email.trim(), password })
-      window.location.href = '/chat'
+      // Redirect is handled by the useEffect above after user state updates
     } catch {
       setFormError(t.loginErrorFailed)
     } finally {

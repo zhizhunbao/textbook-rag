@@ -267,6 +267,40 @@ export const Evaluations: CollectionConfig = {
       type: 'text',
       admin: { description: 'Batch evaluation run ID (for grouping)' },
     },
+
+    // ── Evaluation metadata (EUX-T2) ──
+    {
+      name: 'judgeModel',
+      type: 'text',
+      admin: { description: 'LLM model used as evaluation judge (e.g. "azure/gpt-4o-mini")' },
+    },
+    {
+      name: 'answerModel',
+      type: 'text',
+      admin: { description: 'LLM model that generated the answer (e.g. "llama3.2:3b")' },
+    },
+    {
+      name: 'llmCalls',
+      type: 'number',
+      min: 0,
+      admin: { description: 'Total LLM API calls made during this evaluation' },
+    },
+
+    // ── Improvement suggestions (EUX-T3) ──
+    {
+      name: 'suggestions',
+      type: 'json',
+      admin: { description: 'Array of improvement suggestions [{dimension, severity, message_en, message_zh}]' },
+    },
+
+    // ── AveragePrecision (EUX-T4, aligns with LlamaIndex METRIC_REGISTRY) ──
+    {
+      name: 'averagePrecision',
+      type: 'number',
+      min: 0,
+      max: 1,
+      admin: { description: 'Average Precision — aligns with LlamaIndex AP metric' },
+    },
   ],
 }
 

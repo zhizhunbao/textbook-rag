@@ -191,8 +191,29 @@ export interface EvaluationResult {
   batchId: string | null
   queryRef: number | null
 
+  // Evaluation metadata (EUX-T2)
+  judgeModel: string | null
+  answerModel: string | null
+  llmCalls: number | null
+
+  // Improvement suggestions (EUX-T3)
+  suggestions: EvalSuggestion[] | null
+
+  // AveragePrecision (EUX-T4)
+  averagePrecision: number | null
+
   createdAt: string
   updatedAt: string
+}
+
+/** Improvement suggestion for low-scoring evaluations (EUX-T3). */
+export type SuggestionSeverity = 'high' | 'medium' | 'low' | 'info'
+
+export interface EvalSuggestion {
+  dimension: string
+  severity: SuggestionSeverity
+  message_en: string
+  message_zh: string
 }
 
 // ============================================================

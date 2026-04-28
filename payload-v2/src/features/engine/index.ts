@@ -42,3 +42,6 @@ export * from './evaluation'
 
 // ── 8. Question Generation ──────────────────────────────────────────────────
 export * from './question_gen'
+
+// ── 9. Personas (Consulting Admin) ──────────────────────────────────────────
+export * from './personas'

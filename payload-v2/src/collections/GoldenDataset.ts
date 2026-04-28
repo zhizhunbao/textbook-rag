@@ -64,7 +64,16 @@ export const GoldenDataset: CollectionConfig = {
       name: 'verified',
       type: 'checkbox',
       defaultValue: false,
-      admin: { description: 'Has this QA pair been manually verified?' },
+      admin: { description: 'Has this QA pair been verified (auto or manual)?' },
+    },
+    {
+      name: 'verificationSource',
+      type: 'select',
+      options: [
+        { label: 'Auto (LLM generated)', value: 'auto' },
+        { label: 'Manual (human reviewed)', value: 'manual' },
+      ],
+      admin: { description: 'How was this record verified? (EUX-T1-01)' },
     },
     {
       name: 'tags',

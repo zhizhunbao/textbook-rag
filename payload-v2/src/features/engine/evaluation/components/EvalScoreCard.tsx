@@ -18,9 +18,18 @@ import {
   Shuffle, Grid3X3,
   CircleCheck, CircleX,
   Info,
+  Lightbulb, Settings2,
 } from 'lucide-react'
 import { cn } from '@/features/shared/utils'
-import type { EvaluationResult, EvalStatus } from '../types'
+import type { EvaluationResult, EvalStatus, EvalSuggestion, SuggestionSeverity } from '../types'
+
+/** Map suggestion severity → visual styles. */
+const SEVERITY_STYLES: Record<SuggestionSeverity, { dot: string; text: string }> = {
+  high: { dot: 'bg-red-400', text: 'text-red-300' },
+  medium: { dot: 'bg-amber-400', text: 'text-amber-300' },
+  low: { dot: 'bg-emerald-400', text: 'text-emerald-300' },
+  info: { dot: 'bg-blue-400', text: 'text-blue-300' },
+}
 
 // ============================================================
 // Constants
@@ -557,6 +566,53 @@ export default function EvalScoreCard({ evaluation, locale = 'en' }: EvalScoreCa
                   : <><Grid3X3 className="inline h-2.5 w-2.5 mr-0.5" /> Vector-only</>
                 }
               </span>
+            </div>
+          )}
+
+          {/* ── 💡 Improvement suggestions (EUX-T3-03) ── */}
+          {evaluation.suggestions && evaluation.suggestions.length > 0 && (
+            <div className="col-span-2 rounded-lg border border-amber-500/20 bg-amber-500/5 p-2">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <Lightbulb className="h-3 w-3 text-amber-400" />
+                <span className="text-[10px] font-medium text-amber-300">
+                  {isFr ? `改进建议 (${evaluation.suggestions.length})` : `Suggestions (${evaluation.suggestions.length})`}
+                </span>
+              </div>
+              <div className="space-y-1">
+                {evaluation.suggestions.map((s: EvalSuggestion, i: number) => {
+                  const style = SEVERITY_STYLES[s.severity] || SEVERITY_STYLES.medium
+                  return (
+                    <div key={i} className="flex items-start gap-1.5 text-[9px] text-muted-foreground">
+                      <span className={cn('mt-1 inline-block w-1.5 h-1.5 rounded-full shrink-0', style.dot)} />
+                      <span className={style.text}>
+                        {isFr ? s.message_zh : s.message_en}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ── ⚙ Evaluation metadata (EUX-T2-03) ── */}
+          {(evaluation.judgeModel || evaluation.answerModel || evaluation.llmCalls) && (
+            <div className="col-span-2 flex flex-wrap items-center gap-x-3 gap-y-0.5 px-1 text-[8px] text-muted-foreground/60">
+              <Settings2 className="h-2.5 w-2.5 shrink-0" />
+              {evaluation.judgeModel && (
+                <span>
+                  {isFr ? '评审' : 'Judge'}: <span className="text-foreground/50">{evaluation.judgeModel}</span>
+                </span>
+              )}
+              {evaluation.answerModel && (
+                <span>
+                  {isFr ? '回答' : 'Answer'}: <span className="text-foreground/50">{evaluation.answerModel}</span>
+                </span>
+              )}
+              {evaluation.llmCalls != null && evaluation.llmCalls > 0 && (
+                <span className="ml-auto tabular-nums">
+                  {evaluation.llmCalls} {isFr ? '次调用' : 'calls'}
+                </span>
+              )}
             </div>
           )}
         </div>

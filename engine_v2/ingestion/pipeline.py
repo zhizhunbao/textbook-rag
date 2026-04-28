@@ -55,6 +55,7 @@ def ingest_book(
     category: str = "textbook",
     task_id: int | None = None,
     mineru_dir: Path | str | None = None,
+    collection_name: str | None = None,
 ) -> dict[str, Any]:
     """Run the full ingest pipeline for one book.
 
@@ -67,9 +68,15 @@ def ingest_book(
         3. Push chunk records to Payload CMS
         4. Update book status in Payload CMS
 
+    Args:
+        collection_name: ChromaDB collection override. Defaults to
+            CHROMA_COLLECTION (textbook_chunks). For consulting personas,
+            pass ``persona_{slug}`` to isolate per-role knowledge.
+
     Returns:
         dict with keys: book_id, chunk_count, status
     """
+    target_collection = collection_name or CHROMA_COLLECTION
     mineru_path = Path(mineru_dir) if mineru_dir else MINERU_OUTPUT_DIR
 
     _notify(task_id, status="running", progress=5, log="Reading MinerU output...")
@@ -86,7 +93,7 @@ def ingest_book(
             log=f"Read {len(documents)} chunks")
 
     # Step 2: Run LlamaIndex IngestionPipeline
-    vector_store = get_vector_store()
+    vector_store = get_vector_store(collection_name=target_collection)
     pipeline = IngestionPipeline(
         transformations=[
             BBoxNormalizer(),        # project-specific metadata cleanup
@@ -105,7 +112,7 @@ def ingest_book(
     # Step 4: Update book status + seed ingestOutput
     ingest_output = {
         "nodeCount": len(nodes),
-        "chromaCollection": CHROMA_COLLECTION,
+        "chromaCollection": target_collection,
         "chromaPersistDir": str(CHROMA_PERSIST_DIR),
     }
     _update_book_status(

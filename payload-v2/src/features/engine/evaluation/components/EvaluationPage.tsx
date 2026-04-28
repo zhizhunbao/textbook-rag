@@ -18,16 +18,19 @@ import {
   Search, Info, GripVertical,
   Clock, MessageSquare, BarChart3,
   Users, User, Zap, ChevronRight,
-  FileText, Sparkles, BookOpen,
+  FileText, Sparkles, BookOpen, Trash2,
 } from 'lucide-react'
 import { useI18n } from '@/features/shared/i18n/I18nProvider'
 import { cn } from '@/features/shared/utils'
+import { toast } from 'sonner'
 import {
   evaluateFromHistory,
   fetchQueriesBySession,
   fetchSessionsForEval,
   fetchEvaluations,
   fetchEvalProviders,
+  deleteEvaluationsByQuery,
+  deleteQuery,
 } from '../api'
 import type {
   HistoryEvalSingleResult,
@@ -152,6 +155,12 @@ interface QueryEvalState {
   error?: string
 }
 
+function getEvaluationScore(state: QueryEvalState | undefined): number | null {
+  const evaluation = state?.existing
+  if (!evaluation) return null
+  return evaluation.overallScore ?? evaluation.answerScore ?? evaluation.faithfulness
+}
+
 // ============================================================
 // Component
 // ============================================================
@@ -171,6 +180,9 @@ export default function EvaluationPage() {
 
   // — Per-query evaluation state
   const [evalStates, setEvalStates] = useState<Record<number, QueryEvalState>>({})
+  const [deletingQueryId, setDeletingQueryId] = useState<number | null>(null)
+  const [selectedQueryIds, setSelectedQueryIds] = useState<Set<number>>(new Set())
+  const [batchDeleting, setBatchDeleting] = useState(false)
 
   // — Overall auto-eval progress
   const [autoEvalRunning, setAutoEvalRunning] = useState(false)
@@ -181,6 +193,7 @@ export default function EvaluationPage() {
   const [timeFilter, setTimeFilter] = useState<'all' | 'today' | '7d' | '30d'>('all')
   const [userScope, setUserScope] = useState<UserScope>('mine')
   const [statusFilter, setStatusFilter] = useState<EvalStatus | 'all'>('all')
+  const [minScoreThreshold, setMinScoreThreshold] = useState(0.7)
   const isAdmin = user?.role === 'admin'
 
   // — Model selection
@@ -271,6 +284,15 @@ export default function EvaluationPage() {
     return true
   })
 
+  const lowScoreQueryIds = sessionQueries
+    .filter(q => {
+      const score = getEvaluationScore(evalStates[q.id])
+      return score != null && score < minScoreThreshold
+    })
+    .map(q => q.id)
+  const allQueriesSelected = sessionQueries.length > 0
+    && sessionQueries.every(q => selectedQueryIds.has(q.id))
+
   // Scroll synchronization
   const handleLeftScroll = useCallback(() => {
     if (isSyncingRef.current || !rightPanelRef.current || !leftPanelRef.current) return
@@ -358,6 +380,7 @@ export default function EvaluationPage() {
     setSelectedSession(s)
     setSessionQueries([])
     setEvalStates({})
+    setSelectedQueryIds(new Set())
     setQueriesLoading(true)
 
     try {
@@ -398,6 +421,87 @@ export default function EvaluationPage() {
       }))
     }
   }, [])
+
+  const deleteQuerySet = useCallback(async (queryIds: number[]) => {
+    await Promise.all(queryIds.map(async queryId => {
+      await deleteEvaluationsByQuery(queryId)
+      await deleteQuery(queryId)
+    }))
+
+    const deleted = new Set(queryIds)
+    setSessionQueries(prev => prev.filter(q => !deleted.has(q.id)))
+    setSelectedQueryIds(prev => {
+      const next = new Set(prev)
+      queryIds.forEach(id => next.delete(id))
+      return next
+    })
+    setEvalStates(prev => {
+      const next = { ...prev }
+      queryIds.forEach(id => { delete next[id] })
+      return next
+    })
+    setEvalProgress(prev => ({
+      done: Math.max(0, prev.done - queryIds.length),
+      total: Math.max(0, prev.total - queryIds.length),
+    }))
+    if (selectedSession) {
+      const queryCount = Math.max(0, selectedSession.queryCount - queryIds.length)
+      setSelectedSession({ ...selectedSession, queryCount })
+      setSessions(prev => prev.map(s => (
+        s.id === selectedSession.id ? { ...s, queryCount } : s
+      )))
+    }
+  }, [selectedSession])
+
+  /** Delete a query and its linked evaluations from Payload. */
+  const handleDeleteQuery = useCallback(async (queryId: number) => {
+    const confirmed = window.confirm(
+      isFr ? '删除此回答及其评估数据？' : 'Delete this answer and its evaluation data?',
+    )
+    if (!confirmed) return
+
+    setDeletingQueryId(queryId)
+    try {
+      await deleteQuerySet([queryId])
+      toast.success(isFr ? '已删除 1 条回答' : 'Deleted 1 answer')
+    } finally {
+      setDeletingQueryId(null)
+    }
+  }, [deleteQuerySet, isFr])
+
+  const toggleQuerySelection = useCallback((queryId: number) => {
+    setSelectedQueryIds(prev => {
+      const next = new Set(prev)
+      if (next.has(queryId)) next.delete(queryId)
+      else next.add(queryId)
+      return next
+    })
+  }, [])
+
+  const toggleAllQueries = useCallback(() => {
+    setSelectedQueryIds(prev => {
+      if (sessionQueries.every(q => prev.has(q.id))) return new Set()
+      return new Set(sessionQueries.map(q => q.id))
+    })
+  }, [sessionQueries])
+
+  const handleBatchDelete = useCallback(async (queryIds: number[], label: string) => {
+    if (queryIds.length === 0) return
+    const confirmed = window.confirm(
+      isFr ? `删除 ${queryIds.length} 条回答及其评估数据？` : `Delete ${queryIds.length} answers and their evaluation data?`,
+    )
+    if (!confirmed) return
+
+    setBatchDeleting(true)
+    try {
+      await deleteQuerySet(queryIds)
+      toast.success(isFr ? `已删除 ${queryIds.length} 条回答` : `Deleted ${queryIds.length} answers`)
+    } catch {
+      toast.error(isFr ? `${label}失败` : `${label} failed`)
+    } finally {
+      setBatchDeleting(false)
+    }
+  }, [deleteQuerySet, isFr])
 
   // ============================================================
   // Render helpers
@@ -1045,20 +1149,63 @@ export default function EvaluationPage() {
             >
               <div className="p-5 space-y-1">
                 {/* Session header */}
-                <div className="text-[10px] text-muted-foreground bg-muted/50 rounded-lg px-3 py-1.5 flex items-center justify-between mb-4 sticky top-0 z-10 backdrop-blur-sm">
-                  <span className="font-medium text-foreground text-[11px] line-clamp-1">
-                    {selectedSession.title}
-                  </span>
-                  <span>
-                    {sessionQueries.length} {isFr ? '轮对话' : 'turns'}
-                  </span>
+                <div className="text-[10px] text-muted-foreground bg-muted/50 rounded-lg px-3 py-2 mb-4 sticky top-0 z-10 backdrop-blur-sm space-y-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-medium text-foreground text-[11px] line-clamp-1">
+                      {selectedSession.title}
+                    </span>
+                    <span>
+                      {sessionQueries.length} {isFr ? '轮对话' : 'turns'}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label className="inline-flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                      <input
+                        type="checkbox"
+                        checked={allQueriesSelected}
+                        onChange={toggleAllQueries}
+                        disabled={batchDeleting}
+                        className="h-3.5 w-3.5 rounded border-border"
+                      />
+                      {isFr ? '全选' : 'Select all'}
+                    </label>
+                    <label className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                      {isFr ? '最低分' : 'Min score'}
+                      <input
+                        type="number"
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        value={minScoreThreshold}
+                        onChange={e => setMinScoreThreshold(Number(e.target.value))}
+                        className="h-6 w-14 rounded border border-border bg-background px-1.5 text-[10px] text-foreground"
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => void handleBatchDelete(Array.from(selectedQueryIds), isFr ? '删除选中' : 'Delete selected')}
+                      disabled={batchDeleting || selectedQueryIds.size === 0}
+                      className="rounded-md border border-border px-2 py-1 text-[10px] text-foreground transition-colors hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isFr ? `删除选中 ${selectedQueryIds.size}` : `Delete selected ${selectedQueryIds.size}`}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleBatchDelete(lowScoreQueryIds, isFr ? '删除低分回答' : 'Delete low-score answers')}
+                      disabled={batchDeleting || lowScoreQueryIds.length === 0}
+                      className="rounded-md border border-destructive/30 px-2 py-1 text-[10px] text-destructive transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isFr ? `删除低分 ${lowScoreQueryIds.length}` : `Delete low-score ${lowScoreQueryIds.length}`}
+                    </button>
+                    {batchDeleting && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+                  </div>
                 </div>
 
                 {sessionQueries.map((sq, idx) => (
                   <div
                     key={sq.id}
                     ref={el => { if (el) leftRowRefs.current.set(sq.id, el) }}
-                    className="space-y-3 pb-4"
+                    className="group/query space-y-3 pb-4"
                     data-query-id={sq.id}
                   >
                     {/* Turn number badge */}
@@ -1074,9 +1221,28 @@ export default function EvaluationPage() {
                         <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
                           <span className="text-[9px] font-bold text-primary">Q</span>
                         </div>
+                        <input
+                          type="checkbox"
+                          checked={selectedQueryIds.has(sq.id)}
+                          onChange={() => toggleQuerySelection(sq.id)}
+                          disabled={batchDeleting || deletingQueryId === sq.id}
+                          className="h-3.5 w-3.5 rounded border-border"
+                          title={isFr ? '选择此回答' : 'Select this answer'}
+                        />
                         <span className="text-[9px] text-muted-foreground">
                           {sq.createdAt ? new Date(sq.createdAt).toLocaleString() : ''}
                         </span>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteQuery(sq.id)}
+                          disabled={deletingQueryId === sq.id}
+                          className="ml-auto rounded-md p-1 text-muted-foreground opacity-0 transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-60 group-hover/query:opacity-100"
+                          title={isFr ? '删除此回答及其评估数据' : 'Delete this answer and its evaluations'}
+                        >
+                          {deletingQueryId === sq.id
+                            ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            : <Trash2 className="h-3.5 w-3.5" />}
+                        </button>
                       </div>
                       <div className="ml-7 rounded-xl bg-primary/5 border border-primary/20 px-3.5 py-2.5">
                         <p className="text-sm text-foreground leading-relaxed">
