@@ -19,7 +19,7 @@ configure_logging()
 
 from engine_v2.settings import CORS_ORIGINS, init_settings
 from engine_v2.api.routes import (
-    books, classify, consulting, delete, embeddings, evaluation, health,
+    billing, books, classify, consulting, delete, embeddings, evaluation, health,
     ingest, llms, query, questions, report, retrievers, sources, suggest,
     vectors,
 )
@@ -53,6 +53,19 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    # GO-MU-05: JWT auth middleware — validates Payload tokens on all routes
+    # except /engine/health, /docs, /openapi.json, /redoc
+    from engine_v2.api.middleware.auth import AuthMiddleware
+    app.add_middleware(AuthMiddleware)
+
+    # GO-MON-01/04: Tier-based quota enforcement (query/ingest limits)
+    from engine_v2.api.middleware.quota import QuotaMiddleware
+    app.add_middleware(QuotaMiddleware)
+
+    # GO-MU-10: Per-user rate limiting (in-memory sliding window)
+    from engine_v2.api.middleware.rate_limit import RateLimitMiddleware
+    app.add_middleware(RateLimitMiddleware)
+
     @app.exception_handler(Exception)
     async def _unhandled(request: Request, exc: Exception):
         tb = traceback.format_exc()
@@ -78,6 +91,7 @@ def create_app() -> FastAPI:
     app.include_router(report.router, prefix="/engine")
     app.include_router(vectors.router, prefix="/engine")
     app.include_router(consulting.router, prefix="/engine")
+    app.include_router(billing.router, prefix="/engine")
 
     return app
 

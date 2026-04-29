@@ -11,10 +11,13 @@ import {
 } from "react";
 import { queryTextbookStream } from "@/features/engine/query_engine";
 import { fetchAvailableModels } from "@/features/engine/llms";
+import { fetchConsultingPersonas, queryConsultingStream } from "@/features/shared/consultingApi";
 import { useAppDispatch, useAppState } from "@/features/shared/AppContext";
 import { useAuth } from "@/features/shared/AuthProvider";
 import { useI18n } from "@/features/shared/i18n";
 import type { ModelInfo, SourceInfo } from "@/features/shared/types";
+import type { ChatMode } from "../history/api";
+import type { PersonaInfo } from "@/features/shared/consultingApi";
 
 import type { Message } from "../types";
 import { NEAR_BOTTOM_THRESHOLD } from "../types";
@@ -34,6 +37,8 @@ export default function ChatPanel({
   submitRef,
   showQuestions,
   onToggleQuestions,
+  initialMode = "rag",
+  onConsultingPersonaChange,
 }: {
   activeSessionId: string | null;
   onSessionCreated: (id: string) => void;
@@ -42,6 +47,9 @@ export default function ChatPanel({
   /** Questions sidebar state */
   showQuestions?: boolean;
   onToggleQuestions?: () => void;
+  initialMode?: ChatMode;
+  /** C4-06: Notify parent when consulting persona changes (for sidebar) */
+  onConsultingPersonaChange?: (slug: string, name: string | null) => void;
 }) {
   const {
     currentBookId,
@@ -64,6 +72,9 @@ export default function ChatPanel({
   const [streamingContent, setStreamingContent] = useState("");
   const [streamingSources, setStreamingSources] = useState<SourceInfo[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [chatMode, setChatMode] = useState<ChatMode>(initialMode);
+  const [personas, setPersonas] = useState<PersonaInfo[]>([]);
+  const [selectedPersonaSlug, setSelectedPersonaSlug] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   // Token accumulator — ref avoids re-renders per token; RAF batches at 60fps
   const tokenBufferRef = useRef("");
@@ -84,6 +95,10 @@ export default function ChatPanel({
 
   const sessionBooks = books.filter((b) => sessionBookIds.includes(b.id));
   const hasMessages = messages.length > 0;
+  const activeSession = activeSessionId ? chatHistory.getSession(activeSessionId) : null;
+  const effectiveMode = activeSession?.mode ?? chatMode;
+  const effectivePersonaSlug = activeSession?.personaSlug ?? selectedPersonaSlug;
+  const modeLocked = hasMessages || !!activeSessionId;
 
   /** Track current session id across renders inside callbacks */
   const sessionIdRef = useRef<string | null>(activeSessionId);
@@ -92,6 +107,45 @@ export default function ChatPanel({
   useEffect(() => {
     sessionIdRef.current = activeSessionId;
   }, [activeSessionId]);
+
+  useEffect(() => {
+    if (!activeSessionId && messages.length === 0) setChatMode(initialMode);
+  }, [activeSessionId, initialMode, messages.length]);
+
+  useEffect(() => {
+    fetchConsultingPersonas()
+      .then((items) => {
+        setPersonas(items);
+        setSelectedPersonaSlug((current) => {
+          if (current) return current;
+          const userPersona = currentUser?.selectedPersona;
+          if (userPersona && typeof userPersona === "object") return userPersona.slug;
+          return items[0]?.slug ?? null;
+        });
+      })
+      .catch(() => setPersonas([]));
+  }, [currentUser?.selectedPersona]);
+
+  // C4-06: Propagate persona selection to parent for sidebar integration
+  useEffect(() => {
+    if (effectiveMode !== "consulting" || !effectivePersonaSlug) return;
+    const persona = personas.find((p) => p.slug === effectivePersonaSlug);
+    onConsultingPersonaChange?.(effectivePersonaSlug, persona?.name ?? null);
+  }, [effectiveMode, effectivePersonaSlug, personas, onConsultingPersonaChange]);
+
+  // C4-07: Auto-resume most recent consulting session for selected persona
+  useEffect(() => {
+    if (effectiveMode !== "consulting" || !effectivePersonaSlug) return;
+    if (activeSessionId || messages.length > 0) return; // already in a session
+    // Search history for last consulting session with this persona
+    const consultingSession = chatHistory.sessions.find(
+      (s) => s.mode === "consulting" && s.personaSlug === effectivePersonaSlug,
+    );
+    if (consultingSession) {
+      onSessionCreated(consultingSession.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveMode, effectivePersonaSlug, chatHistory.sessions.length]);
 
   /** When history panel selects an old session (or page refreshes), restore its messages */
   useEffect(() => {
@@ -210,6 +264,17 @@ export default function ChatPanel({
       const trimmed = question.trim();
       if (!trimmed) return;
 
+      const existingSession = sessionIdRef.current
+        ? chatHistory.getSession(sessionIdRef.current)
+        : null;
+      const messageMode = existingSession?.mode ?? chatMode;
+      const personaSlug = existingSession?.personaSlug ?? selectedPersonaSlug;
+      const persona = personas.find((item) => item.slug === personaSlug) ?? null;
+      if (messageMode === "consulting" && !personaSlug) {
+        setError("Please select a consulting persona before sending.");
+        return;
+      }
+
       setInput("");
       setError(null);
       shouldStickToBottomRef.current = true;
@@ -233,7 +298,14 @@ export default function ChatPanel({
           const bookTitles = books
             .filter((b) => sessionBookIds.includes(b.id))
             .map((b) => b.title);
-          sessionId = await chatHistory.createSession({ sessionBookIds, bookTitles, firstMessage: trimmed });
+          sessionId = await chatHistory.createSession({
+            sessionBookIds,
+            bookTitles,
+            firstMessage: trimmed,
+            mode: messageMode,
+            personaSlug: messageMode === "consulting" ? personaSlug : null,
+            personaName: messageMode === "consulting" ? persona?.name ?? null : null,
+          });
           sessionIdRef.current = sessionId;
           onSessionCreated(sessionId);
         } catch (err) {
@@ -243,6 +315,89 @@ export default function ChatPanel({
       }
 
       const startTime = Date.now();
+
+      if (messageMode === "consulting" && personaSlug) {
+        await queryConsultingStream(
+          {
+            persona_slug: personaSlug,
+            question: trimmed,
+            model: selectedModel,
+            provider: selectedProvider,
+            top_k: 5,
+          },
+          {
+            signal: controller.signal,
+            onToken: (token) => {
+              tokenBufferRef.current += token;
+              if (rafIdRef.current === null) {
+                rafIdRef.current = requestAnimationFrame(() => {
+                  setStreamingContent(tokenBufferRef.current);
+                  rafIdRef.current = null;
+                });
+              }
+            },
+            onRetrievalDone: ({ sources }) => {
+              setStreamingSources(sources);
+            },
+            onDone: (res) => {
+              setMessages((prev) => [
+                ...prev,
+                {
+                  role: "assistant",
+                  content: res.answer,
+                  sources: res.sources,
+                  model: selectedModel || undefined,
+                  timestamp: new Date().toISOString(),
+                },
+              ]);
+              setStreamingContent("");
+              setStreamingSources([]);
+              tokenBufferRef.current = "";
+              if (rafIdRef.current !== null) {
+                cancelAnimationFrame(rafIdRef.current);
+                rafIdRef.current = null;
+              }
+              setIsStreaming(false);
+              setLoading(false);
+
+              if (sessionId) {
+                chatHistory.appendMessages(sessionId, [
+                  { role: "user", content: trimmed, timestamp: new Date().toISOString() },
+                  { role: "assistant", content: res.answer, sources: res.sources, timestamp: new Date().toISOString() },
+                ]);
+              }
+
+              const latencyMs = Date.now() - startTime;
+              fetch('/api/queries', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                  user: currentUser?.id ?? null,
+                  sessionId: sessionId ?? null,
+                  question: trimmed,
+                  answer: res.answer,
+                  sources: res.sources,
+                  model: selectedModel,
+                  latencyMs,
+                }),
+              }).catch(() => { /* ignore logging errors */ });
+            },
+            onError: (err) => {
+              setError(err.message);
+              tokenBufferRef.current = "";
+              if (rafIdRef.current !== null) {
+                cancelAnimationFrame(rafIdRef.current);
+                rafIdRef.current = null;
+              }
+              setStreamingSources([]);
+              setIsStreaming(false);
+              setLoading(false);
+            },
+          },
+        );
+        return;
+      }
 
       // Map Payload CMS IDs → engine book_id strings for correct filtering
       // DM-T1-02: When ALL books are selected, skip the filter so backend searches entire library
@@ -381,7 +536,7 @@ export default function ChatPanel({
         },
       );
     },
-    [sessionBookIds, selectedModel, selectedProvider, currentUser, books, chatHistory, onSessionCreated, customSystemPrompt],
+    [sessionBookIds, selectedModel, selectedProvider, currentUser, books, chatHistory, onSessionCreated, customSystemPrompt, chatMode, selectedPersonaSlug, personas],
   );
 
   /** Expose submitQuestion to parent (so QuestionsSidebar can call it) */
@@ -400,6 +555,7 @@ export default function ChatPanel({
     setIsNearBottom(true);
     shouldStickToBottomRef.current = true;
     sessionIdRef.current = null;
+    setChatMode("rag");
     dispatch({ type: "RESET_SESSION" });
   }, [dispatch]);
 
@@ -422,6 +578,12 @@ export default function ChatPanel({
         }}
         showQuestions={showQuestions}
         onToggleQuestions={onToggleQuestions}
+        mode={effectiveMode}
+        personas={personas}
+        selectedPersonaSlug={effectivePersonaSlug}
+        modeLocked={modeLocked}
+        onModeChange={setChatMode}
+        onPersonaChange={setSelectedPersonaSlug}
         selectedPromptSlug={promptSlug}
         onPromptChange={(slug, systemPrompt) => {
           setPromptSlug(slug);

@@ -30,7 +30,7 @@ from pathlib import Path
 from typing import Any
 
 import chromadb
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 from loguru import logger
 from pydantic import BaseModel
@@ -40,6 +40,7 @@ from engine_v2.personas.registry import (
     get_collection_count as _get_collection_count,
     get_collection_name as _get_persona_collection,
 )
+from engine_v2.retrievers.consulting import dual_collection_query
 from engine_v2.user_docs.manager import (
     update_user_doc as _update_user_doc,
     user_collection_name as _user_collection_name,
@@ -78,7 +79,7 @@ class PersonaQueryRequest(BaseModel):
     top_k: int = TOP_K
     model: str | None = None
     provider: str | None = None
-    user_id: int | None = None  # C4: enables dual-collection retrieval
+    # GO-MU-06: user_id removed from body — now extracted from JWT auth
 
 
 # ============================================================
@@ -183,146 +184,8 @@ async def consulting_ingest(req: PersonaIngestRequest):
     }
 
 
-# ============================================================
-# C4 — Dual-Collection Retrieval (persona KB + user private)
-# ============================================================
-
-
-def _dual_collection_query(
-    question: str,
-    persona_collection: str,
-    user_collection: str,
-    system_prompt: str,
-    top_k: int = TOP_K,
-    model: str | None = None,
-    provider: str | None = None,
-    streaming: bool = False,
-) -> tuple[list[dict], Any]:
-    """Retrieve from both persona and user-private collections, merge via RRF.
-
-    Strategy:
-        1. Build two VectorIndexRetrievers (persona + user-private).
-        2. Retrieve top_k from each.
-        3. Merge via simple Reciprocal Rank Fusion (k=60).
-        4. Tag each source with its origin (persona_kb / user_private).
-        5. Synthesize response using persona system prompt.
-
-    Returns:
-        Tuple of (sources_list, response_object)
-    """
-    from llama_index.core import VectorStoreIndex
-    from llama_index.core.schema import NodeWithScore
-    from llama_index.vector_stores.chroma import ChromaVectorStore
-
-    from engine_v2.response_synthesizers.citation import get_citation_synthesizer
-    from engine_v2.schema import build_source, normalize_scores
-
-    # ── Build retrievers for both collections ──
-    client = chromadb.PersistentClient(
-        path=str(CHROMA_PERSIST_DIR),
-        settings=chromadb.Settings(anonymized_telemetry=False),
-    )
-
-    def _retrieve_from(col_name: str, origin_tag: str) -> list[NodeWithScore]:
-        """Retrieve nodes from a single collection and tag origin."""
-        try:
-            col = client.get_or_create_collection(
-                name=col_name,
-                metadata={"hnsw:space": "cosine"},
-            )
-            if col.count() == 0:
-                logger.debug("Collection {} is empty, skipping", col_name)
-                return []
-
-            vs = ChromaVectorStore(chroma_collection=col)
-            index = VectorStoreIndex.from_vector_store(vs)
-            retriever = index.as_retriever(similarity_top_k=top_k)
-            nodes = retriever.retrieve(question)
-
-            # Tag each node with its origin
-            for nws in nodes:
-                nws.node.metadata["retrieval_origin"] = origin_tag
-
-            logger.debug(
-                "Retrieved {} nodes from {} ({})", len(nodes), col_name, origin_tag,
-            )
-            return nodes
-        except Exception as e:
-            logger.warning("Retrieval from {} failed: {}", col_name, e)
-            return []
-
-    # ── Parallel retrieval (synchronous for simplicity) ──
-    persona_nodes = _retrieve_from(persona_collection, "persona_kb")
-    user_nodes = _retrieve_from(user_collection, "user_private")
-
-    # ── RRF Merge (k=60, industry standard) ──
-    RRF_K = 60
-    scored: dict[str, tuple[float, NodeWithScore]] = {}
-
-    for rank, nws in enumerate(persona_nodes, start=1):
-        nid = nws.node.id_
-        rrf_score = 1.0 / (RRF_K + rank)
-        scored[nid] = (rrf_score, nws)
-
-    for rank, nws in enumerate(user_nodes, start=1):
-        nid = nws.node.id_
-        rrf_score = 1.0 / (RRF_K + rank)
-        if nid in scored:
-            existing_score, existing_nws = scored[nid]
-            scored[nid] = (existing_score + rrf_score, existing_nws)
-        else:
-            scored[nid] = (rrf_score, nws)
-
-    # Sort by RRF score descending, take top_k
-    merged = sorted(scored.values(), key=lambda x: x[0], reverse=True)[:top_k]
-
-    # Update scores to RRF scores
-    merged_nodes: list[NodeWithScore] = []
-    for rrf_score, nws in merged:
-        nws.score = rrf_score
-        merged_nodes.append(nws)
-
-    logger.info(
-        "Dual-collection RRF: {} persona + {} user → {} merged",
-        len(persona_nodes), len(user_nodes), len(merged_nodes),
-    )
-
-    # ── Build citation nodes and synthesize ──
-    from engine_v2.query_engine.citation import TextbookCitationQueryEngine
-
-    synthesizer = get_citation_synthesizer(
-        streaming=streaming, model=model, provider=provider,
-        custom_system_prompt=system_prompt,
-    )
-
-    # Use citation engine for dedup + Source N labeling
-    engine = TextbookCitationQueryEngine(
-        retriever=None,  # type: ignore — we won't use retrieve()
-        response_synthesizer=synthesizer,
-    )
-    citation_nodes = engine._create_citation_nodes(merged_nodes)
-
-    # Build sources list
-    sources = []
-    for i, nws in enumerate(citation_nodes, start=1):
-        src = build_source(nws, i)
-        src["retrieval_origin"] = nws.node.metadata.get("retrieval_origin", "unknown")
-        sources.append(src)
-    normalize_scores(sources)
-
-    # Synthesize response
-    from llama_index.core.schema import QueryBundle
-
-    response = synthesizer.synthesize(
-        query=QueryBundle(query_str=question),
-        nodes=citation_nodes,
-    )
-
-    return sources, response
-
-
 @router.post("/query")
-async def consulting_query(req: PersonaQueryRequest):
+async def consulting_query(req: PersonaQueryRequest, request: Request):
     """Execute a RAG query against a persona's knowledge base.
 
     C4 Dual-Collection: When user_id is provided, retrieves from BOTH
@@ -341,12 +204,14 @@ async def consulting_query(req: PersonaQueryRequest):
     from engine_v2.query_engine.citation import get_query_engine
     from engine_v2.schema import build_source, normalize_scores
 
-    # C4: Dual-collection retrieval
-    if req.user_id:
-        sources, response = _dual_collection_query(
+    # C4: Dual-collection retrieval (GO-MU-06: user_id from JWT auth)
+    user_data = getattr(request.state, "user", None)
+    user_id = user_data.get("id") if user_data else None
+    if user_id:
+        sources, response = dual_collection_query(
             question=req.question,
             persona_collection=collection_name,
-            user_collection=_user_collection_name(req.user_id, req.persona_slug),
+            user_collection=_user_collection_name(user_id, req.persona_slug),
             system_prompt=system_prompt,
             top_k=req.top_k,
             model=req.model,
@@ -385,8 +250,11 @@ async def consulting_query(req: PersonaQueryRequest):
 
 
 @router.post("/query/stream")
-async def consulting_query_stream(req: PersonaQueryRequest):
+async def consulting_query_stream(req: PersonaQueryRequest, request: Request):
     """SSE streaming RAG query against a persona's knowledge base."""
+    # GO-MU-06: Extract user_id from auth, attach to req for generator
+    user_data = getattr(request.state, "user", None)
+    req._auth_user_id = user_data.get("id") if user_data else None  # type: ignore[attr-defined]
     return StreamingResponse(
         _consulting_stream_generator(req),
         media_type="text/event-stream",
@@ -414,13 +282,14 @@ async def _consulting_stream_generator(req: PersonaQueryRequest):
         from engine_v2.query_engine.citation import get_query_engine
         from engine_v2.schema import build_source, normalize_scores
 
-        # C4: Dual-collection streaming
-        if req.user_id:
-            sources, response = _dual_collection_query(
+        # C4: Dual-collection streaming (GO-MU-06: user_id from JWT auth)
+        user_id = getattr(req, "_auth_user_id", None)
+        if user_id:
+            sources, response = dual_collection_query(
                 question=req.question,
                 persona_collection=collection_name,
                 user_collection=_user_collection_name(
-                    req.user_id, req.persona_slug,
+                    user_id, req.persona_slug,
                 ),
                 system_prompt=system_prompt,
                 top_k=req.top_k,
@@ -559,7 +428,7 @@ async def persona_status(slug: str):
 class UserDocIngestRequest(BaseModel):
     """Ingest a user-uploaded PDF into their private collection."""
 
-    user_id: int
+    # GO-MU-06: user_id removed — now extracted from JWT auth
     persona_slug: str
     doc_id: int  # Payload UserDocuments record ID
     pdf_filename: str  # filename in data/raw_pdfs/user_private/
@@ -567,7 +436,7 @@ class UserDocIngestRequest(BaseModel):
 
 
 @router.post("/user-doc/ingest")
-async def user_doc_ingest(req: UserDocIngestRequest):
+async def user_doc_ingest(req: UserDocIngestRequest, request: Request):
     """Ingest a user-uploaded PDF into their private ChromaDB collection.
 
     Flow:
@@ -581,7 +450,10 @@ async def user_doc_ingest(req: UserDocIngestRequest):
     from engine_v2.api.routes.ingest import _run_mineru_parse
     from engine_v2.ingestion.pipeline import ingest_book
 
-    collection_name = _user_collection_name(req.user_id, req.persona_slug)
+    # GO-MU-06: user_id from JWT auth
+    user_data = getattr(request.state, "user", {})
+    user_id = user_data.get("id", 0)
+    collection_name = _user_collection_name(user_id, req.persona_slug)
 
     # Derive book_dir_name from filename
     stem = Path(req.pdf_filename).stem
@@ -620,7 +492,7 @@ async def user_doc_ingest(req: UserDocIngestRequest):
             if req.force_parse or not content_list_path.exists():
                 logger.info(
                     "Parsing user PDF: user={}, persona={}, file={}",
-                    req.user_id, req.persona_slug, pdf_path,
+                    user_id, req.persona_slug, pdf_path,
                 )
                 _run_mineru_parse(pdf_path, book_dir_name, category)
             else:
@@ -646,13 +518,13 @@ async def user_doc_ingest(req: UserDocIngestRequest):
             )
             logger.info(
                 "User doc ingest complete: user={}, persona={}, chunks={}",
-                req.user_id, req.persona_slug, chunk_count,
+                user_id, req.persona_slug, chunk_count,
             )
 
         except Exception as e:
             logger.exception(
                 "User doc ingest failed: user={}, doc={}, error={}",
-                req.user_id, req.doc_id, e,
+                user_id, req.doc_id, e,
             )
             _update_user_doc(req.doc_id, status="error", error=str(e))
 
@@ -668,14 +540,17 @@ async def user_doc_ingest(req: UserDocIngestRequest):
 
 
 @router.get("/user-doc/list")
-async def user_doc_list(user_id: int, persona_slug: str | None = None):
+async def user_doc_list(request: Request, persona_slug: str | None = None):
     """List a user's private documents with collection stats.
 
     Args:
-        user_id: Payload user ID.
         persona_slug: Optional filter by persona.
     """
     import httpx
+
+    # GO-MU-06: user_id from JWT auth
+    user_data = getattr(request.state, "user", {})
+    user_id = user_data.get("id", 0)
 
     headers = _payload_headers()
     params: dict[str, str] = {
@@ -796,4 +671,3 @@ def _payload_headers() -> dict[str, str]:
     if PAYLOAD_API_KEY:
         headers["Authorization"] = f"Bearer {PAYLOAD_API_KEY}"
     return headers
-

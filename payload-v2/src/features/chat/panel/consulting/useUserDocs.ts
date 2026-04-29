@@ -56,15 +56,14 @@ export function useUserDocs(personaSlug?: string) {
       setLoading(true)
       setError(null)
 
-      const params = new URLSearchParams({
-        user_id: String(user.id),
-      })
+      const params = new URLSearchParams()
       if (personaSlug) {
         params.set('persona_slug', personaSlug)
       }
 
       const res = await fetch(
         `${ENGINE}/engine/consulting/user-doc/list?${params}`,
+        { credentials: 'include' },
       )
       if (!res.ok) throw new Error(`Failed to fetch docs: ${res.status}`)
       const data = await res.json()
@@ -99,8 +98,8 @@ export function useUserDocs(personaSlug?: string) {
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({
-            user_id: user.id,
             persona_slug: params.personaSlug,
             doc_id: params.docId,
             pdf_filename: params.pdfFilename,
@@ -128,7 +127,7 @@ export function useUserDocs(personaSlug?: string) {
     async (docId: number) => {
       const res = await fetch(
         `${ENGINE}/engine/consulting/user-doc/${docId}?delete_vectors=true`,
-        { method: 'DELETE' },
+        { method: 'DELETE', credentials: 'include' },
       )
 
       if (!res.ok) {

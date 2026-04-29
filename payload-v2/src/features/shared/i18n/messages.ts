@@ -56,6 +56,13 @@ export interface Messages {
   howStep3Title: string
   howStep3Desc: string
 
+  // ── HomePage Pricing ──
+  pricingTitle: string
+  pricingSubtitle: string
+  pricingGetStarted: string
+  pricingUpgrade: string
+  pricingPopular: string
+
   // ── HomePage CTA ──
   ctaTitle: string
   ctaSubtitle: string
@@ -70,6 +77,26 @@ export interface Messages {
   signingIn: string
   loginErrorEmpty: string
   loginErrorFailed: string
+  loginNoAccount: string
+  loginGoToRegister: string
+
+  // ── RegisterForm ──
+  registerHeading: string
+  registerSubheading: string
+  registerDisplayNameLabel: string
+  registerDisplayNamePlaceholder: string
+  registerPasswordPlaceholder: string
+  registerConfirmPasswordLabel: string
+  registerConfirmPasswordPlaceholder: string
+  registerSubmit: string
+  registerCreating: string
+  registerErrorEmpty: string
+  registerErrorShortPassword: string
+  registerErrorPasswordMismatch: string
+  registerErrorEmailExists: string
+  registerErrorFailed: string
+  registerHasAccount: string
+  registerGoToLogin: string
 
   // ── Sidebar Nav ──
   navNewChat: string
@@ -191,6 +218,13 @@ const en: Messages = {
   howStep3Title: 'Get Cited Answers',
   howStep3Desc: 'Receive accurate answers with page-level citations. Click sources to jump to the exact PDF page.',
 
+  // Pricing
+  pricingTitle: 'Simple, transparent pricing',
+  pricingSubtitle: 'Start free. Upgrade when you need more.',
+  pricingGetStarted: 'Get started',
+  pricingUpgrade: 'Upgrade to Pro',
+  pricingPopular: 'Recommended',
+
   // CTA
   ctaTitle: 'Ready to Explore the Data?',
   ctaSubtitle: 'Sign in and start asking questions about Ottawa economic reports today.',
@@ -205,6 +239,26 @@ const en: Messages = {
   signingIn: 'Signing in...',
   loginErrorEmpty: 'Please enter both email and password',
   loginErrorFailed: 'Login failed. Please check your credentials.',
+  loginNoAccount: 'Don\'t have an account?',
+  loginGoToRegister: 'Register now →',
+
+  // Register
+  registerHeading: 'Create Account',
+  registerSubheading: 'Register to access the AI-powered consulting assistant',
+  registerDisplayNameLabel: 'Display Name (optional)',
+  registerDisplayNamePlaceholder: 'Your name',
+  registerPasswordPlaceholder: 'Minimum 6 characters',
+  registerConfirmPasswordLabel: 'Confirm Password',
+  registerConfirmPasswordPlaceholder: 'Re-enter your password',
+  registerSubmit: 'Create Account',
+  registerCreating: 'Creating account...',
+  registerErrorEmpty: 'Please enter your email and password',
+  registerErrorShortPassword: 'Password must be at least 6 characters',
+  registerErrorPasswordMismatch: 'Passwords do not match',
+  registerErrorEmailExists: 'This email is already registered. Try logging in instead.',
+  registerErrorFailed: 'Registration failed. Please try again.',
+  registerHasAccount: 'Already have an account?',
+  registerGoToLogin: 'Sign in →',
 
   // Sidebar Nav
   navNewChat: 'New Chat',
@@ -310,6 +364,13 @@ const fr: Messages = {
   howStep3Title: 'Obtenir des réponses citées',
   howStep3Desc: 'Recevez des réponses précises avec des citations au niveau de la page. Cliquez sur une source pour accéder à la page PDF exacte.',
 
+  // Pricing
+  pricingTitle: 'Tarification simple et transparente',
+  pricingSubtitle: 'Commencez gratuitement. Passez à la version supérieure quand vous en avez besoin.',
+  pricingGetStarted: 'Commencer',
+  pricingUpgrade: 'Passer à Pro',
+  pricingPopular: 'Recommandé',
+
   // CTA
   ctaTitle: 'Prêt à explorer les données ?',
   ctaSubtitle: 'Connectez-vous et commencez à poser des questions sur les rapports économiques d\'Ottawa.',
@@ -324,6 +385,26 @@ const fr: Messages = {
   signingIn: 'Connexion en cours...',
   loginErrorEmpty: 'Veuillez saisir votre courriel et votre mot de passe',
   loginErrorFailed: 'Échec de la connexion. Veuillez vérifier vos identifiants.',
+  loginNoAccount: 'Pas de compte ?',
+  loginGoToRegister: 'Créer un compte →',
+
+  // Register
+  registerHeading: 'Créer un compte',
+  registerSubheading: 'Inscrivez-vous pour accéder à l\'assistant de consultation propulsé par l\'IA',
+  registerDisplayNameLabel: 'Nom d\'affichage (optionnel)',
+  registerDisplayNamePlaceholder: 'Votre nom',
+  registerPasswordPlaceholder: 'Minimum 6 caractères',
+  registerConfirmPasswordLabel: 'Confirmer le mot de passe',
+  registerConfirmPasswordPlaceholder: 'Saisissez à nouveau votre mot de passe',
+  registerSubmit: 'Créer un compte',
+  registerCreating: 'Création du compte...',
+  registerErrorEmpty: 'Veuillez saisir votre courriel et votre mot de passe',
+  registerErrorShortPassword: 'Le mot de passe doit comporter au moins 6 caractères',
+  registerErrorPasswordMismatch: 'Les mots de passe ne correspondent pas',
+  registerErrorEmailExists: 'Ce courriel est déjà enregistré. Essayez de vous connecter.',
+  registerErrorFailed: 'Échec de l\'inscription. Veuillez réessayer.',
+  registerHasAccount: 'Vous avez déjà un compte ?',
+  registerGoToLogin: 'Se connecter →',
 
   // Sidebar Nav
   navNewChat: 'Nouvelle conversation',

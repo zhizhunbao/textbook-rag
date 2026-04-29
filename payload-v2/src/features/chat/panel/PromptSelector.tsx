@@ -10,7 +10,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Sparkles, ChevronDown, Check } from 'lucide-react'
+import { ChevronDown, Check } from 'lucide-react'
 import { cn } from '@/features/shared/utils'
 import { usePromptModes } from '@/features/engine/response_synthesizers/usePromptModes'
 
@@ -26,6 +26,10 @@ interface PromptSelectorProps {
 // ============================================================
 // Component
 // ============================================================
+function displayPromptName(name?: string): string {
+  return (name ?? 'Prompt').replace(/^[^\p{L}\p{N}]+/u, '').trim() || 'Prompt'
+}
+
 export default function PromptSelector({
   selectedSlug,
   onSelect,
@@ -73,7 +77,6 @@ export default function PromptSelector({
   if (loading || promptModes.length === 0) {
     return (
       <div className={cn('inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1.5 text-[11px] text-muted-foreground', className)}>
-        <Sparkles className="h-3 w-3" />
         {loading ? '…' : 'No modes'}
       </div>
     )
@@ -91,8 +94,7 @@ export default function PromptSelector({
           open && 'border-primary bg-accent'
         )}
       >
-        <Sparkles className="h-3 w-3 text-primary" />
-        <span className="max-w-[120px] truncate">{selected?.name ?? 'Prompt'}</span>
+        <span className="max-w-[120px] truncate">{displayPromptName(selected?.name)}</span>
         <ChevronDown className={cn('h-3 w-3 text-muted-foreground transition-transform', open && 'rotate-180')} />
       </button>
 
@@ -115,7 +117,7 @@ export default function PromptSelector({
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-medium text-foreground">{mode.name}</span>
+                  <span className="text-xs font-medium text-foreground">{displayPromptName(mode.name)}</span>
                   {mode.isDefault && (
                     <span className="text-[9px] font-semibold rounded-full px-1.5 py-0.5 bg-primary/10 text-primary">
                       default

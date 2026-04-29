@@ -1,5 +1,6 @@
 import path from 'path'
 import type { CollectionConfig } from 'payload'
+import { isLoggedIn } from '../access/isLoggedIn'
 
 export const Media: CollectionConfig = {
   slug: 'media',
@@ -7,7 +8,7 @@ export const Media: CollectionConfig = {
     group: 'Content',
   },
   access: {
-    read: () => true,
+    read: isLoggedIn,  // GO-MU-09: was () => true
   },
   upload: {
     staticDir: path.resolve(process.cwd(), '../data/media'),

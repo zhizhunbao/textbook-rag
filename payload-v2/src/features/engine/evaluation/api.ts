@@ -472,6 +472,11 @@ function mapEvaluation(raw: any): EvaluationResult {
     queryRef: typeof raw.queryRef === 'object'
       ? (raw.queryRef?.id ?? null)
       : (raw.queryRef ?? null),
+    judgeModel: raw.judgeModel ?? null,
+    answerModel: raw.answerModel ?? null,
+    llmCalls: raw.llmCalls ?? null,
+    suggestions: raw.suggestions ?? null,
+    averagePrecision: raw.averagePrecision ?? null,
     createdAt: raw.createdAt ?? '',
     updatedAt: raw.updatedAt ?? '',
   }

@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { isAdmin } from '../access/isAdmin'
 import { isAdminOrApiKey } from '../access/isAdminOrApiKey'
 
 export const Chunks: CollectionConfig = {
@@ -9,7 +10,7 @@ export const Chunks: CollectionConfig = {
     group: 'Content',
   },
   access: {
-    read: () => true,
+    read: isAdmin,  // GO-MU-08: was () => true
     create: isAdminOrApiKey,
     update: isAdminOrApiKey,
     delete: isAdminOrApiKey,

@@ -17,7 +17,7 @@ import { useState, useMemo, Suspense, type ReactNode } from 'react'
 import {
   Database, Loader2, CheckCircle2, XCircle, Brain,
   FileText, RefreshCw, BookOpen, UserCog, Sparkles,
-  Layers, ArrowRight,
+  Layers, ArrowRight, Briefcase,
 } from 'lucide-react'
 import { SidebarLayout, type SidebarItem } from '@/features/shared/components/SidebarLayout'
 import { useI18n } from '@/features/shared/i18n'
@@ -139,6 +139,20 @@ const SEED_MODULES: SeedModuleMeta[] = [
     recordCount: 7,
     dataSummary: '6 categories from project-brief.md Section 3',
     dataSummaryFr: '6 catégories du projet-brief.md Section 3',
+  },
+  {
+    id: 'consulting-personas',
+    label: 'Consulting Personas',
+    labelFr: 'Rôles de consultation',
+    icon: Briefcase,
+    category: 'preset',
+    targetCollection: 'consulting-personas',
+    targetCollectionLabel: 'ConsultingPersonas',
+    description: '3 preset consulting roles: Lawyer, Compliance, Auditor with system prompts',
+    descriptionFr: '3 rôles de consultation prédéfinis : Juriste, Conformité, Auditeur avec prompts système',
+    recordCount: 3,
+    dataSummary: 'Persona name, slug, systemPrompt, ChromaDB collection binding',
+    dataSummaryFr: 'Nom du rôle, slug, invite système, liaison collection ChromaDB',
   },
   {
     id: 'books',

@@ -40,7 +40,7 @@ Noun 是 **种子名词集**（seed nouns），不是穷举名单。规则如下
 |------|------|----------|
 | `readers` | 文档阅读 / 解析 | [readers.md](./module-manifest/readers.md) |
 | `ingestion` | 数据摄取 | [ingestion.md](./module-manifest/ingestion.md) |
-| `chat` | RAG 对话 | [chat.md](./module-manifest/chat.md) |
+| `chat` | RAG 对话 (含 Consulting 专家模式) | [chat.md](./module-manifest/chat.md) |
 | `retrievers` | 检索引擎 | [retrievers.md](./module-manifest/retrievers.md) |
 | `response_synthesizers` | 回答合成 | [response_synthesizers.md](./module-manifest/response_synthesizers.md) |
 | `llms` | 模型管理 | [llms.md](./module-manifest/llms.md) |

@@ -14,6 +14,8 @@
     "@hookform/resolvers": "^5.2.2",
     "@payloadcms/db-postgres": "^3.80.0",
     "@payloadcms/next": "^3.0.0",
+    "@payloadcms/plugin-seo": "^3.80.0",
+    "@payloadcms/plugin-stripe": "^3.80.0",
     "@payloadcms/richtext-lexical": "^3.0.0",
     "@payloadcms/ui": "^3.0.0",
     "@radix-ui/react-avatar": "^1.1.11",

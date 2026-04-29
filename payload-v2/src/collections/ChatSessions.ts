@@ -1,7 +1,7 @@
 /**
  * ChatSessions — Persists chat conversation sessions to Payload CMS.
  *
- * Each session belongs to a user and records which books were selected.
+ * Each session belongs to a user and records which books or persona were selected.
  * Messages are stored in the related ChatMessages collection.
  *
  * Admin group: Chat
@@ -14,7 +14,7 @@ export const ChatSessions: CollectionConfig = {
   slug: 'chat-sessions',
   admin: {
     useAsTitle: 'title',
-    defaultColumns: ['title', 'user', 'createdAt'],
+    defaultColumns: ['title', 'mode', 'user', 'createdAt'],
     group: 'Chat',
   },
   access: {
@@ -58,6 +58,36 @@ export const ChatSessions: CollectionConfig = {
       name: 'title',
       type: 'text',
       required: true,
+    },
+    {
+      name: 'mode',
+      type: 'select',
+      defaultValue: 'rag',
+      required: true,
+      index: true,
+      options: [
+        { label: 'RAG', value: 'rag' },
+        { label: 'Consulting', value: 'consulting' },
+      ],
+      admin: { position: 'sidebar' },
+    },
+    {
+      name: 'persona',
+      type: 'relationship',
+      relationTo: 'consulting-personas',
+      admin: {
+        position: 'sidebar',
+        condition: (_, siblingData) => siblingData?.mode === 'consulting',
+      },
+    },
+    {
+      name: 'personaSlug',
+      type: 'text',
+      index: true,
+      admin: {
+        position: 'sidebar',
+        condition: (_, siblingData) => siblingData?.mode === 'consulting',
+      },
     },
     {
       name: 'bookIds',

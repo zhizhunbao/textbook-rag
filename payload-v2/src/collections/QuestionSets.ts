@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { isEditorOrAdmin } from '../access/isEditorOrAdmin'
 
 /**
  * QuestionSets — manages logical groupings of Questions for batch evaluation.
@@ -19,7 +20,7 @@ export const QuestionSets: CollectionConfig = {
     group: 'Content',
   },
   access: {
-    read: () => true,
+    read: isEditorOrAdmin,  // GO-MU-08: was () => true
     create: () => true,     // Engine writes generated sets
     update: () => true,
     delete: () => true,     // open for now (local dev)

@@ -180,7 +180,15 @@ export default function ChatHistoryPanel({
                             >
                               {session.title}
                             </p>
-                            {session.bookTitles.length > 0 && (
+                            {session.mode === "consulting" ? (
+                              <p
+                                className={`mt-0.5 truncate text-[10px] ${
+                                  isActive ? "text-primary-foreground/70" : "text-muted-foreground"
+                                }`}
+                              >
+                                Consulting{session.personaName ? ` · ${session.personaName}` : ""}
+                              </p>
+                            ) : session.bookTitles.length > 0 && (
                               <p
                                 className={`mt-0.5 truncate text-[10px] ${
                                   isActive ? "text-primary-foreground/70" : "text-muted-foreground"

@@ -9,6 +9,7 @@ import { useAuth } from '@/features/shared/AuthProvider'
 import { BookPicker } from '@/features/engine/readers'
 import ChatPanel from './panel/ChatPanel'
 import QuestionsSidebar from './panel/QuestionsSidebar'
+import ConsultingSidebar from './panel/ConsultingSidebar'
 import ResizeHandle from '@/features/shared/ResizeHandle'
 import { useChatHistoryContext } from './history/ChatHistoryContext'
 import { fetchIndexedBooks } from '@/features/shared/books'
@@ -42,6 +43,10 @@ function ChatPageInner() {
   const [pdfTabs, setPdfTabs] = useState<PdfTab[]>([])
   const [activeTabBookId, setActiveTabBookId] = useState<number | null>(null)
   const [pdfWidth, setPdfWidth] = useState(600)
+  const initialMode = searchParams.get('mode') === 'consulting' ? 'consulting' : 'rag'
+  // C4-06: Track consulting persona for sidebar (only set when mode=consulting)
+  const [consultingPersonaSlug, setConsultingPersonaSlug] = useState<string | null>(null)
+  const [consultingPersonaName, setConsultingPersonaName] = useState<string | null>(null)
   /** Ref to ChatPanel's submitQuestion so the sidebar can call it directly */
   const submitRef = useRef<((q: string) => void) | null>(null)
 
@@ -284,11 +289,29 @@ function ChatPageInner() {
               submitRef={submitRef}
               showQuestions={showQuestions}
               onToggleQuestions={() => setShowQuestions((v) => !v)}
+              initialMode={initialMode}
+              onConsultingPersonaChange={(slug, name) => {
+                setConsultingPersonaSlug(slug)
+                setConsultingPersonaName(name ?? null)
+              }}
             />
           </div>
 
-          {/* ── Questions Sidebar (right, resizable) ── */}
-          {showQuestions && (
+          {/* ── Consulting Sidebar (right, C4-06) — only in consulting mode ── */}
+          {consultingPersonaSlug && (
+            <>
+              <ResizeHandle width={sidebarWidth} onResize={setSidebarWidth} min={220} max={400} invert />
+              <ConsultingSidebar
+                personaSlug={consultingPersonaSlug}
+                personaName={consultingPersonaName}
+                onClose={() => setConsultingPersonaSlug(null)}
+                style={{ width: sidebarWidth }}
+              />
+            </>
+          )}
+
+          {/* ── Questions Sidebar (right, resizable) — shown in RAG mode ── */}
+          {showQuestions && !consultingPersonaSlug && (
             <>
               <ResizeHandle width={sidebarWidth} onResize={setSidebarWidth} min={220} max={480} invert />
               <QuestionsSidebar

@@ -11,11 +11,16 @@ import type { SourceInfo, QueryTrace } from '@/features/shared/types'
 // Types — Payload REST response shapes
 // ============================================================
 
+export type ChatMode = 'rag' | 'consulting'
+
 /** Raw ChatSession document from Payload REST API. */
 export interface PayloadChatSession {
   id: number
   user: number | { id: number }
   title: string
+  mode?: ChatMode | null
+  persona?: number | { id: number; name?: string; slug?: string } | null
+  personaSlug?: string | null
   bookIds: number[]
   bookTitles: string[]
   createdAt: string
@@ -78,6 +83,9 @@ export async function createServerSession(opts: {
   title: string
   bookIds: number[]
   bookTitles: string[]
+  mode?: ChatMode
+  personaId?: number | null
+  personaSlug?: string | null
 }): Promise<PayloadChatSession> {
   // Payload v3 REST POST wraps the doc: { doc: {...}, message: "..." }
   const res = await request<{ doc: PayloadChatSession }>('/api/chat-sessions', {
@@ -85,6 +93,9 @@ export async function createServerSession(opts: {
     body: JSON.stringify({
       user: opts.userId,
       title: opts.title,
+      mode: opts.mode ?? 'rag',
+      persona: opts.personaId ?? null,
+      personaSlug: opts.personaSlug ?? null,
       bookIds: opts.bookIds,
       bookTitles: opts.bookTitles,
     }),

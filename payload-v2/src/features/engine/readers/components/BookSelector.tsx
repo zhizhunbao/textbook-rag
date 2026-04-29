@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchBooks } from "@/features/engine/query_engine";
+import { fetchIndexedBooks } from "@/features/shared/books";
 import { useAppDispatch, useAppState } from "@/features/shared/AppContext";
 
 export default function BookSelector() {
@@ -9,7 +9,7 @@ export default function BookSelector() {
 
   useEffect(() => {
     if (books.length > 0) return;
-    fetchBooks()
+    fetchIndexedBooks()
       .then((b) => dispatch({ type: "SET_BOOKS", books: b }))
       .catch((err) => {
         console.warn("fetchBooks failed:", err);

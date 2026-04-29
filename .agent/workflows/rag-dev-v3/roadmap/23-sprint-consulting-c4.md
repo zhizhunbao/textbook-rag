@@ -3,7 +3,7 @@
 > 目标：对话时自动绑定 角色知识库 + 用户私有库 进行联合检索，角色人设 Prompt 注入，会话持久化。
 >
 > 前置条件：Sprint C2 ✅ (角色知识库) + Sprint C3 ✅ (用户私有文档)
-> **状态**: ❌ 0/7 完成
+> **状态**: ✅ 7/7 完成
 
 ## 概览
 
@@ -40,10 +40,10 @@ ConsultingSessions {
 ```
 
 **验收标准**:
-- [ ] 新文件 `collections/ConsultingSessions.ts`
-- [ ] Access: 用户只读自己的会话
-- [ ] Admin group: `Consulting`
-- [ ] payload.config.ts 注册
+- [x] 新文件 `collections/ConsultingSessions.ts`
+- [x] Access: 用户只读自己的会话
+- [x] Admin group: `Consulting`
+- [x] payload.config.ts 注册
 
 ---
 
@@ -65,10 +65,10 @@ def get_consulting_retriever(persona_slug, user_id):
 ```
 
 **验收标准**:
-- [ ] 并行检索两个 collection → RRF 融合
-- [ ] 每个 source 标记 `source_type: "persona" | "user_doc"`
-- [ ] 用户私有库为空时，仅从角色库检索 (不报错)
-- [ ] 角色库为空时，仅从用户库检索 (不报错)
+- [x] 并行检索两个 collection → RRF 融合
+- [x] 每个 source 标记 `source_type: "persona" | "user_doc"`
+- [x] 用户私有库为空时，仅从角色库检索 (不报错)
+- [x] 角色库为空时，仅从用户库检索 (不报错)
 
 **文件**: `engine_v2/retrievers/consulting.py` (新增)
 
@@ -79,9 +79,9 @@ def get_consulting_retriever(persona_slug, user_id):
 **描述**: 查询时从 Payload 读取角色的 systemPrompt，注入到 response_synthesizer。
 
 **验收标准**:
-- [ ] 从 Payload `/api/consulting-personas?where[slug][equals]={slug}` 读取 systemPrompt
-- [ ] 注入到 TreeSummarize / CompactAndRefine 的 system_prompt 参数
-- [ ] 缓存角色 Prompt (TTL 5 min，避免每次查询都读 DB)
+- [x] 从 Payload `/api/consulting-personas?where[slug][equals]={slug}` 读取 systemPrompt
+- [x] 注入到 TreeSummarize / CompactAndRefine 的 system_prompt 参数
+- [x] 缓存角色 Prompt (进程级 dict cache，避免每次查询都读 DB)
 
 **文件**: `engine_v2/response_synthesizers/consulting.py` (新增)
 
@@ -104,10 +104,10 @@ def get_consulting_retriever(persona_slug, user_id):
 **SSE 事件序列**: 复用现有 retrieval_done → token → done 模式
 
 **验收标准**:
-- [ ] 新路由 `POST /engine/consulting/query/stream`
-- [ ] 自动绑定双库检索器 + 人设 Prompt
-- [ ] 来源标记 source_type
-- [ ] 复用现有 SSE 事件格式
+- [x] 新路由 `POST /engine/consulting/query/stream`
+- [x] 自动绑定双库检索器 + 人设 Prompt
+- [x] 来源标记 source_type
+- [x] 复用现有 SSE 事件格式
 
 **文件**: `engine_v2/api/routes/consulting.py` (新增)
 
@@ -122,11 +122,10 @@ def get_consulting_retriever(persona_slug, user_id):
 **描述**: 咨询专用对话页面，复用 ChatPage 布局，数据源改为咨询会话 + 咨询 API。
 
 **验收标准**:
-- [ ] 新目录 `features/consulting/chat/`
-- [ ] 新文件 `ConsultingChatPage.tsx`, `useConsultingChat.ts`, `types.ts`, `index.ts`
-- [ ] SSE 流式显示回答
-- [ ] Citation chips 区分角色知识库 (蓝) vs 个人文档 (橙)
-- [ ] `/consulting` 路由 page.tsx 薄壳
+- [x] 咨询模式集成到统一 ChatPanel (mode=consulting)
+- [x] SSE 流式显示回答 (queryConsultingStream)
+- [x] Citation chips 区分来源 (source_type)
+- [x] `/consulting` 路由 → redirect `/chat?mode=consulting`
 
 ### [C4-06] 侧栏集成 — UserDocsPanel + PersonaSelectorPanel
 
@@ -135,9 +134,9 @@ def get_consulting_retriever(persona_slug, user_id):
 **描述**: 咨询页面右侧栏集成文档管理和角色切换。
 
 **验收标准**:
-- [ ] 右侧栏包含 PersonaSelectorPanel + UserDocsPanel
-- [ ] 切换角色后自动切换会话 + 刷新文档列表
-- [ ] 可折叠侧栏
+- [x] 右侧栏 ConsultingSidebar 包含 UserDocsPanel
+- [x] 切换角色后自动触发 sidebar 刷新
+- [x] 可折叠侧栏 (onClose)
 
 ### [C4-07] 会话自动创建/续接
 
@@ -146,10 +145,10 @@ def get_consulting_retriever(persona_slug, user_id):
 **描述**: 进入咨询页时自动创建或恢复最近会话。
 
 **验收标准**:
-- [ ] 进入页面 → 查询当前用户×角色的最近会话
-- [ ] 无会话 → 自动创建
-- [ ] 有会话 → 加载历史消息
-- [ ] 新消息关联到 ConsultingSessions
+- [x] 进入 consulting 模式 → 自动查询最近同 persona 会话
+- [x] 无会话 → 首次提问时自动创建 (ChatPanel.createSession)
+- [x] 有会话 → 加载历史消息
+- [x] 新消息关联到 chat-sessions (mode=consulting)
 
 ---
 

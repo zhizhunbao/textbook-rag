@@ -109,10 +109,30 @@ function PersonaCard({
 export default function OnboardingPage() {
   const { user, setUser } = useAuth()
   const { t } = useI18n()
-  const { personas, loading, error } = usePersonas()
+  const { personas, loading, error, refetch } = usePersonas()
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
+  const [seeding, setSeeding] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+
+  const handleSeedPersonas = async () => {
+    try {
+      setSeeding(true)
+      setSaveError(null)
+      const res = await fetch('/api/seed', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ collections: ['consulting-personas'] }),
+      })
+      if (!res.ok) throw new Error(`Seed failed: ${res.status}`)
+      await refetch()
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Unknown error')
+    } finally {
+      setSeeding(false)
+    }
+  }
 
   const handleConfirm = async () => {
     if (!selectedId || !user) return
@@ -174,7 +194,7 @@ export default function OnboardingPage() {
         )}
 
         {/* Persona grid */}
-        {!loading && !error && (
+        {!loading && !error && personas.length > 0 && (
           <div className={cn(
             'grid gap-6 mb-8',
             personas.length <= 2 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
@@ -187,6 +207,42 @@ export default function OnboardingPage() {
                 onSelect={() => setSelectedId(p.id)}
               />
             ))}
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!loading && !error && personas.length === 0 && (
+          <div className="mb-8 rounded-2xl border border-border bg-muted/30 p-6 text-center">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3v18" />
+                <path d="M5 7l7-4 7 4" />
+                <path d="M3 13l2-6 4 6a4 4 0 0 1-6 0Z" />
+                <path d="M15 13l2-6 4 6a4 4 0 0 1-6 0Z" />
+              </svg>
+            </div>
+            <h2 className="mb-1 text-sm font-semibold text-foreground">
+              No consulting roles found
+            </h2>
+            <p className="mx-auto mb-4 max-w-sm text-xs text-muted-foreground">
+              Initialize the default consulting roles to continue onboarding.
+            </p>
+            <button
+              type="button"
+              onClick={() => void handleSeedPersonas()}
+              disabled={seeding}
+              className="inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {seeding ? (
+                <span className="h-4 w-4 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" />
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 5v14" />
+                  <path d="M5 12h14" />
+                </svg>
+              )}
+              {seeding ? 'Initializing...' : 'Initialize default roles'}
+            </button>
           </div>
         )}
 
@@ -221,7 +277,7 @@ export default function OnboardingPage() {
               </>
             )}
           </button>
-          {!selectedId && !loading && (
+          {!selectedId && !loading && personas.length > 0 && (
             <p className="text-xs text-muted-foreground mt-3">{t.onboardingNoPersona}</p>
           )}
         </div>

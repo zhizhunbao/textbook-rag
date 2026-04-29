@@ -8,6 +8,8 @@
 import { Lightbulb, X } from "lucide-react";
 import type { ModelInfo } from "@/features/shared/types";
 import type { BookBase } from "@/features/shared/books";
+import type { PersonaInfo } from "@/features/shared/consultingApi";
+import type { ChatMode } from "../history/api";
 import PromptSelector from "./PromptSelector";
 
 // ============================================================
@@ -27,6 +29,12 @@ interface ChatHeaderProps {
   /** Questions sidebar toggle */
   showQuestions?: boolean;
   onToggleQuestions?: () => void;
+  mode: ChatMode;
+  personas: PersonaInfo[];
+  selectedPersonaSlug: string | null;
+  modeLocked: boolean;
+  onModeChange: (mode: ChatMode) => void;
+  onPersonaChange: (slug: string) => void;
   /** Prompt mode selection */
   selectedPromptSlug: string | null;
   onPromptChange: (slug: string, systemPrompt: string) => void;
@@ -46,6 +54,12 @@ export default function ChatHeader({
   onClearScope,
   showQuestions,
   onToggleQuestions,
+  mode,
+  personas,
+  selectedPersonaSlug,
+  modeLocked,
+  onModeChange,
+  onPersonaChange,
   selectedPromptSlug,
   onPromptChange,
 }: ChatHeaderProps) {
@@ -87,11 +101,44 @@ export default function ChatHeader({
 
         {/* Controls */}
         <div className="flex shrink-0 items-center gap-2">
+          <select
+            className="rounded-md border border-border bg-background px-2 py-1.5 text-[12px] font-medium text-foreground outline-none transition focus:border-primary"
+            value={mode}
+            onChange={(event) => onModeChange(event.target.value as ChatMode)}
+            disabled={loading || modeLocked}
+            title={modeLocked ? "Mode is locked for this conversation" : "Chat mode"}
+          >
+            <option value="rag">RAG</option>
+            <option value="consulting">Consulting</option>
+          </select>
+
+          {mode === "consulting" && (
+            <select
+              className="max-w-[180px] rounded-md border border-border bg-background px-2 py-1.5 text-[12px] font-medium text-foreground outline-none transition focus:border-primary"
+              value={selectedPersonaSlug ?? ""}
+              onChange={(event) => onPersonaChange(event.target.value)}
+              disabled={loading || modeLocked || personas.length === 0}
+              title={modeLocked ? "Persona is locked for this conversation" : "Consulting persona"}
+            >
+              {personas.length === 0 ? (
+                <option value="">No personas</option>
+              ) : (
+                personas.map((persona) => (
+                  <option key={persona.slug} value={persona.slug}>
+                    {persona.name}
+                  </option>
+                ))
+              )}
+            </select>
+          )}
+
           {/* Prompt mode selector */}
-          <PromptSelector
-            selectedSlug={selectedPromptSlug}
-            onSelect={onPromptChange}
-          />
+          {mode === "rag" && (
+            <PromptSelector
+              selectedSlug={selectedPromptSlug}
+              onSelect={onPromptChange}
+            />
+          )}
 
           {/* Model selector */}
           <select
@@ -137,4 +184,3 @@ export default function ChatHeader({
     </div>
   );
 }
-

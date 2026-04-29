@@ -176,13 +176,23 @@ export default function LoginForm() {
         </form>
 
         {/* Footer */}
-        <div className="text-center mt-7 pt-5 border-t border-border">
-          <span className="text-xs text-muted-foreground">
-            {t.adminAccess}{' '}
-            <a href="/admin/login" className="font-semibold text-primary no-underline hover:underline transition-colors">
-              {t.goToAdminPanel}
-            </a>
-          </span>
+        <div className="text-center mt-7 pt-5 border-t border-border space-y-2">
+          <div>
+            <span className="text-sm text-muted-foreground">
+              {t.loginNoAccount}{' '}
+              <a href="/register" className="font-semibold text-primary no-underline hover:underline transition-colors">
+                {t.loginGoToRegister}
+              </a>
+            </span>
+          </div>
+          <div>
+            <span className="text-xs text-muted-foreground">
+              {t.adminAccess}{' '}
+              <a href="/admin/login" className="font-semibold text-primary no-underline hover:underline transition-colors">
+                {t.goToAdminPanel}
+              </a>
+            </span>
+          </div>
         </div>
       </div>
 

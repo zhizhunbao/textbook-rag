@@ -14,7 +14,7 @@ export const Books: CollectionConfig = {
     group: 'Content',
   },
   access: {
-    read: () => true,
+    read: isEditorOrAdmin,  // GO-MU-08: was () => true
     create: isEditorOrAdmin,
     update: isAdminOrApiKey,
     delete: isAdmin,

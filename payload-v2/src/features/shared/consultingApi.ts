@@ -1,15 +1,26 @@
 /**
- * consulting/api — Client-side API for consulting endpoints.
+ * shared/consultingApi — Client-side API for consulting query streams.
  *
- * Wraps Engine FastAPI /engine/consulting/* endpoints.
- * Modeled after the textbook query_engine/api.ts but targeting persona collections.
+ * Exposes Engine consulting endpoints for feature modules that need live LLM inference.
  */
 
 import type { SourceInfo } from '@/features/shared/types'
 
 const ENGINE = process.env.NEXT_PUBLIC_ENGINE_URL || 'http://localhost:8001'
 
-// ── Types ──
+// GO-MON-06: Typed error for quota exceeded — triggers UpgradeModal
+export class QuotaExceededError extends Error {
+  action: string
+  tier: string
+  limit: number
+  constructor(body: { detail: string; action: string; tier: string; limit: number }) {
+    super(body.detail)
+    this.name = 'QuotaExceededError'
+    this.action = body.action
+    this.tier = body.tier
+    this.limit = body.limit
+  }
+}
 
 export interface ConsultingQueryRequest {
   persona_slug: string
@@ -17,7 +28,7 @@ export interface ConsultingQueryRequest {
   top_k?: number
   model?: string | null
   provider?: string | null
-  user_id?: number | null
+  // GO-MU-06: user_id removed — now extracted from JWT auth server-side
 }
 
 export interface ConsultingQueryResponse {
@@ -43,8 +54,6 @@ export interface PersonaStatus {
   has_data: boolean
 }
 
-// ── Helpers ──
-
 function normaliseSource(s: any): SourceInfo {
   return {
     source_id: s.chunk_id ?? String(s.page_number ?? ''),
@@ -61,27 +70,35 @@ function normaliseSource(s: any): SourceInfo {
     confidence: s.score ?? 1,
     score: s.score ?? undefined,
     retrieval_source: s.retrieval_source ?? s.retrieval_origin ?? undefined,
+    source_type: s.source_type ?? undefined,
   }
 }
 
-// ── API Functions ──
-
-/** List enabled consulting personas with collection stats. */
 export async function fetchConsultingPersonas(): Promise<PersonaInfo[]> {
-  const res = await fetch(`${ENGINE}/engine/consulting/personas`)
+  const res = await fetch('/api/consulting-personas?where[isEnabled][equals]=true&sort=sortOrder&limit=50&depth=0', {
+    credentials: 'include',
+  })
   if (!res.ok) throw new Error(`Failed to fetch personas: ${res.status}`)
   const data = await res.json()
-  return data.personas ?? []
+  const docs = data.docs ?? []
+  return docs.map((d: any) => ({
+    name: d.name,
+    slug: d.slug,
+    icon: d.icon ?? undefined,
+    description: d.description ?? undefined,
+    chromaCollection: d.chromaCollection ?? `persona_${d.slug}`,
+    chunkCount: 0, // Payload doesn't track live chunk count
+  }))
 }
 
-/** Get collection status for a single persona. */
 export async function fetchPersonaStatus(slug: string): Promise<PersonaStatus> {
-  const res = await fetch(`${ENGINE}/engine/consulting/status/${slug}`)
+  const res = await fetch(`${ENGINE}/engine/consulting/status/${slug}`, {
+    credentials: 'include',
+  })
   if (!res.ok) throw new Error(`Failed to fetch status: ${res.status}`)
   return res.json()
 }
 
-/** SSE streaming query against a consulting persona's knowledge base. */
 export async function queryConsultingStream(
   req: ConsultingQueryRequest,
   callbacks: {
@@ -96,16 +113,24 @@ export async function queryConsultingStream(
     const res = await fetch(`${ENGINE}/engine/consulting/query/stream`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({
         persona_slug: req.persona_slug,
         question: req.question,
         top_k: req.top_k ?? 5,
         model: req.model ?? null,
         provider: req.provider ?? null,
-        user_id: req.user_id ?? null,
       }),
       signal: callbacks.signal,
     })
+
+    // GO-MON-06: Detect quota exceeded (403 with upgrade_url)
+    if (res.status === 403) {
+      const body = await res.json().catch(() => ({ detail: 'Quota exceeded' }))
+      if (body.upgrade_url) {
+        throw new QuotaExceededError(body)
+      }
+    }
 
     if (!res.ok) {
       const body = await res.text()
@@ -152,7 +177,7 @@ export async function queryConsultingStream(
               callbacks.onError(new Error(data.message ?? 'Unknown error'))
             }
           } catch {
-            // Skip malformed JSON
+            // Skip malformed JSON.
           }
           currentEvent = ''
         }

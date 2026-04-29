@@ -9,6 +9,7 @@
  */
 
 import type { CollectionConfig } from 'payload'
+import { isLoggedIn } from '../access/isLoggedIn'
 
 // ============================================================
 // Config
@@ -32,7 +33,7 @@ export const Reports: CollectionConfig = {
       return { user: { equals: user.id } }
     },
     // Any authenticated user can create (engine writes on behalf of user)
-    create: () => true,
+    create: isLoggedIn,  // GO-MU-09: was () => true
     // Only owner or admin can update
     update: ({ req: { user } }) => {
       if (!user) return false

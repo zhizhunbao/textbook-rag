@@ -115,6 +115,8 @@ function mapCoverImage(raw: any): CoverImage | null {
 // ── Internal: map Payload response → typed interface ────────────────────────
 function mapPayloadBook(raw: any): LibraryBook {
   const p = raw.pipeline ?? {}
+  const parse = p.parse ?? (raw.status === 'indexed' ? 'done' : 'pending')
+  const ingest = p.ingest ?? p.vector ?? p.chunked ?? (raw.status === 'indexed' ? 'done' : 'pending')
 
   return {
     id: raw.id,
@@ -129,9 +131,8 @@ function mapPayloadBook(raw: any): LibraryBook {
     chunkCount: raw.chunkCount ?? null,
     metadata: raw.metadata ?? null,
     pipeline: {
-      chunked: p.chunked ?? 'pending',
-      toc: p.toc ?? 'pending',
-      vector: p.vector ?? 'pending',
+      parse,
+      ingest,
     },
     createdAt: raw.createdAt ?? '',
     updatedAt: raw.updatedAt ?? '',

@@ -15,7 +15,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef, Suspense } from 'react'
 import {
   FileText, RefreshCw, Star, Save, Eye, Pencil,
-  Lightbulb, BookOpen, BarChart3, Minimize2,
   Loader2, CheckCircle2, AlertCircle, Play,
   Search, Zap, RotateCcw,
 } from 'lucide-react'
@@ -30,23 +29,11 @@ import type { PromptMode, PromptModeUpdatePayload } from '../types'
 // Constants
 // ============================================================
 
-const ICON_MAP: Record<string, React.ElementType> = {
-  lightbulb: Lightbulb,
-  book: BookOpen,
-  chart: BarChart3,
-  minimize: Minimize2,
-  'bar-chart': BarChart3,
-}
-
-const MODE_COLORS = [
-  { border: 'border-blue-500/30', bg: 'bg-blue-500/10', text: 'text-blue-400' },
-  { border: 'border-amber-500/30', bg: 'bg-amber-500/10', text: 'text-amber-400' },
-  { border: 'border-purple-500/30', bg: 'bg-purple-500/10', text: 'text-purple-400' },
-  { border: 'border-emerald-500/30', bg: 'bg-emerald-500/10', text: 'text-emerald-400' },
-  { border: 'border-rose-500/30', bg: 'bg-rose-500/10', text: 'text-rose-400' },
-]
-
 const ENGINE = process.env.NEXT_PUBLIC_ENGINE_URL || 'http://localhost:8001'
+
+function displayRoleName(name?: string): string {
+  return (name ?? '').replace(/^[^\p{L}\p{N}]+/u, '').trim()
+}
 
 // ============================================================
 // Component
@@ -83,7 +70,6 @@ function PromptEditorPageInner() {
   const [editName, setEditName] = useState('')
   const [editDescription, setEditDescription] = useState('')
   const [editSystemPrompt, setEditSystemPrompt] = useState('')
-  const [editIcon, setEditIcon] = useState('')
   const [saving, setSaving] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -132,7 +118,6 @@ function PromptEditorPageInner() {
       setEditName(activeMode.name)
       setEditDescription(activeMode.description)
       setEditSystemPrompt(activeMode.systemPrompt ?? '')
-      setEditIcon(activeMode.icon ?? '')
       setDirty(false)
       setSaveSuccess(false)
       setSaveError(null)
@@ -150,11 +135,10 @@ function PromptEditorPageInner() {
     const changed =
       editName !== activeMode.name ||
       editDescription !== activeMode.description ||
-      editSystemPrompt !== (activeMode.systemPrompt ?? '') ||
-      editIcon !== (activeMode.icon ?? '')
+      editSystemPrompt !== (activeMode.systemPrompt ?? '')
     setDirty(changed)
     if (changed) setSaveSuccess(false)
-  }, [editName, editDescription, editSystemPrompt, editIcon, activeMode])
+  }, [editName, editDescription, editSystemPrompt, activeMode])
 
   // ==========================================================
   // Save handler
@@ -169,7 +153,6 @@ function PromptEditorPageInner() {
       if (editName !== activeMode.name) payload.name = editName
       if (editDescription !== activeMode.description) payload.description = editDescription
       if (editSystemPrompt !== (activeMode.systemPrompt ?? '')) payload.systemPrompt = editSystemPrompt
-      if (editIcon !== (activeMode.icon ?? '')) payload.icon = editIcon
 
       const updated = await updatePromptMode(activeMode.id, payload)
       setModes((prev) => prev.map((m) => (m.id === updated.id ? updated : m)))
@@ -265,38 +248,34 @@ function PromptEditorPageInner() {
   // Sidebar items
   // ==========================================================
   const sidebarItems = useMemo<SidebarItem[]>(() => {
-    return modes.map((mode, idx) => {
-      const color = MODE_COLORS[idx % MODE_COLORS.length]
-      const IconComp = ICON_MAP[mode.icon || ''] || FileText
+    return modes.map((mode) => {
       return {
         key: String(mode.id),
-        label: mode.name,
-        icon: (
-          <IconComp className={cn('h-4 w-4 shrink-0', selected === mode.id ? color.text : '')} />
-        ),
+        label: displayRoleName(mode.name),
+        icon: false,
         highlight: mode.isDefault,
       }
     })
-  }, [modes, selected])
+  }, [modes])
 
   // ==========================================================
   // Render
   // ==========================================================
   return (
     <SidebarLayout
-      title={isFr ? 'Prompt 管理' : 'Prompt Editor'}
-      icon={<FileText className="h-4 w-4 text-rose-400" />}
+      title={isFr ? 'Role Manager' : 'Role Manager'}
+      icon={false}
       sidebarItems={sidebarItems}
       activeFilter={selected != null ? String(selected) : ''}
       onFilterChange={(key) => setSelected(Number(key))}
       sidebarWidthPx={200}
       sidebarFooter={
         <p className="text-[10px] text-muted-foreground">
-          {isFr ? `共 ${modes.length} 种模式` : `${modes.length} modes`}
+          {isFr ? `${modes.length} roles` : `${modes.length} roles`}
         </p>
       }
       loading={loading}
-      loadingText={isFr ? '加载 Prompt 模式...' : 'Loading prompt modes...'}
+      loadingText={isFr ? 'Loading roles...' : 'Loading roles...'}
       error={error}
       onRetry={loadModes}
       toolbar={
@@ -327,19 +306,9 @@ function PromptEditorPageInner() {
           {/* ── Header ─────────────────────────────────────── */}
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-3">
-              {(() => {
-                const idx = modes.findIndex((m) => m.id === activeMode.id)
-                const color = MODE_COLORS[idx % MODE_COLORS.length]
-                const IconComp = ICON_MAP[activeMode.icon || ''] || FileText
-                return (
-                  <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center', color.bg)}>
-                    <IconComp className={cn('h-5 w-5', color.text)} />
-                  </div>
-                )
-              })()}
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-lg font-bold text-foreground">{activeMode.name}</h1>
+                  <h1 className="text-lg font-bold text-foreground">{displayRoleName(activeMode.name)}</h1>
                   {activeMode.isDefault && (
                     <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-0.5">
                       <Star className="h-2.5 w-2.5" />{isFr ? '默认' : 'Default'}
@@ -419,33 +388,24 @@ function PromptEditorPageInner() {
                 </label>
                 <input
                   type="text"
-                  value={editName}
+                  value={displayRoleName(editName)}
                   onChange={(e) => setEditName(e.target.value)}
                   className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none transition-colors"
                 />
               </div>
 
-              {/* Icon */}
-              <div>
+              <div className="hidden" aria-hidden="true">
                 <label className="block text-xs font-medium text-muted-foreground mb-1.5">
                   {isFr ? '图标 (Lucide 名称)' : 'Icon (Lucide name)'}
                 </label>
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
-                    value={editIcon}
-                    onChange={(e) => setEditIcon(e.target.value)}
+                    value=""
+                    onChange={() => {}}
                     placeholder="lightbulb, book, chart, minimize"
                     className="flex-1 rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none transition-colors"
                   />
-                  {editIcon && (() => {
-                    const IconComp = ICON_MAP[editIcon] || FileText
-                    return (
-                      <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
-                        <IconComp className="h-4 w-4 text-foreground" />
-                      </div>
-                    )
-                  })()}
                 </div>
               </div>
 

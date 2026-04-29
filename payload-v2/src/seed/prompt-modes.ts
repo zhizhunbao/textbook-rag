@@ -8,7 +8,7 @@
 
 export const promptModesData = [
   {
-    name: '📚 General User',
+    name: 'General User',
     type: 'mode',
     slug: 'default',
     description: 'I just want clear, accurate answers',
@@ -21,7 +21,7 @@ export const promptModesData = [
     sortOrder: 1,
   },
   {
-    name: '🎓 Student',
+    name: 'Student',
     type: 'mode',
     slug: 'learning',
     description: "I'm studying — explain concepts step by step",
@@ -36,7 +36,7 @@ export const promptModesData = [
     sortOrder: 2,
   },
   {
-    name: '📊 Analyst',
+    name: 'Analyst',
     type: 'mode',
     slug: 'analysis',
     description: 'I need structured comparisons and insights',
@@ -51,7 +51,7 @@ export const promptModesData = [
     sortOrder: 3,
   },
   {
-    name: '⚡ Busy Professional',
+    name: 'Busy Professional',
     type: 'mode',
     slug: 'concise',
     description: "I'm short on time — give me the key point",
@@ -64,7 +64,7 @@ export const promptModesData = [
     sortOrder: 4,
   },
   {
-    name: '🔬 Researcher',
+    name: 'Researcher',
     type: 'mode',
     slug: 'detailed',
     description: 'I want comprehensive, in-depth analysis',
@@ -77,7 +77,7 @@ export const promptModesData = [
     sortOrder: 5,
   },
   {
-    name: '🏛️ Academic',
+    name: 'Academic',
     type: 'mode',
     slug: 'academic',
     description: "I'm writing a paper — use formal style",
@@ -90,7 +90,7 @@ export const promptModesData = [
     sortOrder: 6,
   },
   {
-    name: '❓ Question Generator',
+    name: 'Question Generator',
     type: 'mode',
     slug: 'question-generation',
     description: 'Auto-generate study questions (internal)',

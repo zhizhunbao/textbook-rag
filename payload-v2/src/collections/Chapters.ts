@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { isAdmin } from '../access/isAdmin'
 import { isEditorOrAdmin } from '../access/isEditorOrAdmin'
 
 export const Chapters: CollectionConfig = {
@@ -9,7 +10,7 @@ export const Chapters: CollectionConfig = {
     group: 'Content',
   },
   access: {
-    read: () => true,
+    read: isAdmin,  // GO-MU-08: was () => true
     create: isEditorOrAdmin,
     update: isEditorOrAdmin,
     delete: isEditorOrAdmin,

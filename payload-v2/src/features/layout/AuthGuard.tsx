@@ -16,7 +16,7 @@ import { usePathname } from 'next/navigation'
 import { useAuth } from '@/features/shared/AuthProvider'
 
 /** Routes that should never trigger a guard redirect */
-const UNGUARDED_ROUTES = ['/login', '/onboarding']
+const UNGUARDED_ROUTES = ['/', '/login', '/register', '/onboarding']
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, status } = useAuth()
@@ -28,7 +28,11 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     if (status === undefined) return
 
     // Unguarded routes are always allowed
-    if (UNGUARDED_ROUTES.some((r) => pathname.startsWith(r))) {
+    // '/' uses exact match; others use prefix match (e.g. /login/reset)
+    if (
+      pathname === '/' ||
+      UNGUARDED_ROUTES.slice(1).some((r) => pathname.startsWith(r))
+    ) {
       setAllowed(true)
       return
     }

@@ -56,6 +56,8 @@ export interface SourceInfo {
   score?: number;
   /** Retrieval strategy that found this source (EV2-T1-03). */
   retrieval_source?: 'bm25' | 'vector' | 'both';
+  /** Consulting source class (C4): persona KB or user private document. */
+  source_type?: 'persona' | 'user_doc';
 }
 
 export interface RetrievalStats {

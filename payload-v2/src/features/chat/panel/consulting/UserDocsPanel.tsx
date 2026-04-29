@@ -74,11 +74,45 @@ export default function UserDocsPanel({
     0,
   )
 
+  // ── Upload limits (C5-06) ──
+  const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50 MB
+  const MAX_DOCS_PER_PERSONA = 20
+  const [uploadError, setUploadError] = useState<string | null>(null)
+
   // Handle file selection — upload via Payload then trigger Engine ingest
   const handleFileSelect = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const files = e.target.files
       if (!files || files.length === 0 || !user?.id) return
+
+      setUploadError(null)
+
+      // C5-06: Validate limits
+      const remaining = MAX_DOCS_PER_PERSONA - docs.length
+      if (remaining <= 0) {
+        setUploadError(`Document limit reached (max ${MAX_DOCS_PER_PERSONA} per persona).`)
+        if (fileInputRef.current) fileInputRef.current.value = ''
+        return
+      }
+      if (files.length > remaining) {
+        setUploadError(`Can only upload ${remaining} more document(s) (max ${MAX_DOCS_PER_PERSONA}).`)
+        if (fileInputRef.current) fileInputRef.current.value = ''
+        return
+      }
+
+      for (const file of Array.from(files)) {
+        if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+          setUploadError(`"${file.name}" is not a PDF file. Only .pdf files are accepted.`)
+          if (fileInputRef.current) fileInputRef.current.value = ''
+          return
+        }
+        if (file.size > MAX_FILE_SIZE) {
+          const sizeMB = (file.size / 1024 / 1024).toFixed(1)
+          setUploadError(`"${file.name}" is ${sizeMB} MB — max allowed is 50 MB.`)
+          if (fileInputRef.current) fileInputRef.current.value = ''
+          return
+        }
+      }
 
       setUploading(true)
 
@@ -128,7 +162,7 @@ export default function UserDocsPanel({
       setUploading(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
     },
-    [user?.id, personaSlug, upload],
+    [user?.id, personaSlug, upload, docs.length],
   )
 
   // Get current persona slug from auth user
@@ -230,13 +264,23 @@ export default function UserDocsPanel({
               <line x1="12" y1="3" x2="12" y2="15" />
             </svg>
             <p className="text-xs text-muted-foreground">
-              {uploading ? 'Uploading...' : 'Drop PDFs here or click to upload'}
+              {uploading ? 'Uploading...' : `Drop PDFs here or click to upload (max 50 MB)`}
+            </p>
+            <p className="text-[10px] text-muted-foreground/60">
+              {docs.length}/{MAX_DOCS_PER_PERSONA} documents used
             </p>
           </div>
         </div>
       </div>
 
-      {/* Error */}
+      {/* Upload validation error (C5-06) */}
+      {uploadError && (
+        <div className="mx-4 mb-2 px-3 py-2 rounded-lg bg-amber-500/10 text-xs text-amber-400">
+          {uploadError}
+        </div>
+      )}
+
+      {/* Fetch error */}
       {error && (
         <div className="mx-4 mb-4 px-3 py-2 rounded-lg bg-red-500/10 text-xs text-red-400">
           {error}

@@ -1,5 +1,6 @@
 import path from 'path'
 import type { CollectionConfig } from 'payload'
+import { isAdmin } from '../access/isAdmin'
 import { isEditorOrAdmin } from '../access/isEditorOrAdmin'
 
 /**
@@ -23,7 +24,7 @@ export const PdfUploads: CollectionConfig = {
     defaultColumns: ['filename', 'createdAt'],
   },
   access: {
-    read: () => true,
+    read: isAdmin,  // GO-MU-08: was () => true
     create: isEditorOrAdmin,
     update: isEditorOrAdmin,
     delete: isEditorOrAdmin,

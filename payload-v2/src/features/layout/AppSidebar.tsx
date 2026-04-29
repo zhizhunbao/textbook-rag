@@ -33,6 +33,7 @@ import {
 import { useAuth } from '@/features/shared/AuthProvider'
 import { useChatHistoryContext } from '@/features/chat/history/ChatHistoryContext'
 import type { ChatSession } from '@/features/chat/history/useChatHistory'
+import UsagePanel from '@/features/billing/UsagePanel'
 
 /* ── helpers ── */
 function groupByDay(sessions: ChatSession[]) {
@@ -119,7 +120,8 @@ export default function AppSidebar() {
 
   /** Nav link — always renders icon + label; label fades via CSS */
   function navLink(href: string, Icon: React.ElementType, label: string) {
-    const active = pathname === href || (href !== '/chat' && pathname.startsWith(href))
+    const hrefPath = href.split('?')[0]
+    const active = pathname === hrefPath || (hrefPath !== '/chat' && pathname.startsWith(hrefPath))
     const link = (
       <Link
         href={href}
@@ -290,6 +292,12 @@ export default function AppSidebar() {
                                 {session.bookTitles.length > 2 && ` +${session.bookTitles.length - 2}`}
                               </p>
                             )}
+                            {session.mode === 'consulting' && session.personaName && (
+                              <p className="flex items-center gap-1 text-[10px] text-blue-400 mt-0.5 pr-5">
+                                <Briefcase size={10} className="shrink-0" />
+                                <span className="truncate">{session.personaName}</span>
+                              </p>
+                            )}
                           </button>
                           {isHovered && (
                             <button
@@ -367,14 +375,18 @@ export default function AppSidebar() {
           </div>
         )}
 
+        {/* ── Usage quota (non-admin, expanded only) ── */}
+        {!isAdmin && !collapsed && (
+          <UsagePanel />
+        )}
+
         {/* ── Resources (all users) ── */}
         <div className={cn('shrink-0 border-t border-sidebar-border py-2', collapsed ? 'px-1' : 'px-2')}>
           <p className={cn('px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground transition-all', DURATION, collapsed ? 'h-0 opacity-0 overflow-hidden py-0' : 'opacity-100')}>
             {t.navGroupResources}
           </p>
           <nav className="flex flex-col gap-0.5">
-            {navLink('/consulting', Briefcase, String(t.navConsulting))}
-            {navLink('/engine/question_gen', MessageSquareDot, String(t.navQuestionGen))}
+            {isAdmin && navLink('/engine/question_gen', MessageSquareDot, String(t.navQuestionGen))}
             {navLink('/reports', FileText, String(t.navReports))}
             {navLink('/settings', Settings, String(t.settings))}
           </nav>

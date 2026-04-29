@@ -15,6 +15,7 @@ import {
   appendServerMessages,
   fetchMessages as fetchServerMessages,
   type PayloadChatSession,
+  type ChatMode,
 } from "./api";
 
 /* ── Types ── */
@@ -38,6 +39,12 @@ export interface ChatSession {
   sessionBookIds: number[];
   /** Human-readable book titles (for display without AppState) */
   bookTitles: string[];
+  /** Session mode, shared by normal RAG and consulting conversations. */
+  mode: ChatMode;
+  /** Consulting persona used by this session, when mode is consulting. */
+  personaId?: number | null;
+  personaSlug?: string | null;
+  personaName?: string | null;
   messages: HistoryMessage[];
   createdAt: number;
   updatedAt: number;
@@ -63,6 +70,10 @@ function serverToLocal(
     title: doc.title,
     sessionBookIds: doc.bookIds ?? [],
     bookTitles: doc.bookTitles ?? [],
+    mode: doc.mode ?? "rag",
+    personaId: typeof doc.persona === "number" ? doc.persona : doc.persona?.id ?? null,
+    personaSlug: doc.personaSlug ?? (typeof doc.persona === "object" ? doc.persona?.slug ?? null : null),
+    personaName: typeof doc.persona === "object" ? doc.persona?.name ?? null : null,
     messages,
     createdAt: new Date(doc.createdAt).getTime(),
     updatedAt: new Date(doc.updatedAt).getTime(),
@@ -104,6 +115,10 @@ export function useChatHistory(userId?: number | null) {
       sessionBookIds: number[];
       bookTitles: string[];
       firstMessage: string;
+      mode?: ChatMode;
+      personaId?: number | null;
+      personaSlug?: string | null;
+      personaName?: string | null;
     }): Promise<string> => {
       if (!isLoggedIn || !userId) {
         throw new Error("Cannot create session: user not logged in");
@@ -114,6 +129,9 @@ export function useChatHistory(userId?: number | null) {
       const doc = await createServerSession({
         userId,
         title,
+        mode: opts.mode ?? "rag",
+        personaId: opts.personaId ?? null,
+        personaSlug: opts.personaSlug ?? null,
         bookIds: opts.sessionBookIds,
         bookTitles: opts.bookTitles,
       });
@@ -121,6 +139,10 @@ export function useChatHistory(userId?: number | null) {
       const session = serverToLocal(doc);
       session.sessionBookIds = opts.sessionBookIds;
       session.bookTitles = opts.bookTitles;
+      session.mode = opts.mode ?? "rag";
+      session.personaId = opts.personaId ?? null;
+      session.personaSlug = opts.personaSlug ?? null;
+      session.personaName = opts.personaName ?? null;
 
       setSessions((prev) => [session, ...prev].slice(0, MAX_SESSIONS));
 

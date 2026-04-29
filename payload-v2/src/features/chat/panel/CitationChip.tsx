@@ -101,6 +101,12 @@ const STRATEGY_TAG: Record<string, { Icon: React.FC<{ className?: string }>; lab
   both:   { Icon: IconHybrid,  label: "Both",   cls: "bg-emerald-500/12 text-emerald-500 ring-1 ring-emerald-500/25" },
 };
 
+/** Consulting source type tag config (C4). */
+const SOURCE_TYPE_TAG: Record<string, { label: string; cls: string }> = {
+  persona: { label: "Persona", cls: "bg-blue-500/12 text-blue-500 ring-1 ring-blue-500/25" },
+  user_doc: { label: "User doc", cls: "bg-orange-500/12 text-orange-500 ring-1 ring-orange-500/25" },
+};
+
 /** Shared style for the small square action buttons */
 const ACTION_BTN =
   "inline-flex h-[24px] w-[24px] items-center justify-center rounded-md transition-all duration-150 " +
@@ -160,6 +166,9 @@ export default function CitationChip({
 
 
   const score = source.score;
+  const sourceTypeTag = source.source_type
+    ? SOURCE_TYPE_TAG[source.source_type]
+    : null;
   const strategyTag = source.retrieval_source
     ? STRATEGY_TAG[source.retrieval_source]
     : null;
@@ -218,6 +227,16 @@ export default function CitationChip({
           >
             <strategyTag.Icon className="h-2.5 w-2.5" />
             <span className="hidden sm:inline">{strategyTag.label}</span>
+          </span>
+        )}
+
+        {/* Consulting source type tag (C4) */}
+        {sourceTypeTag && (
+          <span
+            className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold leading-none ${sourceTypeTag.cls}`}
+            title={`Consulting source: ${sourceTypeTag.label}`}
+          >
+            {sourceTypeTag.label}
           </span>
         )}
       </button>

@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { isLoggedIn } from '../access/isLoggedIn'
 import { isEditorOrAdmin } from '../access/isEditorOrAdmin'
 import { isAdmin } from '../access/isAdmin'
 
@@ -15,7 +16,7 @@ export const Llms: CollectionConfig = {
     group: 'Settings',
   },
   access: {
-    read: () => true,
+    read: isLoggedIn,  // GO-MU-09: was () => true
     create: isEditorOrAdmin,
     update: isEditorOrAdmin,
     delete: isAdmin,

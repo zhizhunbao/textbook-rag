@@ -19,7 +19,7 @@ export const DataSources: CollectionConfig = {
     group: 'Content',
   },
   access: {
-    read: () => true,
+    read: isAdmin,  // GO-MU-08: was () => true
     create: isEditorOrAdmin,
     update: isEditorOrAdmin,
     delete: isAdmin,

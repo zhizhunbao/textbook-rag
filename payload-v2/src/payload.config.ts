@@ -1,6 +1,8 @@
 import { buildConfig } from 'payload'
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
+import { stripePlugin } from '@payloadcms/plugin-stripe'
+import { seoPlugin } from '@payloadcms/plugin-seo'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
@@ -24,7 +26,9 @@ import { Media } from './collections/Media'
 import { PdfUploads } from './collections/PdfUploads'
 import { Reports } from './collections/Reports'
 import { ConsultingPersonas } from './collections/ConsultingPersonas'
+import { ConsultingSessions } from './collections/ConsultingSessions'
 import { UserDocuments } from './collections/UserDocuments'
+import { UsageRecords } from './collections/UsageRecords'
 import { seedEndpoint } from './collections/endpoints'
 
 const filename = fileURLToPath(import.meta.url)
@@ -57,7 +61,9 @@ export default buildConfig({
     ChatMessages,
     Reports,
     ConsultingPersonas,
+    ConsultingSessions,
     UserDocuments,
+    UsageRecords,
   ],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
@@ -76,5 +82,57 @@ export default buildConfig({
     },
   },
   endpoints: [seedEndpoint],
-  plugins: [],
+  plugins: [
+    // GO-MON-07/08: Stripe payments — webhook handling + REST proxy
+    stripePlugin({
+      stripeSecretKey: process.env.STRIPE_SECRET_KEY || '',
+      stripeWebhooksEndpointSecret: process.env.STRIPE_WEBHOOKS_ENDPOINT_SECRET,
+      rest: false, // disable REST proxy in production (security risk)
+      logs: process.env.NODE_ENV !== 'production',
+      webhooks: {
+        'customer.subscription.created': async ({ event, req }) => {
+          const subscription = event.data.object as { customer: string }
+          await _upgradeUserTier(req.payload, subscription.customer, 'pro')
+        },
+        'customer.subscription.deleted': async ({ event, req }) => {
+          const subscription = event.data.object as { customer: string }
+          await _upgradeUserTier(req.payload, subscription.customer, 'free')
+        },
+      },
+    }),
+    // GO-LAND-05: SEO meta management for landing/pricing pages
+    seoPlugin({
+      collections: [],  // no CMS collections need SEO yet
+      generateTitle: ({ doc }) => `ConsultRAG — ${(doc as Record<string, string>)?.title || 'AI Consulting'}`,
+      generateDescription: ({ doc }) => (doc as Record<string, string>)?.excerpt || 'AI-powered multi-role consulting with private document RAG',
+    }),
+  ],
 })
+
+/**
+ * Helper: Update user tier when Stripe subscription changes.
+ * Called by Stripe webhook handlers above.
+ */
+async function _upgradeUserTier(
+  payload: any,
+  stripeCustomerId: string,
+  tier: 'free' | 'pro',
+): Promise<void> {
+  try {
+    // Find user by stripeCustomerId
+    const { docs } = await (payload as any).find({
+      collection: 'users',
+      where: { stripeCustomerId: { equals: stripeCustomerId } },
+      limit: 1,
+    })
+    if (docs.length > 0) {
+      await (payload as any).update({
+        collection: 'users',
+        id: docs[0].id,
+        data: { tier },
+      })
+    }
+  } catch (e) {
+    console.error(`[Stripe Webhook] Failed to update tier: ${e}`)
+  }
+}

@@ -96,6 +96,7 @@ export async function generateQuestions(
   options?: {
     model?: string
     category?: string
+    chapterKey?: string
     pageStart?: number
     pageEnd?: number
   },
@@ -104,6 +105,7 @@ export async function generateQuestions(
     const body: Record<string, unknown> = { book_ids: bookIds, count }
     if (options?.model) body.model = options.model
     if (options?.category) body.category = options.category
+    if (options?.chapterKey) body.chapter_key = options.chapterKey
     if (options?.pageStart != null) body.page_start = options.pageStart
     if (options?.pageEnd != null) body.page_end = options.pageEnd
     const res = await fetch(`${ENGINE}/engine/questions/generate`, {
