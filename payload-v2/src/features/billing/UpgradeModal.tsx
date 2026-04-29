@@ -43,6 +43,7 @@ export default function UpgradeModal({ open, onClose, tier = 'free', action }: U
           stripeMethod: 'checkout.sessions.create',
           stripeArgs: [{
             mode: 'subscription',
+            payment_method_types: ['card', 'alipay', 'wechat_pay'],
             line_items: [{
               price: process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID || '',
               quantity: 1,

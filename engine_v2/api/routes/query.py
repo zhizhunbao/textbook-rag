@@ -65,6 +65,7 @@ def _build_trace(
     top_k: int,
     sources: list[dict[str, Any]],
     model: str | None = None,
+    routing: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build a trace object matching the frontend QueryTrace interface."""
     return {
@@ -76,6 +77,32 @@ def _build_trace(
         "generation": {
             "model": model or "",
         },
+        "routing": routing,
+    }
+
+
+async def _resolve_routing(question: str, retrieval_mode: str | None) -> dict[str, Any]:
+    """Resolve requested retrieval mode into an executable strategy.
+
+    ``None`` preserves legacy behavior: standard retrieval without depth routing.
+    ``smart`` and ``deep`` currently fall back inside QueryRouter until their
+    engines are implemented.
+    """
+    mode = retrieval_mode or "standard"
+    if mode not in {"standard", "auto", "smart", "deep"}:
+        logger.warning("Unknown retrieval_mode={}, falling back to standard", mode)
+        mode = "standard"
+
+    from engine_v2.query_engine.router import get_router
+
+    decision = await get_router().route(question, mode=mode)
+    return {
+        "requested_mode": mode,
+        "strategy": decision.strategy,
+        "depth": decision.depth,
+        "depth_score": decision.depth_score,
+        "reasoning": decision.reasoning,
+        "is_fallback": decision.is_fallback,
     }
 
 
@@ -140,7 +167,15 @@ async def query(req: QueryRequest, engine=Depends(get_engine)):
 
     # Extract book scope from filters
     book_ids = req.filters.book_id_strings or []
-    logger.info("Sync query: {} (top_k={}, books={})", req.question[:80], req.top_k, book_ids or "all")
+    routing = await _resolve_routing(req.question, req.retrieval_mode)
+    logger.info(
+        "Sync query: {} (top_k={}, books={}, mode={}→{})",
+        req.question[:80],
+        req.top_k,
+        book_ids or "all",
+        routing["requested_mode"],
+        routing["strategy"],
+    )
 
     result = run_query(
         req.question,
@@ -159,6 +194,7 @@ async def query(req: QueryRequest, engine=Depends(get_engine)):
             top_k=req.top_k,
             sources=result.sources,
             model=req.model,
+            routing=routing,
         ),
     }
 
@@ -200,6 +236,7 @@ async def _stream_generator(req: QueryRequest):
 
         # Extract book scope from filters
         book_ids = req.filters.book_id_strings or []
+        routing = await _resolve_routing(req.question, req.retrieval_mode)
 
         # Build streaming engine with book scope filter and model override
         streaming_engine = get_query_engine(
@@ -212,7 +249,14 @@ async def _stream_generator(req: QueryRequest):
             custom_system_prompt=req.custom_system_prompt,
         )
 
-        logger.info("Stream query: {} (top_k={}, books={})", req.question[:80], req.top_k, book_ids or "all")
+        logger.info(
+            "Stream query: {} (top_k={}, books={}, mode={}→{})",
+            req.question[:80],
+            req.top_k,
+            book_ids or "all",
+            routing["requested_mode"],
+            routing["strategy"],
+        )
 
         # Execute query with streaming enabled
         response = streaming_engine.query(req.question)
@@ -257,6 +301,7 @@ async def _stream_generator(req: QueryRequest):
             top_k=req.top_k,
             sources=sources,
             model=req.model,
+            routing=routing,
         )
 
         yield _sse_event("done", {

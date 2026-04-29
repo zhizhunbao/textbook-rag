@@ -729,6 +729,11 @@ async def full_evaluate(
     compute_aggregate_scores(result)
     result.status = _compute_status(result)
 
+    # Routing evaluation (EV2-T4-02) — post-hoc assessment
+    result.routing_decision, result.routing_correct, result.routing_reasoning = (
+        _assess_routing_correctness(result)
+    )
+
     # Generate improvement suggestions (EUX-T3)
     from engine_v2.evaluation.suggestions import generate_suggestions
     suggestions_data = {
@@ -748,10 +753,10 @@ async def full_evaluate(
     eval_id = await _persist_full_evaluation(result)
 
     logger.info(
-        "Full-evaluated query_id={} — rag={}, llm={}, answer={}, overall={}, status={}, suggestions={} → eval_id={}",
+        "Full-evaluated query_id={} — rag={}, llm={}, answer={}, overall={}, status={}, routing={}/{} → eval_id={}",
         query_id, result.rag_score, result.llm_score,
         result.answer_score, result.overall_score, result.status,
-        len(result.suggestions), eval_id,
+        result.routing_decision, result.routing_correct, eval_id,
     )
     return result
 
@@ -786,6 +791,77 @@ def _compute_status(result: FullEvalResult) -> str:
         return "pass"
 
     return "fail"
+
+
+def _assess_routing_correctness(
+    result: FullEvalResult,
+) -> tuple[str | None, bool | None, str]:
+    """Post-hoc assessment of routing decision correctness (EV2-T4-02).
+
+    Infers what strategy *was* used from question depth, then evaluates
+    whether that strategy was appropriate given the actual eval scores.
+
+    Rules:
+        - Routed to standard but rag_score < 0.5 → should have upgraded
+        - Routed to smart/deep but rag_score >= 0.8 → standard was enough
+        - answer_score low but rag_score high → LLM issue, not retrieval
+
+    Returns:
+        (routing_decision, routing_correct, reasoning)
+    """
+    from engine_v2.settings import ROUTING_UPGRADE_THRESHOLD, ROUTING_DOWNGRADE_THRESHOLD
+
+    depth = result.question_depth
+    if not depth:
+        return None, None, ""
+
+    # Infer what strategy the router would have chosen
+    if depth == "synthesis":
+        decision = "deep"
+    elif depth == "understanding":
+        decision = "smart"
+    else:
+        decision = "standard"
+
+    rag = result.rag_score
+    answer = result.answer_score
+    faith = result.faithfulness
+
+    # Cannot assess without scores
+    if rag is None and answer is None:
+        return decision, None, "Insufficient scores for routing assessment."
+
+    reasons: list[str] = []
+    correct = True
+
+    # Rule 1: Standard route but poor RAG → should upgrade
+    if decision == "standard" and rag is not None and rag < ROUTING_UPGRADE_THRESHOLD:
+        correct = False
+        reasons.append(
+            f"Routed to standard but rag_score={rag:.2f} < {ROUTING_UPGRADE_THRESHOLD}; "
+            "consider upgrading to smart retrieve."
+        )
+
+    # Rule 2: Upgraded route but RAG already excellent → wasted resources
+    if decision in ("smart", "deep") and rag is not None and rag >= ROUTING_DOWNGRADE_THRESHOLD:
+        correct = False
+        reasons.append(
+            f"Routed to {decision} but rag_score={rag:.2f} >= {ROUTING_DOWNGRADE_THRESHOLD}; "
+            "standard retrieval would suffice."
+        )
+
+    # Rule 3: Good RAG but poor answer → LLM problem, not retrieval
+    if (
+        rag is not None and rag >= 0.7
+        and answer is not None and answer < 0.5
+    ):
+        reasons.append(
+            f"rag_score={rag:.2f} is good but answer_score={answer:.2f} is low; "
+            "issue is in LLM generation, not retrieval strategy."
+        )
+
+    reasoning = " | ".join(reasons) if reasons else "Routing appropriate for observed scores."
+    return decision, correct, reasoning
 
 
 # ============================================================
@@ -845,6 +921,10 @@ async def _persist_full_evaluation(
         "suggestions": result.suggestions,
         # AP metric (EUX-T4)
         "averagePrecision": result.average_precision,
+        # Routing evaluation (EV2-T4-02)
+        "routingDecision": result.routing_decision,
+        "routingCorrect": result.routing_correct,
+        "routingReasoning": result.routing_reasoning,
         # Status
         "status": result.status,
     }

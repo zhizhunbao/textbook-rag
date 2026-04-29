@@ -4,7 +4,7 @@
 >
 > 前置条件：S2 ✅ evaluation 5 维评估 + 持久化 + history.py 已完成；DM-T5 ✅ Report MVP 已完成。
 > 继承关系：本 Sprint 覆盖并替代 Sprint EC (14-sprint-eval-curation.md) 的 T2 自动评估部分，EC-T1 Query 删除和 EC-T3 高分报告保留独立。
-> **状态**: 🚧 13/16 完成
+> **状态**: ✅ 16/16 完成
 > ⚠️ **已知问题**: T1 检索策略溯源中 BM25 在全书搜索时从未触发 (bug)，已在 Sprint 18 (UEP-T1) 中修复计划
 
 ## 概览
@@ -280,12 +280,12 @@
 - answer_score 低但 rag_score 高 → 不是检索问题，是 LLM 能力问题
 
 **验收标准**:
-- [ ] `FullEvalResult` 新增 `routing_decision` 字段（记录路由选择）
-- [ ] `FullEvalResult` 新增 `routing_correct` 字段（bool，事后评估路由是否合理）
-- [ ] 路由正确性判定规则写入 `settings.py`
-- [ ] 积累数据后可用于优化路由阈值
+- [x] `FullEvalResult` 新增 `routing_decision` 字段（记录路由选择）
+- [x] `FullEvalResult` 新增 `routing_correct` 字段（bool，事后评估路由是否合理）
+- [x] 路由正确性判定规则写入 `settings.py`
+- [x] 积累数据后可用于优化路由阈值
 
-**文件**: `engine_v2/evaluation/evaluator.py`, `engine_v2/settings.py`
+**文件**: `engine_v2/evaluation/evaluator.py`, `engine_v2/evaluation/history.py`, `engine_v2/settings.py`, `payload-v2/src/collections/Evaluations.ts`
 
 ### [EV2-T4-03] QueryRequest 扩展 — retrieval_mode 参数
 
@@ -295,7 +295,7 @@
 
 **验收标准**:
 - [x] `QueryRequest` 新增 `retrieval_mode: str | None = None` (standard | smart | deep | auto)
-- [ ] 前端 ChatInput 增加下拉/toggle 选择检索模式（默认 standard）
+- [x] 前端 ChatInput 增加下拉/toggle 选择检索模式（默认 standard）
 - [x] 选择 "auto" 时，后端使用路由器自动决策
 - [x] 当 smart/deep 未实现时，UI 显示 "Coming Soon" 并 fallback
 - [x] G3 ✅ 默认 None → standard，向后兼容
@@ -334,10 +334,12 @@ Overall: 0.79 ✅ Pass
 **描述**: 在 ThinkingProcessPanel 或独立面板中展示检索策略分析：BM25 vs Vector 命中分布、策略建议。
 
 **验收标准**:
-- [ ] 新增 `RetrievalDiagnostics.tsx` 组件
-- [ ] 饼图/条形图展示 BM25/Vector/Both 命中比例
-- [ ] 基于分布给出策略建议文案（e.g. "BM25 命中率高→关键词检索有效"）
-- [ ] 可嵌入 TracePanel 或 EvaluationPage
+- [x] 新增 `RetrievalDiagnostics.tsx` 组件
+- [x] 饼图/条形图展示 BM25/Vector/Both 命中比例
+- [x] 基于分布给出策略建议文案（e.g. "BM25 命中率高→关键词检索有效"）
+- [x] 可嵌入 TracePanel 或 EvaluationPage
+- [x] 集成到 EvalScoreCard 替换原有的简易检索统计行
+- [x] 包含路由决策展示 (EV2-T4-02 routing_decision + routing_correct)
 
 **文件**: `features/engine/evaluation/components/RetrievalDiagnostics.tsx` (新增)
 
@@ -348,9 +350,11 @@ Overall: 0.79 ✅ Pass
 **描述**: 评估趋势图按 RAG/LLM/Answer 三组分别绘线，帮助用户判断哪个维度在改善/恶化。
 
 **验收标准**:
-- [ ] 更新现有趋势图组件，支持三线对比（RAG/LLM/Answer）
-- [ ] 颜色与评分卡一致（蓝/紫/绿）
-- [ ] 支持时间范围筛选（最近 10/50/100 条）
+- [x] 更新现有趋势图组件，支持三线对比（RAG/LLM/Answer）
+- [x] 颜色与评分卡一致（蓝/紫/绿）
+- [x] 支持时间范围筛选（最近 10/50/100 条）
+- [x] 新增 EvalTrendChart.tsx 组件，集成到 EvaluationPage 右侧面板
+- [x] 纯 SVG 实现，支持 hover tooltip 和趋势方向指示器
 
 **文件**: `features/engine/evaluation/components/EvaluationPage.tsx`
 

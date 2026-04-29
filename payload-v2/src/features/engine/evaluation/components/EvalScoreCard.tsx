@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/features/shared/utils'
 import type { EvaluationResult, EvalStatus, EvalSuggestion, SuggestionSeverity } from '../types'
+import RetrievalDiagnostics from './RetrievalDiagnostics'
 
 /** Map suggestion severity → visual styles. */
 const SEVERITY_STYLES: Record<SuggestionSeverity, { dot: string; text: string }> = {
@@ -542,30 +543,10 @@ export default function EvalScoreCard({ evaluation, locale = 'en' }: EvalScoreCa
             </div>
           )}
 
-          {/* Retrieval strategy breakdown */}
+          {/* Retrieval strategy diagnostics (EV2-T5-02) */}
           {evaluation.retrievalMode && (
-            <div className="col-span-2 flex items-center gap-2 px-1 text-[9px] text-muted-foreground">
-              <span className="font-medium text-foreground/70">
-                {isFr ? '检索策略' : 'Retrieval'}:
-              </span>
-              <span className="inline-flex items-center gap-0.5">
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500" />
-                BM25 {evaluation.bm25Hits ?? 0}
-              </span>
-              <span className="inline-flex items-center gap-0.5">
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-purple-500" />
-                Vector {evaluation.vectorHits ?? 0}
-              </span>
-              <span className="inline-flex items-center gap-0.5">
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                Both {evaluation.bothHits ?? 0}
-              </span>
-              <span className="ml-auto text-[8px] opacity-60">
-                {evaluation.retrievalMode === 'hybrid'
-                  ? <><Shuffle className="inline h-2.5 w-2.5 mr-0.5" /> Hybrid</>
-                  : <><Grid3X3 className="inline h-2.5 w-2.5 mr-0.5" /> Vector-only</>
-                }
-              </span>
+            <div className="col-span-2">
+              <RetrievalDiagnostics evaluation={evaluation} locale={locale} />
             </div>
           )}
 

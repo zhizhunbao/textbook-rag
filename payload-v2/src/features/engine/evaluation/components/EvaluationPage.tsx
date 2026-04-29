@@ -43,6 +43,7 @@ import type { EvalProvider } from '../api'
 import { useAuth } from '@/features/shared/AuthProvider'
 import AnswerBlockRenderer from '@/features/chat/panel/AnswerBlockRenderer'
 import EvalScoreCard from './EvalScoreCard'
+import EvalTrendChart from './EvalTrendChart'
 
 // ============================================================
 // Evaluation group definitions
@@ -1303,6 +1304,20 @@ export default function EvaluationPage() {
                     </span>
                   )}
                 </div>
+
+                {/* Score trend chart (EV2-T5-03) */}
+                {(() => {
+                  const trendEvals = Object.values(evalStates)
+                    .filter((s): s is QueryEvalState & { existing: EvaluationResult } =>
+                      s.status === 'done' && s.existing != null
+                    )
+                    .map(s => s.existing)
+                  return trendEvals.length >= 2 ? (
+                    <div className="mb-4">
+                      <EvalTrendChart evaluations={trendEvals} locale={isFr ? 'fr' : 'en'} />
+                    </div>
+                  ) : null
+                })()}
 
                 {sessionQueries.map((sq, idx) => (
                   <div

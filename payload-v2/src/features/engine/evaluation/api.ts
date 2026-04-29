@@ -477,6 +477,10 @@ function mapEvaluation(raw: any): EvaluationResult {
     llmCalls: raw.llmCalls ?? null,
     suggestions: raw.suggestions ?? null,
     averagePrecision: raw.averagePrecision ?? null,
+    // Routing assessment (EV2-T4)
+    routingDecision: raw.routingDecision ?? null,
+    routingCorrect: raw.routingCorrect ?? null,
+    routingReasoning: raw.routingReasoning ?? null,
     createdAt: raw.createdAt ?? '',
     updatedAt: raw.updatedAt ?? '',
   }

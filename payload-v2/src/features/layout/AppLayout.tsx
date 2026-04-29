@@ -5,7 +5,7 @@ import AppSidebar from './AppSidebar'
 import AppHeader from './AppHeader'
 
 /** 不需要 sidebar/header 的公开页面路径 */
-const PUBLIC_PATHS = ['/', '/login', '/register']
+const PUBLIC_PATHS = ['/', '/login', '/register', '/pricing', '/terms', '/privacy']
 
 /**
  * AppLayout — Sidebar + Header + Content 统一布局

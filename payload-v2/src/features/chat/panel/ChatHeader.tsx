@@ -1,6 +1,6 @@
 /**
  * ChatHeader — Chat panel top bar with title, model selector, prompt selector,
- * scope indicator, and questions toggle.
+ * scope indicator, questions toggle, and retrieval settings (Reranker / Top-K / Auto-Eval).
  *
  * Usage: <ChatHeader sessionBooks={books} totalBookCount={67} ... />
  */
@@ -11,6 +11,46 @@ import type { BookBase } from "@/features/shared/books";
 import type { PersonaInfo } from "@/features/shared/consultingApi";
 import type { ChatMode } from "../history/api";
 import PromptSelector from "./PromptSelector";
+
+// ============================================================
+// Mini Toggle — compact switch for boolean settings
+// ============================================================
+function MiniToggle({
+  enabled,
+  onChange,
+  disabled,
+  label,
+  title,
+}: {
+  enabled: boolean;
+  onChange: (v: boolean) => void;
+  disabled?: boolean;
+  label: string;
+  title?: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={enabled}
+      aria-label={label}
+      title={title ?? label}
+      disabled={disabled}
+      onClick={() => onChange(!enabled)}
+      className={`relative inline-flex h-[18px] w-[32px] shrink-0 items-center rounded-full border transition-colors duration-200 ${
+        enabled
+          ? "border-primary/40 bg-primary"
+          : "border-border bg-muted/80"
+      } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+    >
+      <span
+        className={`inline-block h-[14px] w-[14px] rounded-full bg-white shadow-sm transition-transform duration-200 ${
+          enabled ? "translate-x-[15px]" : "translate-x-[1px]"
+        }`}
+      />
+    </button>
+  );
+}
 
 // ============================================================
 // Types
@@ -38,6 +78,13 @@ interface ChatHeaderProps {
   /** Prompt mode selection */
   selectedPromptSlug: string | null;
   onPromptChange: (slug: string, systemPrompt: string) => void;
+  /** Retrieval settings */
+  topK: number;
+  rerankerEnabled: boolean;
+  autoEvaluate: boolean;
+  onTopKChange: (value: number) => void;
+  onRerankerChange: (enabled: boolean) => void;
+  onAutoEvaluateChange: (enabled: boolean) => void;
 }
 
 // ============================================================
@@ -62,11 +109,18 @@ export default function ChatHeader({
   onPersonaChange,
   selectedPromptSlug,
   onPromptChange,
+  topK,
+  rerankerEnabled,
+  autoEvaluate,
+  onTopKChange,
+  onRerankerChange,
+  onAutoEvaluateChange,
 }: ChatHeaderProps) {
   const isScoped = sessionBooks.length < totalBookCount && totalBookCount > 0;
 
   return (
     <div className="shrink-0 border-b border-border bg-card px-4 py-2.5">
+      {/* ── Row 1: Title + selectors ── */}
       <div className="flex items-center gap-3">
         {/* Title + scope indicator */}
         <div className="min-w-0 flex-1">
@@ -178,6 +232,82 @@ export default function ChatHeader({
             >
               <Lightbulb size={16} />
             </button>
+          )}
+        </div>
+      </div>
+
+      {/* ── Row 2: Retrieval settings — flat controls ── */}
+      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-border/50 pt-2">
+        {/* Top-K */}
+        <div className="flex items-center gap-1.5">
+          <label
+            className="text-[11px] font-medium text-muted-foreground whitespace-nowrap"
+            title="Number of document chunks retrieved per query"
+          >
+            Top-K
+          </label>
+          <input
+            type="range"
+            min={3}
+            max={20}
+            step={1}
+            value={topK}
+            onChange={(e) => onTopKChange(Number(e.target.value))}
+            disabled={loading}
+            className="h-1 w-16 cursor-pointer accent-primary"
+          />
+          <span className="w-5 text-center text-[11px] font-bold tabular-nums text-foreground">
+            {topK}
+          </span>
+        </div>
+
+        {/* Divider */}
+        <div className="h-4 w-px bg-border/60" />
+
+        {/* Reranker toggle */}
+        <div className="flex items-center gap-1.5">
+          <label
+            className="text-[11px] font-medium text-muted-foreground whitespace-nowrap"
+            title="LLMRerank — re-scores retrieved chunks with LLM for higher precision (uses extra tokens)"
+          >
+            Reranker
+          </label>
+          <MiniToggle
+            enabled={rerankerEnabled}
+            onChange={onRerankerChange}
+            disabled={loading}
+            label="Enable LLM Reranker"
+            title="LLMRerank: re-scores retrieved chunks with LLM for higher precision. Costs extra tokens per query."
+          />
+          {rerankerEnabled && (
+            <span className="text-[9px] font-medium text-amber-500" title="Reranker adds ~1 extra LLM call per query">
+              +tokens
+            </span>
+          )}
+        </div>
+
+        {/* Divider */}
+        <div className="h-4 w-px bg-border/60" />
+
+        {/* Auto-Evaluate toggle */}
+        <div className="flex items-center gap-1.5">
+          <label
+            className="text-[11px] font-medium text-muted-foreground whitespace-nowrap"
+            title="Automatically evaluate each response (faithfulness, relevancy, accuracy)"
+          >
+            Auto-Eval
+          </label>
+          <MiniToggle
+            enabled={autoEvaluate}
+            onChange={onAutoEvaluateChange}
+            disabled={loading}
+            label="Auto-evaluate responses"
+            title="Auto-Evaluate: automatically runs 4-dimension quality evaluation after each response. Costs extra LLM tokens."
+          />
+          {autoEvaluate && (
+            <span className="text-[9px] font-medium text-amber-500" title="Auto-eval adds ~2 extra LLM calls per response">
+              +tokens
+            </span>
           )}
         </div>
       </div>

@@ -208,17 +208,18 @@ npx tsc --noEmit   # cwd: payload-v2
 | 环境 | 配置 | 说明 |
 |------|------|------|
 | **开发** | `.env` + `npm run dev` + `uvicorn --reload` | 本地热部署 |
-| **生产** | `.env.production` + `docker compose up -d` | 容器化全栈部署 |
+| **ngrok 试运行** | `.env` + `.env.ngrok` + `ngrok http 3001` | 本地服务通过 ngrok HTTPS 对外演示/试收费 |
 
-**生产必须项**:
-- `PAYLOAD_SECRET`: 生产环境独立密钥 (用于 JWT 签发和验证)
-- `DATABASE_URL`: 生产 PostgreSQL 连接串
-- `CORS_ORIGINS`: 限制为生产域名 (不允许 `*`)
+**ngrok 试运行必须项**:
+- `PAYLOAD_SECRET`: 独立密钥 (用于 JWT 签发和验证)
+- `DATABASE_URL` / `DATABASE_URI`: 本地持久化数据库连接串
+- `PAYLOAD_PUBLIC_SERVER_URL`: 当前 ngrok HTTPS URL
+- `CORS_ORIGINS`: `http://localhost:3001,https://<ngrok-domain>` (不允许 `*`)
 - `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET`: Stripe 支付密钥
-- HTTPS: Let's Encrypt 或 Cloudflare proxy
-- Volume: postgres_data + chroma_persist + user_uploads 必须持久化
+- Stripe webhook endpoint: `https://<ngrok-domain>/api/stripe/webhooks`
+- 本机保持开机，PostgreSQL / ChromaDB / user uploads 使用本地持久化路径
 
-> 部署 Sprint 详见 `roadmap/28-sprint-go-deployment.md`
+> 部署 Sprint 详见 `roadmap/28-sprint-go-deployment.md`，操作手册见 `docs/deployment/ngrok-local.md`
 
 ---
 

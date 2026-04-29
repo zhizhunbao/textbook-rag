@@ -202,6 +202,11 @@ export interface EvaluationResult {
   // AveragePrecision (EUX-T4)
   averagePrecision: number | null
 
+  // Routing evaluation (EV2-T4-02)
+  routingDecision: 'standard' | 'smart' | 'deep' | null
+  routingCorrect: boolean | null
+  routingReasoning: string | null
+
   createdAt: string
   updatedAt: string
 }
@@ -293,5 +298,10 @@ export interface FullEvalApiResult {
     vector_hits: number
     both_hits: number
   }
+  routing: {
+    decision: string | null
+    correct: boolean | null
+    reasoning: string
+  } | null
   feedback: Record<string, string>
 }

@@ -155,6 +155,7 @@ function normaliseTrace(raw: any, req: QueryRequest, sources: any[]): any {
     top_k: retr.top_k ?? req.top_k ?? 5,
     filters: retr.filters ?? req.filters ?? null,
     active_book_title: null,
+    routing: raw?.routing ?? null,
     retrieval: {
       fetch_k: retr.fetch_k ?? (req.top_k ?? 5) * 3,
       fts_query: ftsQuery,
@@ -183,6 +184,7 @@ export async function queryTextbook(req: QueryRequest): Promise<QueryResponse> {
       provider: req.provider,
       reranker: req.reranker ?? null,
       custom_system_prompt: req.custom_system_prompt ?? null,
+      retrieval_mode: req.retrieval_mode ?? null,
     }),
   })
 
@@ -227,6 +229,7 @@ export async function queryTextbookStream(
         provider: req.provider,
         reranker: req.reranker ?? null,
         custom_system_prompt: req.custom_system_prompt ?? null,
+        retrieval_mode: req.retrieval_mode ?? null,
       }),
       signal: callbacks.signal,
     })

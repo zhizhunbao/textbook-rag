@@ -40,17 +40,17 @@
 |----|-------|------|------|------|
 | MH-06 | 新增 `CatalogModel`, `BenchmarkResult`, `PullProgress` 类型 | `features/engine/llms/types.ts` | 0.5h | ✅ |
 | MH-07 | 新增 `searchLibrary()`, `pullModel()`, `testModel()`, `testBatch()` API 函数 | `features/engine/llms/api.ts` | 1h | ✅ |
-| MH-08 | `useModels` hook 增加 `catalog`, `pullAndRegister()` 状态/方法 | `features/engine/llms/useModels.ts` | 1h | ⏳ 延后 |
+| MH-08 | `useModels` hook 增加 `catalog`, `pullAndRegister()` 状态/方法 | `features/engine/llms/useModels.ts` | 1h | ✅ |
 | MH-09 | `/engine/llms` 页面增加 "Library" 侧栏 Tab + CatalogCard 组件 | `components/CatalogCard.tsx` + `page.tsx` | 2h | ✅ |
 | MH-10 | Pull 进度条 UI + 自动注册流程 | `components/CatalogCard.tsx` | 1.5h | ✅ |
 | MH-15 | Benchmark Console 组件 — 模型选择 + 问题选择 + 串行测试 + 结果对比表 | `components/BenchmarkConsole.tsx` + `page.tsx` | 3h | ✅ |
 
 ---
 
-## 总计: 16 stories, 15/16 completed (~14h)
+## 总计: 16 stories, 16/16 completed (~15h)
 
-> MH-08 (useModels hook 扩展) 延后 — 当前通过 page.tsx 内部 state 管理 catalog，
-> 暂不需要将其合并到 useModels hook 中。可在后续迭代中合并。
+> MH-08 已收口 — catalog 加载、刷新、Pull 进度、Pull 完成后的 CMS 自动注册统一由 `useModels` hook 管理，
+> `/engine/llms` 页面只负责展示和触发回调。
 
 ---
 

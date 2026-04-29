@@ -16,7 +16,7 @@ import { usePathname } from 'next/navigation'
 import { useAuth } from '@/features/shared/AuthProvider'
 
 /** Routes that should never trigger a guard redirect */
-const UNGUARDED_ROUTES = ['/', '/login', '/register', '/onboarding']
+const UNGUARDED_ROUTES = ['/', '/login', '/register', '/onboarding', '/pricing', '/terms', '/privacy']
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, status } = useAuth()
@@ -37,9 +37,9 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
       return
     }
 
-    // Not logged in → /login
+    // Not logged in → / (Home)
     if (status === 'loggedOut' || !user) {
-      window.location.href = '/login'
+      window.location.href = '/'
       return
     }
 

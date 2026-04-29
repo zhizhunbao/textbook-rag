@@ -3,7 +3,7 @@
 > 目标：交互打磨、角色扩展向导、咨询历史、权限收紧。
 >
 > 前置条件：Sprint C4 ✅ 端到端咨询体验闭环已完成
-> **状态**: ✅ 5/6 完成 (C5-03 deferred — use Payload Admin UI)
+> **状态**: ✅ 6/6 完成
 
 ## 概览
 
@@ -39,10 +39,10 @@
 **类型**: Frontend · **优先级**: P2 · **预估**: 1.5h
 
 **验收标准**:
-- [ ] Admin PersonasPage 新增按钮打开创建表单
-- [ ] 表单: name / slug / icon / description / systemPrompt
-- [ ] 提交后自动创建 Collection + 初始化 ChromaDB
-- [ ] slug 自动生成 (从 name kebab-case)
+- [x] Admin PersonasPage 新增按钮打开创建表单
+- [x] 表单: name / slug / icon / description / systemPrompt
+- [x] 提交后自动创建 Collection + 初始化 ChromaDB
+- [x] slug 自动生成 (从 name kebab-case)
 
 ### [C5-04] 咨询历史列表 — 按角色分组
 

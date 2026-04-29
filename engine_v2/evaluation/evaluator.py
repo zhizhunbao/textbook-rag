@@ -168,6 +168,11 @@ class FullEvalResult:
     # ── 💡 Improvement suggestions (EUX-T3) ──
     suggestions: list[dict] = field(default_factory=list)
 
+    # ── 🧭 Routing evaluation (EV2-T4-02) ──
+    routing_decision: str | None = None   # "standard" | "smart" | "deep" | None
+    routing_correct: bool | None = None   # post-hoc assessment of routing quality
+    routing_reasoning: str = ""           # why was this routing deemed correct/incorrect
+
     # ── Feedback ──
     feedback: dict[str, str] = field(default_factory=dict)
 

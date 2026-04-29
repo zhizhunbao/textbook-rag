@@ -29,7 +29,7 @@ import { ConsultingPersonas } from './collections/ConsultingPersonas'
 import { ConsultingSessions } from './collections/ConsultingSessions'
 import { UserDocuments } from './collections/UserDocuments'
 import { UsageRecords } from './collections/UsageRecords'
-import { seedEndpoint } from './collections/endpoints'
+import { homeMetricsEndpoint, seedEndpoint } from './collections/endpoints'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -81,7 +81,7 @@ export default buildConfig({
       fileSize: 200_000_000, // 200 MB — for large PDFs
     },
   },
-  endpoints: [seedEndpoint],
+  endpoints: [seedEndpoint, homeMetricsEndpoint],
   plugins: [
     // GO-MON-07/08: Stripe payments — webhook handling + REST proxy
     stripePlugin({

@@ -3,7 +3,7 @@
 > 目标：用户能发现产品、了解价值、完成注册。
 >
 > 前置条件：Sprint GO-DEPLOY ✅ (产品已上线)
-> **状态**: ❌ 0/5 未开始
+> **状态**: 🚧 4/5 进行中 (Landing Page + Pricing + legal compliance + SEO basics)
 
 ## 概览
 
@@ -25,13 +25,13 @@
 **描述**: 面向潜在用户的产品首页 (非登录后首页)。
 
 **验收标准**:
-- [ ] 新文件 `app/(frontend)/landing/page.tsx` 或改造根 `/` 页面
-- [ ] Hero: 标语 + 副标题 + "开始免费使用" CTA
-- [ ] Features: 3-4 个核心卖点 (多角色咨询/私有文档/AI 回答/引用溯源)
-- [ ] How it works: 3 步使用流程
-- [ ] CTA: 注册按钮 → /register
-- [ ] 响应式布局 (手机/平板/桌面)
-- [ ] SEO: title / meta description / OpenGraph tags
+- [x] 新文件 `app/(frontend)/landing/page.tsx` 或改造根 `/` 页面
+- [x] Hero: 标语 + 副标题 + "开始免费使用" CTA
+- [x] Features: 3-4 个核心卖点 (多角色咨询/私有文档/AI 回答/引用溯源)
+- [x] How it works: 3 步使用流程
+- [x] CTA: 注册按钮 → /register
+- [x] 响应式布局 (手机/平板/桌面)
+- [x] SEO: title / meta description / OpenGraph tags
 
 ### [GO-LAND-02] 产品演示展示
 
@@ -39,7 +39,7 @@
 
 **验收标准**:
 - [ ] 录制一段 30s 产品使用 GIF/视频
-- [ ] 嵌入 Landing Page 的 Features 区域
+- [x] 嵌入 Landing Page 的 Features 区域
 - [ ] 展示: 选角色 → 提问 → 流式回答 → 引用来源
 
 ---
@@ -51,12 +51,12 @@
 **类型**: Frontend · **优先级**: P0 · **预估**: 1.5h
 
 **验收标准**:
-- [ ] 新文件 `app/(frontend)/pricing/page.tsx`
-- [ ] 双列卡片: Free / Pro
-- [ ] Free: 10 次/天, 3 文档/月, 基础角色
-- [ ] Pro: 200 次/天, 100 文档/月, 全部角色, 优先回答
-- [ ] Pro 卡片 CTA → Stripe Checkout
-- [ ] Landing Page 导航链接到定价页
+- [x] 新文件 `app/(frontend)/pricing/page.tsx`
+- [x] 双列卡片: Free / Pro
+- [x] Free: 10 次/天, 3 文档/月, 基础角色
+- [x] Pro: 200 次/天, 100 文档/月, 全部角色, 优先回答
+- [x] Pro 卡片 CTA → Stripe Checkout
+- [x] Landing Page 导航链接到定价页
 
 ---
 
@@ -67,20 +67,20 @@
 **类型**: Frontend · **优先级**: P1 · **预估**: 1.5h
 
 **验收标准**:
-- [ ] `/terms` — Terms of Service (服务条款)
-- [ ] `/privacy` — Privacy Policy (隐私政策)
-- [ ] 注册页面勾选 "同意服务条款和隐私政策"
-- [ ] 底部导航包含 Terms / Privacy 链接
+- [x] `/terms` — Terms of Service (服务条款)
+- [x] `/privacy` — Privacy Policy (隐私政策)
+- [x] 注册页面勾选 "同意服务条款和隐私政策"
+- [x] 底部导航包含 Terms / Privacy 链接
 
 ### [GO-LAND-05] SEO 基础
 
 **类型**: Frontend · **优先级**: P2 · **预估**: 1.5h
 
 **验收标准**:
-- [ ] 所有页面有合适的 `<title>` 和 `<meta description>`
-- [ ] OpenGraph / Twitter Card meta tags
-- [ ] robots.txt + sitemap.xml
-- [ ] JSON-LD structured data (Product schema)
+- [x] 所有页面有合适的 `<title>` 和 `<meta description>`
+- [x] OpenGraph / Twitter Card meta tags
+- [x] robots.txt + sitemap.xml
+- [x] JSON-LD structured data (Product schema)
 
 ---
 

@@ -1,6 +1,9 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { ArrowRight, SearchCheck } from 'lucide-react'
 import { useAuth } from '@/features/shared/AuthProvider'
 import { useI18n } from '@/features/shared/i18n'
 import LanguageToggle from '@/features/shared/components/LanguageToggle'
@@ -21,6 +24,7 @@ export default function RegisterForm() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
 
@@ -46,6 +50,10 @@ export default function RegisterForm() {
     }
     if (password !== confirmPassword) {
       setFormError(t.registerErrorPasswordMismatch)
+      return
+    }
+    if (!acceptedTerms) {
+      setFormError('Please agree to the Terms of Service and Privacy Policy.')
       return
     }
 
@@ -86,34 +94,55 @@ export default function RegisterForm() {
   }
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center p-5 relative overflow-hidden
-        bg-[linear-gradient(135deg,#004890_0%,#0066cc_50%,#004890_100%)]
-        dark:bg-[linear-gradient(135deg,#0a1628_0%,#0d2240_40%,#1a3a5c_70%,#0d2240_100%)]
-        transition-colors duration-500"
-    >
-      {/* Top-left logo */}
-      <div className="fixed top-4 left-5 z-50">
-        <img src="/ottawa-logo.jpg" alt="City of Ottawa" className="h-14 md:h-16 rounded-lg" />
-      </div>
+    <main className="relative min-h-screen overflow-hidden bg-background text-foreground">
+      <Image
+        src="/consultrag-hero.png"
+        alt="ConsultRAG workspace background"
+        fill
+        priority
+        sizes="100vw"
+        className="object-cover"
+      />
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(2,6,23,0.94)_0%,rgba(15,23,42,0.78)_48%,rgba(15,23,42,0.48)_100%)]" />
 
-      {/* Top-right controls */}
-      <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
-        <LanguageToggle className="bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm" />
-        <ThemeToggle className="bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm" />
-      </div>
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-black/25 backdrop-blur-md">
+        <nav className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 md:px-8">
+          <Link href="/" className="flex items-center gap-3 text-white">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/15">
+              <SearchCheck className="h-5 w-5" aria-hidden />
+            </span>
+            <span className="text-sm font-bold uppercase tracking-widest">ConsultRAG</span>
+          </Link>
 
-      {/* Background decorations */}
-      <div className="absolute inset-0 z-0 opacity-10 pointer-events-none">
-        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-white rounded-full blur-[150px] -translate-y-1/2 translate-x-1/3" />
-        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-white rounded-full blur-[120px] translate-y-1/3 -translate-x-1/4" />
-      </div>
+          <div className="flex items-center gap-3">
+            <LanguageToggle className="border-white/15 bg-white/10 text-white hover:bg-white/20" />
+            <ThemeToggle className="border-white/15 bg-white/10 text-white hover:bg-white/20" />
+            <Link
+              href="/login"
+              className="hidden items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-bold text-slate-950 hover:bg-white/90 sm:inline-flex"
+            >
+              Log in
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+          </div>
+        </nav>
+      </header>
 
-      {/* Register card */}
-      <div className="relative z-10 w-full max-w-[440px] backdrop-blur-xl rounded-3xl shadow-[0_32px_64px_rgba(0,0,0,0.3)] p-10
-        bg-card/95 text-card-foreground border border-border/50
-        animate-[slideUp_0.8s_cubic-bezier(0.34,1.56,0.64,1)]"
-      >
+      <section className="relative z-10 mx-auto grid min-h-screen max-w-7xl items-center gap-10 px-5 pb-10 pt-28 md:px-8 lg:grid-cols-[1fr_460px]">
+        <div className="hidden max-w-2xl text-white lg:block">
+          <p className="mb-5 inline-flex items-center rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-xs font-bold uppercase tracking-widest text-blue-100 backdrop-blur">
+            Start free
+          </p>
+          <h1 className="text-5xl font-extrabold leading-tight tracking-normal">
+            Create a private consulting workspace in minutes.
+          </h1>
+          <p className="mt-5 text-lg leading-8 text-slate-100">
+            Upload documents, choose expert roles, and inspect every answer with citations and quality signals.
+          </p>
+        </div>
+
+        {/* Register card */}
+        <div className="w-full rounded-lg border border-border/70 bg-card/95 p-7 text-card-foreground shadow-[0_24px_70px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:p-9">
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="flex flex-col gap-2">
@@ -227,6 +256,29 @@ export default function RegisterForm() {
             />
           </div>
 
+          {/* Terms agreement */}
+          <label className="flex items-start gap-3 rounded-xl border border-border bg-background/70 p-3 text-xs leading-relaxed text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={acceptedTerms}
+              onChange={(e) => setAcceptedTerms(e.target.checked)}
+              disabled={isLoading}
+              className="mt-0.5 h-4 w-4 rounded border-input accent-primary disabled:cursor-not-allowed disabled:opacity-50"
+              required
+            />
+            <span>
+              I agree to the{' '}
+              <Link href="/terms" className="font-semibold text-primary hover:underline">
+                Terms of Service
+              </Link>{' '}
+              and{' '}
+              <Link href="/privacy" className="font-semibold text-primary hover:underline">
+                Privacy Policy
+              </Link>
+              .
+            </span>
+          </label>
+
           {/* Submit */}
           <button
             type="submit" disabled={isLoading}
@@ -264,7 +316,8 @@ export default function RegisterForm() {
             </a>
           </span>
         </div>
-      </div>
-    </div>
+        </div>
+      </section>
+    </main>
   )
 }

@@ -358,9 +358,8 @@ export default function MessageBubble({ role, content, sources, model, queryId, 
             {showEval && (
               <div className="rounded-xl border border-border/40 bg-card/50 p-3 animate-in slide-in-from-top-2 fade-in duration-200">
                 {evalLoading && !evalResult && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <IconSpinner className="h-4 w-4" />
-                    <span>Evaluating answer quality…</span>
+                  <div className="flex items-center justify-center py-3">
+                    <IconSpinner className="h-4 w-4 text-muted-foreground" />
                   </div>
                 )}
                 {evalError && (

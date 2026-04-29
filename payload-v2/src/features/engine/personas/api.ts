@@ -7,12 +7,50 @@
  */
 
 import type {
+  CreatePersonaInput,
   PersonaIngestResponse,
   PersonaStatusResponse,
   PersonaWithStats,
 } from './types'
 
 const ENGINE = process.env.NEXT_PUBLIC_ENGINE_URL || 'http://localhost:8001'
+
+// ============================================================
+// Payload CMS — persona records
+// ============================================================
+
+/** Create a consulting persona in Payload CMS. */
+export async function createPersona(
+  input: CreatePersonaInput,
+): Promise<PersonaWithStats> {
+  const res = await fetch('/api/consulting-personas', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      ...input,
+      mineruCategory: input.mineruCategory || 'consulting',
+      isEnabled: input.isEnabled ?? true,
+      sortOrder: input.sortOrder ?? 0,
+    }),
+  })
+
+  if (!res.ok) {
+    const body = await res.text()
+    throw new Error(`Create persona failed: ${res.status} ${body}`)
+  }
+
+  const doc = await res.json()
+  return {
+    name: doc.name,
+    slug: doc.slug,
+    icon: doc.icon,
+    description: doc.description,
+    chromaCollection: doc.chromaCollection,
+    chunkCount: 0,
+    status: 'empty',
+  }
+}
 
 // ============================================================
 // Engine FastAPI (cross-origin) — admin operations

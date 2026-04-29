@@ -9,6 +9,12 @@
 // ============================================================
 export { default as PersonasPage } from './components/PersonasPage'
 export { default as PersonaCard } from './components/PersonaCard'
+export { default as PersonaCreatePanel } from './components/PersonaCreatePanel'
 export { default as PersonaIngestPanel } from './components/PersonaIngestPanel'
-export type { PersonaWithStats, PersonaKbStatus, PersonaIngestResponse } from './types'
+export type {
+  CreatePersonaInput,
+  PersonaWithStats,
+  PersonaKbStatus,
+  PersonaIngestResponse,
+} from './types'
 export { usePersonaAdmin } from './usePersonaAdmin'

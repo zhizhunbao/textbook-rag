@@ -10,6 +10,8 @@ import {
   useEffect,
 } from "react";
 import { queryTextbookStream } from "@/features/engine/query_engine";
+import { evaluateFromHistory } from "@/features/engine/evaluation/api";
+import type { RetrievalMode } from "@/features/engine/query_engine/types";
 import { fetchAvailableModels } from "@/features/engine/llms";
 import { fetchConsultingPersonas, queryConsultingStream } from "@/features/shared/consultingApi";
 import { useAppDispatch, useAppState } from "@/features/shared/AppContext";
@@ -82,6 +84,14 @@ export default function ChatPanel({
   // Prompt mode state — user-selected system prompt override
   const [promptSlug, setPromptSlug] = useState<string | null>(null);
   const [customSystemPrompt, setCustomSystemPrompt] = useState<string | null>(null);
+  const [retrievalMode, setRetrievalMode] = useState<RetrievalMode>("standard");
+  // Retrieval settings — user-adjustable from ChatHeader settings row
+  const [topK, setTopK] = useState(5);
+  const [rerankerEnabled, setRerankerEnabled] = useState(false);
+  const [autoEvaluate, setAutoEvaluate] = useState(false);
+  /** Ref to track autoEvaluate inside callbacks without stale closures */
+  const autoEvaluateRef = useRef(false);
+  useEffect(() => { autoEvaluateRef.current = autoEvaluate; }, [autoEvaluate]);
 
   // Smooth text reveal — à la Coze/GPT typewriter effect
   const { displayText: smoothedText, isRevealing } = useSmoothText({
@@ -410,7 +420,7 @@ export default function ChatPanel({
       const filters = engineBookIdStrings.length > 0 ? { book_id_strings: engineBookIdStrings } : undefined;
 
       await queryTextbookStream(
-        { question: trimmed, filters, model: selectedModel, provider: selectedProvider, top_k: 5, custom_system_prompt: customSystemPrompt },
+        { question: trimmed, filters, model: selectedModel, provider: selectedProvider, top_k: topK, reranker: rerankerEnabled ? "llm" : null, custom_system_prompt: customSystemPrompt, retrieval_mode: retrievalMode },
         {
           signal: controller.signal,
           onToken: (token) => {
@@ -517,6 +527,10 @@ export default function ChatPanel({
                     if (sessionId) {
                       chatHistory.updateLastAssistantQueryId(sessionId, qId);
                     }
+                    // Auto-evaluate if enabled
+                    if (autoEvaluateRef.current) {
+                      evaluateFromHistory(qId).catch(() => { /* ignore eval errors */ });
+                    }
                   }
                 }
               })
@@ -536,7 +550,7 @@ export default function ChatPanel({
         },
       );
     },
-    [sessionBookIds, selectedModel, selectedProvider, currentUser, books, chatHistory, onSessionCreated, customSystemPrompt, chatMode, selectedPersonaSlug, personas],
+    [sessionBookIds, selectedModel, selectedProvider, currentUser, books, chatHistory, onSessionCreated, customSystemPrompt, chatMode, selectedPersonaSlug, personas, topK, rerankerEnabled, retrievalMode],
   );
 
   /** Expose submitQuestion to parent (so QuestionsSidebar can call it) */
@@ -589,6 +603,12 @@ export default function ChatPanel({
           setPromptSlug(slug);
           setCustomSystemPrompt(systemPrompt);
         }}
+        topK={topK}
+        rerankerEnabled={rerankerEnabled}
+        autoEvaluate={autoEvaluate}
+        onTopKChange={setTopK}
+        onRerankerChange={setRerankerEnabled}
+        onAutoEvaluateChange={setAutoEvaluate}
       />
 
       {/* ── Message thread ── */}
@@ -681,7 +701,15 @@ export default function ChatPanel({
         sessionBooks={sessionBooks}
         input={input}
         loading={loading}
+        retrievalMode={retrievalMode}
+        topK={topK}
+        rerankerEnabled={rerankerEnabled}
+        autoEvaluate={autoEvaluate}
         onInputChange={setInput}
+        onRetrievalModeChange={setRetrievalMode}
+        onTopKChange={setTopK}
+        onRerankerChange={setRerankerEnabled}
+        onAutoEvaluateChange={setAutoEvaluate}
         onSubmit={(q) => void submitQuestion(q)}
       />
     </div>

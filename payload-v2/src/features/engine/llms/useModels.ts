@@ -25,8 +25,11 @@ import type {
   ModelOption,
   AvailabilityStatus,
   DiscoveredLocalModel,
+  CatalogModel,
+  PullProgress,
 } from './types'
 import {
+  fetchCatalogFromDB,
   fetchEnabledModels,
   checkAllModels,
   checkOllamaModels,
@@ -35,6 +38,7 @@ import {
   deleteModel as apiDeleteModel,
   registerModel as apiRegisterModel,
   removeOllamaModel as apiRemoveOllamaModel,
+  pullModel as apiPullModel,
 } from './api'
 import type { AvailabilityResult, LlmModel } from './types'
 
@@ -74,9 +78,15 @@ export interface UseModelsReturn {
   discovered: DiscoveredLocalModel[]
   /** 是否正在发现模型 / Discovering models */
   discovering: boolean
+  /** Curated model catalog / 精选模型目录 */
+  catalog: CatalogModel[]
+  /** Whether catalog is loading / 目录加载状态 */
+  catalogLoading: boolean
 
   /** 手动刷新模型列表 / Manual refresh model list */
   refresh: () => Promise<void>
+  /** Reload curated catalog / 刷新模型目录 */
+  reloadCatalog: () => Promise<void>
   /** 手动触发可用性检测 / Manual trigger availability check */
   checkAvailability: () => Promise<void>
   /** 运行本地模型发现 / Run local model discovery */
@@ -97,6 +107,11 @@ export interface UseModelsReturn {
     parameterSize?: string | null
     family?: string | null
   }) => Promise<LlmModel | null>
+  /** Pull a catalog model from Ollama and register it into CMS */
+  pullAndRegister: (
+    name: string,
+    onProgress?: (progress: PullProgress) => void,
+  ) => Promise<LlmModel | null>
   /** 从 Ollama 移除本地模型 + CMS 记录 / Remove a model from local Ollama + CMS */
   removeOllamaModel: (name: string) => Promise<void>
   /** 设为默认模型 / Set a model as the default */
@@ -122,6 +137,9 @@ export function useModels(options: UseModelsOptions = {}): UseModelsReturn {
   // ── Discovery state ──────────────────────────────────────────────────────────
   const [discovered, setDiscovered] = useState<DiscoveredLocalModel[]>([])
   const [discovering, setDiscovering] = useState(false)
+  const [catalog, setCatalog] = useState<CatalogModel[]>([])
+  const [catalogLoading, setCatalogLoading] = useState(false)
+  const [catalogLoaded, setCatalogLoaded] = useState(false)
 
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const mountedRef = useRef(true)
@@ -159,6 +177,30 @@ export function useModels(options: UseModelsOptions = {}): UseModelsReturn {
 
   // 为了向后兼容保留 loadAndCheck 别名，但实际只读 DB
   const loadAndCheck = loadFromDB
+
+  // ── 精选模型目录 / Curated model catalog ─────────────────────────────────
+  const loadCatalog = useCallback(async (force = false) => {
+    if (!mountedRef.current) return
+    if (!force && catalogLoaded) return
+
+    setCatalogLoading(true)
+    try {
+      const data = await fetchCatalogFromDB()
+      if (!mountedRef.current) return
+      setCatalog(data)
+      setCatalogLoaded(true)
+    } catch {
+      // Keep existing catalog on transient failures.
+    } finally {
+      if (mountedRef.current) {
+        setCatalogLoading(false)
+      }
+    }
+  }, [catalogLoaded])
+
+  const reloadCatalog = useCallback(async () => {
+    await loadCatalog(true)
+  }, [loadCatalog])
 
   // ── 检测可用性（调用 Engine API，不重新从 DB 加载）/ Check availability via Engine ──
   const checkAvailability = useCallback(async () => {
@@ -256,11 +298,12 @@ export function useModels(options: UseModelsOptions = {}): UseModelsReturn {
     mountedRef.current = true
     if (autoLoad) {
       loadFromDB()  // 仅读 Payload CMS DB，可用性稍后由用户手动 Check
+      void loadCatalog()
     }
     return () => {
       mountedRef.current = false
     }
-  }, [autoLoad, loadFromDB])
+  }, [autoLoad, loadCatalog, loadFromDB])
 
   // ── 定期轮询 / Periodic polling ────────────────────────────────────────────
   useEffect(() => {
@@ -367,6 +410,60 @@ export function useModels(options: UseModelsOptions = {}): UseModelsReturn {
     }
   }, [])
 
+  // ── Pull + Register / 拉取并注册模型 ─────────────────────────────────────
+  const pullAndRegister = useCallback(async (
+    name: string,
+    onProgress?: (progress: PullProgress) => void,
+  ): Promise<LlmModel | null> => {
+    const catalogModel = catalog.find((model) => model.name === name)
+
+    try {
+      await new Promise<void>((resolve, reject) => {
+        apiPullModel(
+          name,
+          (progress) => onProgress?.(progress),
+          () => resolve(),
+          (message) => reject(new Error(message)),
+        )
+      })
+
+      const newModel = await apiRegisterModel({
+        name,
+        parameterSize: catalogModel?.parameterSize ?? null,
+        family: catalogModel?.family ?? null,
+      })
+
+      if (mountedRef.current) {
+        const newRuntime: RuntimeModel = {
+          ...newModel,
+          availability: {
+            status: 'available',
+            latencyMs: null,
+            checkedAt: Date.now(),
+            error: null,
+          },
+        }
+        setModels((prev) => {
+          if (prev.some((model) => model.name === newRuntime.name)) {
+            return prev.map((model) =>
+              model.name === newRuntime.name ? newRuntime : model,
+            )
+          }
+          return [...prev, newRuntime]
+        })
+        setCatalog((prev) =>
+          prev.map((model) =>
+            model.name === name ? { ...model, installed: true } : model,
+          ),
+        )
+      }
+
+      return newModel
+    } catch {
+      return null
+    }
+  }, [catalog])
+
   // ── 从 Ollama 移除 + 同步清理 CMS / Remove from Ollama + cleanup CMS ──────
   const removeOllamaModel = useCallback(async (name: string) => {
     // 1. Remove from Ollama local
@@ -426,7 +523,10 @@ export function useModels(options: UseModelsOptions = {}): UseModelsReturn {
     allOptions,
     discovered,
     discovering,
+    catalog,
+    catalogLoading,
     refresh,
+    reloadCatalog,
     checkAvailability,
     runDiscovery,
     registerDiscoveredModel,
@@ -435,6 +535,7 @@ export function useModels(options: UseModelsOptions = {}): UseModelsReturn {
     findModel,
     deleteModel,
     registerModel,
+    pullAndRegister,
     removeOllamaModel,
     setDefaultModel,
   }

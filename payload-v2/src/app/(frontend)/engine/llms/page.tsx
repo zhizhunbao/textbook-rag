@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo, useCallback, Suspense, type ReactNode } from 'react'
+import { useState, useMemo, useCallback, Suspense, type ReactNode } from 'react'
 import {
   Brain, Loader2, AlertCircle, RefreshCw, CheckCircle2, XCircle,
   Cpu, Globe, Zap, DollarSign, Calendar,
@@ -13,7 +13,6 @@ import { SidebarLayout, type ViewMode, type SidebarItem } from '@/features/share
 import { useModels } from '@/features/engine/llms/useModels'
 import type { CatalogModel, ModelProvider, PullProgress } from '@/features/engine/llms/types'
 import { PROVIDER_CONFIGS } from '@/features/engine/llms/types'
-import { fetchCatalogFromDB, pullModel, registerModel } from '@/features/engine/llms/api'
 import { useQueryState } from '@/features/shared/hooks/useQueryState'
 import { useI18n } from '@/features/shared/i18n'
 import { BenchmarkConsole } from '@/features/engine/llms/components/BenchmarkConsole'
@@ -143,7 +142,12 @@ function LlmsPageInner() {
     loading,
     checking,
     error,
+    catalog,
+    catalogLoading,
     refresh,
+    reloadCatalog,
+    registerModel,
+    pullAndRegister,
     removeOllamaModel,
     setDefaultModel,
   } = useModels({ autoLoad: true, autoCheck: true, pollInterval: 0 })
@@ -152,33 +156,6 @@ function LlmsPageInner() {
   const [role, setRole] = useState('all')
   const [sourceFilter, setSourceFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState('all')
-
-  // ── Catalog state ──────────────────────────────────────────────────────────
-  const [catalog, setCatalog] = useState<CatalogModel[]>([])
-  const [catalogLoading, setCatalogLoading] = useState(false)
-  const [catalogLoaded, setCatalogLoaded] = useState(false)
-
-  // Load catalog on mount — reads directly from Payload CMS DB, no Engine API call.
-  useEffect(() => {
-    if (catalogLoaded || catalogLoading) return
-    setCatalogLoading(true)
-    fetchCatalogFromDB()
-      .then((data) => {
-        setCatalog(data)
-        setCatalogLoaded(true)
-      })
-      .catch(() => { })
-      .finally(() => setCatalogLoading(false))
-  }, [catalogLoaded, catalogLoading])
-
-  // Reload catalog (e.g. after Sync CMS, pull, or remove).
-  const reloadCatalog = useCallback(() => {
-    setCatalogLoading(true)
-    fetchCatalogFromDB()
-      .then(setCatalog)
-      .catch(() => { })
-      .finally(() => setCatalogLoading(false))
-  }, [])
 
   // ── Sync catalog → Payload CMS ─────────────────────────────────────────────
   const [syncing, setSyncing] = useState(false)
@@ -193,8 +170,8 @@ function LlmsPageInner() {
       if (data.success) {
         const prunedPart = data.pruned > 0 ? ` · ${data.pruned} pruned` : ''
         setSyncResult({ ok: true, msg: `+${data.created} created · ${data.updated} updated · ${data.skipped ?? 0} skipped${prunedPart}` })
-        void refresh()       // refresh registered models count in sidebar
-        reloadCatalog()      // reload catalog table from DB (now includes new models)
+        void refresh()        // refresh registered models count in sidebar
+        void reloadCatalog()  // reload catalog table from DB (now includes new models)
       } else {
         setSyncResult({ ok: false, msg: data.error || 'Sync failed' })
       }
@@ -389,7 +366,7 @@ function LlmsPageInner() {
           </div>
           {/* Refresh */}
           <button
-            onClick={() => { reloadCatalog(); void refresh() }}
+            onClick={() => { void reloadCatalog(); void refresh() }}
             className="p-2 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
             title={isFr ? 'Actualiser' : 'Refresh'}
           >
@@ -400,7 +377,7 @@ function LlmsPageInner() {
       loading={(loading || catalogLoading) && catalog.length === 0}
       loadingText={isFr ? 'Chargement du catalogue...' : 'Loading catalog...'}
       error={error && catalog.length === 0 ? error : null}
-      onRetry={() => { reloadCatalog(); void refresh() }}
+      onRetry={() => { void reloadCatalog(); void refresh() }}
     >
       {/* ── Benchmark view ── */}
       {filter === 'benchmark' ? (
@@ -505,9 +482,11 @@ function LlmsPageInner() {
             models={displayModels}
             registeredNames={registeredNames}
             onPulled={reloadCatalog}
+            onPullAndRegister={pullAndRegister}
+            onRegister={registerModel}
             onRemove={async (name) => {
               await removeOllamaModel(name)
-              reloadCatalog()
+              void reloadCatalog()
             }}
             isFr={isFr}
           />
@@ -537,12 +516,23 @@ function CatalogTable({
   models,
   registeredNames,
   onPulled,
+  onPullAndRegister,
+  onRegister,
   onRemove,
   isFr,
 }: {
   models: CatalogModel[]
   registeredNames: Set<string>
   onPulled: () => void
+  onPullAndRegister: (
+    name: string,
+    onProgress?: (progress: PullProgress) => void,
+  ) => Promise<unknown>
+  onRegister: (info: {
+    name: string
+    parameterSize?: string | null
+    family?: string | null
+  }) => Promise<unknown>
   onRemove: (name: string) => Promise<void>
   isFr: boolean
 }) {
@@ -572,6 +562,8 @@ function CatalogTable({
               model={m}
               isRegistered={registeredNames.has(m.name)}
               onPulled={onPulled}
+              onPullAndRegister={onPullAndRegister}
+              onRegister={onRegister}
               onRemove={onRemove}
               isFr={isFr}
             />
@@ -625,12 +617,23 @@ function CatalogTableRow({
   model: m,
   isRegistered,
   onPulled,
+  onPullAndRegister,
+  onRegister,
   onRemove,
   isFr,
 }: {
   model: CatalogModel
   isRegistered: boolean
   onPulled: () => void
+  onPullAndRegister: (
+    name: string,
+    onProgress?: (progress: PullProgress) => void,
+  ) => Promise<unknown>
+  onRegister: (info: {
+    name: string
+    parameterSize?: string | null
+    family?: string | null
+  }) => Promise<unknown>
   onRemove: (name: string) => Promise<void>
   isFr: boolean
 }) {
@@ -663,23 +666,24 @@ function CatalogTableRow({
     if (pulling || isActuallyInstalled) return
     setPulling(true)
     setError(null)
-    pullModel(
-      m.name,
-      (p: any) => setProgress(p),
-      async () => {
-        setPulling(false)
+    void onPullAndRegister(m.name, setProgress)
+      .then((result) => {
+        if (!result) {
+          setError('Pull or registration failed')
+          return
+        }
         setDone(true)
         setUninstalled(false)
         onPulled()
-      },
-      (err: string) => { setPulling(false); setError(err) },
-    )
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : 'Pull failed'))
+      .finally(() => setPulling(false))
   }
 
   const handleRegister = async () => {
     setRegistering(true)
     try {
-      await registerModel({ name: m.name, parameterSize: m.parameterSize, family: m.family })
+      await onRegister({ name: m.name, parameterSize: m.parameterSize, family: m.family })
       setJustRegistered(true)
       onPulled()
     } catch { /* */ }

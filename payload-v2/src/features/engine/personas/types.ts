@@ -22,6 +22,19 @@ export interface PersonaWithStats {
   status: PersonaKbStatus
 }
 
+/** Payload for creating a consulting persona from the admin UI. */
+export interface CreatePersonaInput {
+  name: string
+  slug: string
+  icon?: string
+  description?: string
+  systemPrompt: string
+  chromaCollection: string
+  mineruCategory?: string
+  isEnabled?: boolean
+  sortOrder?: number
+}
+
 // ============================================================
 // API types
 // ============================================================

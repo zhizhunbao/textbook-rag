@@ -20,6 +20,8 @@ export interface QueryFilters {
 }
 
 /** Client request payload for a query engine call. */
+export type RetrievalMode = 'standard' | 'auto' | 'smart' | 'deep'
+
 export interface QueryRequest {
   question: string
   filters?: QueryFilters
@@ -30,6 +32,8 @@ export interface QueryRequest {
   reranker?: string | null
   /** Custom system prompt override — from PromptSelector. */
   custom_system_prompt?: string | null
+  /** Retrieval strategy routing mode. Smart/deep currently fall back server-side. */
+  retrieval_mode?: RetrievalMode | null
 }
 
 /** Complete execution trace including retrieval and generation stages. */
@@ -38,6 +42,14 @@ export interface QueryTrace {
   top_k: number
   filters: QueryFilters | null
   active_book_title: string | null
+  routing?: {
+    requested_mode: RetrievalMode
+    strategy: 'standard' | 'smart' | 'deep'
+    depth?: string | null
+    depth_score?: number | null
+    reasoning?: string
+    is_fallback?: boolean
+  } | null
   retrieval: RetrievalTrace
   generation: GenerationTrace
 }

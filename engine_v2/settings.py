@@ -92,6 +92,12 @@ AUTO_EVAL_ENABLED: bool = os.getenv("AUTO_EVAL_ENABLED", "false").lower() in (
 EVAL_PASS_FAITHFULNESS: float = float(os.getenv("EVAL_PASS_FAITHFULNESS", "0.7"))
 EVAL_PASS_ANSWER_SCORE: float = float(os.getenv("EVAL_PASS_ANSWER_SCORE", "0.6"))
 
+# Routing correctness thresholds (EV2-T4-02)
+# If routed to standard but rag_score below this → routing was wrong
+ROUTING_UPGRADE_THRESHOLD: float = float(os.getenv("ROUTING_UPGRADE_THRESHOLD", "0.5"))
+# If routed to smart/deep but rag_score above this → standard was enough
+ROUTING_DOWNGRADE_THRESHOLD: float = float(os.getenv("ROUTING_DOWNGRADE_THRESHOLD", "0.8"))
+
 # ============================================================
 # Guidelines for GuidelineEvaluator (EI-T3-01)
 # ============================================================

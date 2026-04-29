@@ -301,6 +301,28 @@ export const Evaluations: CollectionConfig = {
       max: 1,
       admin: { description: 'Average Precision — aligns with LlamaIndex AP metric' },
     },
+
+    // ── Routing evaluation (EV2-T4-02) ──
+    {
+      name: 'routingDecision',
+      type: 'select',
+      options: [
+        { label: 'Standard', value: 'standard' },
+        { label: 'Smart', value: 'smart' },
+        { label: 'Deep', value: 'deep' },
+      ],
+      admin: { description: 'Retrieval strategy chosen by the router (EV2-T4-01)' },
+    },
+    {
+      name: 'routingCorrect',
+      type: 'checkbox',
+      admin: { description: 'Post-hoc assessment: was the routing decision appropriate?' },
+    },
+    {
+      name: 'routingReasoning',
+      type: 'textarea',
+      admin: { description: 'Explanation of why the routing was deemed correct/incorrect' },
+    },
   ],
 }
 

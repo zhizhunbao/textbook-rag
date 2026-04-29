@@ -21,6 +21,25 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="en" className="h-full" suppressHydrationWarning>
       <head>
         <link href="/favicon.ico" rel="icon" sizes="32x32" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'Product',
+              name: 'ConsultRAG',
+              description: 'AI-powered multi-role consulting with private document RAG and source tracing.',
+              brand: { '@type': 'Brand', name: 'ConsultRAG' },
+              offers: {
+                '@type': 'Offer',
+                price: '19',
+                priceCurrency: 'USD',
+                availability: 'https://schema.org/InStock',
+                url: 'https://consultrag.com/pricing',
+              },
+            }),
+          }}
+        />
         {/* Blocking script: set dark class BEFORE first paint to prevent FOUC */}
         <script
           dangerouslySetInnerHTML={{
@@ -52,6 +71,22 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 }
 
 export const metadata: Metadata = {
-  title: 'EcDev Research',
-  description: 'AI-powered research assistant for City of Ottawa economic reports',
+  title: {
+    default: 'ConsultRAG — AI Consulting & RAG Assistant',
+    template: '%s | ConsultRAG',
+  },
+  description: 'AI-powered multi-role consulting with private document RAG and deep source tracing.',
+  openGraph: {
+    title: 'ConsultRAG — AI Consulting & RAG Assistant',
+    description: 'AI-powered multi-role consulting with private document RAG and deep source tracing.',
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://consultrag.com',
+    siteName: 'ConsultRAG',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'ConsultRAG — AI Consulting & RAG Assistant',
+    description: 'AI-powered multi-role consulting with private document RAG and deep source tracing.',
+  },
 }

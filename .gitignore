@@ -3,6 +3,8 @@
 venv/
 env/
 .env
+.env.ngrok
+.env.production
 
 # Node
 node_modules/

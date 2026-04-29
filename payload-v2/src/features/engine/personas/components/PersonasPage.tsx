@@ -13,17 +13,25 @@ import { useState, useCallback } from 'react'
 import { cn } from '@/features/shared/utils'
 import { usePersonaAdmin } from '../usePersonaAdmin'
 import PersonaCard from './PersonaCard'
+import PersonaCreatePanel from './PersonaCreatePanel'
 import PersonaIngestPanel from './PersonaIngestPanel'
+import type { PersonaWithStats } from '../types'
 
 // ── Component ──
 
 export default function PersonasPage() {
   const { personas, loading, error, refetch } = usePersonaAdmin()
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null)
+  const [createOpen, setCreateOpen] = useState(false)
 
   const selectedPersona = personas.find((p) => p.slug === selectedSlug)
 
   const handleRefresh = useCallback(() => {
+    void refetch()
+  }, [refetch])
+
+  const handleCreated = useCallback((persona: PersonaWithStats) => {
+    setSelectedSlug(persona.slug)
     void refetch()
   }, [refetch])
 
@@ -88,35 +96,54 @@ export default function PersonasPage() {
             </div>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={handleRefresh}
-          disabled={loading}
-          className={cn(
-            'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border',
-            loading
-              ? 'opacity-60 cursor-not-allowed border-border text-muted-foreground'
-              : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground',
-          )}
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className={cn(loading && 'animate-spin')}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setCreateOpen((value) => !value)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors bg-primary text-primary-foreground hover:bg-primary/90"
           >
-            <polyline points="23,4 23,10 17,10" />
-            <polyline points="1,20 1,14 7,14" />
-            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-          </svg>
-          Refresh
-        </button>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12h14" />
+              <path d="M12 5v14" />
+            </svg>
+            New persona
+          </button>
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={loading}
+            className={cn(
+              'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border',
+              loading
+                ? 'opacity-60 cursor-not-allowed border-border text-muted-foreground'
+                : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground',
+            )}
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={cn(loading && 'animate-spin')}
+            >
+              <polyline points="23,4 23,10 17,10" />
+              <polyline points="1,20 1,14 7,14" />
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+            </svg>
+            Refresh
+          </button>
+        </div>
       </div>
+
+      <PersonaCreatePanel
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onCreated={handleCreated}
+      />
 
       {/* Persona grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -147,7 +174,7 @@ export default function PersonasPage() {
             No consulting personas defined yet.
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            Create personas in the Admin panel → Consulting Personas.
+            Use New persona to create one and initialize its collection.
           </p>
         </div>
       )}
