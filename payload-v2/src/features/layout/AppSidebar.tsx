@@ -34,6 +34,7 @@ import { useAuth } from '@/features/shared/AuthProvider'
 import { useChatHistoryContext } from '@/features/chat/history/ChatHistoryContext'
 import type { ChatSession } from '@/features/chat/history/useChatHistory'
 import UsagePanel from '@/features/billing/UsagePanel'
+import Logo from '@/features/shared/components/Logo'
 
 /* ── helpers ── */
 function groupByDay(sessions: ChatSession[]) {
@@ -172,7 +173,7 @@ export default function AppSidebar() {
                 {collapsed ? (
                   <PanelLeft size={18} className="text-muted-foreground" />
                 ) : (
-                  <img src="/consultrag-logo.png" alt="ConsultRAG" className="h-5 w-5 rounded-sm object-contain" />
+                  <Logo className="h-5 w-5 rounded-sm" />
                 )}
               </button>
             </TooltipTrigger>

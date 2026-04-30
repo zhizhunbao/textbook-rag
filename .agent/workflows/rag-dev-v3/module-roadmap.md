@@ -1,6 +1,7 @@
 # ConsultRAG — 全球跨境 AI 顾问平台 · 功能路线图
 
 > **PRD**: `docs/prd-v2.md` (全球跨境生活一站式 AI 智能顾问平台)
+> **架构**: 7 大类 × 28 角色 (P0: 10 / P1: 10 / P2: 8)
 > **首发国家**: 🇨🇦 加拿大
 > **历史 Sprint**: 所有 v1 时期的 Sprint 文件已归档至 `roadmap/archive/`
 
@@ -13,9 +14,24 @@
 | Sprint | 文件 | 目标 | Stories | 状态 |
 |--------|------|------|---------|------|
 | **G1** | [30-sprint-g1-global-template.md](./roadmap/30-sprint-g1-global-template.md) | 全球架构改造 — 多国家通用架构 | 7 | ✅ |
-| **G2** | [31-sprint-g2-canada-p0.md](./roadmap/31-sprint-g2-canada-p0.md) | 加拿大 P0 角色上线 — 8 个角色 Seed + Prompt + 知识库 | 10 | ❌ |
-| **G3** | [32-sprint-g3-landing-rebuild.md](./roadmap/32-sprint-g3-landing-rebuild.md) | Landing 页重构 — 分类卡片 + 国家选择 | 5 | ❌ |
-| **G4** | [33-sprint-g4-qa-deploy.md](./roadmap/33-sprint-g4-qa-deploy.md) | 质量验收 + 部署 | 5 | ❌ |
+| **G2** | [31-sprint-g2-canada-p0.md](./roadmap/31-sprint-g2-canada-p0.md) | 加拿大 P0 角色上线 — 10 角色 Seed + Prompt + 知识库 | TBD | ❌ |
+| **G3** | [32-sprint-g3-landing-rebuild.md](./roadmap/32-sprint-g3-landing-rebuild.md) | Landing 页重构 — 7 类目卡片 + 国家选择 | TBD | ❌ |
+| **G4** | [33-sprint-g4-qa-deploy.md](./roadmap/33-sprint-g4-qa-deploy.md) | 质量验收 + 部署 | TBD | ❌ |
+
+---
+
+## 7 大类 × P0 角色速查
+
+| 大类 | value | P0 角色 | P1 | P2 | 合计 |
+|------|-------|---------|----|----|------|
+| 🎓 教育求学 | `education` | `edu-school-planning`, `edu-visa-compliance` | 1 | 2 | 5 |
+| 🛂 移民身份 | `immigration` | `imm-pathways` | 1 | 1 | 3 |
+| 🏠 安家落地 | `settlement` | `life-rental`, `life-driving`, `life-utilities` | 2 | 0 | 5 |
+| 🏥 医疗健康 | `healthcare` | `health-insurance` | 1 | 1 | 3 |
+| 💰 财税金融 | `finance` | `fin-banking` | 1 | 2 | 4 |
+| 💼 职场就业 | `career` | `career-resume` | 1 | 2 | 4 |
+| ⚖️ 法律权益 | `legal` | `legal-labor` | 2 | 1 | 4 |
+| **合计** | | **10** | **10** | **8** | **28** |
 
 ---
 
@@ -25,7 +41,7 @@
 
 | Sprint | 内容 | 状态 |
 |--------|------|------|
-| G5 | 加拿大 P1 角色上线 (9 个) | ⏸️ |
+| G5 | 加拿大 P1 角色上线 (10 个) | ⏸️ |
 | G6 | 真人顾问对接基础功能 | ⏸️ |
 | G7 | 匿名咨询模式 (无需注册) | ⏸️ |
 
@@ -33,7 +49,7 @@
 
 | Sprint | 内容 | 状态 |
 |--------|------|------|
-| G8 | 美国模板复制 (8 个 P0 角色) | ⏸️ |
+| G8 | 美国模板复制 (10 个 P0 角色) | ⏸️ |
 | G9 | 多语种包 (英/中/法/西) | ⏸️ |
 
 ---

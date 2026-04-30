@@ -281,6 +281,19 @@ function ChatPageInner() {
             </>
           )}
 
+          {/* ── Consulting Sidebar (left of chat) — only in consulting mode ── */}
+          {consultingPersonaSlug && (
+            <>
+              <ConsultingSidebar
+                personaSlug={consultingPersonaSlug}
+                personaName={consultingPersonaName}
+                onClose={() => setConsultingPersonaSlug(null)}
+                style={{ width: sidebarWidth }}
+              />
+              <ResizeHandle width={sidebarWidth} onResize={setSidebarWidth} min={220} max={400} />
+            </>
+          )}
+
           {/* ── Chat Panel (centered when PDF is hidden) ── */}
           <div className="flex-1 h-full overflow-hidden min-w-[300px]">
             <ChatPanel
@@ -297,26 +310,14 @@ function ChatPageInner() {
             />
           </div>
 
-          {/* ── Consulting Sidebar (right, C4-06) — only in consulting mode ── */}
-          {consultingPersonaSlug && (
-            <>
-              <ResizeHandle width={sidebarWidth} onResize={setSidebarWidth} min={220} max={400} invert />
-              <ConsultingSidebar
-                personaSlug={consultingPersonaSlug}
-                personaName={consultingPersonaName}
-                onClose={() => setConsultingPersonaSlug(null)}
-                style={{ width: sidebarWidth }}
-              />
-            </>
-          )}
-
           {/* ── Questions Sidebar (right, resizable) — shown in RAG mode ── */}
-          {showQuestions && !consultingPersonaSlug && (
+          {showQuestions && (
             <>
               <ResizeHandle width={sidebarWidth} onResize={setSidebarWidth} min={220} max={480} invert />
               <QuestionsSidebar
                 bookIds={sessionBooks.map((b) => b.book_id)}
                 isScoped={sessionBookIds.length > 0 && sessionBookIds.length < books.length}
+                personaSlug={consultingPersonaSlug}
                 onSelect={(q) => {
                   submitRef.current?.(q)
                 }}

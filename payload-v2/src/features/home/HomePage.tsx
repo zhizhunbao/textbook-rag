@@ -217,7 +217,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Expert Consultants — grouped by domain ── */}
+      {/* ── Expert Consultants — 7 categories × 28 roles ── */}
       <section className="relative overflow-hidden bg-gradient-to-b from-slate-50 to-blue-50/30 py-24 dark:bg-[#020617] dark:from-[#020617] dark:to-[#020617]">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_40%_at_50%_50%,rgba(59,130,246,0.10),transparent)] dark:bg-[radial-gradient(ellipse_60%_40%_at_50%_50%,rgba(59,130,246,0.08),transparent)]" />
         <div className="relative z-10 mx-auto max-w-7xl px-5 md:px-8">
@@ -229,23 +229,17 @@ export default function HomePage() {
               Meet your AI consultants
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-base leading-7 text-muted-foreground">
-              11 domain experts across 3 categories. Each backed by a dedicated knowledge base.
+              28 domain experts across 7 categories. Each backed by a dedicated knowledge base.
             </p>
           </div>
 
-          <div className="mt-14 space-y-10">
-            {EXPERT_SECTIONS.map((section) => (
-              <div key={section.title}>
-                <h3 className="mb-4 text-sm font-semibold text-muted-foreground">
-                  {section.title}
-                </h3>
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {section.experts.map((expert) => (
-                    <ExpertCard key={expert.slug} {...expert} href={primaryHref} />
-                  ))}
-                </div>
-              </div>
-            ))}
+          <div className="mt-14 space-y-12">
+            {CATEGORIES.map((cat) => {
+              const roles = ALL_ROLES.filter((r) => r.category === cat.value)
+              return (
+                <CategorySection key={cat.value} cat={cat} roles={roles} href={primaryHref} />
+              )
+            })}
           </div>
         </div>
       </section>
@@ -322,89 +316,140 @@ function HowStep({ number, title, text }: { number: string; title: string; text:
   )
 }
 
-/* ── Expert Center — grouped by domain sections ── */
+/* ── Expert Center — 8 categories × 29 roles ── */
 
-const COLOR_MAP: Record<string, { ring: string; accent: string }> = {
-  immigration:     { ring: 'ring-blue-400/60',    accent: 'text-blue-400' },
-  education:       { ring: 'ring-indigo-400/60',  accent: 'text-indigo-400' },
-  legal:           { ring: 'ring-violet-400/60',  accent: 'text-violet-400' },
-  career:          { ring: 'ring-emerald-400/60', accent: 'text-emerald-400' },
-  living:          { ring: 'ring-cyan-400/60',    accent: 'text-cyan-400' },
-  finance:         { ring: 'ring-amber-400/60',   accent: 'text-amber-400' },
-  healthcare:      { ring: 'ring-rose-400/60',    accent: 'text-rose-400' },
-  housing:         { ring: 'ring-orange-400/60',  accent: 'text-orange-400' },
-  transportation:  { ring: 'ring-teal-400/60',    accent: 'text-teal-400' },
-  social:          { ring: 'ring-pink-400/60',    accent: 'text-pink-400' },
-  travel:          { ring: 'ring-sky-400/60',     accent: 'text-sky-400' },
+interface CategoryDef {
+  value: string
+  label: string
+  emoji: string
+  color: string
+  ringColor: string
+  bgColor: string
+  textColor: string
 }
 
-interface ExpertInfo {
-  slug: string
-  name: string
-  avatar: string
-  category: string
-  description: string
-}
-
-const EXPERT_SECTIONS: { title: string; experts: ExpertInfo[] }[] = [
-  {
-    title: 'Essential Services',
-    experts: [
-      { slug: 'immigration',  name: 'Immigration Advisor',    avatar: '/avatars/immigration.png',  category: 'immigration',  description: 'Visa applications, PR/work permits, family sponsorship, and citizenship.' },
-      { slug: 'lawyer',       name: 'Legal Advisor',          avatar: '/avatars/lawyer.png',       category: 'legal',        description: 'Contract review, consumer rights, labor law, and dispute resolution.' },
-      { slug: 'finance',      name: 'Financial Advisor',      avatar: '/avatars/finance.png',      category: 'finance',      description: 'Banking, credit cards, TFSA/RRSP investing, tax filing, and insurance.' },
-      { slug: 'healthcare',   name: 'Healthcare Navigator',   avatar: '/avatars/healthcare.png',   category: 'healthcare',   description: 'Health insurance, family doctor, clinic visits, pharmacy, and mental health.' },
-    ],
-  },
-  {
-    title: 'Professional Growth',
-    experts: [
-      { slug: 'education',    name: 'Education Counselor',    avatar: '/avatars/education.png',    category: 'education',    description: 'School selection, credential evaluation, language learning, and training.' },
-      { slug: 'career',       name: 'Career Coach',           avatar: '/avatars/career.png',       category: 'career',       description: 'Job search, resume optimization, interview coaching, and entrepreneurship.' },
-    ],
-  },
-  {
-    title: 'Lifestyle & Living',
-    experts: [
-      { slug: 'housing',        name: 'Housing Advisor',             avatar: '/avatars/housing.png',        category: 'housing',        description: 'Renting, home buying, moving services, furniture, and utilities.' },
-      { slug: 'living',         name: 'Living Advisor',              avatar: '/avatars/living.png',         category: 'living',         description: 'Shopping, phone plans, internet, delivery, and everyday essentials.' },
-      { slug: 'transportation', name: 'Transportation Advisor',      avatar: '/avatars/transportation.png', category: 'transportation', description: 'Public transit, driving tests, car buying, and auto insurance.' },
-      { slug: 'social',         name: 'Social Integration Advisor',  avatar: '/avatars/social.png',         category: 'social',         description: 'Community groups, cultural events, volunteering, and leisure.' },
-      { slug: 'travel',         name: 'Travel Planner',              avatar: '/avatars/travel.png',         category: 'travel',         description: 'Trip planning, hotel booking, car rental, and cross-border tips.' },
-    ],
-  },
+const CATEGORIES: CategoryDef[] = [
+  { value: 'education',    label: 'Education',    emoji: '🎓', color: 'from-indigo-500 to-blue-500',   ringColor: 'ring-indigo-400/50',  bgColor: 'bg-indigo-500/10',  textColor: 'text-indigo-500 dark:text-indigo-300' },
+  { value: 'immigration',  label: 'Immigration',  emoji: '🛂', color: 'from-blue-500 to-cyan-500',     ringColor: 'ring-blue-400/50',    bgColor: 'bg-blue-500/10',    textColor: 'text-blue-500 dark:text-blue-300' },
+  { value: 'settlement',   label: 'Settlement',   emoji: '🏠', color: 'from-emerald-500 to-teal-500',  ringColor: 'ring-emerald-400/50', bgColor: 'bg-emerald-500/10', textColor: 'text-emerald-500 dark:text-emerald-300' },
+  { value: 'healthcare',   label: 'Healthcare',   emoji: '🏥', color: 'from-rose-500 to-pink-500',     ringColor: 'ring-rose-400/50',    bgColor: 'bg-rose-500/10',    textColor: 'text-rose-500 dark:text-rose-300' },
+  { value: 'finance',      label: 'Finance',      emoji: '💰', color: 'from-amber-500 to-orange-500',  ringColor: 'ring-amber-400/50',   bgColor: 'bg-amber-500/10',   textColor: 'text-amber-500 dark:text-amber-300' },
+  { value: 'career',       label: 'Career',       emoji: '💼', color: 'from-violet-500 to-purple-500', ringColor: 'ring-violet-400/50',  bgColor: 'bg-violet-500/10',  textColor: 'text-violet-500 dark:text-violet-300' },
+  { value: 'legal',        label: 'Legal',        emoji: '⚖️', color: 'from-slate-500 to-gray-600',    ringColor: 'ring-slate-400/50',   bgColor: 'bg-slate-500/10',   textColor: 'text-slate-500 dark:text-slate-300' },
+  { value: 'analysis',     label: 'Analysis',     emoji: '📊', color: 'from-sky-500 to-blue-600',      ringColor: 'ring-sky-400/50',     bgColor: 'bg-sky-500/10',     textColor: 'text-sky-500 dark:text-sky-300' },
 ]
 
-function ExpertCard({
-  name,
-  avatar,
-  category,
-  description,
-  href,
-}: ExpertInfo & { href: string }) {
-  const c = COLOR_MAP[category] ?? COLOR_MAP.immigration
+interface RoleDef {
+  slug: string
+  name: string
+  category: string
+  description: string
+  enabled: boolean
+  avatar?: string
+}
+
+const ALL_ROLES: RoleDef[] = [
+  // Education
+  { slug: 'edu-school-planning', name: 'School & Program Planning', category: 'education', description: 'DLI school comparison, program selection, and tuition analysis', enabled: true, avatar: '/avatars/education.png' },
+  { slug: 'edu-visa-compliance', name: 'Study Visa & Compliance', category: 'education', description: 'Study permit applications, renewals, and common refusal reasons', enabled: true, avatar: '/avatars/immigration.png' },
+  { slug: 'edu-academic-rules', name: 'Academic Rules & Graduation', category: 'education', description: 'Course planning, GPA requirements, and graduation rules', enabled: true, avatar: '/avatars/academic-rules.png' },
+  { slug: 'edu-work-permit', name: 'Post-Grad Work Permit', category: 'education', description: 'PGWP applications and on/off-campus work rules', enabled: true, avatar: '/avatars/work-permit.png' },
+  { slug: 'edu-child-education', name: 'Child Education & K-12', category: 'education', description: 'K-12 school selection, ESL programs, and extracurriculars', enabled: true, avatar: '/avatars/child-education.png' },
+  // Immigration
+  { slug: 'imm-pathways', name: 'Immigration Pathways', category: 'immigration', description: 'Express Entry, PNP, LMIA, and CRS scoring', enabled: true, avatar: '/avatars/immigration.png' },
+  { slug: 'imm-pr-renewal', name: 'PR & Citizenship', category: 'immigration', description: 'PR card renewal, citizenship test, and residency obligations', enabled: true, avatar: '/avatars/pr-citizenship.png' },
+  { slug: 'imm-family', name: 'Family Sponsorship', category: 'immigration', description: 'Spousal sponsorship, parent reunification, and Super Visa', enabled: true, avatar: '/avatars/family-sponsorship.png' },
+  // Settlement
+  { slug: 'life-rental', name: 'Rental & Lease', category: 'settlement', description: 'Tenancy Act, standard lease terms, and rent increase limits', enabled: true, avatar: '/avatars/housing.png' },
+  { slug: 'life-driving', name: "Driver's License & Traffic", category: 'settlement', description: 'G1/G2/G license tests and international license exchange', enabled: true, avatar: '/avatars/transportation.png' },
+  { slug: 'life-utilities', name: 'Utilities & Bills', category: 'settlement', description: 'Electricity, gas, water setup, and internet plan comparisons', enabled: true, avatar: '/avatars/living.png' },
+  { slug: 'life-home-buying', name: 'Home Buying & Property', category: 'settlement', description: 'First-time home buying, inspections, and mortgages', enabled: true, avatar: '/avatars/home-buying.png' },
+  { slug: 'life-car', name: 'Vehicle & Auto Insurance', category: 'settlement', description: 'Car buying, insurance comparison, and maintenance', enabled: true, avatar: '/avatars/vehicle-insurance.png' },
+  // Healthcare
+  { slug: 'health-insurance', name: 'Health Insurance & Medical', category: 'healthcare', description: 'OHIP registration, family doctor, and walk-in clinics', enabled: true, avatar: '/avatars/healthcare.png' },
+  { slug: 'health-mental', name: 'Mental Health & Support', category: 'healthcare', description: 'Mental health resources, EAP programs, and crisis hotlines', enabled: true, avatar: '/avatars/mental-health.png' },
+  { slug: 'health-childcare', name: 'Maternal & Child Health', category: 'healthcare', description: 'Prenatal care, child vaccinations, and daycare subsidies', enabled: true, avatar: '/avatars/maternal-child.png' },
+  // Finance
+  { slug: 'fin-banking', name: 'Banking & Credit Building', category: 'finance', description: 'Bank account opening, credit cards, and credit score building', enabled: true, avatar: '/avatars/finance.png' },
+  { slug: 'fin-tax', name: 'Tax Filing & Benefits', category: 'finance', description: 'T4/T1 tax filing, GST/HST rebates, and government benefits', enabled: true, avatar: '/avatars/tax-filing.png' },
+  { slug: 'fin-investment', name: 'Insurance & Investment', category: 'finance', description: 'TFSA/RRSP investing, insurance planning, and remittance', enabled: true, avatar: '/avatars/investment.png' },
+  { slug: 'fin-cost-saving', name: 'Cost-Saving & Deals', category: 'finance', description: 'Grocery comparisons, cashback programs, and budget tips', enabled: true, avatar: '/avatars/cost-saving.png' },
+  // Career
+  { slug: 'career-resume', name: 'Resume & Job Search', category: 'career', description: 'Canadian resume format, ATS optimization, and LinkedIn SEO', enabled: true, avatar: '/avatars/career.png' },
+  { slug: 'career-internship', name: 'Internship & Part-Time', category: 'career', description: 'Co-op programs, part-time channels, and work permit rules', enabled: true, avatar: '/avatars/internship.png' },
+  { slug: 'career-transition', name: 'Career Transition', category: 'career', description: 'Skills assessment, bridge programs, and industry analysis', enabled: true, avatar: '/avatars/career-transition.png' },
+  { slug: 'career-volunteer', name: 'Volunteering & Profile', category: 'career', description: 'Volunteer opportunities, references, and community involvement', enabled: true, avatar: '/avatars/volunteering.png' },
+  // Legal
+  { slug: 'legal-labor', name: 'Labor Rights & Standards', category: 'legal', description: 'Employment Standards Act, minimum wage, and overtime rules', enabled: true, avatar: '/avatars/lawyer.png' },
+  { slug: 'legal-disputes', name: 'Rental & Workplace Disputes', category: 'legal', description: 'LTB complaints, labor arbitration, and small claims court', enabled: true, avatar: '/avatars/legal-disputes.png' },
+  { slug: 'legal-consumer', name: 'Consumer Rights', category: 'legal', description: 'Refund policies, complaint channels, and scam prevention', enabled: true, avatar: '/avatars/consumer-rights.png' },
+  { slug: 'legal-basics', name: 'Legal Basics & Resources', category: 'legal', description: 'Canadian legal system overview and legal aid resources', enabled: true, avatar: '/avatars/legal-basics.png' },
+  // Analysis
+  { slug: 'ecdev-analyst', name: 'Ottawa EcDev Analyst', category: 'analysis', description: 'Ottawa economic development data analysis — labour market, housing, CPI, vacancy, permits', enabled: true, avatar: '/avatars/ecdev-analyst.png' },
+]
+
+function CategorySection({ cat, roles, href }: { cat: CategoryDef; roles: RoleDef[]; href: string }) {
   return (
-    <Link
-      href={href}
-      className="group flex items-start gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm backdrop-blur transition-all hover:border-blue-200 hover:shadow-md hover:shadow-blue-100/50 dark:border-white/8 dark:bg-slate-900/60 dark:shadow-none dark:hover:border-white/20 dark:hover:bg-slate-800/60 dark:hover:shadow-none"
-    >
-      {/* Avatar */}
-      <div className={`h-14 w-14 shrink-0 overflow-hidden rounded-full ring-2 ${c.ring} transition-shadow group-hover:ring-[3px]`}>
-        <Image
-          src={avatar}
-          alt={name}
-          width={56}
-          height={56}
-          className="h-full w-full object-cover"
-        />
+    <div>
+      <h3 className="mb-4 text-sm font-semibold text-muted-foreground">
+        {cat.label}
+      </h3>
+      {/* Roles grid */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {roles.map((role) => (
+          <RoleCard key={role.slug} role={role} cat={cat} href={href} />
+        ))}
       </div>
+    </div>
+  )
+}
+
+function RoleCard({ role, cat, href }: { role: RoleDef; cat: CategoryDef; href: string }) {
+  const inner = (
+    <div
+      className={`group flex items-start gap-4 rounded-xl border p-4 transition-all ${
+        role.enabled
+          ? 'border-slate-200 bg-white shadow-sm hover:border-blue-200 hover:shadow-md hover:shadow-blue-100/50 dark:border-white/8 dark:bg-slate-900/60 dark:hover:border-white/20 dark:hover:bg-slate-800/60'
+          : 'border-dashed border-slate-200 bg-slate-50/50 dark:border-white/5 dark:bg-slate-900/30'
+      }`}
+    >
+      {/* Avatar or initial */}
+      {role.avatar ? (
+        <div className={`h-12 w-12 shrink-0 overflow-hidden rounded-full ring-2 ${cat.ringColor} transition-shadow group-hover:ring-[3px]`}>
+          <Image src={role.avatar} alt={role.name} width={48} height={48} className="h-full w-full object-cover" />
+        </div>
+      ) : (
+        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${cat.bgColor} ring-2 ${cat.ringColor}`}>
+          <span className={`text-sm font-bold ${cat.textColor}`}>
+            {role.name.charAt(0)}
+          </span>
+        </div>
+      )}
       {/* Text */}
-      <div className="min-w-0">
-        <h3 className="text-sm font-bold text-foreground">{name}</h3>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <h4 className={`text-sm font-bold ${role.enabled ? 'text-foreground' : 'text-muted-foreground'}`}>
+            {role.name}
+          </h4>
+          {!role.enabled && (
+            <span className="shrink-0 rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+              Coming soon
+            </span>
+          )}
+        </div>
         <p className="mt-1 text-[12px] leading-[1.5] text-muted-foreground">
-          {description}
+          {role.description}
         </p>
       </div>
+    </div>
+  )
+
+  if (!role.enabled) return <div className="cursor-default opacity-60">{inner}</div>
+
+  return (
+    <Link href={href} className="block">
+      {inner}
     </Link>
   )
 }
+

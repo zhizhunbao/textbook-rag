@@ -6,6 +6,7 @@ import { useAuth } from '@/features/shared/AuthProvider'
 import CountrySelector from '@/features/shared/components/CountrySelector'
 import LanguageToggle from '@/features/shared/components/LanguageToggle'
 import ThemeToggle from '@/features/shared/components/ThemeToggle'
+import Logo from '@/features/shared/components/Logo'
 
 /**
  * PublicNav — shared navbar for all public pages (landing, login, register).
@@ -24,7 +25,7 @@ export default function PublicNav({ page = 'landing' }: { page?: 'landing' | 'lo
       <nav className="flex w-full items-center justify-between px-5 py-4 md:px-8">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-3 text-foreground">
-          <img src="/consultrag-logo.png" alt="ConsultRAG" className="h-9 w-9 rounded-lg object-contain" />
+          <Logo className="h-9 w-9 rounded-lg" />
           <span className="text-sm font-bold uppercase tracking-widest">ConsultRAG</span>
         </Link>
 

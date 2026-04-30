@@ -94,7 +94,7 @@ export async function fetchConsultingPersonas(): Promise<PersonaInfo[]> {
     icon: d.icon ?? undefined,
     avatar: d.avatar ?? undefined,
     description: d.description ?? undefined,
-    chromaCollection: d.chromaCollection ?? `persona_${d.slug}`,
+    chromaCollection: d.chromaCollection ?? `ca_${d.slug}`,
     chunkCount: 0,
     country: d.country ?? undefined,
     category: d.category ?? undefined,

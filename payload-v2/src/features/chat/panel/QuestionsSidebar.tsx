@@ -2,20 +2,21 @@
  * chat/QuestionsSidebar — Right-side collapsible panel for suggested questions
  *
  * Data source priority:
- *   1. CMS questions scoped to session bookIds (via useSuggestedQuestions)
- *   2. Ottawa EcDev defaults from data/suggested_questions.json (fallback)
+ *   1. Persona-scoped questions (from consulting-personas DB via personaSlug)
+ *   2. CMS questions scoped to session bookIds (via useSuggestedQuestions)
+ *   3. Ottawa EcDev defaults from data/suggested_questions.json (fallback)
  *
  * Layout:
  *  ┌─────────────────────┐
  *  │ 💡 Questions  [X]   │  ← header
  *  │ 🔍 Search...        │  ← filter
- *  │ 📖 Book Title       │  ← group (expandable)
+ *  │ 📖 Category         │  ← group (expandable)
  *  │    question text     │
  *  └─────────────────────┘
  */
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   Lightbulb,
   X,
@@ -24,6 +25,7 @@ import {
   MessageCircleQuestion,
   Loader2,
   BookOpen,
+  UserCircle,
 } from 'lucide-react'
 import { cn } from '@/features/shared/utils'
 import { useSuggestedQuestions } from '@/features/engine/question_gen'
@@ -36,6 +38,8 @@ interface QuestionsSidebarProps {
   bookIds: string[]
   /** Whether a specific book scope is active (false = "all docs" mode) */
   isScoped?: boolean
+  /** Active consulting persona slug — triggers persona-scoped questions */
+  personaSlug?: string | null
   /** Called when user clicks a question */
   onSelect: (question: string) => void
   /** Close this panel */
@@ -52,6 +56,46 @@ import suggestedQuestionsData from '../../../../../data/suggested_questions.json
 
 type QuestionCategory = { id: string; label: string; icon: string; questions: string[] }
 const DEFAULT_CATEGORIES: QuestionCategory[] = suggestedQuestionsData.categories
+
+// ============================================================
+// Hook: fetch persona-scoped suggested questions from DB
+// ============================================================
+function usePersonaQuestions(personaSlug: string | null | undefined) {
+  const [categories, setCategories] = useState<QuestionCategory[]>([])
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!personaSlug) {
+      setCategories([])
+      return
+    }
+
+    let cancelled = false
+    setLoading(true)
+
+    fetch(`/api/consulting-personas?where[slug][equals]=${personaSlug}&limit=1`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return
+        const persona = data?.docs?.[0]
+        if (persona?.suggestedQuestions && Array.isArray(persona.suggestedQuestions)) {
+          setCategories(persona.suggestedQuestions)
+        } else {
+          setCategories([])
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setCategories([])
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => { cancelled = true }
+  }, [personaSlug])
+
+  return { categories, loading }
+}
 
 // ============================================================
 // Helpers
@@ -75,24 +119,36 @@ function groupByCategory(questions: Array<{ question: string; bookTitle: string 
 export default function QuestionsSidebar({
   bookIds,
   isScoped = false,
+  personaSlug,
   onSelect,
   onClose,
   className,
   style,
 }: QuestionsSidebarProps) {
   // Only fetch CMS questions when scoped to specific books
-  const { questions: cmsQuestions, loading } = useSuggestedQuestions(isScoped ? bookIds : [], 50)
+  const { questions: cmsQuestions, loading: cmsLoading } = useSuggestedQuestions(isScoped ? bookIds : [], 50)
+  // Fetch persona-scoped questions if a consulting persona is active
+  const { categories: personaCategories, loading: personaLoading } = usePersonaQuestions(personaSlug)
   const [search, setSearch] = useState('')
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null)
 
-  // Decide data source: CMS questions (scoped to bookIds) vs defaults
+  const loading = cmsLoading || personaLoading
+
+  // Decide data source: persona questions > CMS questions > defaults
+  const hasPersonaQuestions = personaCategories.length > 0
   const hasCmsQuestions = cmsQuestions.length > 0
 
-  // Build display groups from CMS questions or fall back to defaults
+  // Build display groups from persona / CMS / defaults (priority order)
   const displayGroups = useMemo(() => {
     let groups: Array<{ label: string; icon?: string; questions: string[] }>
 
-    if (hasCmsQuestions) {
+    if (hasPersonaQuestions) {
+      groups = personaCategories.map((cat) => ({
+        label: cat.label,
+        icon: cat.icon,
+        questions: cat.questions,
+      }))
+    } else if (hasCmsQuestions) {
       groups = groupByCategory(cmsQuestions).map((g) => ({
         label: g.label,
         icon: '🏷️',
@@ -118,12 +174,19 @@ export default function QuestionsSidebar({
     }
 
     return groups
-  }, [hasCmsQuestions, cmsQuestions, search])
+  }, [hasPersonaQuestions, personaCategories, hasCmsQuestions, cmsQuestions, search])
 
   const totalQuestions = displayGroups.reduce((s, g) => s + g.questions.length, 0)
 
   // Auto-expand first group if only one
   const effectiveExpanded = expandedGroup ?? (displayGroups.length === 1 ? displayGroups[0].label : null)
+
+  // Source label
+  const sourceLabel = hasPersonaQuestions
+    ? `Persona questions`
+    : hasCmsQuestions
+      ? `Scoped to ${bookIds.length} book${bookIds.length > 1 ? 's' : ''} · grouped by topic`
+      : null
 
   return (
     <aside
@@ -175,11 +238,11 @@ export default function QuestionsSidebar({
       </div>
 
       {/* ── Source label ── */}
-      {hasCmsQuestions && (
+      {sourceLabel && (
         <div className="px-3 py-1.5 border-b border-border/50 shrink-0">
           <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-            <BookOpen size={10} />
-            <span>Scoped to {bookIds.length} book{bookIds.length > 1 ? 's' : ''} · grouped by topic</span>
+            {hasPersonaQuestions ? <UserCircle size={10} /> : <BookOpen size={10} />}
+            <span>{sourceLabel}</span>
           </div>
         </div>
       )}
@@ -257,10 +320,10 @@ export default function QuestionsSidebar({
       <div className="shrink-0 px-3 py-2 border-t border-border">
         <p className="text-center text-[10px] text-muted-foreground">
           {totalQuestions} suggested questions
-          {!hasCmsQuestions && ' (defaults)'}
+          {hasPersonaQuestions && ' (persona)'}
+          {!hasPersonaQuestions && !hasCmsQuestions && ' (defaults)'}
         </p>
       </div>
     </aside>
   )
 }
-

@@ -60,7 +60,7 @@ export default function PersonaCreatePanel({
 
   const derivedSlug = useMemo(() => slugify(name), [name])
   const effectiveSlug = slug || derivedSlug
-  const chromaCollection = effectiveSlug ? `persona_${effectiveSlug}` : ''
+  const chromaCollection = effectiveSlug ? `ca_${effectiveSlug}` : ''
   const canSubmit = Boolean(name.trim() && effectiveSlug && systemPrompt.trim())
 
   if (!open) return null

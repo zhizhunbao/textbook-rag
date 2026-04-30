@@ -1,5 +1,5 @@
 /**
- * ConsultingSidebar — Right sidebar for consulting mode.
+ * ConsultingSidebar — Left sidebar for consulting mode.
  *
  * Sprint C4-06: Integrates UserDocsPanel + persona info into the chat layout.
  * Shows the user's private documents for the active persona.
@@ -33,7 +33,7 @@ export default function ConsultingSidebar({
     return (
       <div
         className={cn(
-          'flex flex-col h-full border-l border-border bg-card overflow-hidden',
+          'flex flex-col h-full border-r border-border bg-card overflow-hidden',
           className,
         )}
         style={style}
@@ -51,7 +51,7 @@ export default function ConsultingSidebar({
   return (
     <div
       className={cn(
-        'flex flex-col h-full border-l border-border bg-card overflow-hidden',
+        'flex flex-col h-full border-r border-border bg-card overflow-hidden',
         className,
       )}
       style={style}

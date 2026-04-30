@@ -82,11 +82,19 @@ export const ConsultingPersonas: CollectionConfig = {
       },
     },
     {
+      name: 'greeting',
+      type: 'textarea',
+      admin: {
+        rows: 3,
+        description: 'Opening greeting message displayed when a user starts a new session with this persona',
+      },
+    },
+    {
       name: 'chromaCollection',
       type: 'text',
       required: true,
       admin: {
-        description: 'ChromaDB collection name (e.g. "persona_lawyer")',
+        description: 'ChromaDB collection name (e.g. "ca_edu-school-planning")',
       },
     },
     {
@@ -115,19 +123,16 @@ export const ConsultingPersonas: CollectionConfig = {
       name: 'category',
       type: 'select',
       required: true,
-      defaultValue: 'legal',
+      defaultValue: 'settlement',
       options: [
-        { label: 'Immigration', value: 'immigration' },
-        { label: 'Education', value: 'education' },
-        { label: 'Legal', value: 'legal' },
-        { label: 'Career', value: 'career' },
-        { label: 'Living', value: 'living' },
-        { label: 'Finance', value: 'finance' },
-        { label: 'Healthcare', value: 'healthcare' },
-        { label: 'Housing', value: 'housing' },
-        { label: 'Transportation', value: 'transportation' },
-        { label: 'Social', value: 'social' },
-        { label: 'Travel', value: 'travel' },
+        { label: '🎓 Education', value: 'education' },
+        { label: '🛂 Immigration', value: 'immigration' },
+        { label: '🏠 Settlement', value: 'settlement' },
+        { label: '🏥 Healthcare', value: 'healthcare' },
+        { label: '💰 Finance', value: 'finance' },
+        { label: '💼 Career', value: 'career' },
+        { label: '⚖️ Legal', value: 'legal' },
+        { label: '📊 Analysis', value: 'analysis' },
       ],
       index: true,
       admin: { position: 'sidebar' },
@@ -143,6 +148,13 @@ export const ConsultingPersonas: CollectionConfig = {
       type: 'number',
       defaultValue: 0,
       admin: { position: 'sidebar' },
+    },
+    {
+      name: 'suggestedQuestions',
+      type: 'json',
+      admin: {
+        description: 'JSON array of { id, label, icon, questions[] } for persona-scoped suggested questions',
+      },
     },
   ],
 }
