@@ -172,7 +172,7 @@ export default function AppSidebar() {
                 {collapsed ? (
                   <PanelLeft size={18} className="text-muted-foreground" />
                 ) : (
-                  <img src="/ottawa-logo.jpg" alt="Ottawa" className="h-5 w-5 rounded-sm object-contain" />
+                  <img src="/consultrag-logo.png" alt="ConsultRAG" className="h-5 w-5 rounded-sm object-contain" />
                 )}
               </button>
             </TooltipTrigger>

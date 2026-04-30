@@ -16,6 +16,7 @@ import { fetchAvailableModels } from "@/features/engine/llms";
 import { fetchConsultingPersonas, queryConsultingStream } from "@/features/shared/consultingApi";
 import { useAppDispatch, useAppState } from "@/features/shared/AppContext";
 import { useAuth } from "@/features/shared/AuthProvider";
+import { useCountry } from "@/features/shared/CountryContext";
 import { useI18n } from "@/features/shared/i18n";
 import type { ModelInfo, SourceInfo } from "@/features/shared/types";
 import type { ChatMode } from "../history/api";
@@ -62,6 +63,7 @@ export default function ChatPanel({
   } = useAppState();
   const dispatch = useAppDispatch();
   const { user: currentUser } = useAuth();
+  const { country } = useCountry();
   const { t } = useI18n();
   const chatHistory = useChatHistoryContext();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -74,7 +76,7 @@ export default function ChatPanel({
   const [streamingContent, setStreamingContent] = useState("");
   const [streamingSources, setStreamingSources] = useState<SourceInfo[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
-  const [chatMode, setChatMode] = useState<ChatMode>(initialMode);
+  const [chatMode, setChatMode] = useState<ChatMode>("consulting");
   const [personas, setPersonas] = useState<PersonaInfo[]>([]);
   const [selectedPersonaSlug, setSelectedPersonaSlug] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -92,6 +94,14 @@ export default function ChatPanel({
   /** Ref to track autoEvaluate inside callbacks without stale closures */
   const autoEvaluateRef = useRef(false);
   useEffect(() => { autoEvaluateRef.current = autoEvaluate; }, [autoEvaluate]);
+  // G1-07: Response language state (synced from localStorage)
+  const [responseLang, setResponseLang] = useState<string | null>(null);
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('consultrag_language');
+      if (stored) setResponseLang(stored);
+    } catch { /* SSR */ }
+  }, []);
 
   // Smooth text reveal — à la Coze/GPT typewriter effect
   const { displayText: smoothedText, isRevealing } = useSmoothText({
@@ -334,6 +344,8 @@ export default function ChatPanel({
             model: selectedModel,
             provider: selectedProvider,
             top_k: 5,
+            country,
+            response_language: responseLang,
           },
           {
             signal: controller.signal,
@@ -587,22 +599,14 @@ export default function ChatPanel({
         onModelChange={(model, provider) => dispatch({ type: "SET_MODEL", model, provider })}
         onNewChat={resetConversation}
         onClearScope={() => {
-          // Reset to all-books scope without clearing messages
           dispatch({ type: 'START_SESSION', bookIds: books.map((b) => b.id) });
         }}
         showQuestions={showQuestions}
         onToggleQuestions={onToggleQuestions}
-        mode={effectiveMode}
         personas={personas}
         selectedPersonaSlug={effectivePersonaSlug}
         modeLocked={modeLocked}
-        onModeChange={setChatMode}
         onPersonaChange={setSelectedPersonaSlug}
-        selectedPromptSlug={promptSlug}
-        onPromptChange={(slug, systemPrompt) => {
-          setPromptSlug(slug);
-          setCustomSystemPrompt(systemPrompt);
-        }}
         topK={topK}
         rerankerEnabled={rerankerEnabled}
         autoEvaluate={autoEvaluate}
@@ -701,15 +705,7 @@ export default function ChatPanel({
         sessionBooks={sessionBooks}
         input={input}
         loading={loading}
-        retrievalMode={retrievalMode}
-        topK={topK}
-        rerankerEnabled={rerankerEnabled}
-        autoEvaluate={autoEvaluate}
         onInputChange={setInput}
-        onRetrievalModeChange={setRetrievalMode}
-        onTopKChange={setTopK}
-        onRerankerChange={setRerankerEnabled}
-        onAutoEvaluateChange={setAutoEvaluate}
         onSubmit={(q) => void submitQuestion(q)}
       />
     </div>

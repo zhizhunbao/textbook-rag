@@ -79,6 +79,8 @@ class PersonaQueryRequest(BaseModel):
     top_k: int = TOP_K
     model: str | None = None
     provider: str | None = None
+    country: str = "ca"  # ISO 3166-1 alpha-2
+    response_language: str | None = None  # G1-07: language override
     # GO-MU-06: user_id removed from body — now extracted from JWT auth
 
 
@@ -201,6 +203,12 @@ async def consulting_query(req: PersonaQueryRequest, request: Request):
     collection_name = persona.get("chromaCollection", f"persona_{req.persona_slug}")
     system_prompt = persona.get("systemPrompt", "")
 
+    # G1-07: Inject response language instruction if specified
+    if req.response_language and req.response_language != "zh":
+        lang_map = {"en": "English", "fr": "Français", "es": "Español"}
+        lang_name = lang_map.get(req.response_language, req.response_language)
+        system_prompt += f"\n\nPlease respond in {lang_name}."
+
     from engine_v2.query_engine.citation import get_query_engine
     from engine_v2.schema import build_source, normalize_scores
 
@@ -211,7 +219,9 @@ async def consulting_query(req: PersonaQueryRequest, request: Request):
         sources, response = dual_collection_query(
             question=req.question,
             persona_collection=collection_name,
-            user_collection=_user_collection_name(user_id, req.persona_slug),
+            user_collection=_user_collection_name(
+                user_id, req.persona_slug, req.country,
+            ),
             system_prompt=system_prompt,
             top_k=req.top_k,
             model=req.model,
@@ -279,6 +289,12 @@ async def _consulting_stream_generator(req: PersonaQueryRequest):
         )
         system_prompt = persona.get("systemPrompt", "")
 
+        # G1-07: Inject response language instruction if specified
+        if req.response_language and req.response_language != "zh":
+            lang_map = {"en": "English", "fr": "Français", "es": "Español"}
+            lang_name = lang_map.get(req.response_language, req.response_language)
+            system_prompt += f"\n\nPlease respond in {lang_name}."
+
         from engine_v2.query_engine.citation import get_query_engine
         from engine_v2.schema import build_source, normalize_scores
 
@@ -289,7 +305,7 @@ async def _consulting_stream_generator(req: PersonaQueryRequest):
                 question=req.question,
                 persona_collection=collection_name,
                 user_collection=_user_collection_name(
-                    user_id, req.persona_slug,
+                    user_id, req.persona_slug, req.country,
                 ),
                 system_prompt=system_prompt,
                 top_k=req.top_k,
@@ -353,8 +369,12 @@ def _sse(event: str, data: dict[str, Any]) -> str:
 
 
 @router.get("/personas")
-async def list_personas():
-    """List all enabled consulting personas with collection stats."""
+async def list_personas(country: str | None = None):
+    """List all enabled consulting personas with collection stats.
+
+    Args:
+        country: Optional ISO 3166-1 alpha-2 filter (e.g. 'ca').
+    """
     import httpx
 
     headers: dict[str, str] = {"Content-Type": "application/json"}
@@ -362,13 +382,16 @@ async def list_personas():
         headers["Authorization"] = f"Bearer {PAYLOAD_API_KEY}"
 
     try:
+        params: dict[str, str] = {
+            "where[isEnabled][equals]": "true",
+            "sort": "sortOrder",
+            "limit": "50",
+        }
+        if country:
+            params["where[country][equals]"] = country
         resp = httpx.get(
             f"{PAYLOAD_URL}/api/consulting-personas",
-            params={
-                "where[isEnabled][equals]": "true",
-                "sort": "sortOrder",
-                "limit": "20",
-            },
+            params=params,
             headers=headers,
             timeout=10.0,
         )
@@ -390,6 +413,8 @@ async def list_personas():
             "description": p.get("description"),
             "chromaCollection": collection_name,
             "chunkCount": chunk_count,
+            "country": p.get("country", "ca"),
+            "category": p.get("category"),
         })
 
     return {"personas": result}
@@ -433,6 +458,7 @@ class UserDocIngestRequest(BaseModel):
     doc_id: int  # Payload UserDocuments record ID
     pdf_filename: str  # filename in data/raw_pdfs/user_private/
     force_parse: bool = False
+    country: str = "ca"  # ISO 3166-1 alpha-2
 
 
 @router.post("/user-doc/ingest")
@@ -453,7 +479,7 @@ async def user_doc_ingest(req: UserDocIngestRequest, request: Request):
     # GO-MU-06: user_id from JWT auth
     user_data = getattr(request.state, "user", {})
     user_id = user_data.get("id", 0)
-    collection_name = _user_collection_name(user_id, req.persona_slug)
+    collection_name = _user_collection_name(user_id, req.persona_slug, req.country)
 
     # Derive book_dir_name from filename
     stem = Path(req.pdf_filename).stem

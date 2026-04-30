@@ -196,3 +196,84 @@
   border-radius: 9999px;
 }
 
+/* ── Landing page animations ── */
+@keyframes heroFadeUp {
+  from { opacity: 0; transform: translateY(32px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes heroFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes orbFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -20px) scale(1.05); }
+  66% { transform: translate(-20px, 15px) scale(0.95); }
+}
+@keyframes orbFloat2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-25px, 25px) scale(1.08); }
+  66% { transform: translate(20px, -15px) scale(0.92); }
+}
+@keyframes scorePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.15); }
+  50% { box-shadow: 0 0 0 12px rgba(37, 99, 235, 0); }
+}
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.hero-fade-up {
+  animation: heroFadeUp 800ms ease-out both;
+}
+.hero-fade-up-delay-1 { animation-delay: 150ms; }
+.hero-fade-up-delay-2 { animation-delay: 300ms; }
+.hero-fade-up-delay-3 { animation-delay: 450ms; }
+.hero-fade-up-delay-4 { animation-delay: 600ms; }
+
+.hero-fade-in {
+  animation: heroFadeIn 1000ms ease-out both;
+}
+
+.orb-float {
+  animation: orbFloat 8s ease-in-out infinite;
+}
+.orb-float-2 {
+  animation: orbFloat2 10s ease-in-out infinite;
+}
+
+.score-pulse {
+  animation: scorePulse 2.5s ease-in-out infinite;
+}
+:root .score-pulse {
+  animation-name: scorePulseLight;
+}
+@keyframes scorePulseLight {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.20); }
+  50% { box-shadow: 0 0 0 16px rgba(37, 99, 235, 0); }
+}
+
+/* Score ring draw animation */
+@keyframes scoreRingDraw {
+  from { stroke-dasharray: 0 326.7; }
+}
+.score-ring-animate {
+  animation: scoreRingDraw 1.5s ease-out 800ms both;
+}
+
+.metric-enter {
+  animation: countUp 600ms ease-out both;
+}
+
+/* Feature card hover lift */
+.feature-lift {
+  transition: transform 300ms ease, box-shadow 300ms ease;
+}
+.feature-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px -8px rgba(0, 0, 0, 0.12);
+}
+.dark .feature-lift:hover {
+  box-shadow: 0 12px 40px -8px rgba(0, 0, 0, 0.4);
+}

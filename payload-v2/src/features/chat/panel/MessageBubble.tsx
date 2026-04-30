@@ -273,28 +273,11 @@ export default function MessageBubble({ role, content, sources, model, queryId, 
           )}
         </div>
 
-        {/* ── Assistant message footer: Evaluate button + score card ── */}
-        {!isUser && !isStreaming && (
+        {/* ── Assistant message footer: score card (only when eval results exist) ── */}
+        {!isUser && !isStreaming && evalResult && (
           <div className="mt-2 space-y-2">
             {/* Action bar */}
             <div className="flex items-center gap-1.5">
-              {/* Evaluate button */}
-              {queryId && !evalResult && (
-                <button
-                  type="button"
-                  onClick={handleEvaluate}
-                  disabled={evalLoading}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-border/50 bg-card/60 px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-all duration-150 hover:border-primary/30 hover:bg-primary/10 hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Run 4-category evaluation on this response"
-                >
-                  {evalLoading ? (
-                    <IconSpinner className="h-3 w-3" />
-                  ) : (
-                    <IconGauge className="h-3 w-3" />
-                  )}
-                  <span>{evalLoading ? "Evaluating…" : "Evaluate"}</span>
-                </button>
-              )}
 
               {/* Toggle eval scores visibility (when already evaluated) */}
               {evalResult && (

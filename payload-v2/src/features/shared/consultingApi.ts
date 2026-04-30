@@ -28,6 +28,8 @@ export interface ConsultingQueryRequest {
   top_k?: number
   model?: string | null
   provider?: string | null
+  country?: string         // G1-05: ISO 3166-1 alpha-2
+  response_language?: string | null  // G1-07: language override
   // GO-MU-06: user_id removed — now extracted from JWT auth server-side
 }
 
@@ -40,11 +42,15 @@ export interface ConsultingQueryResponse {
 
 export interface PersonaInfo {
   name: string
+  nameEn?: string
   slug: string
   icon?: string
+  avatar?: string
   description?: string
   chromaCollection: string
   chunkCount: number
+  country?: string   // G1-01
+  category?: string  // G1-02
 }
 
 export interface PersonaStatus {
@@ -75,19 +81,23 @@ function normaliseSource(s: any): SourceInfo {
 }
 
 export async function fetchConsultingPersonas(): Promise<PersonaInfo[]> {
-  const res = await fetch('/api/consulting-personas?where[isEnabled][equals]=true&sort=sortOrder&limit=50&depth=0', {
+  const res = await fetch('/api/consulting-personas?where[isEnabled][equals]=true&sort=sortOrder&limit=100&depth=0', {
     credentials: 'include',
   })
   if (!res.ok) throw new Error(`Failed to fetch personas: ${res.status}`)
   const data = await res.json()
   const docs = data.docs ?? []
   return docs.map((d: any) => ({
-    name: d.name,
+    name: d.nameEn || d.name,
+    nameEn: d.nameEn ?? undefined,
     slug: d.slug,
     icon: d.icon ?? undefined,
+    avatar: d.avatar ?? undefined,
     description: d.description ?? undefined,
     chromaCollection: d.chromaCollection ?? `persona_${d.slug}`,
-    chunkCount: 0, // Payload doesn't track live chunk count
+    chunkCount: 0,
+    country: d.country ?? undefined,
+    category: d.category ?? undefined,
   }))
 }
 
@@ -120,6 +130,8 @@ export async function queryConsultingStream(
         top_k: req.top_k ?? 5,
         model: req.model ?? null,
         provider: req.provider ?? null,
+        country: req.country ?? 'ca',
+        response_language: req.response_language ?? null,
       }),
       signal: callbacks.signal,
     })

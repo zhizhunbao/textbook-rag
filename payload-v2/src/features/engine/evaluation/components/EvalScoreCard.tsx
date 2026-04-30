@@ -1,9 +1,16 @@
 /**
- * EvalScoreCard — Five-category evaluation score card (EV2-T5-01 / EI-T5-01).
+ * EvalScoreCard — Table-based collapsible evaluation score card.
  *
- * Displays RAG / LLM / Answer / Question / IR scores in a compact,
- * color-coded card layout with expandable detail dimensions.
- * IR card only renders when Golden Dataset has a matched record.
+ * Replaces the old 4-colored gradient card layout with 5 logical
+ * collapsible sections:
+ *   S1 Response Quality  — faithfulness + answerRelevancy + completeness + clarity + guidelines
+ *   S2 Retrieval Quality  — contextRelevancy + relevancy + IR metrics
+ *   S3 Question Analysis  — depth level + depth score
+ *   S4 Retrieval Strategy — BM25/Vector distribution + routing
+ *   S5 Suggestions        — improvement suggestions (only when present)
+ *
+ * Design: single bg-card background, score-only color coding (green/blue/amber/red),
+ * compact table rows, each section independently collapsible.
  *
  * Usage: <EvalScoreCard evaluation={evalResult} locale="en" />
  */
@@ -12,10 +19,8 @@
 
 import { useState } from 'react'
 import {
-  Search, Bot, Sparkles, FileText, BarChart2,
-  ChevronDown,
+  ChevronRight,
   CheckCircle2, XCircle, Clock,
-  Shuffle, Grid3X3,
   CircleCheck, CircleX,
   Info,
   Lightbulb, Settings2,
@@ -24,201 +29,178 @@ import { cn } from '@/features/shared/utils'
 import type { EvaluationResult, EvalStatus, EvalSuggestion, SuggestionSeverity } from '../types'
 import RetrievalDiagnostics from './RetrievalDiagnostics'
 
-/** Map suggestion severity → visual styles. */
-const SEVERITY_STYLES: Record<SuggestionSeverity, { dot: string; text: string }> = {
-  high: { dot: 'bg-red-400', text: 'text-red-300' },
-  medium: { dot: 'bg-amber-400', text: 'text-amber-300' },
-  low: { dot: 'bg-emerald-400', text: 'text-emerald-300' },
-  info: { dot: 'bg-blue-400', text: 'text-blue-300' },
-}
-
 // ============================================================
-// Constants
+// Grade system — score → color
 // ============================================================
-
-/** Core four evaluation categories with display metadata. */
-const CORE_CATEGORIES = [
-  {
-    key: 'rag' as const,
-    label: 'RAG',
-    labelFr: '检索',
-    Icon: Search,
-    gradient: 'from-blue-500/20 to-cyan-500/10',
-    border: 'border-blue-500/30',
-    accent: 'text-blue-400',
-    accentBg: 'bg-blue-500/10',
-    barColor: 'bg-blue-500',
-    scoreKey: 'ragScore' as const,
-    dimensions: [
-      { key: 'contextRelevancy', label: 'Context Relevancy', labelFr: '上下文相关性' },
-      { key: 'relevancy', label: 'Source Relevancy', labelFr: '来源相关性' },
-    ],
-  },
-  {
-    key: 'llm' as const,
-    label: 'LLM',
-    labelFr: '模型',
-    Icon: Bot,
-    gradient: 'from-purple-500/20 to-violet-500/10',
-    border: 'border-purple-500/30',
-    accent: 'text-purple-400',
-    accentBg: 'bg-purple-500/10',
-    barColor: 'bg-purple-500',
-    scoreKey: 'llmScore' as const,
-    dimensions: [
-      { key: 'faithfulness', label: 'Faithfulness', labelFr: '忠实度' },
-    ],
-  },
-  {
-    key: 'answer' as const,
-    label: 'Answer',
-    labelFr: '回答',
-    Icon: Sparkles,
-    gradient: 'from-emerald-500/20 to-green-500/10',
-    border: 'border-emerald-500/30',
-    accent: 'text-emerald-400',
-    accentBg: 'bg-emerald-500/10',
-    barColor: 'bg-emerald-500',
-    scoreKey: 'answerScore' as const,
-    dimensions: [
-      { key: 'answerRelevancy', label: 'Answer Relevancy', labelFr: '答案相关性' },
-      { key: 'correctness',     label: 'Correctness',      labelFr: '正确性' },
-      { key: 'completeness',    label: 'Completeness',     labelFr: '完整度' },
-      { key: 'clarity',         label: 'Clarity',          labelFr: '清晰度' },
-    ],
-  },
-  {
-    key: 'question' as const,
-    label: 'Question',
-    labelFr: '问题',
-    Icon: FileText,
-    gradient: 'from-amber-500/20 to-orange-500/10',
-    border: 'border-amber-500/30',
-    accent: 'text-amber-400',
-    accentBg: 'bg-amber-500/10',
-    barColor: 'bg-amber-500',
-    scoreKey: null,
-    dimensions: [],
-  },
-] as const
-
-/** IR retrieval metrics card metadata (EI-T5-01). */
-const IR_CARD = {
-  key: 'ir' as const,
-  label: 'IR',
-  labelFr: '检索指标',
-  Icon: BarChart2,
-  gradient: 'from-cyan-500/20 to-teal-500/10',
-  border: 'border-cyan-500/30',
-  accent: 'text-cyan-400',
-  accentBg: 'bg-cyan-500/10',
-  barColor: 'bg-cyan-500',
-  dimensions: [
-    { key: 'hitRate',      label: 'Hit Rate',    labelFr: '命中率' },
-    { key: 'mrr',          label: 'MRR',         labelFr: 'MRR' },
-    { key: 'precisionAtK', label: 'Precision@K', labelFr: '精确率@K' },
-    { key: 'recallAtK',    label: 'Recall@K',    labelFr: '召回率@K' },
-    { key: 'ndcg',         label: 'NDCG',        labelFr: 'NDCG' },
-  ],
-}
-
-/** Tooltip text for metric explanations (EI-T5-03). */
-const TOOLTIP_MAP: Record<string, { en: string; fr: string }> = {
-  contextRelevancy:  { en: 'Quality of retrieved context for the query', fr: '检索到的内容与问题是否相关' },
-  relevancy:         { en: 'Are the retrieved sources relevant to the query?', fr: '来源是否与问题相关' },
-  faithfulness:      { en: 'Is the answer grounded in context, no hallucination?', fr: '回答是否基于给定上下文，无幻觉' },
-  answerRelevancy:   { en: 'How relevant is the answer to the question?', fr: '答案与问题的相关程度' },
-  correctness:       { en: 'Factual overlap with the reference answer (F1)', fr: '回答与标准答案的事实重合度 (F1)' },
-  completeness:      { en: 'Does the answer cover all question aspects?', fr: '回答是否覆盖问题所有方面' },
-  clarity:           { en: 'Is the answer clear, well-structured?', fr: '回答是否清晰、结构良好' },
-  hitRate:           { en: 'Did retrieval include the correct chunk? (1=hit, 0=miss)', fr: '检索结果中是否包含正确答案 (1=命中, 0=未命中)' },
-  mrr:               { en: 'Reciprocal rank of the first correct result (1=top, 0.5=2nd)', fr: '第一个正确结果的排名倒数 (1=排第一, 0.5=排第二)' },
-  precisionAtK:      { en: 'Fraction of top-K results that are correct', fr: 'Top-K 结果中正确的比例' },
-  recallAtK:         { en: 'Fraction of correct results retrieved in top-K', fr: '正确答案被检索到的比例' },
-  ndcg:              { en: 'Are correct results ranked higher? (considers ranking quality)', fr: '正确结果是否排在前面 (考虑排序质量)' },
-  guidelines:        { en: 'Does the answer follow all predefined quality rules?', fr: '回答是否符合预设质量规则' },
-}
-
-/** Depth label display info. */
-const DEPTH_META: Record<string, { label: string; labelFr: string; color: string }> = {
-  surface:       { label: 'Surface',       labelFr: '浅层', color: 'text-amber-400' },
-  understanding: { label: 'Understanding', labelFr: '理解', color: 'text-blue-400' },
-  synthesis:     { label: 'Synthesis',     labelFr: '综合', color: 'text-emerald-400' },
-}
-
-/** Status badge metadata. */
-const STATUS_META: Record<EvalStatus, { Icon: typeof CheckCircle2; label: string; labelFr: string; cls: string }> = {
-  pass:    { Icon: CheckCircle2, label: 'Pass',    labelFr: '通过',   cls: 'text-emerald-300 bg-emerald-500/15 border-emerald-500/40' },
-  fail:    { Icon: XCircle,      label: 'Fail',    labelFr: '未通过', cls: 'text-red-300 bg-red-500/15 border-red-500/40' },
-  pending: { Icon: Clock,        label: 'Pending', labelFr: '待评估', cls: 'text-amber-300 bg-amber-500/15 border-amber-500/40' },
-}
-
 type Grade = 'excellent' | 'good' | 'fair' | 'poor' | 'none'
 
 function getGrade(score: number | null | undefined): Grade {
   if (score == null) return 'none'
   if (score >= 0.85) return 'excellent'
-  if (score >= 0.7)  return 'good'
-  if (score >= 0.5)  return 'fair'
+  if (score >= 0.7) return 'good'
+  if (score >= 0.5) return 'fair'
   return 'poor'
 }
 
-const GRADE_CLS: Record<Grade, string> = {
-  excellent: 'text-emerald-400',
-  good:      'text-blue-400',
-  fair:      'text-amber-400',
-  poor:      'text-red-400',
-  none:      'text-zinc-500',
+const GRADE_TEXT: Record<Grade, string> = {
+  excellent: 'text-emerald-500 dark:text-emerald-400',
+  good:      'text-blue-500 dark:text-blue-400',
+  fair:      'text-amber-500 dark:text-amber-400',
+  poor:      'text-red-500 dark:text-red-400',
+  none:      'text-muted-foreground',
+}
+
+const GRADE_BAR: Record<Grade, string> = {
+  excellent: 'bg-emerald-500',
+  good:      'bg-blue-500',
+  fair:      'bg-amber-500',
+  poor:      'bg-red-500',
+  none:      'bg-muted-foreground/30',
+}
+
+const GRADE_LABEL: Record<Grade, string> = {
+  excellent: 'Excellent',
+  good:      'Good',
+  fair:      'Fair',
+  poor:      'Poor',
+  none:      'N/A',
+}
+
+// ============================================================
+// Status badge
+// ============================================================
+const STATUS_META: Record<EvalStatus, { Icon: typeof CheckCircle2; label: string; labelFr: string; cls: string }> = {
+  pass:    { Icon: CheckCircle2, label: 'Pass',    labelFr: '通过',   cls: 'text-emerald-600 dark:text-emerald-400' },
+  fail:    { Icon: XCircle,      label: 'Fail',    labelFr: '未通过', cls: 'text-red-600 dark:text-red-400' },
+  pending: { Icon: Clock,        label: 'Pending', labelFr: '待评估', cls: 'text-amber-600 dark:text-amber-400' },
+}
+
+// ============================================================
+// Tooltip map
+// ============================================================
+const TOOLTIP: Record<string, { en: string; fr: string }> = {
+  faithfulness:      { en: 'Is the answer grounded in context, no hallucination?', fr: '回答是否基于给定上下文，无幻觉' },
+  answerRelevancy:   { en: 'How relevant is the answer to the question?', fr: '答案与问题的相关程度' },
+  completeness:      { en: 'Does the answer cover all question aspects?', fr: '回答是否覆盖问题所有方面' },
+  clarity:           { en: 'Is the answer clear, well-structured?', fr: '回答是否清晰、结构良好' },
+  correctness:       { en: 'Factual overlap with the reference answer (F1)', fr: '回答与标准答案的事实重合度 (F1)' },
+  contextRelevancy:  { en: 'Quality of retrieved context for the query', fr: '检索到的内容与问题是否相关' },
+  relevancy:         { en: 'Are the retrieved sources relevant to the query?', fr: '来源是否与问题相关' },
+  hitRate:           { en: 'Did retrieval include the correct chunk?', fr: '检索结果中是否包含正确答案' },
+  mrr:               { en: 'Reciprocal rank of the first correct result', fr: '第一个正确结果的排名倒数' },
+  precisionAtK:      { en: 'Fraction of top-K results that are correct', fr: 'Top-K 结果中正确的比例' },
+  recallAtK:         { en: 'Fraction of correct results retrieved in top-K', fr: '正确答案被检索到的比例' },
+  ndcg:              { en: 'Are correct results ranked higher?', fr: '正确结果是否排在前面' },
+}
+
+/** Depth level display metadata. */
+const DEPTH_META: Record<string, { label: string; labelFr: string }> = {
+  surface:       { label: 'Surface',       labelFr: '浅层' },
+  understanding: { label: 'Understanding', labelFr: '理解' },
+  synthesis:     { label: 'Synthesis',     labelFr: '综合' },
+}
+
+/** Suggestion severity styles. */
+const SEV_STYLES: Record<SuggestionSeverity, { dot: string }> = {
+  high:   { dot: 'bg-red-500' },
+  medium: { dot: 'bg-amber-500' },
+  low:    { dot: 'bg-emerald-500' },
+  info:   { dot: 'bg-blue-500' },
 }
 
 // ============================================================
 // Sub-components
 // ============================================================
 
-/** Info icon with tooltip (EI-T5-03). */
-function InfoTooltip({ text }: { text: string }) {
+/** Info tooltip on hover. */
+function Tip({ text }: { text: string }) {
   return (
-    <span className="group relative inline-flex">
-      <Info className="h-2.5 w-2.5 text-muted-foreground/50 cursor-help" />
-      <span className="pointer-events-none absolute left-4 bottom-0 z-50 w-44 rounded-md bg-popover/95 border border-border px-2 py-1 text-[8px] leading-snug text-popover-foreground shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+    <span className="group relative inline-flex ml-0.5">
+      <Info className="h-2.5 w-2.5 text-muted-foreground/40 cursor-help" />
+      <span className="pointer-events-none absolute left-4 bottom-0 z-50 w-44 rounded-md bg-popover border border-border px-2 py-1 text-[9px] leading-snug text-popover-foreground shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-150">
         {text}
       </span>
     </span>
   )
 }
 
-/** Single dimension progress bar row. */
-function DimBar({
-  label, labelFr, value, barColor, isFr, dimKey,
+/** Single metric row: label | progress bar | score | grade. */
+function MetricRow({
+  label, value, tipKey, isFr,
 }: {
   label: string
-  labelFr: string
   value: number | null | undefined
-  barColor: string
+  tipKey?: string
   isFr: boolean
-  dimKey?: string
 }) {
-  const tip = dimKey ? TOOLTIP_MAP[dimKey] : null
+  const grade = getGrade(value)
+  const pct = value != null ? Math.round(value * 100) : 0
+  const tip = tipKey ? TOOLTIP[tipKey] : null
+
   return (
-    <div className="flex items-center gap-1">
-      <span className="text-[8px] text-muted-foreground w-24 shrink-0 truncate inline-flex items-center gap-0.5">
-        {isFr ? labelFr : label}
-        {tip && <InfoTooltip text={isFr ? tip.fr : tip.en} />}
+    <div className="flex items-center gap-2 py-0.5">
+      <span className="w-[110px] shrink-0 text-[10px] text-muted-foreground truncate inline-flex items-center">
+        {label}
+        {tip && <Tip text={isFr ? tip.fr : tip.en} />}
       </span>
-      <div className="flex-1 h-1 rounded-full bg-muted overflow-hidden">
+      <div className="flex-1 h-1.5 rounded-full bg-muted/60 overflow-hidden">
         <div
-          className={cn('h-full rounded-full transition-all duration-500', barColor)}
-          style={{ width: `${(value ?? 0) * 100}%` }}
+          className={cn('h-full rounded-full transition-all duration-500', GRADE_BAR[grade])}
+          style={{ width: `${pct}%` }}
         />
       </div>
-      <span className={cn('text-[9px] font-bold tabular-nums w-7 text-right', GRADE_CLS[getGrade(value)])}>
+      <span className={cn(
+        'w-[32px] text-right text-[10px] font-semibold tabular-nums',
+        GRADE_TEXT[grade],
+      )}>
         {value != null ? value.toFixed(2) : '—'}
       </span>
     </div>
   )
 }
 
-/** Guidelines Pass/Fail row with expandable feedback (EI-T5-02). */
+/** Collapsible section wrapper. */
+function Section({
+  title,
+  summary,
+  defaultOpen = false,
+  children,
+}: {
+  title: string
+  summary: React.ReactNode
+  defaultOpen?: boolean
+  children: React.ReactNode
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+
+  return (
+    <div className="border-b border-border/30 last:border-b-0">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className="flex w-full items-center gap-1.5 px-3 py-2 text-left transition-colors hover:bg-muted/30"
+      >
+        <ChevronRight className={cn(
+          'h-3 w-3 shrink-0 text-muted-foreground/60 transition-transform duration-150',
+          open && 'rotate-90',
+        )} />
+        <span className="text-[11px] font-medium text-foreground flex-1">
+          {title}
+        </span>
+        <span className="text-[10px] text-muted-foreground tabular-nums">
+          {summary}
+        </span>
+      </button>
+      {open && (
+        <div className="px-3 pb-2.5 pt-0.5 animate-in slide-in-from-top-1 fade-in duration-150">
+          {children}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Guidelines pass/fail row with expandable feedback. */
 function GuidelinesRow({
   pass: guidelinesPass,
   feedback,
@@ -229,23 +211,22 @@ function GuidelinesRow({
   isFr: boolean
 }) {
   const [showFeedback, setShowFeedback] = useState(false)
-  const tip = TOOLTIP_MAP.guidelines
   const hasFeedback = !!feedback?.trim()
 
   return (
-    <div className="pt-0.5 space-y-0.5">
-      <div className="flex items-center gap-1">
-        <span className="text-[8px] text-muted-foreground w-24 shrink-0 inline-flex items-center gap-0.5">
+    <div className="py-0.5 space-y-1">
+      <div className="flex items-center gap-2">
+        <span className="w-[110px] shrink-0 text-[10px] text-muted-foreground inline-flex items-center">
           {isFr ? '质量规则' : 'Guidelines'}
-          {tip && <InfoTooltip text={isFr ? tip.fr : tip.en} />}
+          <Tip text={isFr ? '回答是否符合预设质量规则' : 'Does the answer follow all predefined quality rules?'} />
         </span>
         <button
           type="button"
           onClick={() => hasFeedback && setShowFeedback(v => !v)}
           className={cn(
-            'inline-flex items-center gap-0.5 text-[9px] font-semibold',
+            'inline-flex items-center gap-1 text-[10px] font-semibold',
             hasFeedback && 'cursor-pointer hover:opacity-80',
-            guidelinesPass ? 'text-emerald-400' : 'text-red-400',
+            guidelinesPass ? 'text-emerald-500 dark:text-emerald-400' : 'text-red-500 dark:text-red-400',
           )}
         >
           {guidelinesPass
@@ -253,25 +234,42 @@ function GuidelinesRow({
             : <><CircleX className="h-3 w-3" />{isFr ? '未通过' : 'Fail'}</>
           }
           {hasFeedback && (
-            <ChevronDown className={cn(
+            <ChevronRight className={cn(
               'h-2.5 w-2.5 transition-transform duration-150',
-              showFeedback && 'rotate-180',
+              showFeedback && 'rotate-90',
             )} />
           )}
         </button>
       </div>
       {showFeedback && feedback && (
-        <div className={cn(
-          'rounded-md border px-2 py-1 text-[8px] leading-snug animate-in slide-in-from-top-1 fade-in duration-150',
-          guidelinesPass
-            ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-300/80'
-            : 'border-red-500/20 bg-red-500/5 text-red-300/80',
-        )}>
+        <div className="ml-[110px] rounded-md border border-border/40 bg-muted/20 px-2 py-1 text-[9px] leading-snug text-muted-foreground animate-in slide-in-from-top-1 fade-in duration-150">
           {feedback}
         </div>
       )}
     </div>
   )
+}
+
+// ============================================================
+// Helpers
+// ============================================================
+
+/** Format a score as a colored summary string. */
+function scoreSummary(score: number | null | undefined): React.ReactNode {
+  if (score == null) return <span className="text-muted-foreground/50">—</span>
+  const grade = getGrade(score)
+  return (
+    <span className={cn('font-semibold', GRADE_TEXT[grade])}>
+      {(score * 100).toFixed(0)}%
+    </span>
+  )
+}
+
+/** Compute average of non-null values. */
+function avg(...values: (number | null | undefined)[]): number | null {
+  const valid = values.filter((v): v is number => v != null)
+  if (valid.length === 0) return null
+  return valid.reduce((a, b) => a + b, 0) / valid.length
 }
 
 // ============================================================
@@ -289,314 +287,197 @@ interface EvalScoreCardProps {
 // ============================================================
 export default function EvalScoreCard({ evaluation, locale = 'en' }: EvalScoreCardProps) {
   const isFr = locale === 'fr'
-  const [expanded, setExpanded] = useState(true)
 
   const status = evaluation.status ?? 'pending'
   const statusMeta = STATUS_META[status]
   const overall = evaluation.overallScore
 
-  // Determine if IR metrics are available
+  // Section averages for collapsed summary
+  const responseAvg = avg(
+    evaluation.faithfulness,
+    evaluation.answerRelevancy,
+    evaluation.completeness,
+    evaluation.clarity,
+    evaluation.correctness,
+  ) ?? evaluation.answerScore ?? evaluation.llmScore
+  const retrievalAvg = avg(
+    evaluation.contextRelevancy,
+    evaluation.relevancy,
+  ) ?? evaluation.ragScore
+
+  // IR metrics availability
   const hasIR = evaluation.irScore != null || evaluation.hitRate != null
 
+  // Question depth
+  const depth = evaluation.questionDepth
+  const depthMeta = depth ? DEPTH_META[depth] : null
+  const depthScore = evaluation.questionDepthScore
+
+  // Retrieval strategy
+  const hasRetrievalStrategy = evaluation.retrievalMode != null
+
+  // Suggestions
+  const hasSuggestions = evaluation.suggestions && evaluation.suggestions.length > 0
+
   return (
-    <div className="space-y-2">
-      {/* ── Header: Overall + Status ── */}
-      <div className="flex items-center gap-2">
-        <span className={cn(
-          'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-semibold border',
-          statusMeta.cls,
-        )}>
-          <statusMeta.Icon className="h-3 w-3" />
+    <div className="rounded-lg border border-border/50 bg-card overflow-hidden">
+      {/* ── Overall summary header ── */}
+      <div className="flex items-center gap-2 border-b border-border/30 px-3 py-2">
+        <span className={cn('inline-flex items-center gap-1 text-[11px] font-semibold', statusMeta.cls)}>
+          <statusMeta.Icon className="h-3.5 w-3.5" />
           {isFr ? statusMeta.labelFr : statusMeta.label}
         </span>
         {overall != null && (
-          <span className={cn('text-sm font-bold tabular-nums', GRADE_CLS[getGrade(overall)])}>
+          <span className={cn('text-sm font-bold tabular-nums', GRADE_TEXT[getGrade(overall)])}>
             {(overall * 100).toFixed(0)}%
           </span>
         )}
         <div className="flex-1" />
-        <button
-          type="button"
-          onClick={() => setExpanded(v => !v)}
-          className="p-1 rounded hover:bg-secondary transition-colors"
-          title={isFr ? '展开详情' : 'Toggle details'}
-        >
-          <ChevronDown className={cn(
-            'h-3 w-3 text-muted-foreground transition-transform duration-200',
-            expanded && 'rotate-180',
-          )} />
-        </button>
-      </div>
-
-      {/* ── Summary row: category score chips ── */}
-      <div className="flex items-center gap-1.5 flex-wrap">
-        {CORE_CATEGORIES.map(cat => {
-          const score = cat.scoreKey ? evaluation[cat.scoreKey] : evaluation.questionDepthScore
-          const grade = getGrade(score)
-          return (
-            <div
-              key={cat.key}
-              className={cn(
-                'inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5',
-                cat.border, cat.accentBg,
-              )}
-            >
-              <cat.Icon className={cn('h-3 w-3', cat.accent)} />
-              <span className="text-[9px] font-medium text-muted-foreground">
-                {isFr ? cat.labelFr : cat.label}
-              </span>
-              <span className={cn('text-[10px] font-bold tabular-nums', GRADE_CLS[grade])}>
-                {score != null ? (score * 100).toFixed(0) + '%' : '—'}
-              </span>
-            </div>
-          )
-        })}
-
-        {/* IR chip — only shown when data available */}
-        {hasIR && (
-          <div className={cn(
-            'inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5',
-            IR_CARD.border, IR_CARD.accentBg,
-          )}>
-            <IR_CARD.Icon className={cn('h-3 w-3', IR_CARD.accent)} />
-            <span className="text-[9px] font-medium text-muted-foreground">
-              {isFr ? IR_CARD.labelFr : IR_CARD.label}
-            </span>
-            <span className={cn('text-[10px] font-bold tabular-nums', GRADE_CLS[getGrade(evaluation.irScore)])}>
-              {evaluation.irScore != null ? (evaluation.irScore * 100).toFixed(0) + '%' : '—'}
-            </span>
+        {/* Evaluation metadata */}
+        {(evaluation.judgeModel || evaluation.llmCalls) && (
+          <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground/50">
+            <Settings2 className="h-2.5 w-2.5" />
+            {evaluation.judgeModel && (
+              <span>{evaluation.judgeModel}</span>
+            )}
+            {evaluation.llmCalls != null && evaluation.llmCalls > 0 && (
+              <span className="tabular-nums">{evaluation.llmCalls} {isFr ? '调用' : 'calls'}</span>
+            )}
           </div>
         )}
       </div>
 
-      {/* ── Expanded detail ── */}
-      {expanded && (
-        <div className="grid grid-cols-2 gap-2 animate-in slide-in-from-top-1 fade-in duration-200">
-          {CORE_CATEGORIES.map(cat => {
-            // Question category — special depth display
-            if (cat.key === 'question') {
-              const depth = evaluation.questionDepth
-              const depthMeta = depth ? DEPTH_META[depth] : null
-              const normScore = evaluation.questionDepthScore
-              return (
-                <div
-                  key={cat.key}
-                  className={cn('rounded-lg border p-2 space-y-1.5', cat.border, 'bg-gradient-to-br', cat.gradient)}
-                >
-                  <div className="flex items-center gap-1">
-                    <cat.Icon className={cn('h-3 w-3', cat.accent)} />
-                    <span className="text-[9px] font-semibold text-foreground flex-1">
-                      {isFr ? cat.labelFr : cat.label}
-                    </span>
-                    {normScore != null && (
-                      <span className={cn('text-[10px] font-bold tabular-nums', GRADE_CLS[getGrade(normScore)])}>
-                        {normScore.toFixed(2)}
-                      </span>
-                    )}
-                  </div>
-                  {depthMeta && (
-                    <div className="flex items-center gap-1.5">
-                      <span className={cn(
-                        'inline-flex px-1.5 py-0.5 rounded-full text-[9px] font-semibold border',
-                        depthMeta.color, cat.accentBg, cat.border,
-                      )}>
-                        {isFr ? depthMeta.labelFr : depthMeta.label}
-                      </span>
-                    </div>
-                  )}
-                  <div className="space-y-1">
-                    <DimBar
-                      label="Depth" labelFr="认知深度"
-                      value={normScore} barColor={cat.barColor} isFr={isFr}
-                    />
-                  </div>
-                </div>
-              )
-            }
+      {/* ── Section 1: Response Quality ── */}
+      <Section
+        title={isFr ? '回答质量' : 'Response Quality'}
+        summary={scoreSummary(responseAvg)}
+        defaultOpen
+      >
+        <div className="space-y-0.5">
+          <MetricRow label={isFr ? '忠实度' : 'Faithfulness'} value={evaluation.faithfulness} tipKey="faithfulness" isFr={isFr} />
+          <MetricRow label={isFr ? '答案相关性' : 'Answer Relevancy'} value={evaluation.answerRelevancy} tipKey="answerRelevancy" isFr={isFr} />
+          <MetricRow label={isFr ? '完整度' : 'Completeness'} value={evaluation.completeness} tipKey="completeness" isFr={isFr} />
+          <MetricRow label={isFr ? '清晰度' : 'Clarity'} value={evaluation.clarity} tipKey="clarity" isFr={isFr} />
+          <MetricRow label={isFr ? '正确性' : 'Correctness'} value={evaluation.correctness} tipKey="correctness" isFr={isFr} />
+          {evaluation.guidelinesPass != null && (
+            <GuidelinesRow pass={evaluation.guidelinesPass} feedback={evaluation.guidelinesFeedback} isFr={isFr} />
+          )}
+        </div>
+      </Section>
 
-            // Answer category — includes guidelinesPass + correctness
-            if (cat.key === 'answer') {
-              const aggScore = evaluation[cat.scoreKey]
-              return (
-                <div
-                  key={cat.key}
-                  className={cn('rounded-lg border p-2 space-y-1.5', cat.border, 'bg-gradient-to-br', cat.gradient)}
-                >
-                  <div className="flex items-center gap-1">
-                    <cat.Icon className={cn('h-3 w-3', cat.accent)} />
-                    <span className="text-[9px] font-semibold text-foreground flex-1">
-                      {isFr ? cat.labelFr : cat.label}
-                    </span>
-                    {aggScore != null && (
-                      <span className={cn('text-[10px] font-bold tabular-nums', GRADE_CLS[getGrade(aggScore)])}>
-                        {aggScore.toFixed(2)}
-                      </span>
-                    )}
-                  </div>
-                  <div className="space-y-1">
-                    {cat.dimensions.map(dim => {
-                      const val = (evaluation as any)[dim.key] as number | null
-                      return (
-                        <DimBar
-                          key={dim.key}
-                          label={dim.label} labelFr={dim.labelFr}
-                          value={val} barColor={cat.barColor} isFr={isFr}
-                          dimKey={dim.key}
-                        />
-                      )
-                    })}
-                    {/* Guidelines Pass/Fail badge + expandable feedback (EI-T5-02) */}
-                    {evaluation.guidelinesPass != null && (
-                      <GuidelinesRow
-                        pass={evaluation.guidelinesPass}
-                        feedback={evaluation.guidelinesFeedback}
-                        isFr={isFr}
-                      />
-                    )}
-                  </div>
-                </div>
-              )
-            }
+      {/* ── Section 2: Retrieval Quality ── */}
+      <Section
+        title={isFr ? '检索质量' : 'Retrieval Quality'}
+        summary={scoreSummary(retrievalAvg)}
+      >
+        <div className="space-y-0.5">
+          <MetricRow label={isFr ? '上下文相关性' : 'Context Relevancy'} value={evaluation.contextRelevancy} tipKey="contextRelevancy" isFr={isFr} />
+          <MetricRow label={isFr ? '来源相关性' : 'Source Relevancy'} value={evaluation.relevancy} tipKey="relevancy" isFr={isFr} />
 
-            // RAG / LLM — standard score bars
-            const aggScore = cat.scoreKey ? evaluation[cat.scoreKey] : null
-            return (
-              <div
-                key={cat.key}
-                className={cn('rounded-lg border p-2 space-y-1.5', cat.border, 'bg-gradient-to-br', cat.gradient)}
-              >
-                <div className="flex items-center gap-1">
-                  <cat.Icon className={cn('h-3 w-3', cat.accent)} />
-                  <span className="text-[9px] font-semibold text-foreground flex-1">
-                    {isFr ? cat.labelFr : cat.label}
-                  </span>
-                  {aggScore != null && (
-                    <span className={cn('text-[10px] font-bold tabular-nums', GRADE_CLS[getGrade(aggScore)])}>
-                      {aggScore.toFixed(2)}
-                    </span>
-                  )}
-                </div>
-                <div className="space-y-1">
-                  {cat.dimensions.map(dim => {
-                    const val = (evaluation as any)[dim.key] as number | null
-                    return (
-                      <DimBar
-                        key={dim.key}
-                        label={dim.label} labelFr={dim.labelFr}
-                        value={val} barColor={cat.barColor} isFr={isFr}
-                        dimKey={dim.key}
-                      />
-                    )
-                  })}
-                </div>
-              </div>
-            )
-          })}
-
-          {/* ── 5th card: IR Retrieval Metrics (EI-T5-01) ── */}
+          {/* IR Metrics sub-group */}
           {hasIR ? (
-            <div className={cn(
-              'col-span-2 rounded-lg border p-2 space-y-1.5',
-              IR_CARD.border, 'bg-gradient-to-br', IR_CARD.gradient,
-            )}>
-              <div className="flex items-center gap-1">
-                <IR_CARD.Icon className={cn('h-3 w-3', IR_CARD.accent)} />
-                <span className="text-[9px] font-semibold text-foreground flex-1">
-                  {isFr ? IR_CARD.labelFr : IR_CARD.label}
-                  <span className="ml-1 text-[8px] font-normal text-muted-foreground">
-                    {isFr ? '(需 Golden Dataset)' : '(requires Golden Dataset)'}
-                  </span>
-                </span>
-                {evaluation.irScore != null && (
-                  <span className={cn('text-[10px] font-bold tabular-nums', GRADE_CLS[getGrade(evaluation.irScore)])}>
-                    {evaluation.irScore.toFixed(2)}
-                  </span>
-                )}
+            <>
+              <div className="mt-2 mb-1 text-[9px] font-medium text-muted-foreground/60 uppercase tracking-wider">
+                {isFr ? 'IR 检索指标' : 'IR Metrics'}
               </div>
-              <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-                {IR_CARD.dimensions.map(dim => {
-                  const val = (evaluation as any)[dim.key] as number | null
-                  return (
-                    <DimBar
-                      key={dim.key}
-                      label={dim.label} labelFr={dim.labelFr}
-                      value={val} barColor={IR_CARD.barColor} isFr={isFr}
-                      dimKey={dim.key}
-                    />
-                  )
-                })}
-              </div>
-            </div>
+              <MetricRow label="Hit Rate" value={evaluation.hitRate} tipKey="hitRate" isFr={isFr} />
+              <MetricRow label="MRR" value={evaluation.mrr} tipKey="mrr" isFr={isFr} />
+              <MetricRow label="Precision@K" value={evaluation.precisionAtK} tipKey="precisionAtK" isFr={isFr} />
+              <MetricRow label="Recall@K" value={evaluation.recallAtK} tipKey="recallAtK" isFr={isFr} />
+              <MetricRow label="NDCG" value={evaluation.ndcg} tipKey="ndcg" isFr={isFr} />
+            </>
           ) : (
-            <div className={cn(
-              'col-span-2 rounded-lg border p-2',
-              IR_CARD.border, IR_CARD.accentBg,
-            )}>
-              <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground">
-                <IR_CARD.Icon className={cn('h-3 w-3 shrink-0', IR_CARD.accent)} />
-                <span>
-                  {isFr
-                    ? 'IR 指标不可用 — 需先生成 Golden Dataset 并标记 verified'
-                    : 'IR metrics unavailable — generate & verify Golden Dataset records first'}
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Retrieval strategy diagnostics (EV2-T5-02) */}
-          {evaluation.retrievalMode && (
-            <div className="col-span-2">
-              <RetrievalDiagnostics evaluation={evaluation} locale={locale} />
-            </div>
-          )}
-
-          {/* ── 💡 Improvement suggestions (EUX-T3-03) ── */}
-          {evaluation.suggestions && evaluation.suggestions.length > 0 && (
-            <div className="col-span-2 rounded-lg border border-amber-500/20 bg-amber-500/5 p-2">
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <Lightbulb className="h-3 w-3 text-amber-400" />
-                <span className="text-[10px] font-medium text-amber-300">
-                  {isFr ? `改进建议 (${evaluation.suggestions.length})` : `Suggestions (${evaluation.suggestions.length})`}
-                </span>
-              </div>
-              <div className="space-y-1">
-                {evaluation.suggestions.map((s: EvalSuggestion, i: number) => {
-                  const style = SEVERITY_STYLES[s.severity] || SEVERITY_STYLES.medium
-                  return (
-                    <div key={i} className="flex items-start gap-1.5 text-[9px] text-muted-foreground">
-                      <span className={cn('mt-1 inline-block w-1.5 h-1.5 rounded-full shrink-0', style.dot)} />
-                      <span className={style.text}>
-                        {isFr ? s.message_zh : s.message_en}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* ── ⚙ Evaluation metadata (EUX-T2-03) ── */}
-          {(evaluation.judgeModel || evaluation.answerModel || evaluation.llmCalls) && (
-            <div className="col-span-2 flex flex-wrap items-center gap-x-3 gap-y-0.5 px-1 text-[8px] text-muted-foreground/60">
-              <Settings2 className="h-2.5 w-2.5 shrink-0" />
-              {evaluation.judgeModel && (
-                <span>
-                  {isFr ? '评审' : 'Judge'}: <span className="text-foreground/50">{evaluation.judgeModel}</span>
-                </span>
-              )}
-              {evaluation.answerModel && (
-                <span>
-                  {isFr ? '回答' : 'Answer'}: <span className="text-foreground/50">{evaluation.answerModel}</span>
-                </span>
-              )}
-              {evaluation.llmCalls != null && evaluation.llmCalls > 0 && (
-                <span className="ml-auto tabular-nums">
-                  {evaluation.llmCalls} {isFr ? '次调用' : 'calls'}
-                </span>
-              )}
+            <div className="mt-1.5 flex items-center gap-1.5 rounded-md bg-muted/30 px-2 py-1.5 text-[9px] text-muted-foreground/60">
+              <Info className="h-3 w-3 shrink-0" />
+              {isFr ? 'IR 指标不可用 — 需先生成 Golden Dataset' : 'IR metrics unavailable — generate Golden Dataset first'}
             </div>
           )}
         </div>
+      </Section>
+
+      {/* ── Section 3: Question Analysis ── */}
+      <Section
+        title={isFr ? '问题分析' : 'Question Analysis'}
+        summary={
+          depthMeta
+            ? <span className={cn('font-medium', GRADE_TEXT[getGrade(depthScore)])}>{isFr ? depthMeta.labelFr : depthMeta.label}</span>
+            : <span className="text-muted-foreground/50">—</span>
+        }
+      >
+        {depthMeta ? (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-muted-foreground">
+                {isFr ? '认知深度' : 'Depth Level'}:
+              </span>
+              <span className={cn('text-[10px] font-semibold', GRADE_TEXT[getGrade(depthScore)])}>
+                {isFr ? depthMeta.labelFr : depthMeta.label}
+              </span>
+              {depthScore != null && (
+                <span className={cn('text-[10px] tabular-nums', GRADE_TEXT[getGrade(depthScore)])}>
+                  ({depthScore.toFixed(2)})
+                </span>
+              )}
+            </div>
+            <MetricRow label={isFr ? '深度分数' : 'Depth Score'} value={depthScore} isFr={isFr} />
+            {/* Visual scale */}
+            <div className="flex items-center gap-1 text-[8px] text-muted-foreground/50">
+              <span className={depth === 'surface' ? 'font-semibold text-muted-foreground' : ''}>
+                Surface
+              </span>
+              <span>{'<'}</span>
+              <span className={depth === 'understanding' ? 'font-semibold text-muted-foreground' : ''}>
+                Understanding
+              </span>
+              <span>{'<'}</span>
+              <span className={depth === 'synthesis' ? 'font-semibold text-muted-foreground' : ''}>
+                Synthesis
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div className="text-[10px] text-muted-foreground/50 py-1">
+            {isFr ? '无问题深度数据' : 'No question depth data'}
+          </div>
+        )}
+      </Section>
+
+      {/* ── Section 4: Retrieval Strategy ── */}
+      {hasRetrievalStrategy && (
+        <Section
+          title={isFr ? '检索策略' : 'Retrieval Strategy'}
+          summary={
+            <span className="text-[10px] font-medium text-muted-foreground">
+              {evaluation.retrievalMode === 'hybrid' ? 'Hybrid' : 'Vector-only'}
+            </span>
+          }
+        >
+          <RetrievalDiagnostics evaluation={evaluation} locale={locale} />
+        </Section>
+      )}
+
+      {/* ── Section 5: Suggestions ── */}
+      {hasSuggestions && (
+        <Section
+          title={isFr ? '改进建议' : 'Suggestions'}
+          summary={
+            <span className="text-[10px] text-muted-foreground">
+              {evaluation.suggestions!.length}
+            </span>
+          }
+        >
+          <div className="space-y-1.5">
+            {evaluation.suggestions!.map((s: EvalSuggestion, i: number) => {
+              const style = SEV_STYLES[s.severity] || SEV_STYLES.medium
+              return (
+                <div key={i} className="flex items-start gap-2 text-[10px] text-muted-foreground">
+                  <span className={cn('mt-1 inline-block w-1.5 h-1.5 rounded-full shrink-0', style.dot)} />
+                  <span>{isFr ? s.message_zh : s.message_en}</span>
+                </div>
+              )
+            })}
+          </div>
+        </Section>
       )}
     </div>
   )

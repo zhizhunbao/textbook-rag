@@ -13,7 +13,7 @@
 
 import { useMemo } from 'react'
 import {
-  Search, Shuffle, Grid3X3, ArrowUpRight,
+  Shuffle, Grid3X3,
   CheckCircle2, AlertTriangle, Info,
   Navigation,
 } from 'lucide-react'
@@ -174,19 +174,17 @@ export default function RetrievalDiagnostics({
 
   // ── Full diagnostic panel ──────────────────────
   return (
-    <div className="rounded-lg border border-blue-500/20 bg-gradient-to-br from-blue-500/5 to-purple-500/5 p-3 space-y-3">
-      {/* Header */}
+    <div className="space-y-3">
+      {/* Mode badge */}
       <div className="flex items-center gap-2">
-        <Search className="h-4 w-4 text-blue-400" />
-        <span className="text-[11px] font-semibold text-foreground">
-          {isFr ? '检索策略诊断' : 'Retrieval Strategy Diagnostics'}
+        <span className="text-[10px] text-muted-foreground">
+          {isFr ? '模式' : 'Mode'}:
         </span>
-        <div className="flex-1" />
         <span className={cn(
-          'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-medium border',
+          'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-medium border',
           mode === 'hybrid'
-            ? 'text-blue-400 bg-blue-500/10 border-blue-500/30'
-            : 'text-purple-400 bg-purple-500/10 border-purple-500/30',
+            ? 'text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/20'
+            : 'text-purple-600 dark:text-purple-400 bg-purple-500/10 border-purple-500/20',
         )}>
           {mode === 'hybrid'
             ? <><Shuffle className="h-3 w-3" />{isFr ? '混合' : 'Hybrid'}</>

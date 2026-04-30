@@ -74,10 +74,20 @@ def clear_persona_cache() -> None:
 
 
 def get_collection_name(slug: str) -> str:
-    """Derive ChromaDB collection name for a persona."""
+    """Derive ChromaDB collection name for a persona.
+
+    Naming: {country}_{slug}  (e.g. ca_lawyer)
+    Fallback: persona_{slug}  (for legacy data without country)
+    """
     persona = fetch_persona(slug)
-    if persona and persona.get("chromaCollection"):
-        return persona["chromaCollection"]
+    if persona:
+        # Explicit config takes priority (backward compat)
+        if persona.get("chromaCollection"):
+            return persona["chromaCollection"]
+        # New logic: country + slug
+        country = persona.get("country", "")
+        if country:
+            return f"{country}_{slug}"
     return f"persona_{slug}"
 
 

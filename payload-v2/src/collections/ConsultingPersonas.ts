@@ -20,7 +20,7 @@ export const ConsultingPersonas: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'name',
-    defaultColumns: ['name', 'slug', 'isEnabled', 'sortOrder', 'updatedAt'],
+    defaultColumns: ['name', 'nameEn', 'slug', 'country', 'category', 'isEnabled', 'sortOrder', 'updatedAt'],
     group: 'Consulting',
   },
   access: {
@@ -41,6 +41,12 @@ export const ConsultingPersonas: CollectionConfig = {
       name: 'name',
       type: 'text',
       required: true,
+      admin: { description: 'Chinese display name (e.g. 移民顾问)' },
+    },
+    {
+      name: 'nameEn',
+      type: 'text',
+      admin: { description: 'English display name (e.g. Immigration Advisor)' },
     },
     {
       name: 'slug',
@@ -54,6 +60,13 @@ export const ConsultingPersonas: CollectionConfig = {
       type: 'text',
       admin: {
         description: 'Lucide icon name (e.g. "scale", "shield-check")',
+      },
+    },
+    {
+      name: 'avatar',
+      type: 'text',
+      admin: {
+        description: 'Path to avatar image (e.g. "/avatars/lawyer.png")',
       },
     },
     {
@@ -83,6 +96,41 @@ export const ConsultingPersonas: CollectionConfig = {
       admin: {
         description: 'MinerU output category directory (default: "consulting")',
       },
+    },
+    {
+      name: 'country',
+      type: 'select',
+      required: true,
+      defaultValue: 'ca',
+      options: [
+        { label: 'Canada', value: 'ca' },
+        { label: 'USA', value: 'us' },
+        { label: 'UK', value: 'uk' },
+        { label: 'Australia', value: 'au' },
+      ],
+      index: true,
+      admin: { position: 'sidebar' },
+    },
+    {
+      name: 'category',
+      type: 'select',
+      required: true,
+      defaultValue: 'legal',
+      options: [
+        { label: 'Immigration', value: 'immigration' },
+        { label: 'Education', value: 'education' },
+        { label: 'Legal', value: 'legal' },
+        { label: 'Career', value: 'career' },
+        { label: 'Living', value: 'living' },
+        { label: 'Finance', value: 'finance' },
+        { label: 'Healthcare', value: 'healthcare' },
+        { label: 'Housing', value: 'housing' },
+        { label: 'Transportation', value: 'transportation' },
+        { label: 'Social', value: 'social' },
+        { label: 'Travel', value: 'travel' },
+      ],
+      index: true,
+      admin: { position: 'sidebar' },
     },
     {
       name: 'isEnabled',

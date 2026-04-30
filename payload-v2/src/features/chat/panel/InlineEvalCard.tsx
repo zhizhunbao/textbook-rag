@@ -1,13 +1,9 @@
 /**
- * InlineEvalCard — User-friendly evaluation score card (UEP-T3-01).
+ * InlineEvalCard — Compact user-friendly evaluation summary for chat bubbles.
  *
- * Compact, non-technical evaluation display for the chat interface.
- * Maps RAG/LLM/Answer terminology to user-friendly labels:
- *   RAG Score      → Source Quality / 来源质量
- *   LLM Score      → Accuracy / 准确度
- *   Answer Score   → Answer Quality / 回答质量
- *   Question Depth → Question Depth / 问题深度
- *   Overall Score  → Overall / 综合评分
+ * Matches the new EvalScoreCard visual language (no colored gradients,
+ * score-only color coding). Shows 3 core dimensions as compact rows
+ * plus overall score and status.
  *
  * Usage: <InlineEvalCard evaluation={evalResult} />
  */
@@ -18,10 +14,8 @@ import { cn } from '@/features/shared/utils'
 import type { EvaluationResult } from '@/features/engine/evaluation/types'
 
 // ============================================================
-// Constants
+// Grade system — matches EvalScoreCard
 // ============================================================
-
-/** Grade thresholds — matches EvalScoreCard for consistency. */
 type Grade = 'excellent' | 'good' | 'fair' | 'poor' | 'none'
 
 function getGrade(score: number | null | undefined): Grade {
@@ -32,58 +26,64 @@ function getGrade(score: number | null | undefined): Grade {
   return 'poor'
 }
 
-const GRADE_COLORS: Record<Grade, { text: string; bar: string; bg: string }> = {
-  excellent: { text: 'text-emerald-400', bar: 'bg-emerald-500', bg: 'bg-emerald-500/10' },
-  good:      { text: 'text-blue-400',    bar: 'bg-blue-500',    bg: 'bg-blue-500/10' },
-  fair:      { text: 'text-amber-400',   bar: 'bg-amber-500',   bg: 'bg-amber-500/10' },
-  poor:      { text: 'text-red-400',     bar: 'bg-red-500',     bg: 'bg-red-500/10' },
-  none:      { text: 'text-zinc-500',    bar: 'bg-zinc-600',    bg: 'bg-zinc-500/10' },
+const GRADE_TEXT: Record<Grade, string> = {
+  excellent: 'text-emerald-500 dark:text-emerald-400',
+  good:      'text-blue-500 dark:text-blue-400',
+  fair:      'text-amber-500 dark:text-amber-400',
+  poor:      'text-red-500 dark:text-red-400',
+  none:      'text-muted-foreground',
 }
 
-/** User-friendly status labels (no pass/fail jargon). */
-const STATUS_LABEL: Record<string, { en: string; icon: string; cls: string }> = {
-  pass: { en: 'Good', icon: '✓', cls: 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30' },
-  fail: { en: 'Needs Improvement', icon: '!', cls: 'text-amber-400 bg-amber-500/15 border-amber-500/30' },
-  pending: { en: 'Pending', icon: '…', cls: 'text-zinc-400 bg-zinc-500/15 border-zinc-500/30' },
+const GRADE_BAR: Record<Grade, string> = {
+  excellent: 'bg-emerald-500',
+  good:      'bg-blue-500',
+  fair:      'bg-amber-500',
+  poor:      'bg-red-500',
+  none:      'bg-muted-foreground/30',
 }
 
-/** Depth label user-friendly mapping. */
+/** Status display (user-friendly, no jargon). */
+const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
+  pass: { label: 'Good', cls: 'text-emerald-500 dark:text-emerald-400' },
+  fail: { label: 'Needs Improvement', cls: 'text-amber-500 dark:text-amber-400' },
+  pending: { label: 'Pending', cls: 'text-muted-foreground' },
+}
+
+/** Depth label mapping. */
 const DEPTH_LABEL: Record<string, string> = {
   surface: 'Surface',
   understanding: 'Understanding',
   synthesis: 'Synthesis',
 }
 
-/** Score dimension definitions — user-friendly terminology. */
-const DIMENSIONS = [
-  { key: 'ragScore',    label: 'Source Quality' },
-  { key: 'llmScore',    label: 'Accuracy' },
-  { key: 'answerScore', label: 'Answer Quality' },
+/** Score row definitions. */
+const ROWS = [
+  { key: 'responseQuality', label: 'Response Quality' },
+  { key: 'retrievalQuality', label: 'Retrieval Quality' },
 ] as const
 
 // ============================================================
 // Sub-components
 // ============================================================
 
-/** Single score dimension row with progress bar. */
-function ScoreRow({ label, score }: { label: string; score: number | null | undefined }) {
+/** Compact metric row with thin progress bar. */
+function Row({ label, score }: { label: string; score: number | null | undefined }) {
   const grade = getGrade(score)
-  const colors = GRADE_COLORS[grade]
-  const pct = score != null ? Math.round(score * 100) : null
+  const pct = score != null ? Math.round(score * 100) : 0
 
   return (
     <div className="flex items-center gap-2">
-      <span className="w-[100px] shrink-0 text-[10px] text-muted-foreground/80 truncate">
+      <span className="w-[105px] shrink-0 text-[10px] text-muted-foreground truncate">
         {label}
       </span>
       <div className="flex-1 h-1.5 rounded-full bg-muted/50 overflow-hidden">
         <div
-          className={cn('h-full rounded-full transition-all duration-700 ease-out', colors.bar)}
-          style={{ width: `${pct ?? 0}%` }}
+          className={cn('h-full rounded-full transition-all duration-700 ease-out', GRADE_BAR[grade])}
+          style={{ width: `${pct}%` }}
         />
       </div>
-      <span className={cn('w-8 text-right text-[10px] font-bold tabular-nums', colors.text)}>
-        {pct != null ? `${pct}%` : '—'}
+      <span className={cn('w-8 text-right text-[10px] font-semibold tabular-nums', GRADE_TEXT[grade])}>
+        {score != null ? `${(score * 100).toFixed(0)}%` : '—'}
       </span>
     </div>
   )
@@ -102,9 +102,7 @@ interface InlineEvalCardProps {
 // ============================================================
 export default function InlineEvalCard({ evaluation }: InlineEvalCardProps) {
   const overall = evaluation.overallScore
-  const overallPct = overall != null ? Math.round(overall * 100) : null
   const overallGrade = getGrade(overall)
-  const overallColors = GRADE_COLORS[overallGrade]
 
   const status = evaluation.status ?? 'pending'
   const statusMeta = STATUS_LABEL[status] ?? STATUS_LABEL.pending
@@ -112,21 +110,21 @@ export default function InlineEvalCard({ evaluation }: InlineEvalCardProps) {
   const depth = evaluation.questionDepth
   const depthLabel = depth ? DEPTH_LABEL[depth] ?? depth : null
 
+  // Compute section averages
+  const responseScore = evaluation.answerScore ?? evaluation.llmScore ?? null
+  const retrievalScore = evaluation.ragScore ?? null
+
   return (
-    <div className="space-y-2.5">
-      {/* ── Overall score header ── */}
-      <div className="flex items-center gap-2.5">
-        {overallPct != null && (
-          <span className={cn('text-lg font-bold tabular-nums leading-none', overallColors.text)}>
-            {overallPct}%
+    <div className="space-y-2">
+      {/* ── Overall header ── */}
+      <div className="flex items-center gap-2">
+        {overall != null && (
+          <span className={cn('text-lg font-bold tabular-nums leading-none', GRADE_TEXT[overallGrade])}>
+            {(overall * 100).toFixed(0)}%
           </span>
         )}
-        <span className={cn(
-          'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold',
-          statusMeta.cls,
-        )}>
-          <span className="text-[10px]">{statusMeta.icon}</span>
-          {statusMeta.en}
+        <span className={cn('text-[10px] font-semibold', statusMeta.cls)}>
+          {statusMeta.label}
         </span>
         {depthLabel && (
           <span className="ml-auto inline-flex items-center gap-1 rounded-md bg-muted/40 px-1.5 py-0.5 text-[10px] text-muted-foreground">
@@ -138,15 +136,10 @@ export default function InlineEvalCard({ evaluation }: InlineEvalCardProps) {
         )}
       </div>
 
-      {/* ── Score dimensions ── */}
-      <div className="space-y-1.5">
-        {DIMENSIONS.map(dim => (
-          <ScoreRow
-            key={dim.key}
-            label={dim.label}
-            score={(evaluation as any)[dim.key]}
-          />
-        ))}
+      {/* ── Score rows ── */}
+      <div className="space-y-1">
+        <Row label="Response Quality" score={responseScore} />
+        <Row label="Retrieval Quality" score={retrievalScore} />
       </div>
     </div>
   )

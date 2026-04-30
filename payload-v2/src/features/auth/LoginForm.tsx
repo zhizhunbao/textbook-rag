@@ -1,13 +1,9 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import Image from 'next/image'
-import Link from 'next/link'
-import { ArrowRight, SearchCheck } from 'lucide-react'
 import { useAuth } from '@/features/shared/AuthProvider'
 import { useI18n } from '@/features/shared/i18n'
-import LanguageToggle from '@/features/shared/components/LanguageToggle'
-import ThemeToggle from '@/features/shared/components/ThemeToggle'
+import PublicShell from '@/features/layout/PublicShell'
 
 /**
  * LoginForm — 登录表单
@@ -49,40 +45,7 @@ export default function LoginForm() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-background text-foreground">
-      <Image
-        src="/consultrag-hero.png"
-        alt="ConsultRAG workspace background"
-        fill
-        priority
-        sizes="100vw"
-        className="object-cover"
-      />
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(2,6,23,0.94)_0%,rgba(15,23,42,0.78)_48%,rgba(15,23,42,0.48)_100%)]" />
-
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-black/25 backdrop-blur-md">
-        <nav className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 md:px-8">
-          <Link href="/" className="flex items-center gap-3 text-white">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/15">
-              <SearchCheck className="h-5 w-5" aria-hidden />
-            </span>
-            <span className="text-sm font-bold uppercase tracking-widest">ConsultRAG</span>
-          </Link>
-
-          <div className="flex items-center gap-3">
-            <LanguageToggle className="border-white/15 bg-white/10 text-white hover:bg-white/20" />
-            <ThemeToggle className="border-white/15 bg-white/10 text-white hover:bg-white/20" />
-            <Link
-              href="/register"
-              className="hidden items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-bold text-slate-950 hover:bg-white/90 sm:inline-flex"
-            >
-              Start free
-              <ArrowRight className="h-4 w-4" aria-hidden />
-            </Link>
-          </div>
-        </nav>
-      </header>
-
+    <PublicShell page="login">
       <section className="relative z-10 mx-auto grid min-h-screen max-w-7xl items-center gap-10 px-5 pb-10 pt-28 md:px-8 lg:grid-cols-[1fr_440px]">
         <div className="hidden max-w-2xl text-white lg:block">
           <p className="mb-5 inline-flex items-center rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-xs font-bold uppercase tracking-widest text-blue-100 backdrop-blur">
@@ -220,6 +183,6 @@ export default function LoginForm() {
         </div>
         </div>
       </section>
-    </main>
+    </PublicShell>
   )
 }

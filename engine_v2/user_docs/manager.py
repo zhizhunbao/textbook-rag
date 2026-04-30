@@ -26,13 +26,15 @@ from engine_v2.settings import (
 # ============================================================
 
 
-def user_collection_name(user_id: int, persona_slug: str) -> str:
+def user_collection_name(
+    user_id: int, persona_slug: str, country: str = "ca",
+) -> str:
     """Build a user-private ChromaDB collection name.
 
-    Format: user_{userId}_{personaSlug}
-    Guarantees data isolation per user per persona.
+    Format: user_{userId}_{country}_{personaSlug}
+    Guarantees data isolation per user per persona per country.
     """
-    return f"user_{user_id}_{persona_slug}"
+    return f"user_{user_id}_{country}_{persona_slug}"
 
 
 # ============================================================
@@ -48,12 +50,14 @@ def _get_chroma_client() -> chromadb.ClientAPI:
     )
 
 
-def ensure_user_collection(user_id: int, persona_slug: str) -> str:
+def ensure_user_collection(
+    user_id: int, persona_slug: str, country: str = "ca",
+) -> str:
     """Idempotent creation of a user-private ChromaDB collection.
 
     Returns the collection name.
     """
-    name = user_collection_name(user_id, persona_slug)
+    name = user_collection_name(user_id, persona_slug, country)
     client = _get_chroma_client()
     client.get_or_create_collection(
         name=name,
@@ -66,9 +70,11 @@ def ensure_user_collection(user_id: int, persona_slug: str) -> str:
     return name
 
 
-def get_user_doc_stats(user_id: int, persona_slug: str) -> dict[str, Any]:
+def get_user_doc_stats(
+    user_id: int, persona_slug: str, country: str = "ca",
+) -> dict[str, Any]:
     """Return collection stats for a user/persona pair."""
-    name = user_collection_name(user_id, persona_slug)
+    name = user_collection_name(user_id, persona_slug, country)
     try:
         client = _get_chroma_client()
         col = client.get_or_create_collection(name)
