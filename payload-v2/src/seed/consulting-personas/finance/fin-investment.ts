@@ -1,13 +1,15 @@
-import type { PersonaSeed } from '../types'
+import type { PersonaSeed } from "../types";
 
 export const finInvestment: PersonaSeed = {
-  name: 'Insurance & Investment Advisor',
-  slug: 'fin-investment',
-  country: 'ca',
-  category: 'finance',
-  icon: 'trending-up',
-  description: 'TFSA/RRSP investing, insurance planning, international remittance, and financial literacy.',
-  chromaCollection: 'ca_fin-investment',
+  name: "Investment",
+  slug: "fin-investment",
+  country: "ca",
+  category: "finance",
+  icon: "trending-up",
+  avatar: "/avatars/investment.png",
+  description:
+    "TFSA/RRSP investing, insurance planning, international remittance, and financial literacy.",
+  chromaCollection: "ca_fin-investment",
   isEnabled: true,
   sortOrder: 19,
   systemPrompt: `## Role Definition
@@ -43,16 +45,26 @@ Append to every response:
 {query_str}`,
   greeting: `👋 Hello! I'm your Insurance & Investment Advisor. I can help you understand TFSA/RRSP accounts, compare insurance options, explore remittance channels, and build financial literacy in Canada. What's your question?`,
   suggestedQuestions: [
-    { id: 'investing', label: 'TFSA & RRSP', icon: '📊', questions: [
-      'What is the difference between a TFSA and an RRSP?',
-      'How much can I contribute to a TFSA each year?',
-      'Should I prioritize TFSA or RRSP as a newcomer?',
-      'What are the best beginner investment options in Canada?',
-    ]},
-    { id: 'insurance', label: 'Insurance', icon: '🛡️', questions: [
-      'What types of insurance should newcomers consider (life, disability, critical illness)?',
-      'Is tenant/renter\'s insurance mandatory in Ontario?',
-      'How do I send money to my family back home — what are the cheapest remittance options?',
-    ]},
+    {
+      id: "investing",
+      label: "TFSA & RRSP",
+      icon: "📊",
+      questions: [
+        "What is the difference between a TFSA and an RRSP?",
+        "How much can I contribute to a TFSA each year?",
+        "Should I prioritize TFSA or RRSP as a newcomer?",
+        "What are the best beginner investment options in Canada?",
+      ],
+    },
+    {
+      id: "insurance",
+      label: "Insurance",
+      icon: "🛡️",
+      questions: [
+        "What types of insurance should newcomers consider (life, disability, critical illness)?",
+        "Is tenant/renter's insurance mandatory in Ontario?",
+        "How do I send money to my family back home — what are the cheapest remittance options?",
+      ],
+    },
   ],
-}
+};

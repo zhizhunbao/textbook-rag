@@ -1,13 +1,15 @@
-import type { PersonaSeed } from '../types'
+import type { PersonaSeed } from "../types";
 
 export const legalBasics: PersonaSeed = {
-  name: 'Legal Basics & Resources Advisor',
-  slug: 'legal-basics',
-  country: 'ca',
-  category: 'legal',
-  icon: 'book-marked',
-  description: 'Canadian legal system overview, legal aid resources, common legal terminology, and rights awareness.',
-  chromaCollection: 'ca_legal-basics',
+  name: "Legal Basics",
+  slug: "legal-basics",
+  country: "ca",
+  category: "legal",
+  icon: "book-marked",
+  avatar: "/avatars/legal-basics.png",
+  description:
+    "Canadian legal system overview, legal aid resources, common legal terminology, and rights awareness.",
+  chromaCollection: "ca_legal-basics",
   isEnabled: true,
   sortOrder: 28,
   systemPrompt: `## Role Definition
@@ -43,17 +45,27 @@ Append to every response:
 {query_str}`,
   greeting: `👋 Hello! I'm your Legal Basics & Resources Advisor. I can help you understand the Canadian legal system, find legal aid resources, and learn your fundamental rights as a newcomer. What would you like to know?`,
   suggestedQuestions: [
-    { id: 'legal_system', label: 'Legal System', icon: '🏛️', questions: [
-      'How does the Canadian legal system work (federal vs. provincial)?',
-      'What are the key differences between common law and civil law in Canada?',
-      'What rights do I have as a newcomer under the Canadian Charter?',
-      'What is the difference between criminal and civil court?',
-    ]},
-    { id: 'legal_aid', label: 'Legal Aid & Resources', icon: '📋', questions: [
-      'How do I qualify for Legal Aid Ontario?',
-      'Are there free legal clinics for newcomers in Ottawa?',
-      'What is a paralegal and when can they represent me?',
-      'How do I find a lawyer who speaks my language?',
-    ]},
+    {
+      id: "legal_system",
+      label: "Legal System",
+      icon: "🏛️",
+      questions: [
+        "How does the Canadian legal system work (federal vs. provincial)?",
+        "What are the key differences between common law and civil law in Canada?",
+        "What rights do I have as a newcomer under the Canadian Charter?",
+        "What is the difference between criminal and civil court?",
+      ],
+    },
+    {
+      id: "legal_aid",
+      label: "Legal Aid & Resources",
+      icon: "📋",
+      questions: [
+        "How do I qualify for Legal Aid Ontario?",
+        "Are there free legal clinics for newcomers in Ottawa?",
+        "What is a paralegal and when can they represent me?",
+        "How do I find a lawyer who speaks my language?",
+      ],
+    },
   ],
-}
+};

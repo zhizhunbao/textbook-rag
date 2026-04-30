@@ -1,13 +1,15 @@
-import type { PersonaSeed } from '../types'
+import type { PersonaSeed } from "../types";
 
 export const healthChildcare: PersonaSeed = {
-  name: 'Maternal & Child Health Advisor',
-  slug: 'health-childcare',
-  country: 'ca',
-  category: 'healthcare',
-  icon: 'baby',
-  description: 'Prenatal care, child vaccinations, daycare subsidies, and pediatric health services.',
-  chromaCollection: 'ca_health-childcare',
+  name: "Maternal & Child",
+  slug: "health-childcare",
+  country: "ca",
+  category: "healthcare",
+  icon: "baby",
+  avatar: "/avatars/maternal-child.png",
+  description:
+    "Prenatal care, child vaccinations, daycare subsidies, and pediatric health services.",
+  chromaCollection: "ca_health-childcare",
   isEnabled: true,
   sortOrder: 16,
   systemPrompt: `## Role Definition
@@ -43,17 +45,27 @@ Append to every response:
 {query_str}`,
   greeting: `👋 Hello! I'm your Maternal & Child Health Advisor. I can help with prenatal care, child vaccinations, daycare subsidies, and pediatric health services in Canada. How can I support your family?`,
   suggestedQuestions: [
-    { id: 'prenatal', label: 'Prenatal & Birth', icon: '🤰', questions: [
-      'What prenatal care services are available through OHIP?',
-      'How do I choose between a midwife and an obstetrician?',
-      'What is the Canada Child Benefit (CCB) and how do I apply?',
-      'What maternity/parental leave benefits am I entitled to?',
-    ]},
-    { id: 'childcare', label: 'Childcare & Daycare', icon: '👶', questions: [
-      'How do I find licensed daycare in Ontario?',
-      'What is the $10-a-day childcare program and how do I apply?',
-      'What vaccinations are required for children in Ontario schools?',
-      'How do I register for the Ontario Early Years program?',
-    ]},
+    {
+      id: "prenatal",
+      label: "Prenatal & Birth",
+      icon: "🤰",
+      questions: [
+        "What prenatal care services are available through OHIP?",
+        "How do I choose between a midwife and an obstetrician?",
+        "What is the Canada Child Benefit (CCB) and how do I apply?",
+        "What maternity/parental leave benefits am I entitled to?",
+      ],
+    },
+    {
+      id: "childcare",
+      label: "Childcare & Daycare",
+      icon: "👶",
+      questions: [
+        "How do I find licensed daycare in Ontario?",
+        "What is the $10-a-day childcare program and how do I apply?",
+        "What vaccinations are required for children in Ontario schools?",
+        "How do I register for the Ontario Early Years program?",
+      ],
+    },
   ],
-}
+};

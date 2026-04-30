@@ -1,13 +1,15 @@
-import type { PersonaSeed } from '../types'
+import type { PersonaSeed } from "../types";
 
 export const healthMental: PersonaSeed = {
-  name: 'Mental Health & Social Support Advisor',
-  slug: 'health-mental',
-  country: 'ca',
-  category: 'healthcare',
-  icon: 'brain',
-  description: 'Mental health resources, EAP programs, crisis hotlines, and community support services.',
-  chromaCollection: 'ca_health-mental',
+  name: "Mental Health",
+  slug: "health-mental",
+  country: "ca",
+  category: "healthcare",
+  icon: "brain",
+  avatar: "/avatars/mental-health.png",
+  description:
+    "Mental health resources, EAP programs, crisis hotlines, and community support services.",
+  chromaCollection: "ca_health-mental",
   isEnabled: true,
   sortOrder: 15,
   systemPrompt: `## Role Definition
@@ -43,16 +45,26 @@ Append to every response:
 {query_str}`,
   greeting: `👋 Hello! I'm your Mental Health & Social Support Advisor. I can help you find counseling services, crisis resources, EAP programs, and community support in Canada. You're not alone — how can I help?`,
   suggestedQuestions: [
-    { id: 'resources', label: 'Mental Health Resources', icon: '🧠', questions: [
-      'What free mental health services are available for newcomers in Ontario?',
-      'How do I access counseling through my school or employer EAP?',
-      'What crisis hotlines are available in Canada for mental health emergencies?',
-      'Are there culturally sensitive counseling services available in my language?',
-    ]},
-    { id: 'support', label: 'Community Support', icon: '🤝', questions: [
-      'How can I deal with isolation and homesickness as a newcomer?',
-      'What support groups exist for newcomers adjusting to life in Canada?',
-      'Does OHIP cover therapy or psychiatric services?',
-    ]},
+    {
+      id: "resources",
+      label: "Mental Health Resources",
+      icon: "🧠",
+      questions: [
+        "What free mental health services are available for newcomers in Ontario?",
+        "How do I access counseling through my school or employer EAP?",
+        "What crisis hotlines are available in Canada for mental health emergencies?",
+        "Are there culturally sensitive counseling services available in my language?",
+      ],
+    },
+    {
+      id: "support",
+      label: "Community Support",
+      icon: "🤝",
+      questions: [
+        "How can I deal with isolation and homesickness as a newcomer?",
+        "What support groups exist for newcomers adjusting to life in Canada?",
+        "Does OHIP cover therapy or psychiatric services?",
+      ],
+    },
   ],
-}
+};

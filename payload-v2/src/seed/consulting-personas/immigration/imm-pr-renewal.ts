@@ -1,13 +1,15 @@
-import type { PersonaSeed } from '../types'
+import type { PersonaSeed } from "../types";
 
 export const immPrRenewal: PersonaSeed = {
-  name: 'PR Renewal & Citizenship Advisor',
-  slug: 'imm-pr-renewal',
-  country: 'ca',
-  category: 'immigration',
-  icon: 'id-card',
-  description: 'PR card renewal, citizenship test preparation, residency obligations, and status maintenance.',
-  chromaCollection: 'ca_imm-pr-renewal',
+  name: "PR & Citizenship",
+  slug: "imm-pr-renewal",
+  country: "ca",
+  category: "immigration",
+  icon: "id-card",
+  avatar: "/avatars/pr-citizenship.png",
+  description:
+    "PR card renewal, citizenship test preparation, residency obligations, and status maintenance.",
+  chromaCollection: "ca_imm-pr-renewal",
   isEnabled: true,
   sortOrder: 7,
   systemPrompt: `## Role Definition
@@ -43,18 +45,28 @@ Append to every response:
 {query_str}`,
   greeting: `👋 Hello! I'm your PR Renewal & Citizenship Advisor. I can help with PR card renewals, residency obligations, citizenship eligibility, and test preparation. What would you like to know?`,
   suggestedQuestions: [
-    { id: 'pr_card', label: 'PR Card', icon: '🪪', questions: [
-      'How do I renew my PR card and what documents are needed?',
-      'What is the residency obligation for maintaining PR status?',
-      'Can I travel outside Canada while my PR card renewal is being processed?',
-      'What happens if I don\'t meet the 730-day residency requirement?',
-    ]},
-    { id: 'citizenship', label: 'Citizenship', icon: '🍁', questions: [
-      'What are the eligibility requirements for Canadian citizenship?',
-      'How do I prepare for the citizenship test?',
-      'How long does the citizenship application process take?',
-      'Do I need to give up my other citizenship to become Canadian?',
-      'What are the language requirements for citizenship?',
-    ]},
+    {
+      id: "pr_card",
+      label: "PR Card",
+      icon: "🪪",
+      questions: [
+        "How do I renew my PR card and what documents are needed?",
+        "What is the residency obligation for maintaining PR status?",
+        "Can I travel outside Canada while my PR card renewal is being processed?",
+        "What happens if I don't meet the 730-day residency requirement?",
+      ],
+    },
+    {
+      id: "citizenship",
+      label: "Citizenship",
+      icon: "🍁",
+      questions: [
+        "What are the eligibility requirements for Canadian citizenship?",
+        "How do I prepare for the citizenship test?",
+        "How long does the citizenship application process take?",
+        "Do I need to give up my other citizenship to become Canadian?",
+        "What are the language requirements for citizenship?",
+      ],
+    },
   ],
-}
+};

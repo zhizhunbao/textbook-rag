@@ -1,18 +1,14 @@
-import React from 'react'
-import Link from 'next/link'
+'use client'
 
-export const metadata = {
-  title: 'Privacy Policy | ConsultRAG',
-  description: 'How we collect and protect your data at ConsultRAG.',
-}
+import React from 'react'
+import PublicNav from '@/features/layout/PublicNav'
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-background font-sans text-foreground py-20 px-6">
-      <div className="max-w-3xl mx-auto">
-        <Link href="/" className="text-sm text-indigo-500 hover:underline mb-8 inline-block">
-          ← Back to Home
-        </Link>
+    <main className="min-h-screen bg-background font-sans text-foreground">
+      <PublicNav page="privacy" />
+
+      <div className="mx-auto max-w-3xl px-6 pb-20 pt-24">
         <h1 className="text-4xl font-extrabold mb-8">Privacy Policy</h1>
         
         <div className="space-y-8 text-muted-foreground leading-relaxed">
@@ -68,6 +64,6 @@ export default function PrivacyPage() {
           <p className="pt-8 text-xs">Last updated: April 29, 2026</p>
         </div>
       </div>
-    </div>
+    </main>
   )
 }

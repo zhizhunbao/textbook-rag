@@ -1,13 +1,14 @@
-import type { PersonaSeed } from '../types'
+import type { PersonaSeed } from "../types";
 
 export const ecdevAnalyst: PersonaSeed = {
-  name: 'Ottawa EcDev Analyst',
-  slug: 'ecdev-analyst',
-  country: 'ca',
-  category: 'analysis',
-  icon: 'bar-chart-3',
-  description: 'Ottawa economic development data analysis — labour market, housing, CPI, commercial vacancy, and construction permits.',
-  chromaCollection: 'ca_ecdev-analyst',
+  name: "Ottawa EcDev Analyst",
+  slug: "ecdev-analyst",
+  country: "ca",
+  category: "analysis",
+  icon: "bar-chart-3",
+  description:
+    "Ottawa economic development data analysis — labour market, housing, CPI, commercial vacancy, and construction permits.",
+  chromaCollection: "ca_ecdev-analyst",
   isEnabled: true,
   sortOrder: 29,
   systemPrompt: `## Role Definition
@@ -47,9 +48,9 @@ Append to every response:
   greeting: `📊 Hello! I'm your Ottawa Economic Development Analyst. I can help you analyze labour market trends, housing starts, resale market data, inflation/CPI, commercial vacancy rates, and construction permits across 2024 quarters. What data would you like to explore?`,
   suggestedQuestions: [
     {
-      id: 'labour_market',
-      label: 'Labour Market',
-      icon: '📈',
+      id: "labour_market",
+      label: "Labour Market",
+      icon: "📈",
       questions: [
         "What was Ottawa's unemployment rate in Q4 2024?",
         "Which sectors saw the largest employment increases year-over-year in Q4 2024?",
@@ -72,9 +73,9 @@ Append to every response:
       ],
     },
     {
-      id: 'housing_starts',
-      label: 'Housing Starts',
-      icon: '🏠',
+      id: "housing_starts",
+      label: "Housing Starts",
+      icon: "🏠",
       questions: [
         "How did housing starts change in Q4 2024 relative to Q4 2023?",
         "Summarize housing starts in Q3 2024 vs Q3 2023.",
@@ -88,9 +89,9 @@ Append to every response:
       ],
     },
     {
-      id: 'resale_market',
-      label: 'Resale Market',
-      icon: '🏘️',
+      id: "resale_market",
+      label: "Resale Market",
+      icon: "🏘️",
       questions: [
         "Summarize resale market performance in Q4 2024.",
         "Did average resale prices rise or fall from Q2 to Q3 2024?",
@@ -106,9 +107,9 @@ Append to every response:
       ],
     },
     {
-      id: 'inflation_cpi',
-      label: 'Inflation & CPI',
-      icon: '💹',
+      id: "inflation_cpi",
+      label: "Inflation & CPI",
+      icon: "💹",
       questions: [
         "Report Ottawa's inflation rate for Q4 2024.",
         "What was Ottawa's CPI inflation in Q3 2024?",
@@ -117,9 +118,9 @@ Append to every response:
       ],
     },
     {
-      id: 'commercial_vacancy',
-      label: 'Commercial Vacancy',
-      icon: '🏢',
+      id: "commercial_vacancy",
+      label: "Commercial Vacancy",
+      icon: "🏢",
       questions: [
         "What was Ottawa's office vacancy rate in Q4 2024?",
         "Did retail vacancy improve or worsen by Q4 2024?",
@@ -135,9 +136,9 @@ Append to every response:
       ],
     },
     {
-      id: 'construction_permits',
-      label: 'Construction & Permits',
-      icon: '🏗️',
+      id: "construction_permits",
+      label: "Construction & Permits",
+      icon: "🏗️",
       questions: [
         "How did construction permit values change in Q4 2024 year-over-year?",
         "State the total construction permit value in Q3 2024.",
@@ -148,9 +149,9 @@ Append to every response:
       ],
     },
     {
-      id: 'policy_highlights',
-      label: 'Policy & Highlights',
-      icon: '📋',
+      id: "policy_highlights",
+      label: "Policy & Highlights",
+      icon: "📋",
       questions: [
         "What was the population estimate for Ottawa at year-end 2024?",
         "Summarize population trend from Q2 2024 to Q4 2024.",
@@ -163,4 +164,4 @@ Append to every response:
       ],
     },
   ],
-}
+};

@@ -1,13 +1,15 @@
-import type { PersonaSeed } from '../types'
+import type { PersonaSeed } from "../types";
 
 export const immPathways: PersonaSeed = {
-  name: 'Immigration Pathways & Policy Advisor',
-  slug: 'imm-pathways',
-  country: 'ca',
-  category: 'immigration',
-  icon: 'route',
-  description: 'Express Entry, PNP, LMIA, CRS scoring, and immigration pathway comparisons.',
-  chromaCollection: 'ca_imm-pathways',
+  name: "Immigration Pathways",
+  slug: "imm-pathways",
+  country: "ca",
+  category: "immigration",
+  icon: "route",
+  avatar: "/avatars/immigration.png",
+  description:
+    "Express Entry, PNP, LMIA, CRS scoring, and immigration pathway comparisons.",
+  chromaCollection: "ca_imm-pathways",
   isEnabled: true,
   sortOrder: 6,
   systemPrompt: `## Role Definition
@@ -44,27 +46,27 @@ Append to every response:
   greeting: `👋 Hello! I'm your Immigration Pathways & Policy Advisor. Whether you're exploring Express Entry, PNP, or LMIA, I can help you compare immigration programs and find the best pathway. What's your situation?`,
   suggestedQuestions: [
     {
-      id: 'express_entry',
-      label: 'Express Entry',
-      icon: '🚀',
+      id: "express_entry",
+      label: "Express Entry",
+      icon: "🚀",
       questions: [
-        'How does the Express Entry system work and what are the three programs under it?',
-        'What is the current CRS score cutoff for Express Entry draws?',
-        'How can I improve my CRS score for Express Entry?',
-        'What is the difference between FSW, CEC, and FST programs?',
-        'How long does it take to get PR through Express Entry?',
+        "How does the Express Entry system work and what are the three programs under it?",
+        "What is the current CRS score cutoff for Express Entry draws?",
+        "How can I improve my CRS score for Express Entry?",
+        "What is the difference between FSW, CEC, and FST programs?",
+        "How long does it take to get PR through Express Entry?",
       ],
     },
     {
-      id: 'pnp_lmia',
-      label: 'PNP & LMIA',
-      icon: '🗺️',
+      id: "pnp_lmia",
+      label: "PNP & LMIA",
+      icon: "🗺️",
       questions: [
-        'Which Provincial Nominee Programs (PNP) are best for international graduates?',
-        'What is an LMIA and how does my employer apply for one?',
-        'Does Ontario PNP have a stream for international students?',
-        'Can I apply for PNP and Express Entry at the same time?',
+        "Which Provincial Nominee Programs (PNP) are best for international graduates?",
+        "What is an LMIA and how does my employer apply for one?",
+        "Does Ontario PNP have a stream for international students?",
+        "Can I apply for PNP and Express Entry at the same time?",
       ],
     },
   ],
-}
+};

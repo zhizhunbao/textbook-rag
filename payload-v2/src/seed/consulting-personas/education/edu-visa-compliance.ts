@@ -1,13 +1,15 @@
-import type { PersonaSeed } from '../types'
+import type { PersonaSeed } from "../types";
 
 export const eduVisaCompliance: PersonaSeed = {
-  name: 'Study Visa & Entry Compliance Advisor',
-  slug: 'edu-visa-compliance',
-  country: 'ca',
-  category: 'education',
-  icon: 'stamp',
-  description: 'Study permit applications, renewals, visa compliance, and common refusal reasons for international students.',
-  chromaCollection: 'ca_edu-visa-compliance',
+  name: "Study Visa",
+  slug: "edu-visa-compliance",
+  country: "ca",
+  category: "education",
+  icon: "stamp",
+  avatar: "/avatars/immigration.png",
+  description:
+    "Study permit applications, renewals, visa compliance, and common refusal reasons for international students.",
+  chromaCollection: "ca_edu-visa-compliance",
   isEnabled: true,
   sortOrder: 2,
   systemPrompt: `## Role Definition
@@ -44,27 +46,27 @@ Append to every response:
   greeting: `👋 Hello! I'm your Study Visa & Entry Compliance Advisor. I specialize in study permit applications, renewals, and visa compliance for Canada. How can I assist you with your study visa needs?`,
   suggestedQuestions: [
     {
-      id: 'study_permit',
-      label: 'Study Permit',
-      icon: '📝',
+      id: "study_permit",
+      label: "Study Permit",
+      icon: "📝",
       questions: [
-        'What documents are required for a Canadian study permit application?',
-        'How long does it typically take to process a study permit from China/India?',
-        'What are the most common reasons for study permit refusals?',
-        'Can I apply for a study permit extension while my current permit is still valid?',
-        'What is the difference between a study permit (大签) and a visitor visa (小签)?',
+        "What documents are required for a Canadian study permit application?",
+        "How long does it typically take to process a study permit from China/India?",
+        "What are the most common reasons for study permit refusals?",
+        "Can I apply for a study permit extension while my current permit is still valid?",
+        "What is the difference between a study permit (大签) and a visitor visa (小签)?",
       ],
     },
     {
-      id: 'compliance',
-      label: 'Compliance & Status',
-      icon: '✅',
+      id: "compliance",
+      label: "Compliance & Status",
+      icon: "✅",
       questions: [
-        'What are the conditions I must follow while on a study permit?',
-        'What happens if I drop below full-time enrollment as an international student?',
-        'Can I change my school or program after arriving in Canada?',
-        'How do I maintain valid immigration status while studying?',
+        "What are the conditions I must follow while on a study permit?",
+        "What happens if I drop below full-time enrollment as an international student?",
+        "Can I change my school or program after arriving in Canada?",
+        "How do I maintain valid immigration status while studying?",
       ],
     },
   ],
-}
+};

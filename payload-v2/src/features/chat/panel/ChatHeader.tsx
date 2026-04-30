@@ -11,6 +11,7 @@ import type { BookBase } from "@/features/shared/books";
 import type { PersonaInfo } from "@/features/shared/consultingApi";
 import CountrySelector from "@/features/shared/components/CountrySelector";
 import LanguageSelector from "@/features/shared/components/LanguageSelector";
+import PersonaPicker from "./PersonaPicker";
 
 // ============================================================
 // Mini Toggle — compact switch for boolean settings
@@ -145,25 +146,15 @@ export default function ChatHeader({
         {/* ── All controls in one row ── */}
         <div className="flex shrink-0 items-center gap-2">
           {/* Persona */}
-          <select
-            className="h-7 max-w-[180px] rounded-md border border-border bg-background px-2 text-[11px] font-medium text-foreground outline-none transition focus:border-primary"
-            value={selectedPersonaSlug ?? ""}
-            onChange={(event) => onPersonaChange(event.target.value)}
+          <PersonaPicker
+            personas={personas}
+            selectedSlug={selectedPersonaSlug}
             disabled={loading || modeLocked || personas.length === 0}
-            title={modeLocked ? "Persona is locked for this conversation" : "Consulting persona"}
-          >
-            {personas.length === 0 ? (
-              <option value="">No personas</option>
-            ) : (
-              personas.map((persona) => (
-                <option key={persona.slug} value={persona.slug}>
-                  {persona.name}
-                </option>
-              ))
-            )}
-          </select>
+            disabledTitle={modeLocked ? "Persona is locked for this conversation" : undefined}
+            onSelect={onPersonaChange}
+          />
 
-          {/* Model */}
+          {/* Model — grouped by family (local) + cloud */}
           <select
             className="h-7 rounded-md border border-border bg-background px-2 text-[11px] font-medium text-foreground outline-none transition focus:border-primary"
             value={selectedModel}
@@ -178,11 +169,88 @@ export default function ChatHeader({
             {models.length === 0 ? (
               <option value={selectedModel} suppressHydrationWarning>{selectedModel}</option>
             ) : (
-              models.map((model) => (
-                <option key={model.name} value={model.name}>
-                  {model.name}{model.is_default ? " ✦" : ""}
-                </option>
-              ))
+              (() => {
+                // Filter out embedding models (nomic-embed-*, mxbai-embed-*, bge-*, etc.)
+                const chatModels = models.filter(
+                  (m) => !m.name.toLowerCase().includes("embed")
+                );
+
+                // Parse parameter size (in billions) from Ollama tag
+                // e.g. "qwen3.6:35b" → 35, "phi4-mini:3.8b" → 3.8, "gemma4:e2b" → 2
+                const parseParamB = (name: string): number | null => {
+                  const tag = name.split(":")[1] || "";
+                  // Match leading number like "35b", "3.8b", or after prefix like "e2b" → 2
+                  const m = tag.match(/^(\d+\.?\d*)[bB]/);
+                  if (m) return parseFloat(m[1]);
+                  // Handle "e2b" / "e4b" style (gemma4)
+                  const m2 = tag.match(/[a-z](\d+\.?\d*)[bB]/);
+                  if (m2) return parseFloat(m2[1]);
+                  return null;
+                };
+
+                // 8GB VRAM cutoff: hide local models >14B (they won't fit)
+                const MAX_PARAM_B = 14;
+
+                // Separate local (ollama) vs cloud models
+                const local = chatModels.filter((m) => {
+                  if (m.provider && m.provider !== "ollama") return false;
+                  const paramB = parseParamB(m.name);
+                  // If we can parse size and it's too large, filter it out
+                  if (paramB !== null && paramB > MAX_PARAM_B) return false;
+                  return true;
+                });
+                const cloud = chatModels.filter(
+                  (m) => m.provider && m.provider !== "ollama"
+                );
+
+                // Infer family from model name for grouping
+                const inferFamily = (name: string): string => {
+                  const n = name.toLowerCase();
+                  if (n.startsWith("qwen"))     return "Qwen";
+                  if (n.startsWith("phi"))      return "Phi";
+                  if (n.startsWith("gemma"))    return "Gemma";
+                  if (n.startsWith("llama"))    return "Llama";
+                  if (n.startsWith("deepseek")) return "DeepSeek";
+                  if (n.startsWith("mistral"))  return "Mistral";
+                  if (n.startsWith("yi"))       return "Yi";
+                  return "Other";
+                };
+
+                // Group local models by family, preserving order
+                const familyMap = new Map<string, typeof local>();
+                for (const m of local) {
+                  const fam = inferFamily(m.name);
+                  if (!familyMap.has(fam)) familyMap.set(fam, []);
+                  familyMap.get(fam)!.push(m);
+                }
+
+
+
+                return (
+                  <>
+                    {/* Cloud models first (default gpt-4o-mini) */}
+                    {cloud.length > 0 && (
+                      <optgroup label="Cloud">
+                        {cloud.map((m) => (
+                          <option key={m.name} value={m.name}>
+                            {m.name}{m.is_default ? " ✦" : ""}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {/* Local models grouped by family */}
+                    {[...familyMap.entries()].map(([family, familyModels]) => (
+                      <optgroup key={family} label={family}>
+                        {familyModels.map((m) => (
+                          <option key={m.name} value={m.name}>
+                            {m.name}{m.is_default ? " ✦" : ""}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </>
+                );
+              })()
             )}
           </select>
 

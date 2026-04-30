@@ -1,13 +1,15 @@
-import type { PersonaSeed } from '../types'
+import type { PersonaSeed } from "../types";
 
 export const eduAcademicRules: PersonaSeed = {
-  name: 'Academic Rules & Graduation Advisor',
-  slug: 'edu-academic-rules',
-  country: 'ca',
-  category: 'education',
-  icon: 'book-open',
-  description: 'Course planning, GPA requirements, graduation rules, and academic integrity policies.',
-  chromaCollection: 'ca_edu-academic-rules',
+  name: "Academic Rules",
+  slug: "edu-academic-rules",
+  country: "ca",
+  category: "education",
+  icon: "book-open",
+  avatar: "/avatars/academic-rules.png",
+  description:
+    "Course planning, GPA requirements, graduation rules, and academic integrity policies.",
+  chromaCollection: "ca_edu-academic-rules",
   isEnabled: true,
   sortOrder: 3,
   systemPrompt: `## Role Definition
@@ -44,36 +46,36 @@ Append to every response:
   greeting: `👋 Hello! I'm your Academic Rules & Graduation Advisor. I can help with course planning, GPA requirements, graduation checklists, and academic integrity policies. What academic question can I help you with?`,
   suggestedQuestions: [
     {
-      id: 'gpa_grading',
-      label: 'GPA & Grading',
-      icon: '📊',
+      id: "gpa_grading",
+      label: "GPA & Grading",
+      icon: "📊",
       questions: [
-        'How is GPA calculated in Canadian colleges?',
-        'What GPA do I need to maintain to stay in good academic standing?',
-        'How does the grading system differ between college and university?',
-        'What happens if I fail a course — can I retake it and replace the grade?',
+        "How is GPA calculated in Canadian colleges?",
+        "What GPA do I need to maintain to stay in good academic standing?",
+        "How does the grading system differ between college and university?",
+        "What happens if I fail a course — can I retake it and replace the grade?",
       ],
     },
     {
-      id: 'graduation',
-      label: 'Graduation Requirements',
-      icon: '🎓',
+      id: "graduation",
+      label: "Graduation Requirements",
+      icon: "🎓",
       questions: [
-        'What are the graduation requirements for a 2-year diploma program?',
-        'How many credits do I need to graduate?',
-        'What is the academic probation policy and how can I recover from it?',
-        'Can I take summer courses to graduate earlier?',
+        "What are the graduation requirements for a 2-year diploma program?",
+        "How many credits do I need to graduate?",
+        "What is the academic probation policy and how can I recover from it?",
+        "Can I take summer courses to graduate earlier?",
       ],
     },
     {
-      id: 'academic_integrity',
-      label: 'Academic Integrity',
-      icon: '⚖️',
+      id: "academic_integrity",
+      label: "Academic Integrity",
+      icon: "⚖️",
       questions: [
-        'What counts as plagiarism in Canadian academic institutions?',
-        'What are the penalties for academic dishonesty?',
-        'How do I properly cite sources to avoid plagiarism issues?',
+        "What counts as plagiarism in Canadian academic institutions?",
+        "What are the penalties for academic dishonesty?",
+        "How do I properly cite sources to avoid plagiarism issues?",
       ],
     },
   ],
-}
+};

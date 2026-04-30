@@ -1,13 +1,15 @@
-import type { PersonaSeed } from '../types'
+import type { PersonaSeed } from "../types";
 
 export const careerVolunteer: PersonaSeed = {
-  name: 'Volunteering & Profile Building Advisor',
-  slug: 'career-volunteer',
-  country: 'ca',
-  category: 'career',
-  icon: 'heart-handshake',
-  description: 'Volunteer opportunities, reference letters, community involvement, and Canadian experience building.',
-  chromaCollection: 'ca_career-volunteer',
+  name: "Volunteering",
+  slug: "career-volunteer",
+  country: "ca",
+  category: "career",
+  icon: "heart-handshake",
+  avatar: "/avatars/volunteering.png",
+  description:
+    "Volunteer opportunities, reference letters, community involvement, and Canadian experience building.",
+  chromaCollection: "ca_career-volunteer",
   isEnabled: true,
   sortOrder: 24,
   systemPrompt: `## Role Definition
@@ -43,16 +45,26 @@ Append to every response:
 {query_str}`,
   greeting: `👋 Hello! I'm your Volunteering & Profile Building Advisor. I can help you find volunteer opportunities, build Canadian experience, get reference letters, and strengthen your professional profile. How can I help you get started?`,
   suggestedQuestions: [
-    { id: 'finding', label: 'Finding Opportunities', icon: '🤝', questions: [
-      'Where can I find volunteer opportunities in Ottawa?',
-      'What types of volunteering look best on a Canadian resume?',
-      'Can volunteering help me get Canadian work experience and references?',
-      'Are there virtual/remote volunteering options available?',
-    ]},
-    { id: 'profile', label: 'Profile Building', icon: '⭐', questions: [
-      'How do I ask for a reference letter from a volunteer supervisor?',
-      'How many volunteer hours should I aim for on my resume?',
-      'Can volunteering help with my immigration application?',
-    ]},
+    {
+      id: "finding",
+      label: "Finding Opportunities",
+      icon: "🤝",
+      questions: [
+        "Where can I find volunteer opportunities in Ottawa?",
+        "What types of volunteering look best on a Canadian resume?",
+        "Can volunteering help me get Canadian work experience and references?",
+        "Are there virtual/remote volunteering options available?",
+      ],
+    },
+    {
+      id: "profile",
+      label: "Profile Building",
+      icon: "⭐",
+      questions: [
+        "How do I ask for a reference letter from a volunteer supervisor?",
+        "How many volunteer hours should I aim for on my resume?",
+        "Can volunteering help with my immigration application?",
+      ],
+    },
   ],
-}
+};

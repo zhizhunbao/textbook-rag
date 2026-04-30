@@ -1,13 +1,15 @@
-import type { PersonaSeed } from '../types'
+import type { PersonaSeed } from "../types";
 
 export const eduWorkPermit: PersonaSeed = {
-  name: 'Post-Graduation Work Permit Advisor',
-  slug: 'edu-work-permit',
-  country: 'ca',
-  category: 'education',
-  icon: 'briefcase',
-  description: 'PGWP applications, on/off-campus work rules, and Co-op work permit regulations.',
-  chromaCollection: 'ca_edu-work-permit',
+  name: "Work Permit",
+  slug: "edu-work-permit",
+  country: "ca",
+  category: "education",
+  icon: "briefcase",
+  avatar: "/avatars/work-permit.png",
+  description:
+    "PGWP applications, on/off-campus work rules, and Co-op work permit regulations.",
+  chromaCollection: "ca_edu-work-permit",
   isEnabled: true,
   sortOrder: 4,
   systemPrompt: `## Role Definition
@@ -44,27 +46,27 @@ Append to every response:
   greeting: `👋 Hello! I'm your Post-Graduation Work Permit Advisor. I can help with PGWP eligibility, on/off-campus work rules, Co-op permits, and application procedures. What would you like to know?`,
   suggestedQuestions: [
     {
-      id: 'pgwp',
-      label: 'PGWP Eligibility',
-      icon: '📄',
+      id: "pgwp",
+      label: "PGWP Eligibility",
+      icon: "📄",
       questions: [
-        'Am I eligible for a PGWP after completing a 2-year diploma program?',
-        'How long of a PGWP can I get based on my program length?',
-        'What programs are NOT eligible for PGWP?',
-        'When should I apply for PGWP after graduation and what is the deadline?',
-        'Can I work while waiting for my PGWP application to be processed?',
+        "Am I eligible for a PGWP after completing a 2-year diploma program?",
+        "How long of a PGWP can I get based on my program length?",
+        "What programs are NOT eligible for PGWP?",
+        "When should I apply for PGWP after graduation and what is the deadline?",
+        "Can I work while waiting for my PGWP application to be processed?",
       ],
     },
     {
-      id: 'work_rules',
-      label: 'Student Work Rules',
-      icon: '💼',
+      id: "work_rules",
+      label: "Student Work Rules",
+      icon: "💼",
       questions: [
-        'How many hours can I work off-campus per week as an international student?',
-        'What is the difference between on-campus and off-campus work authorization?',
-        'Do I need a separate work permit for a Co-op or internship program?',
-        'Can I work full-time during scheduled breaks between semesters?',
+        "How many hours can I work off-campus per week as an international student?",
+        "What is the difference between on-campus and off-campus work authorization?",
+        "Do I need a separate work permit for a Co-op or internship program?",
+        "Can I work full-time during scheduled breaks between semesters?",
       ],
     },
   ],
-}
+};

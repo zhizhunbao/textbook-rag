@@ -16,7 +16,7 @@ import Logo from '@/features/shared/components/Logo'
  *   - login   → Start free (→ /register)
  *   - register → Log in (→ /login)
  */
-export default function PublicNav({ page = 'landing' }: { page?: 'landing' | 'login' | 'register' }) {
+export default function PublicNav({ page = 'landing' }: { page?: 'landing' | 'login' | 'register' | 'onboarding' | 'pricing' | 'terms' | 'privacy' }) {
   const { user } = useAuth()
   const primaryHref = user ? '/consulting' : '/register'
 

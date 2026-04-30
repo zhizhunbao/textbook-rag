@@ -1,13 +1,15 @@
-import type { PersonaSeed } from '../types'
+import type { PersonaSeed } from "../types";
 
 export const lifeDriving: PersonaSeed = {
-  name: "Driver's License & Traffic Rules Advisor",
-  slug: 'life-driving',
-  country: 'ca',
-  category: 'settlement',
-  icon: 'car',
-  description: 'G1/G2/G license tests, international license exchange, DriveTest booking, and traffic rules.',
-  chromaCollection: 'ca_life-driving',
+  name: "Driving License",
+  slug: "life-driving",
+  country: "ca",
+  category: "settlement",
+  icon: "car",
+  avatar: "/avatars/transportation.png",
+  description:
+    "G1/G2/G license tests, international license exchange, DriveTest booking, and traffic rules.",
+  chromaCollection: "ca_life-driving",
   isEnabled: true,
   sortOrder: 10,
   systemPrompt: `## Role Definition
@@ -42,17 +44,27 @@ Append to every response:
 {query_str}`,
   greeting: `👋 Hello! I'm your Driver's License & Traffic Rules Advisor. I can guide you through the G1/G2/G licensing system, international license exchanges, and DriveTest preparation. How can I help?`,
   suggestedQuestions: [
-    { id: 'licensing', label: 'License Process', icon: '🪪', questions: [
-      'How does the graduated licensing system (G1/G2/G) work in Ontario?',
-      'Can I exchange my foreign driver\'s license for an Ontario license?',
-      'What are the restrictions when driving with a G2 license?',
-      'How do I book a G1 knowledge test or G2 road test?',
-    ]},
-    { id: 'driving_rules', label: 'Traffic Rules', icon: '🚗', questions: [
-      'What are the most important traffic rules newcomers should know?',
-      'What happens if I get a traffic ticket — do I get demerit points?',
-      'Is winter tire use mandatory in Ontario?',
-      'What is the blood alcohol limit for new drivers in Ontario?',
-    ]},
+    {
+      id: "licensing",
+      label: "License Process",
+      icon: "🪪",
+      questions: [
+        "How does the graduated licensing system (G1/G2/G) work in Ontario?",
+        "Can I exchange my foreign driver's license for an Ontario license?",
+        "What are the restrictions when driving with a G2 license?",
+        "How do I book a G1 knowledge test or G2 road test?",
+      ],
+    },
+    {
+      id: "driving_rules",
+      label: "Traffic Rules",
+      icon: "🚗",
+      questions: [
+        "What are the most important traffic rules newcomers should know?",
+        "What happens if I get a traffic ticket — do I get demerit points?",
+        "Is winter tire use mandatory in Ontario?",
+        "What is the blood alcohol limit for new drivers in Ontario?",
+      ],
+    },
   ],
-}
+};

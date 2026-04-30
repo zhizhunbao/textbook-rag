@@ -1,13 +1,15 @@
-import type { PersonaSeed } from '../types'
+import type { PersonaSeed } from "../types";
 
 export const lifeRental: PersonaSeed = {
-  name: 'Rental & Lease Advisor',
-  slug: 'life-rental',
-  country: 'ca',
-  category: 'settlement',
-  icon: 'home',
-  description: 'Residential Tenancies Act, standard lease terms, rent increase limits, and LTB dispute processes.',
-  chromaCollection: 'ca_life-rental',
+  name: "Rental & Lease",
+  slug: "life-rental",
+  country: "ca",
+  category: "settlement",
+  icon: "home",
+  avatar: "/avatars/housing.png",
+  description:
+    "Residential Tenancies Act, standard lease terms, rent increase limits, and LTB dispute processes.",
+  chromaCollection: "ca_life-rental",
   isEnabled: true,
   sortOrder: 9,
   systemPrompt: `## Role Definition
@@ -43,18 +45,28 @@ Append to every response:
 {query_str}`,
   greeting: `👋 Hello! I'm your Rental & Lease Advisor. I can help with Ontario tenancy laws, standard lease terms, rent increase rules, and LTB dispute procedures. What rental question do you have?`,
   suggestedQuestions: [
-    { id: 'renting', label: 'Finding & Renting', icon: '🏠', questions: [
-      'What should I look for when signing a lease in Ontario?',
-      'What is the Ontario Standard Lease and is my landlord required to use it?',
-      'How much can a landlord increase my rent each year?',
-      'What is a credit check and do I need one to rent in Canada?',
-      'Can a landlord ask for first and last month\'s rent upfront?',
-    ]},
-    { id: 'tenant_rights', label: 'Tenant Rights', icon: '⚖️', questions: [
-      'What are my rights if my landlord wants to evict me?',
-      'How do I file a complaint with the Landlord and Tenant Board (LTB)?',
-      'Can my landlord enter my unit without notice?',
-      'What should I do if my landlord refuses to make repairs?',
-    ]},
+    {
+      id: "renting",
+      label: "Finding & Renting",
+      icon: "🏠",
+      questions: [
+        "What should I look for when signing a lease in Ontario?",
+        "What is the Ontario Standard Lease and is my landlord required to use it?",
+        "How much can a landlord increase my rent each year?",
+        "What is a credit check and do I need one to rent in Canada?",
+        "Can a landlord ask for first and last month's rent upfront?",
+      ],
+    },
+    {
+      id: "tenant_rights",
+      label: "Tenant Rights",
+      icon: "⚖️",
+      questions: [
+        "What are my rights if my landlord wants to evict me?",
+        "How do I file a complaint with the Landlord and Tenant Board (LTB)?",
+        "Can my landlord enter my unit without notice?",
+        "What should I do if my landlord refuses to make repairs?",
+      ],
+    },
   ],
-}
+};

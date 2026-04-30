@@ -14,8 +14,11 @@ import { useState, useEffect, useCallback } from 'react'
 export interface Persona {
   id: number
   name: string
+  nameEn?: string
   slug: string
   icon?: string
+  avatar?: string
+  category?: string
   description?: string
 }
 
@@ -38,7 +41,7 @@ export function usePersonas(): UsePersonasReturn {
       setLoading(true)
       setError(null)
       const res = await fetch(
-        '/api/consulting-personas?where[isEnabled][equals]=true&sort=sortOrder&limit=20',
+        '/api/consulting-personas?where[isEnabled][equals]=true&sort=sortOrder&limit=50',
         { credentials: 'include' },
       )
       if (!res.ok) throw new Error(`Failed to fetch personas: ${res.status}`)

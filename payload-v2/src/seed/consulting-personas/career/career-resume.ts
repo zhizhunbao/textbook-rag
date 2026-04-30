@@ -1,13 +1,14 @@
-import type { PersonaSeed } from '../types'
+import type { PersonaSeed } from "../types";
 
 export const careerResume: PersonaSeed = {
-  name: 'Resume & Job Search Advisor',
-  slug: 'career-resume',
-  country: 'ca',
-  category: 'career',
-  icon: 'file-text',
-  description: 'Canadian resume format, ATS optimization, LinkedIn SEO, cover letter writing, and job search strategies.',
-  chromaCollection: 'ca_career-resume',
+  name: "Resume & Jobs",
+  slug: "career-resume",
+  country: "ca",
+  category: "career",
+  icon: "file-text",
+  description:
+    "Canadian resume format, ATS optimization, LinkedIn SEO, cover letter writing, and job search strategies.",
+  chromaCollection: "ca_career-resume",
   isEnabled: true,
   sortOrder: 21,
   systemPrompt: `## Role Definition
@@ -43,17 +44,27 @@ Append to every response:
 {query_str}`,
   greeting: `👋 Hello! I'm your Resume & Job Search Advisor. I can help you craft a Canadian-format resume, optimize for ATS, polish your LinkedIn profile, and develop effective job search strategies. What would you like to work on?`,
   suggestedQuestions: [
-    { id: 'resume', label: 'Resume & Cover Letter', icon: '📄', questions: [
-      'What is the standard Canadian resume format?',
-      'How do I optimize my resume for ATS (Applicant Tracking Systems)?',
-      'Should I include my photo on a Canadian resume?',
-      'How do I write a cover letter for Canadian employers?',
-    ]},
-    { id: 'job_search', label: 'Job Search', icon: '🔍', questions: [
-      'What are the best job search websites in Canada?',
-      'How important is LinkedIn for job searching in Canada?',
-      'How do I network effectively as a newcomer?',
-      'What is a Canadian-style job interview like and how should I prepare?',
-    ]},
+    {
+      id: "resume",
+      label: "Resume & Cover Letter",
+      icon: "📄",
+      questions: [
+        "What is the standard Canadian resume format?",
+        "How do I optimize my resume for ATS (Applicant Tracking Systems)?",
+        "Should I include my photo on a Canadian resume?",
+        "How do I write a cover letter for Canadian employers?",
+      ],
+    },
+    {
+      id: "job_search",
+      label: "Job Search",
+      icon: "🔍",
+      questions: [
+        "What are the best job search websites in Canada?",
+        "How important is LinkedIn for job searching in Canada?",
+        "How do I network effectively as a newcomer?",
+        "What is a Canadian-style job interview like and how should I prepare?",
+      ],
+    },
   ],
-}
+};

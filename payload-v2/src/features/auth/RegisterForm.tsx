@@ -92,7 +92,7 @@ export default function RegisterForm() {
 
   return (
     <PublicShell page="register">
-      <section className="relative z-10 mx-auto grid min-h-screen max-w-7xl items-center gap-10 px-5 pb-10 pt-28 md:px-8 lg:grid-cols-[1fr_460px]">
+      <section className="relative z-10 mx-auto grid min-h-screen max-w-7xl items-center gap-10 px-5 pb-10 pt-20 md:px-8 lg:grid-cols-[1fr_460px]">
         <div className="hidden max-w-2xl text-white lg:block">
           <p className="mb-5 inline-flex items-center rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-xs font-bold uppercase tracking-widest text-blue-100 backdrop-blur">
             Start free

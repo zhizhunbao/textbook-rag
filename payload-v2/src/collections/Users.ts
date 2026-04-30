@@ -14,7 +14,12 @@ export const Users: CollectionConfig = {
   access: {
     read: isOwnerOrAdmin,
     create: () => true,  // GO-MU-03: allow self-registration (sanitizeNewUser hook enforces safe defaults)
-    update: isOwnerOrAdmin,
+    update: ({ req: { user } }) => {
+      if (!user) return false
+      if (user.role === 'admin') return true
+      // Users collection: the doc itself IS the user, so match by id
+      return { id: { equals: user.id } }
+    },
     delete: isAdmin,
   },
   hooks: {

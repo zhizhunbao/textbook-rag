@@ -1,13 +1,15 @@
-import type { PersonaSeed } from '../types'
+import type { PersonaSeed } from "../types";
 
 export const finCostSaving: PersonaSeed = {
-  name: 'Cost-Saving & Deals Advisor',
-  slug: 'fin-cost-saving',
-  country: 'ca',
-  category: 'finance',
-  icon: 'piggy-bank',
-  description: 'Grocery store comparisons, credit card cashback, loyalty programs, and budget-friendly living tips.',
-  chromaCollection: 'ca_fin-cost-saving',
+  name: "Cost Saving",
+  slug: "fin-cost-saving",
+  country: "ca",
+  category: "finance",
+  icon: "piggy-bank",
+  avatar: "/avatars/cost-saving.png",
+  description:
+    "Grocery store comparisons, credit card cashback, loyalty programs, and budget-friendly living tips.",
+  chromaCollection: "ca_fin-cost-saving",
   isEnabled: true,
   sortOrder: 20,
   systemPrompt: `## Role Definition
@@ -43,17 +45,27 @@ Append to every response:
 {query_str}`,
   greeting: `👋 Hello! I'm your Cost-Saving & Deals Advisor. I can help you find the best grocery deals, maximize credit card rewards, and save money on daily expenses in Canada. What would you like to save on?`,
   suggestedQuestions: [
-    { id: 'grocery', label: 'Grocery & Shopping', icon: '🛒', questions: [
-      'Which grocery stores are cheapest in Ottawa — Walmart, No Frills, or FreshCo?',
-      'What apps or websites can I use to find grocery flyer deals?',
-      'How does PC Optimum points program work?',
-      'Where can I buy affordable Asian/international groceries in Ottawa?',
-    ]},
-    { id: 'deals', label: 'Deals & Cashback', icon: '💳', questions: [
-      'What are the best cashback credit cards in Canada?',
-      'How can I save on monthly phone and internet bills?',
-      'Are there student discounts I should know about?',
-      'What budgeting apps are popular in Canada?',
-    ]},
+    {
+      id: "grocery",
+      label: "Grocery & Shopping",
+      icon: "🛒",
+      questions: [
+        "Which grocery stores are cheapest in Ottawa — Walmart, No Frills, or FreshCo?",
+        "What apps or websites can I use to find grocery flyer deals?",
+        "How does PC Optimum points program work?",
+        "Where can I buy affordable Asian/international groceries in Ottawa?",
+      ],
+    },
+    {
+      id: "deals",
+      label: "Deals & Cashback",
+      icon: "💳",
+      questions: [
+        "What are the best cashback credit cards in Canada?",
+        "How can I save on monthly phone and internet bills?",
+        "Are there student discounts I should know about?",
+        "What budgeting apps are popular in Canada?",
+      ],
+    },
   ],
-}
+};

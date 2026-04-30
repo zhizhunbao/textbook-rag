@@ -1,106 +1,132 @@
 /**
  * OnboardingPage — Full-screen role selection for first-time users.
  *
- * Displays a card grid of enabled consulting personas.
+ * Reuses the shared CATEGORIES + AVATAR_MAP from consultingRoles.ts
+ * and the PublicNav header for consistent branding.
+ *
  * On confirm, PATCHes the user's selectedPersona + isOnboarded, then redirects.
  */
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
+import Image from 'next/image'
 import { useAuth } from '@/features/shared/AuthProvider'
 import { useI18n } from '@/features/shared/i18n'
 import { usePersonas, type Persona } from './usePersonas'
 import { cn } from '@/features/shared/utils'
+import PublicNav from '@/features/layout/PublicNav'
+import { CATEGORIES, AVATAR_MAP, type CategoryDef } from '@/features/shared/consultingRoles'
 
-// ── Lucide icon map — maps icon name string to inline SVG paths ──
+// ── Role Card ──
 
-const ICON_MAP: Record<string, React.ReactNode> = {
-  scale: (
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 3v17" /><path d="M5 7l7-4 7 4" />
-      <path d="M3 13l2-6 4 6a4 4 0 0 1-6 0z" /><path d="M15 13l2-6 4 6a4 4 0 0 1-6 0z" />
-    </svg>
-  ),
-  'shield-check': (
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-      <path d="M9 12l2 2 4-4" />
-    </svg>
-  ),
-  'clipboard-check': (
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
-      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-      <path d="M9 14l2 2 4-4" />
-    </svg>
-  ),
-}
-
-/** Fallback icon when icon name not in map */
-function FallbackIcon() {
-  return (
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" />
-    </svg>
-  )
-}
-
-// ── Persona Card ──
-
-function PersonaCard({
+function RoleCard({
   persona,
+  cat,
   selected,
   onSelect,
 }: {
   persona: Persona
+  cat: CategoryDef
   selected: boolean
   onSelect: () => void
 }) {
+  const displayName = persona.nameEn || persona.name
+  // Use API avatar, or fallback to shared AVATAR_MAP by slug
+  const avatarSrc = persona.avatar || AVATAR_MAP[persona.slug]
+
   return (
     <button
       type="button"
       onClick={onSelect}
       className={cn(
-        'group relative flex flex-col items-center gap-4 p-8 rounded-2xl border-2 transition-all duration-300',
-        'bg-card/80 backdrop-blur-sm hover:shadow-lg hover:-translate-y-1',
+        'group relative flex items-start gap-4 rounded-xl border p-4 text-left transition-all duration-200',
         selected
-          ? 'border-primary shadow-[0_0_0_4px_rgba(37,99,235,0.15)] bg-primary/5'
-          : 'border-border hover:border-primary/40',
+          ? 'border-primary bg-primary/5 shadow-md shadow-primary/10 ring-2 ring-primary/30 dark:bg-primary/10 dark:shadow-primary/5'
+          : 'border-slate-200 bg-white shadow-sm hover:border-blue-200 hover:shadow-md hover:shadow-blue-100/50 dark:border-white/8 dark:bg-slate-900/60 dark:hover:border-white/20 dark:hover:bg-slate-800/60',
       )}
     >
-      {/* Selected indicator */}
+      {/* Selected check */}
       {selected && (
-        <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+        <div className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-primary shadow-lg shadow-primary/30">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="20 6 9 17 4 12" />
           </svg>
         </div>
       )}
 
-      {/* Icon */}
-      <div className={cn(
-        'w-16 h-16 rounded-2xl flex items-center justify-center transition-colors duration-300',
-        selected ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary',
-      )}>
-        {persona.icon && ICON_MAP[persona.icon] ? ICON_MAP[persona.icon] : <FallbackIcon />}
-      </div>
-
-      {/* Name */}
-      <h3 className={cn(
-        'text-lg font-bold transition-colors',
-        selected ? 'text-primary' : 'text-foreground',
-      )}>
-        {persona.name}
-      </h3>
-
-      {/* Description */}
-      {persona.description && (
-        <p className="text-sm text-muted-foreground text-center leading-relaxed">
-          {persona.description}
-        </p>
+      {/* Avatar */}
+      {avatarSrc ? (
+        <div className={cn(
+          'h-11 w-11 shrink-0 overflow-hidden rounded-full ring-2 transition-shadow',
+          selected ? 'ring-primary/60 ring-[3px]' : `${cat.ringColor} group-hover:ring-[3px]`,
+        )}>
+          <Image src={avatarSrc} alt={displayName} width={44} height={44} className="h-full w-full object-cover" />
+        </div>
+      ) : (
+        <div className={cn(
+          'flex h-11 w-11 shrink-0 items-center justify-center rounded-full ring-2',
+          cat.bgColor,
+          selected ? 'ring-primary/60' : cat.ringColor,
+        )}>
+          <span className={cn('text-sm font-bold', cat.textColor)}>
+            {displayName.charAt(0)}
+          </span>
+        </div>
       )}
+
+      {/* Text */}
+      <div className="min-w-0 flex-1">
+        <h4 className={cn(
+          'text-sm font-bold transition-colors',
+          selected ? 'text-primary' : 'text-foreground',
+        )}>
+          {displayName}
+        </h4>
+        {persona.description && (
+          <p className="mt-0.5 text-[12px] leading-[1.5] text-muted-foreground line-clamp-2">
+            {persona.description}
+          </p>
+        )}
+      </div>
     </button>
+  )
+}
+
+// ── Category Section ──
+
+function CategorySection({
+  cat,
+  personas,
+  selectedId,
+  onSelect,
+}: {
+  cat: CategoryDef
+  personas: Persona[]
+  selectedId: number | null
+  onSelect: (id: number) => void
+}) {
+  if (personas.length === 0) return null
+
+  return (
+    <div>
+      <h3 className={cn('mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider', cat.textColor)}>
+        <span className={cn('inline-block h-1.5 w-1.5 rounded-full bg-gradient-to-r', cat.color)} />
+        {cat.label}
+        <span className="text-[10px] font-medium text-muted-foreground">({personas.length})</span>
+      </h3>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {personas.map((p) => (
+          <RoleCard
+            key={p.id}
+            persona={p}
+            cat={cat}
+            selected={selectedId === p.id}
+            onSelect={() => onSelect(p.id)}
+          />
+        ))}
+      </div>
+    </div>
   )
 }
 
@@ -114,6 +140,16 @@ export default function OnboardingPage() {
   const [saving, setSaving] = useState(false)
   const [seeding, setSeeding] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+
+  // Group personas by category using shared CATEGORIES
+  const grouped = useMemo(() => {
+    return CATEGORIES.map((cat) => ({
+      cat,
+      roles: personas.filter((p) => p.category === cat.value),
+    })).filter((g) => g.roles.length > 0)
+  }, [personas])
+
+  const selectedPersona = personas.find((p) => p.id === selectedId)
 
   const handleSeedPersonas = async () => {
     try {
@@ -159,86 +195,77 @@ export default function OnboardingPage() {
     }
   }
 
+  const selectedAvatarSrc = selectedPersona
+    ? (selectedPersona.avatar || AVATAR_MAP[selectedPersona.slug])
+    : undefined
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden
-      bg-[linear-gradient(135deg,#004890_0%,#0066cc_50%,#004890_100%)]
-      dark:bg-[linear-gradient(135deg,#0a1628_0%,#0d2240_40%,#1a3a5c_70%,#0d2240_100%)]"
-    >
-      {/* Background orbs */}
-      <div className="absolute inset-0 z-0 opacity-10 pointer-events-none">
-        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-white rounded-full blur-[150px] -translate-y-1/2 translate-x-1/3" />
-        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-white rounded-full blur-[120px] translate-y-1/3 -translate-x-1/4" />
+    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/50 to-indigo-50/30 dark:from-[#0a1628] dark:via-[#0d2240] dark:to-[#0a1628]">
+      {/* Background effects */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(59,130,246,0.12),transparent)] dark:bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(59,130,246,0.08),transparent)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.02)_1px,transparent_1px)] bg-[size:64px_64px] dark:bg-[linear-gradient(rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.03)_1px,transparent_1px)]" />
       </div>
 
-      {/* Content card */}
-      <div className="relative z-10 w-full max-w-3xl backdrop-blur-xl rounded-3xl shadow-[0_32px_64px_rgba(0,0,0,0.3)]
-        bg-card/95 text-card-foreground border border-border/50 p-10
-        animate-[slideUp_0.8s_cubic-bezier(0.34,1.56,0.64,1)]"
-      >
+      {/* Reuse existing PublicNav */}
+      <PublicNav page="onboarding" />
+
+      {/* Content */}
+      <div className="relative z-10 mx-auto max-w-6xl px-6 pb-32 pt-24">
         {/* Header */}
-        <div className="text-center mb-10">
-          <h1 className="text-3xl font-extrabold text-primary mb-2">{t.onboardingTitle}</h1>
-          <p className="text-sm text-muted-foreground">{t.onboardingSubtitle}</p>
+        <div className="mb-10 text-center">
+          <div className="mx-auto mb-4 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-primary backdrop-blur dark:border-primary/30 dark:bg-primary/10">
+            Expert Center
+          </div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground md:text-4xl">
+            {t.onboardingTitle}
+          </h1>
+          <p className="mx-auto mt-3 max-w-xl text-base text-muted-foreground">
+            {t.onboardingSubtitle}
+          </p>
         </div>
 
         {/* Loading state */}
         {loading && (
-          <div className="flex items-center justify-center py-16">
-            <div className="w-8 h-8 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
+          <div className="flex items-center justify-center py-24">
+            <div className="flex flex-col items-center gap-3">
+              <div className="h-8 w-8 rounded-full border-[3px] border-primary/20 border-t-primary animate-spin" />
+              <span className="text-sm text-muted-foreground">Loading expert roles...</span>
+            </div>
           </div>
         )}
 
         {/* Error state */}
         {error && (
-          <div className="text-center py-8 text-destructive text-sm">{error}</div>
-        )}
-
-        {/* Persona grid */}
-        {!loading && !error && personas.length > 0 && (
-          <div className={cn(
-            'grid gap-6 mb-8',
-            personas.length <= 2 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
-          )}>
-            {personas.map((p) => (
-              <PersonaCard
-                key={p.id}
-                persona={p}
-                selected={selectedId === p.id}
-                onSelect={() => setSelectedId(p.id)}
-              />
-            ))}
+          <div className="mx-auto max-w-md rounded-xl border border-destructive/20 bg-destructive/5 px-6 py-4 text-center text-sm text-destructive">
+            {error}
           </div>
         )}
 
-        {/* Empty state */}
+        {/* Empty state — seed button */}
         {!loading && !error && personas.length === 0 && (
-          <div className="mb-8 rounded-2xl border border-border bg-muted/30 p-6 text-center">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 3v18" />
-                <path d="M5 7l7-4 7 4" />
-                <path d="M3 13l2-6 4 6a4 4 0 0 1-6 0Z" />
-                <path d="M15 13l2-6 4 6a4 4 0 0 1-6 0Z" />
+          <div className="mx-auto max-w-md rounded-2xl border border-border bg-card p-8 text-center shadow-lg">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3v18" /><path d="M5 7l7-4 7 4" />
+                <path d="M3 13l2-6 4 6a4 4 0 0 1-6 0Z" /><path d="M15 13l2-6 4 6a4 4 0 0 1-6 0Z" />
               </svg>
             </div>
-            <h2 className="mb-1 text-sm font-semibold text-foreground">
-              No consulting roles found
-            </h2>
-            <p className="mx-auto mb-4 max-w-sm text-xs text-muted-foreground">
-              Initialize the default consulting roles to continue onboarding.
+            <h2 className="mb-2 text-lg font-bold text-foreground">No consulting roles found</h2>
+            <p className="mb-6 text-sm text-muted-foreground">
+              Initialize the default consulting roles to continue.
             </p>
             <button
               type="button"
               onClick={() => void handleSeedPersonas()}
               disabled={seeding}
-              className="inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {seeding ? (
                 <span className="h-4 w-4 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" />
               ) : (
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 5v14" />
-                  <path d="M5 12h14" />
+                  <path d="M12 5v14" /><path d="M5 12h14" />
                 </svg>
               )}
               {seeding ? 'Initializing...' : 'Initialize default roles'}
@@ -246,42 +273,83 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* Save error */}
-        {saveError && (
-          <div className="text-center text-destructive text-sm mb-4">{saveError}</div>
+        {/* Categorized persona grid */}
+        {!loading && !error && personas.length > 0 && (
+          <div className="space-y-8">
+            {grouped.map(({ cat, roles }) => (
+              <CategorySection
+                key={cat.value}
+                cat={cat}
+                personas={roles}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+              />
+            ))}
+          </div>
         )}
 
-        {/* Confirm button */}
-        <div className="text-center">
-          <button
-            type="button"
-            disabled={!selectedId || saving}
-            onClick={handleConfirm}
-            className="inline-flex items-center gap-2.5 px-8 py-4 rounded-xl text-base font-semibold text-white
-              bg-[linear-gradient(135deg,#003d7a,#004890)] shadow-[0_8px_30px_rgba(0,72,144,0.3)]
-              hover:translate-y-[-2px] hover:shadow-[0_12px_40px_rgba(0,72,144,0.4)]
-              active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0
-              transition-all duration-300"
-          >
-            {saving ? (
-              <>
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                {t.onboardingSaving}
-              </>
-            ) : (
-              <>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-                {t.onboardingConfirm}
-              </>
-            )}
-          </button>
-          {!selectedId && !loading && personas.length > 0 && (
-            <p className="text-xs text-muted-foreground mt-3">{t.onboardingNoPersona}</p>
-          )}
-        </div>
+        {/* Save error */}
+        {saveError && (
+          <div className="mx-auto mt-6 max-w-md rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-center text-sm text-destructive">
+            {saveError}
+          </div>
+        )}
       </div>
-    </div>
+
+      {/* Sticky bottom bar */}
+      {!loading && personas.length > 0 && (
+        <div className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200/60 bg-white/90 backdrop-blur-xl dark:border-white/8 dark:bg-slate-950/90">
+          <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+            {/* Left — selection summary */}
+            <div className="flex items-center gap-3">
+              {selectedPersona ? (
+                <>
+                  {selectedAvatarSrc && (
+                    <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full ring-2 ring-primary/40">
+                      <Image src={selectedAvatarSrc} alt="" width={36} height={36} className="h-full w-full object-cover" />
+                    </div>
+                  )}
+                  <div>
+                    <div className="text-sm font-bold text-foreground">
+                      {selectedPersona.nameEn || selectedPersona.name}
+                    </div>
+                    <div className="text-xs text-muted-foreground">Selected role</div>
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">{t.onboardingNoPersona}</p>
+              )}
+            </div>
+
+            {/* Right — confirm button */}
+            <button
+              type="button"
+              disabled={!selectedId || saving}
+              onClick={handleConfirm}
+              className={cn(
+                'inline-flex items-center gap-2.5 rounded-xl px-7 py-3 text-sm font-bold transition-all duration-300',
+                selectedId
+                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/30 active:translate-y-0'
+                  : 'cursor-not-allowed bg-muted text-muted-foreground opacity-60',
+              )}
+            >
+              {saving ? (
+                <>
+                  <div className="h-4 w-4 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" />
+                  {t.onboardingSaving}
+                </>
+              ) : (
+                <>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  {t.onboardingConfirm}
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+    </main>
   )
 }

@@ -1,13 +1,15 @@
-import type { PersonaSeed } from '../types'
+import type { PersonaSeed } from "../types";
 
 export const eduChildEducation: PersonaSeed = {
-  name: 'Child Education & K-12 Planning Advisor',
-  slug: 'edu-child-education',
-  country: 'ca',
-  category: 'education',
-  icon: 'baby',
-  description: 'K-12 school selection, ESL programs, extracurricular activities, and school registration processes.',
-  chromaCollection: 'ca_edu-child-education',
+  name: "K-12 Education",
+  slug: "edu-child-education",
+  country: "ca",
+  category: "education",
+  icon: "baby",
+  avatar: "/avatars/child-education.png",
+  description:
+    "K-12 school selection, ESL programs, extracurricular activities, and school registration processes.",
+  chromaCollection: "ca_edu-child-education",
   isEnabled: true,
   sortOrder: 5,
   systemPrompt: `## Role Definition
@@ -44,27 +46,27 @@ Append to every response:
   greeting: `👋 Hello! I'm your Child Education & K-12 Planning Advisor. I can help with school registration, ESL programs, French immersion options, and navigating the Canadian school system for your children. How can I help?`,
   suggestedQuestions: [
     {
-      id: 'school_registration',
-      label: 'School Registration',
-      icon: '🏫',
+      id: "school_registration",
+      label: "School Registration",
+      icon: "🏫",
       questions: [
-        'How do I register my child for public school in Ontario?',
-        'What documents do I need to enroll my child in a Canadian school?',
-        'What is the difference between public, Catholic, and private schools?',
-        'How does the school catchment/boundary system work?',
+        "How do I register my child for public school in Ontario?",
+        "What documents do I need to enroll my child in a Canadian school?",
+        "What is the difference between public, Catholic, and private schools?",
+        "How does the school catchment/boundary system work?",
       ],
     },
     {
-      id: 'programs',
-      label: 'Programs & Support',
-      icon: '📚',
+      id: "programs",
+      label: "Programs & Support",
+      icon: "📚",
       questions: [
-        'What ESL/ELL support is available for newcomer children?',
-        'How does French immersion work and is it recommended for newcomers?',
-        'What before/after school care options are available?',
-        'How does the gifted program identification process work?',
-        'What extracurricular activities are typically offered at Canadian schools?',
+        "What ESL/ELL support is available for newcomer children?",
+        "How does French immersion work and is it recommended for newcomers?",
+        "What before/after school care options are available?",
+        "How does the gifted program identification process work?",
+        "What extracurricular activities are typically offered at Canadian schools?",
       ],
     },
   ],
-}
+};

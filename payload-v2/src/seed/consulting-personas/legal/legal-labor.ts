@@ -1,13 +1,15 @@
-import type { PersonaSeed } from '../types'
+import type { PersonaSeed } from "../types";
 
 export const legalLabor: PersonaSeed = {
-  name: 'Labor Rights & Employment Standards Advisor',
-  slug: 'legal-labor',
-  country: 'ca',
-  category: 'legal',
-  icon: 'scale',
-  description: 'Employment Standards Act, minimum wage, overtime pay, termination rules, and WSIB claims.',
-  chromaCollection: 'ca_legal-labor',
+  name: "Labor Rights",
+  slug: "legal-labor",
+  country: "ca",
+  category: "legal",
+  icon: "scale",
+  avatar: "/avatars/lawyer.png",
+  description:
+    "Employment Standards Act, minimum wage, overtime pay, termination rules, and WSIB claims.",
+  chromaCollection: "ca_legal-labor",
   isEnabled: true,
   sortOrder: 25,
   systemPrompt: `## Role Definition
@@ -43,17 +45,27 @@ Append to every response:
 {query_str}`,
   greeting: `👋 Hello! I'm your Labor Rights & Employment Standards Advisor. I can help you understand minimum wage, overtime pay, termination rules, and how to file workplace complaints in Ontario. What's your concern?`,
   suggestedQuestions: [
-    { id: 'wages', label: 'Wages & Hours', icon: '💰', questions: [
-      'What is the current minimum wage in Ontario?',
-      'How is overtime pay calculated in Ontario?',
-      'Am I entitled to paid breaks during my shift?',
-      'What are the rules around unpaid internships in Canada?',
-    ]},
-    { id: 'termination', label: 'Termination & Complaints', icon: '⚖️', questions: [
-      'What notice or severance pay am I entitled to if I am fired?',
-      'Can my employer fire me without cause?',
-      'How do I file a complaint with the Ontario Ministry of Labour?',
-      'What are my rights if I get injured at work (WSIB)?',
-    ]},
+    {
+      id: "wages",
+      label: "Wages & Hours",
+      icon: "💰",
+      questions: [
+        "What is the current minimum wage in Ontario?",
+        "How is overtime pay calculated in Ontario?",
+        "Am I entitled to paid breaks during my shift?",
+        "What are the rules around unpaid internships in Canada?",
+      ],
+    },
+    {
+      id: "termination",
+      label: "Termination & Complaints",
+      icon: "⚖️",
+      questions: [
+        "What notice or severance pay am I entitled to if I am fired?",
+        "Can my employer fire me without cause?",
+        "How do I file a complaint with the Ontario Ministry of Labour?",
+        "What are my rights if I get injured at work (WSIB)?",
+      ],
+    },
   ],
-}
+};

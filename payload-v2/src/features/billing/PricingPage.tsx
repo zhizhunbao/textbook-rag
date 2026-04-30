@@ -9,6 +9,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
+import PublicNav from '@/features/layout/PublicNav'
 
 // ============================================================
 // Component
@@ -48,21 +49,9 @@ export function PricingPage() {
 
   return (
     <main className="min-h-screen bg-background text-foreground">
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
-        <Link href="/" className="text-sm font-bold uppercase tracking-widest text-primary">
-          ConsultRAG
-        </Link>
-        <div className="flex items-center gap-4 text-sm font-medium">
-          <Link href="/" className="text-muted-foreground hover:text-foreground">
-            Home
-          </Link>
-          <Link href="/register" className="rounded-lg bg-primary px-4 py-2 text-primary-foreground">
-            Start free
-          </Link>
-        </div>
-      </header>
+      <PublicNav page="pricing" />
 
-      <section className="mx-auto max-w-6xl px-6 pb-20 pt-10">
+      <section className="mx-auto max-w-6xl px-6 pb-20 pt-24">
         <div className="max-w-2xl">
           <p className="mb-3 text-xs font-bold uppercase tracking-widest text-primary">
             Pricing

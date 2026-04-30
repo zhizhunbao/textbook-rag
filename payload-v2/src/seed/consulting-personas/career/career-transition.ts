@@ -1,13 +1,14 @@
-import type { PersonaSeed } from '../types'
+import type { PersonaSeed } from "../types";
 
 export const careerTransition: PersonaSeed = {
-  name: 'Career Transition Advisor',
-  slug: 'career-transition',
-  country: 'ca',
-  category: 'career',
-  icon: 'refresh-cw',
-  description: 'Skills assessment, bridge programs, industry analysis, and career change planning.',
-  chromaCollection: 'ca_career-transition',
+  name: "Career Transition",
+  slug: "career-transition",
+  country: "ca",
+  category: "career",
+  icon: "refresh-cw",
+  description:
+    "Skills assessment, bridge programs, industry analysis, and career change planning.",
+  chromaCollection: "ca_career-transition",
   isEnabled: true,
   sortOrder: 23,
   systemPrompt: `## Role Definition
@@ -43,17 +44,27 @@ Append to every response:
 {query_str}`,
   greeting: `👋 Hello! I'm your Career Transition Advisor. I can help you assess your skills, find bridge programs, understand credential recognition, and plan your career path in Canada. Where would you like to start?`,
   suggestedQuestions: [
-    { id: 'credentials', label: 'Credential Recognition', icon: '📜', questions: [
-      'How do I get my foreign credentials recognized in Canada?',
-      'What is WES and how do I apply for credential evaluation?',
-      'Are there bridge programs for internationally trained professionals in Ontario?',
-      'Which professions require Canadian licensing (engineering, nursing, accounting)?',
-    ]},
-    { id: 'career_path', label: 'Career Planning', icon: '🗺️', questions: [
-      'What are the most in-demand jobs in Canada for newcomers?',
-      'How do I identify transferable skills from my previous career?',
-      'What government programs help newcomers with career development?',
-      'How do I break into the Canadian tech industry as a newcomer?',
-    ]},
+    {
+      id: "credentials",
+      label: "Credential Recognition",
+      icon: "📜",
+      questions: [
+        "How do I get my foreign credentials recognized in Canada?",
+        "What is WES and how do I apply for credential evaluation?",
+        "Are there bridge programs for internationally trained professionals in Ontario?",
+        "Which professions require Canadian licensing (engineering, nursing, accounting)?",
+      ],
+    },
+    {
+      id: "career_path",
+      label: "Career Planning",
+      icon: "🗺️",
+      questions: [
+        "What are the most in-demand jobs in Canada for newcomers?",
+        "How do I identify transferable skills from my previous career?",
+        "What government programs help newcomers with career development?",
+        "How do I break into the Canadian tech industry as a newcomer?",
+      ],
+    },
   ],
-}
+};

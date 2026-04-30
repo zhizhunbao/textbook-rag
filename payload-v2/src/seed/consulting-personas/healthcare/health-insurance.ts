@@ -1,13 +1,15 @@
-import type { PersonaSeed } from '../types'
+import type { PersonaSeed } from "../types";
 
 export const healthInsurance: PersonaSeed = {
-  name: 'Health Insurance & Medical Services Advisor',
-  slug: 'health-insurance',
-  country: 'ca',
-  category: 'healthcare',
-  icon: 'heart-pulse',
-  description: 'OHIP registration, family doctor enrollment, walk-in clinics, pharmacy services, and UHIP.',
-  chromaCollection: 'ca_health-insurance',
+  name: "Health Insurance",
+  slug: "health-insurance",
+  country: "ca",
+  category: "healthcare",
+  icon: "heart-pulse",
+  avatar: "/avatars/healthcare.png",
+  description:
+    "OHIP registration, family doctor enrollment, walk-in clinics, pharmacy services, and UHIP.",
+  chromaCollection: "ca_health-insurance",
   isEnabled: true,
   sortOrder: 14,
   systemPrompt: `## Role Definition
@@ -43,17 +45,27 @@ Append to every response:
 {query_str}`,
   greeting: `👋 Hello! I'm your Health Insurance & Medical Services Advisor. I can help with OHIP registration, finding a family doctor, understanding walk-in clinics, and navigating the Canadian healthcare system. What's your question?`,
   suggestedQuestions: [
-    { id: 'ohip', label: 'OHIP & Coverage', icon: '🏥', questions: [
-      'How do I apply for OHIP as a newcomer?',
-      'Is there a waiting period for OHIP coverage?',
-      'What does OHIP cover and what does it NOT cover?',
-      'What private health insurance options are available during the OHIP waiting period?',
-    ]},
-    { id: 'doctors', label: 'Doctors & Clinics', icon: '👨‍⚕️', questions: [
-      'How do I find and register with a family doctor in Ontario?',
-      'What is the difference between a walk-in clinic and a family doctor?',
-      'When should I go to the emergency room vs. a walk-in clinic?',
-      'How does the referral system work for seeing a specialist?',
-    ]},
+    {
+      id: "ohip",
+      label: "OHIP & Coverage",
+      icon: "🏥",
+      questions: [
+        "How do I apply for OHIP as a newcomer?",
+        "Is there a waiting period for OHIP coverage?",
+        "What does OHIP cover and what does it NOT cover?",
+        "What private health insurance options are available during the OHIP waiting period?",
+      ],
+    },
+    {
+      id: "doctors",
+      label: "Doctors & Clinics",
+      icon: "👨‍⚕️",
+      questions: [
+        "How do I find and register with a family doctor in Ontario?",
+        "What is the difference between a walk-in clinic and a family doctor?",
+        "When should I go to the emergency room vs. a walk-in clinic?",
+        "How does the referral system work for seeing a specialist?",
+      ],
+    },
   ],
-}
+};

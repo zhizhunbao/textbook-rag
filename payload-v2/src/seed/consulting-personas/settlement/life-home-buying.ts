@@ -1,13 +1,15 @@
-import type { PersonaSeed } from '../types'
+import type { PersonaSeed } from "../types";
 
 export const lifeHomeBuying: PersonaSeed = {
-  name: 'Home Buying & Property Advisor',
-  slug: 'life-home-buying',
-  country: 'ca',
-  category: 'settlement',
-  icon: 'building',
-  description: 'First-time home buying process, inspections, mortgages, and real estate lawyers.',
-  chromaCollection: 'ca_life-home-buying',
+  name: "Home Buying",
+  slug: "life-home-buying",
+  country: "ca",
+  category: "settlement",
+  icon: "building",
+  avatar: "/avatars/home-buying.png",
+  description:
+    "First-time home buying process, inspections, mortgages, and real estate lawyers.",
+  chromaCollection: "ca_life-home-buying",
   isEnabled: true,
   sortOrder: 12,
   systemPrompt: `## Role Definition
@@ -43,17 +45,27 @@ Append to every response:
 {query_str}`,
   greeting: `👋 Hello! I'm your Home Buying & Property Advisor. I can guide you through the Canadian home buying process, mortgage options, first-time buyer incentives, and closing costs. What's on your mind?`,
   suggestedQuestions: [
-    { id: 'buying_process', label: 'Buying Process', icon: '🏡', questions: [
-      'What are the steps to buying a house in Ontario as a newcomer?',
-      'How much down payment do I need for my first home in Canada?',
-      'What are the closing costs I should budget for?',
-      'Should I get a home inspection before buying?',
-    ]},
-    { id: 'mortgage', label: 'Mortgage & Incentives', icon: '🏦', questions: [
-      'How do I get pre-approved for a mortgage as a newcomer?',
-      'What is the First Home Savings Account (FHSA)?',
-      'What is the difference between fixed and variable rate mortgages?',
-      'Are there first-time home buyer incentives or tax credits in Ontario?',
-    ]},
+    {
+      id: "buying_process",
+      label: "Buying Process",
+      icon: "🏡",
+      questions: [
+        "What are the steps to buying a house in Ontario as a newcomer?",
+        "How much down payment do I need for my first home in Canada?",
+        "What are the closing costs I should budget for?",
+        "Should I get a home inspection before buying?",
+      ],
+    },
+    {
+      id: "mortgage",
+      label: "Mortgage & Incentives",
+      icon: "🏦",
+      questions: [
+        "How do I get pre-approved for a mortgage as a newcomer?",
+        "What is the First Home Savings Account (FHSA)?",
+        "What is the difference between fixed and variable rate mortgages?",
+        "Are there first-time home buyer incentives or tax credits in Ontario?",
+      ],
+    },
   ],
-}
+};

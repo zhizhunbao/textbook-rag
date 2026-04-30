@@ -12,7 +12,7 @@ import {
 import { queryTextbookStream } from "@/features/engine/query_engine";
 import { evaluateFromHistory } from "@/features/engine/evaluation/api";
 import type { RetrievalMode } from "@/features/engine/query_engine/types";
-import { fetchAvailableModels } from "@/features/engine/llms";
+import { fetchAvailableModels, discoverLocalModels } from "@/features/engine/llms";
 import { fetchConsultingPersonas, queryConsultingStream } from "@/features/shared/consultingApi";
 import { useAppDispatch, useAppState } from "@/features/shared/AppContext";
 import { useAuth } from "@/features/shared/AuthProvider";
@@ -224,22 +224,29 @@ export default function ChatPanel({
     if (nextNearBottom) setHasNewMessagesBelow((prev) => prev === false ? prev : false);
   }, []);
 
-  /* ── Load models ── */
+  /* ── Load models — cross-check local models with Ollama /api/tags ── */
   useEffect(() => {
-    fetchAvailableModels()
-      .then((availableModels) => {
-        setModels(availableModels);
-        if (availableModels.length > 0) {
-          const currentMatch = availableModels.find((m) => m.name === selectedModel);
+    Promise.all([fetchAvailableModels(), discoverLocalModels().catch(() => [])])
+      .then(([cmsModels, localModels]) => {
+        // Build a set of actually-installed Ollama model names
+        const installedNames = new Set(localModels.map((m) => m.name));
+
+        // Keep cloud models as-is; for Ollama models, only keep those truly installed
+        const verified = cmsModels.filter((m) => {
+          if (m.provider && m.provider !== "ollama") return true; // cloud → always keep
+          return installedNames.has(m.name); // local → must be installed
+        });
+
+        setModels(verified);
+        if (verified.length > 0) {
+          const currentMatch = verified.find((m) => m.name === selectedModel);
           if (currentMatch) {
-            // Model still available — sync provider in case it drifted (e.g. stale sessionStorage)
             if (currentMatch.provider && currentMatch.provider !== selectedProvider) {
               dispatch({ type: "SET_MODEL", model: currentMatch.name, provider: currentMatch.provider });
             }
           } else {
-            // Model no longer available — fall back to default
             const preferred =
-              availableModels.find((model) => model.is_default) ?? availableModels[0];
+              verified.find((model) => model.is_default) ?? verified[0];
             dispatch({ type: "SET_MODEL", model: preferred.name, provider: preferred.provider });
           }
         }

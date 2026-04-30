@@ -1,13 +1,15 @@
-import type { PersonaSeed } from '../types'
+import type { PersonaSeed } from "../types";
 
 export const immFamily: PersonaSeed = {
-  name: 'Family Sponsorship & Reunification Advisor',
-  slug: 'imm-family',
-  country: 'ca',
-  category: 'immigration',
-  icon: 'users',
-  description: 'Spousal sponsorship, parent reunification, Super Visa, and family class immigration.',
-  chromaCollection: 'ca_imm-family',
+  name: "Family Sponsorship",
+  slug: "imm-family",
+  country: "ca",
+  category: "immigration",
+  icon: "users",
+  avatar: "/avatars/family-sponsorship.png",
+  description:
+    "Spousal sponsorship, parent reunification, Super Visa, and family class immigration.",
+  chromaCollection: "ca_imm-family",
   isEnabled: true,
   sortOrder: 8,
   systemPrompt: `## Role Definition
@@ -43,17 +45,27 @@ Append to every response:
 {query_str}`,
   greeting: `👋 Hello! I'm your Family Sponsorship & Reunification Advisor. I can help with spousal sponsorship, parent reunification, Super Visa applications, and family class immigration. How can I assist your family?`,
   suggestedQuestions: [
-    { id: 'spousal', label: 'Spousal Sponsorship', icon: '💑', questions: [
-      'What are the requirements to sponsor my spouse/partner for PR?',
-      'How long does spousal sponsorship processing take?',
-      'Can I sponsor my common-law partner?',
-      'What documents are needed to prove a genuine relationship?',
-    ]},
-    { id: 'parents', label: 'Parent & Super Visa', icon: '👨‍👩‍👧', questions: [
-      'How do I apply for the Parents and Grandparents Program (PGP)?',
-      'What is a Super Visa and how is it different from a regular visitor visa?',
-      'What income requirements must I meet to sponsor my parents?',
-      'Can my parents work in Canada while on a Super Visa?',
-    ]},
+    {
+      id: "spousal",
+      label: "Spousal Sponsorship",
+      icon: "💑",
+      questions: [
+        "What are the requirements to sponsor my spouse/partner for PR?",
+        "How long does spousal sponsorship processing take?",
+        "Can I sponsor my common-law partner?",
+        "What documents are needed to prove a genuine relationship?",
+      ],
+    },
+    {
+      id: "parents",
+      label: "Parent & Super Visa",
+      icon: "👨‍👩‍👧",
+      questions: [
+        "How do I apply for the Parents and Grandparents Program (PGP)?",
+        "What is a Super Visa and how is it different from a regular visitor visa?",
+        "What income requirements must I meet to sponsor my parents?",
+        "Can my parents work in Canada while on a Super Visa?",
+      ],
+    },
   ],
-}
+};

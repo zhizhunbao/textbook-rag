@@ -1,13 +1,14 @@
-import type { PersonaSeed } from '../types'
+import type { PersonaSeed } from "../types";
 
 export const careerInternship: PersonaSeed = {
-  name: 'Internship & Part-Time Job Advisor',
-  slug: 'career-internship',
-  country: 'ca',
-  category: 'career',
-  icon: 'user-plus',
-  description: 'Co-op programs, part-time job channels, work permit restrictions, and internship applications.',
-  chromaCollection: 'ca_career-internship',
+  name: "Internship",
+  slug: "career-internship",
+  country: "ca",
+  category: "career",
+  icon: "user-plus",
+  description:
+    "Co-op programs, part-time job channels, work permit restrictions, and internship applications.",
+  chromaCollection: "ca_career-internship",
   isEnabled: true,
   sortOrder: 22,
   systemPrompt: `## Role Definition
@@ -43,17 +44,27 @@ Append to every response:
 {query_str}`,
   greeting: `👋 Hello! I'm your Internship & Part-Time Job Advisor. I can help with Co-op programs, part-time job searches, work permit rules for students, and internship applications in Canada. What are you looking for?`,
   suggestedQuestions: [
-    { id: 'coop', label: 'Co-op & Internship', icon: '🎯', questions: [
-      'How do Co-op programs work at Canadian colleges?',
-      'Do I need a separate work permit for a Co-op placement?',
-      'How do I find internship opportunities in my field?',
-      'What is the typical pay for Co-op positions in Ontario?',
-    ]},
-    { id: 'part_time', label: 'Part-Time Work', icon: '⏰', questions: [
-      'What part-time jobs are popular among international students?',
-      'How many hours can I work per week on a study permit?',
-      'Where can I find on-campus job postings?',
-      'Can I work for Uber/DoorDash as an international student?',
-    ]},
+    {
+      id: "coop",
+      label: "Co-op & Internship",
+      icon: "🎯",
+      questions: [
+        "How do Co-op programs work at Canadian colleges?",
+        "Do I need a separate work permit for a Co-op placement?",
+        "How do I find internship opportunities in my field?",
+        "What is the typical pay for Co-op positions in Ontario?",
+      ],
+    },
+    {
+      id: "part_time",
+      label: "Part-Time Work",
+      icon: "⏰",
+      questions: [
+        "What part-time jobs are popular among international students?",
+        "How many hours can I work per week on a study permit?",
+        "Where can I find on-campus job postings?",
+        "Can I work for Uber/DoorDash as an international student?",
+      ],
+    },
   ],
-}
+};

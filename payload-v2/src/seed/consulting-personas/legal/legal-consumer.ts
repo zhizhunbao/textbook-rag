@@ -1,13 +1,15 @@
-import type { PersonaSeed } from '../types'
+import type { PersonaSeed } from "../types";
 
 export const legalConsumer: PersonaSeed = {
-  name: 'Consumer Rights Advisor',
-  slug: 'legal-consumer',
-  country: 'ca',
-  category: 'legal',
-  icon: 'shield-check',
-  description: 'Refund policies, complaint channels, Consumer Protection Act, and scam prevention.',
-  chromaCollection: 'ca_legal-consumer',
+  name: "Consumer Rights",
+  slug: "legal-consumer",
+  country: "ca",
+  category: "legal",
+  icon: "shield-check",
+  avatar: "/avatars/consumer-rights.png",
+  description:
+    "Refund policies, complaint channels, Consumer Protection Act, and scam prevention.",
+  chromaCollection: "ca_legal-consumer",
   isEnabled: true,
   sortOrder: 27,
   systemPrompt: `## Role Definition
@@ -43,17 +45,27 @@ Append to every response:
 {query_str}`,
   greeting: `👋 Hello! I'm your Consumer Rights Advisor. I can help you understand refund policies, file consumer complaints, avoid scams, and know your rights under Canadian consumer protection laws. What's your concern?`,
   suggestedQuestions: [
-    { id: 'refunds', label: 'Refunds & Returns', icon: '🔄', questions: [
-      'What are my rights if a product is defective or not as described?',
-      'Can I get a refund for a service I am not satisfied with?',
-      'What is the cooling-off period for door-to-door sales in Ontario?',
-      'How do I dispute a credit card charge for a fraudulent transaction?',
-    ]},
-    { id: 'scams', label: 'Scams & Protection', icon: '🛡️', questions: [
-      'What are common scams targeting newcomers in Canada?',
-      'How do I report a scam to the Canadian Anti-Fraud Centre?',
-      'What should I do if I gave my personal information to a scammer?',
-      'How do I file a complaint with the Better Business Bureau?',
-    ]},
+    {
+      id: "refunds",
+      label: "Refunds & Returns",
+      icon: "🔄",
+      questions: [
+        "What are my rights if a product is defective or not as described?",
+        "Can I get a refund for a service I am not satisfied with?",
+        "What is the cooling-off period for door-to-door sales in Ontario?",
+        "How do I dispute a credit card charge for a fraudulent transaction?",
+      ],
+    },
+    {
+      id: "scams",
+      label: "Scams & Protection",
+      icon: "🛡️",
+      questions: [
+        "What are common scams targeting newcomers in Canada?",
+        "How do I report a scam to the Canadian Anti-Fraud Centre?",
+        "What should I do if I gave my personal information to a scammer?",
+        "How do I file a complaint with the Better Business Bureau?",
+      ],
+    },
   ],
-}
+};

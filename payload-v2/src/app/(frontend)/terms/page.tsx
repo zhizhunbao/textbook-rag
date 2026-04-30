@@ -1,25 +1,21 @@
-import React from 'react'
-import Link from 'next/link'
+'use client'
 
-export const metadata = {
-  title: 'Terms of Service | ConsultRAG',
-  description: 'Terms and conditions for using ConsultRAG services.',
-}
+import React from 'react'
+import PublicNav from '@/features/layout/PublicNav'
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-background font-sans text-foreground py-20 px-6">
-      <div className="max-w-3xl mx-auto">
-        <Link href="/" className="text-sm text-indigo-500 hover:underline mb-8 inline-block">
-          ← Back to Home
-        </Link>
+    <main className="min-h-screen bg-background font-sans text-foreground">
+      <PublicNav page="terms" />
+
+      <div className="mx-auto max-w-3xl px-6 pb-20 pt-24">
         <h1 className="text-4xl font-extrabold mb-8">Terms of Service</h1>
         
         <div className="space-y-8 text-muted-foreground leading-relaxed">
           <section>
             <h2 className="text-xl font-bold text-foreground mb-3">1. Acceptance of Terms</h2>
             <p>
-              By accessing or using ConsultRAG ("the Service"), you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the Service.
+              By accessing or using ConsultRAG (&quot;the Service&quot;), you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the Service.
             </p>
           </section>
 
@@ -54,7 +50,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-bold text-foreground mb-3">6. Limitation of Liability</h2>
             <p>
-              ConsultRAG is provided "as is" without warranties of any kind. AI-generated answers should be verified by professional consultants. We are not liable for any decisions made based on AI-generated content.
+              ConsultRAG is provided &quot;as is&quot; without warranties of any kind. AI-generated answers should be verified by professional consultants. We are not liable for any decisions made based on AI-generated content.
             </p>
           </section>
 
@@ -68,6 +64,6 @@ export default function TermsPage() {
           <p className="pt-8 text-xs">Last updated: April 29, 2026</p>
         </div>
       </div>
-    </div>
+    </main>
   )
 }

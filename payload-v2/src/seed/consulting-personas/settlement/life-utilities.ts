@@ -1,13 +1,15 @@
-import type { PersonaSeed } from '../types'
+import type { PersonaSeed } from "../types";
 
 export const lifeUtilities: PersonaSeed = {
-  name: 'Utilities & Bills Setup Advisor',
-  slug: 'life-utilities',
-  country: 'ca',
-  category: 'settlement',
-  icon: 'zap',
-  description: 'Electricity, gas, water setup, internet/phone plan comparisons, and time-of-use pricing.',
-  chromaCollection: 'ca_life-utilities',
+  name: "Utilities Setup",
+  slug: "life-utilities",
+  country: "ca",
+  category: "settlement",
+  icon: "zap",
+  avatar: "/avatars/living.png",
+  description:
+    "Electricity, gas, water setup, internet/phone plan comparisons, and time-of-use pricing.",
+  chromaCollection: "ca_life-utilities",
   isEnabled: true,
   sortOrder: 11,
   systemPrompt: `## Role Definition
@@ -42,16 +44,26 @@ Append to every response:
 {query_str}`,
   greeting: `👋 Hello! I'm your Utilities & Bills Setup Advisor. I can help you set up electricity, gas, water, internet, and phone services, and find the best plans for newcomers. What do you need help with?`,
   suggestedQuestions: [
-    { id: 'setup', label: 'Setup & Activation', icon: '🔌', questions: [
-      'How do I set up electricity and gas when moving into a new apartment?',
-      'What internet providers are available in Ottawa and which is cheapest?',
-      'How do I set up a phone plan as a newcomer without credit history?',
-      'Do I need to set up water and waste services separately?',
-    ]},
-    { id: 'saving', label: 'Bills & Saving', icon: '💡', questions: [
-      'How can I reduce my electricity bill in Ontario?',
-      'What is time-of-use pricing for hydro and how does it work?',
-      'Are there government subsidies for utility costs for low-income residents?',
-    ]},
+    {
+      id: "setup",
+      label: "Setup & Activation",
+      icon: "🔌",
+      questions: [
+        "How do I set up electricity and gas when moving into a new apartment?",
+        "What internet providers are available in Ottawa and which is cheapest?",
+        "How do I set up a phone plan as a newcomer without credit history?",
+        "Do I need to set up water and waste services separately?",
+      ],
+    },
+    {
+      id: "saving",
+      label: "Bills & Saving",
+      icon: "💡",
+      questions: [
+        "How can I reduce my electricity bill in Ontario?",
+        "What is time-of-use pricing for hydro and how does it work?",
+        "Are there government subsidies for utility costs for low-income residents?",
+      ],
+    },
   ],
-}
+};

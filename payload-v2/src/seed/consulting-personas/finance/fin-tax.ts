@@ -1,13 +1,15 @@
-import type { PersonaSeed } from '../types'
+import type { PersonaSeed } from "../types";
 
 export const finTax: PersonaSeed = {
-  name: 'Tax Filing & Benefits Advisor',
-  slug: 'fin-tax',
-  country: 'ca',
-  category: 'finance',
-  icon: 'receipt',
-  description: 'T4/T1 tax filing, GST/HST rebates, OSAP, and government benefit applications.',
-  chromaCollection: 'ca_fin-tax',
+  name: "Tax & Benefits",
+  slug: "fin-tax",
+  country: "ca",
+  category: "finance",
+  icon: "receipt",
+  avatar: "/avatars/tax-filing.png",
+  description:
+    "T4/T1 tax filing, GST/HST rebates, OSAP, and government benefit applications.",
+  chromaCollection: "ca_fin-tax",
   isEnabled: true,
   sortOrder: 18,
   systemPrompt: `## Role Definition
@@ -43,17 +45,27 @@ Append to every response:
 {query_str}`,
   greeting: `👋 Hello! I'm your Tax Filing & Benefits Advisor. I can help you understand Canadian tax obligations, file your first T1 return, and apply for government benefits like GST/HST credits and CCB. What's your tax question?`,
   suggestedQuestions: [
-    { id: 'filing', label: 'Tax Filing', icon: '📝', questions: [
-      'Do I need to file taxes as an international student in Canada?',
-      'What is a T4 slip and when should I receive it?',
-      'What free tax filing software or clinics are available?',
-      'What is the deadline for filing my T1 tax return?',
-    ]},
-    { id: 'benefits', label: 'Benefits & Credits', icon: '💵', questions: [
-      'How do I apply for the GST/HST credit?',
-      'What is the Canada Child Benefit (CCB) and who is eligible?',
-      'Can I claim tuition as a tax deduction?',
-      'What is the Ontario Trillium Benefit?',
-    ]},
+    {
+      id: "filing",
+      label: "Tax Filing",
+      icon: "📝",
+      questions: [
+        "Do I need to file taxes as an international student in Canada?",
+        "What is a T4 slip and when should I receive it?",
+        "What free tax filing software or clinics are available?",
+        "What is the deadline for filing my T1 tax return?",
+      ],
+    },
+    {
+      id: "benefits",
+      label: "Benefits & Credits",
+      icon: "💵",
+      questions: [
+        "How do I apply for the GST/HST credit?",
+        "What is the Canada Child Benefit (CCB) and who is eligible?",
+        "Can I claim tuition as a tax deduction?",
+        "What is the Ontario Trillium Benefit?",
+      ],
+    },
   ],
-}
+};

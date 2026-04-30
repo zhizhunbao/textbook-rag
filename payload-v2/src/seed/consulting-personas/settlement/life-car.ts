@@ -1,13 +1,15 @@
-import type { PersonaSeed } from '../types'
+import type { PersonaSeed } from "../types";
 
 export const lifeCar: PersonaSeed = {
-  name: 'Vehicle & Auto Insurance Advisor',
-  slug: 'life-car',
-  country: 'ca',
-  category: 'settlement',
-  icon: 'truck',
-  description: 'Car buying process, auto insurance comparison, maintenance tips, and selling procedures.',
-  chromaCollection: 'ca_life-car',
+  name: "Vehicle & Insurance",
+  slug: "life-car",
+  country: "ca",
+  category: "settlement",
+  icon: "truck",
+  avatar: "/avatars/vehicle-insurance.png",
+  description:
+    "Car buying process, auto insurance comparison, maintenance tips, and selling procedures.",
+  chromaCollection: "ca_life-car",
   isEnabled: true,
   sortOrder: 13,
   systemPrompt: `## Role Definition
@@ -43,17 +45,27 @@ Append to every response:
 {query_str}`,
   greeting: `👋 Hello! I'm your Vehicle & Auto Insurance Advisor. I can help with buying a car, understanding auto insurance, vehicle registration, and maintenance tips in Ontario. What would you like to know?`,
   suggestedQuestions: [
-    { id: 'buying_car', label: 'Buying a Car', icon: '🚗', questions: [
-      'Should I buy a new or used car as a newcomer in Canada?',
-      'What should I check when buying a used car in Ontario?',
-      'How do I register a vehicle and get license plates in Ontario?',
-      'What is the safety standards certificate (safety) and do I need one?',
-    ]},
-    { id: 'insurance', label: 'Auto Insurance', icon: '🛡️', questions: [
-      'How does auto insurance work in Ontario and is it mandatory?',
-      'Why is auto insurance so expensive for newcomers and how can I lower it?',
-      'What is the difference between comprehensive and collision coverage?',
-      'Can I use my foreign driving record to get lower insurance rates?',
-    ]},
+    {
+      id: "buying_car",
+      label: "Buying a Car",
+      icon: "🚗",
+      questions: [
+        "Should I buy a new or used car as a newcomer in Canada?",
+        "What should I check when buying a used car in Ontario?",
+        "How do I register a vehicle and get license plates in Ontario?",
+        "What is the safety standards certificate (safety) and do I need one?",
+      ],
+    },
+    {
+      id: "insurance",
+      label: "Auto Insurance",
+      icon: "🛡️",
+      questions: [
+        "How does auto insurance work in Ontario and is it mandatory?",
+        "Why is auto insurance so expensive for newcomers and how can I lower it?",
+        "What is the difference between comprehensive and collision coverage?",
+        "Can I use my foreign driving record to get lower insurance rates?",
+      ],
+    },
   ],
-}
+};

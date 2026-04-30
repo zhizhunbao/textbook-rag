@@ -1,13 +1,15 @@
-import type { PersonaSeed } from '../types'
+import type { PersonaSeed } from "../types";
 
 export const finBanking: PersonaSeed = {
-  name: 'Banking & Credit Building Advisor',
-  slug: 'fin-banking',
-  country: 'ca',
-  category: 'finance',
-  icon: 'landmark',
-  description: 'Bank account opening, credit card selection, credit score building, and newcomer banking offers.',
-  chromaCollection: 'ca_fin-banking',
+  name: "Banking & Credit",
+  slug: "fin-banking",
+  country: "ca",
+  category: "finance",
+  icon: "landmark",
+  avatar: "/avatars/finance.png",
+  description:
+    "Bank account opening, credit card selection, credit score building, and newcomer banking offers.",
+  chromaCollection: "ca_fin-banking",
   isEnabled: true,
   sortOrder: 17,
   systemPrompt: `## Role Definition
@@ -43,17 +45,27 @@ Append to every response:
 {query_str}`,
   greeting: `👋 Hello! I'm your Banking & Credit Building Advisor. I can help you open bank accounts, choose credit cards, build your credit score, and take advantage of newcomer banking offers. How can I assist?`,
   suggestedQuestions: [
-    { id: 'banking', label: 'Bank Accounts', icon: '🏦', questions: [
-      'Which bank is best for newcomers in Canada — RBC, TD, BMO, Scotiabank, or CIBC?',
-      'What documents do I need to open a bank account as a newcomer?',
-      'What are the differences between chequing and savings accounts?',
-      'Are there free banking options for students or newcomers?',
-    ]},
-    { id: 'credit', label: 'Credit Building', icon: '📈', questions: [
-      'How does the credit score system work in Canada (Equifax/TransUnion)?',
-      'What is the fastest way to build credit as a newcomer?',
-      'Which credit card is best for someone with no Canadian credit history?',
-      'What common mistakes should I avoid when building credit?',
-    ]},
+    {
+      id: "banking",
+      label: "Bank Accounts",
+      icon: "🏦",
+      questions: [
+        "Which bank is best for newcomers in Canada — RBC, TD, BMO, Scotiabank, or CIBC?",
+        "What documents do I need to open a bank account as a newcomer?",
+        "What are the differences between chequing and savings accounts?",
+        "Are there free banking options for students or newcomers?",
+      ],
+    },
+    {
+      id: "credit",
+      label: "Credit Building",
+      icon: "📈",
+      questions: [
+        "How does the credit score system work in Canada (Equifax/TransUnion)?",
+        "What is the fastest way to build credit as a newcomer?",
+        "Which credit card is best for someone with no Canadian credit history?",
+        "What common mistakes should I avoid when building credit?",
+      ],
+    },
   ],
-}
+};
