@@ -254,26 +254,22 @@ export default function ChatHeader({
             )}
           </select>
 
+          {/* ── DEV-MODE: K / Rerank / Eval hidden ──
           <div className="h-4 w-px bg-border" />
-
-          {/* Top-K */}
           <div className="flex items-center gap-1.5">
             <label className="text-[10px] font-medium text-muted-foreground" title="Number of document chunks retrieved per query">K</label>
             <input type="range" min={3} max={20} step={1} value={topK} onChange={(e) => onTopKChange(Number(e.target.value))} disabled={loading} className="h-1 w-14 cursor-pointer accent-primary" />
             <span className="w-4 text-center text-[10px] font-bold tabular-nums text-foreground">{topK}</span>
           </div>
-
-          {/* Reranker */}
           <div className="flex items-center gap-1.5">
             <label className="text-[10px] font-medium text-muted-foreground" title="LLMRerank — re-scores chunks with LLM">Rerank</label>
             <MiniToggle enabled={rerankerEnabled} onChange={onRerankerChange} disabled={loading} label="Enable LLM Reranker" />
           </div>
-
-          {/* Auto-Eval */}
           <div className="flex items-center gap-1.5">
             <label className="text-[10px] font-medium text-muted-foreground" title="Auto-evaluate each response">Eval</label>
             <MiniToggle enabled={autoEvaluate} onChange={onAutoEvaluateChange} disabled={loading} label="Auto-evaluate responses" />
           </div>
+          */}
 
           {/* Questions toggle */}
           {onToggleQuestions && !showQuestions && (

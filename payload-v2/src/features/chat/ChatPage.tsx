@@ -281,8 +281,8 @@ function ChatPageInner() {
             </>
           )}
 
-          {/* ── Consulting Sidebar (left of chat) — only in consulting mode ── */}
-          {consultingPersonaSlug && (
+          {/* ── Consulting Sidebar — temporarily hidden (DEV-MODE) ── */}
+          {/* consultingPersonaSlug && (
             <>
               <ConsultingSidebar
                 personaSlug={consultingPersonaSlug}
@@ -292,7 +292,7 @@ function ChatPageInner() {
               />
               <ResizeHandle width={sidebarWidth} onResize={setSidebarWidth} min={220} max={400} />
             </>
-          )}
+          ) */}
 
           {/* ── Chat Panel (centered when PDF is hidden) ── */}
           <div className="flex-1 h-full overflow-hidden min-w-[300px]">

@@ -24,7 +24,7 @@ export const ConsultingPersonas: CollectionConfig = {
     group: 'Consulting',
   },
   access: {
-    read: ({ req: { user } }) => !!user,  // any authenticated user
+    read: () => true,  // public — persona list shown on landing page + read by Engine
     create: isAdmin,
     update: isAdmin,
     delete: isAdmin,

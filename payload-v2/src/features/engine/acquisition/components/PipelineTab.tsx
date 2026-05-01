@@ -1491,7 +1491,7 @@ function BatchPipelineView({ books, filter, isFr, onBooksRefresh }: BatchPipelin
                             method: 'PATCH',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ status: 'done', progress: 100 }),
-                          }).catch(() => {})
+                          }).catch(() => { })
                         }
                       }
                     } catch { /* ignore */ }
@@ -1525,7 +1525,7 @@ function BatchPipelineView({ books, filter, isFr, onBooksRefresh }: BatchPipelin
                         method: 'PATCH',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ status: 'done', progress: 100 }),
-                      }).catch(() => {})
+                      }).catch(() => { })
                     }
                   }
                 } catch { /* ignore */ }

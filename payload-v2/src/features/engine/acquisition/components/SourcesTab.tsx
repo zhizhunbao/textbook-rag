@@ -578,7 +578,7 @@ export default function SourcesTab({ onBooksRefresh }: SourcesTabProps) {
                                         style={{
                                           width: fStatus === 'waiting' ? '15%'
                                             : fStatus === 'importing' ? '60%'
-                                            : '100%',
+                                              : '100%',
                                         }}
                                       />
                                     </div>

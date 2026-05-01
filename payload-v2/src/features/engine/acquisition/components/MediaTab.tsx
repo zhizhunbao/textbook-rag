@@ -104,20 +104,20 @@ function formatFileSize(bytes: number): string {
 
 /** Status config — using "Ready" instead of "Indexed" for the Files context. */
 const STATUS_CONFIG: Record<BookStatus, { icon: React.ElementType; color: string; label: string; labelFr: string }> = {
-  indexed:    { icon: CheckCircle2, color: 'text-emerald-400', label: 'Ready',      labelFr: '已就绪' },
-  processing: { icon: Loader2,     color: 'text-amber-400',   label: 'Processing', labelFr: '处理中' },
-  pending:    { icon: Clock,       color: 'text-muted-foreground', label: 'Pending', labelFr: '待处理' },
-  error:      { icon: AlertTriangle, color: 'text-red-400',   label: 'Error',      labelFr: '错误' },
+  indexed: { icon: CheckCircle2, color: 'text-emerald-400', label: 'Ready', labelFr: '已就绪' },
+  processing: { icon: Loader2, color: 'text-amber-400', label: 'Processing', labelFr: '处理中' },
+  pending: { icon: Clock, color: 'text-muted-foreground', label: 'Pending', labelFr: '待处理' },
+  error: { icon: AlertTriangle, color: 'text-red-400', label: 'Error', labelFr: '错误' },
 }
 
 function compareBooks(a: BookBase, b: BookBase, field: SortField, dir: SortDir): number {
   let cmp = 0
   switch (field) {
-    case 'title':   cmp = a.title.localeCompare(b.title); break
+    case 'title': cmp = a.title.localeCompare(b.title); break
     case 'authors': cmp = a.authors.localeCompare(b.authors); break
-    case 'pages':   cmp = a.pageCount - b.pageCount; break
-    case 'size':    cmp = a.fileSize - b.fileSize; break
-    case 'chunks':  cmp = (a.chunk_count ?? 0) - (b.chunk_count ?? 0); break
+    case 'pages': cmp = a.pageCount - b.pageCount; break
+    case 'size': cmp = a.fileSize - b.fileSize; break
+    case 'chunks': cmp = (a.chunk_count ?? 0) - (b.chunk_count ?? 0); break
     case 'status': {
       const order = { indexed: 0, processing: 1, pending: 2, error: 3 }
       cmp = (order[a.status] ?? 9) - (order[b.status] ?? 9)
@@ -145,14 +145,14 @@ function fuzzyMatch(book: BookBase, query: string): boolean {
 // Default column widths (px)
 // ============================================================
 const DEFAULT_COLS = {
-  title:  240,
+  title: 240,
   author: 130,
   category: 100,
   subcategory: 100,
   chunks: 70,
   status: 90,
-  pages:  60,
-  size:   80,
+  pages: 60,
+  size: 80,
   pipeline: 120,
   actions: 90,
 }

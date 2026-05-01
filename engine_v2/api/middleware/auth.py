@@ -72,11 +72,16 @@ class AuthMiddleware(BaseHTTPMiddleware):
         # Strategy 2: JWT from cookie or Authorization header
         token = _extract_token(request)
         if not token:
-            return _unauthorized("Missing authentication token")
+            # DEV-MODE: skip auth, set anonymous user (re-enable before production)
+            logger.debug("No token found — using anonymous user (dev mode)")
+            request.state.user = {"id": 0, "role": "reader", "email": "", "tier": "free", "collection": "users"}
+            return await call_next(request)
 
         payload = _verify_token(token)
         if payload is None:
-            return _unauthorized("Invalid or expired token")
+            logger.debug("Invalid token — using anonymous user (dev mode)")
+            request.state.user = {"id": 0, "role": "reader", "email": "", "tier": "free", "collection": "users"}
+            return await call_next(request)
 
         # Inject user context
         request.state.user = {

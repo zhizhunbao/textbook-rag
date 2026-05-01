@@ -140,7 +140,9 @@ export default function ChatPanel({
           if (current) return current;
           const userPersona = currentUser?.selectedPersona;
           if (userPersona && typeof userPersona === "object") return userPersona.slug;
-          return items[0]?.slug ?? null;
+          // Default to analyst persona, fallback to first item
+          const analyst = items.find((p) => p.slug === "ecdev-analyst");
+          return analyst?.slug ?? items[0]?.slug ?? null;
         });
       })
       .catch(() => setPersonas([]));
