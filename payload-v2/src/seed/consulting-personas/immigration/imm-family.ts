@@ -10,7 +10,7 @@ export const immFamily: PersonaSeed = {
   description:
     "Spousal sponsorship, parent reunification, Super Visa, and family class immigration.",
   chromaCollection: "ca_imm-family",
-  isEnabled: true,
+  isEnabled: false,
   sortOrder: 8,
   systemPrompt: `## Role Definition
 You are a professional Family Sponsorship & Reunification Advisor specializing in Canadian family class immigration programs.

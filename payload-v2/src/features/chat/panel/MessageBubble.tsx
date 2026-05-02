@@ -123,7 +123,7 @@ export default function MessageBubble({ role, content, sources, model, queryId, 
   const [showEval, setShowEval] = useState(false);
   const [evalViewMode, setEvalViewMode] = useState<EvalViewMode>(getInitialViewMode);
 
-  // Auto-load existing evaluation on mount (F2 — no duplicate evaluations)
+  // Auto-load existing evaluation on mount (show Scores button if already evaluated)
   useEffect(() => {
     if (!queryId || isStreaming) return;
     let cancelled = false;
@@ -142,13 +142,13 @@ export default function MessageBubble({ role, content, sources, model, queryId, 
     if (!queryId) return;
     setEvalLoading(true);
     setEvalError(null);
-    setShowEval(true);
 
     try {
       // First check if evaluation already exists for this query
       const existing = await fetchEvaluations({ queryRef: queryId, limit: 1 });
       if (existing.evaluations.length > 0) {
         setEvalResult(existing.evaluations[0]);
+        setShowEval(true);
         setEvalLoading(false);
         return;
       }
@@ -162,6 +162,7 @@ export default function MessageBubble({ role, content, sources, model, queryId, 
       const fresh = await fetchEvaluations({ queryRef: queryId, limit: 1 });
       if (fresh.evaluations.length > 0) {
         setEvalResult(fresh.evaluations[0]);
+        setShowEval(true);
       } else {
         setEvalError("Evaluation completed but result not found.");
       }
@@ -273,11 +274,32 @@ export default function MessageBubble({ role, content, sources, model, queryId, 
           )}
         </div>
 
-        {/* ── Assistant message footer: score card (only when eval results exist) ── */}
-        {!isUser && !isStreaming && evalResult && (
+        {/* ── Assistant message footer: evaluate button + score card ── */}
+        {!isUser && !isStreaming && queryId && (
           <div className="mt-2 space-y-2">
             {/* Action bar */}
             <div className="flex items-center gap-1.5">
+
+              {/* Evaluate button — shown when no eval result exists yet */}
+              {!evalResult && !evalLoading && (
+                <button
+                  type="button"
+                  onClick={handleEvaluate}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary transition-all duration-150 hover:bg-primary/20"
+                  title="Evaluate this response"
+                >
+                  <IconGauge className="h-3 w-3" />
+                  <span>Evaluate</span>
+                </button>
+              )}
+
+              {/* Loading spinner while evaluating */}
+              {evalLoading && (
+                <span className="inline-flex items-center gap-1.5 rounded-lg border border-border/50 bg-card/60 px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
+                  <IconSpinner className="h-3 w-3" />
+                  <span>Evaluating…</span>
+                </span>
+              )}
 
               {/* Toggle eval scores visibility (when already evaluated) */}
               {evalResult && (
@@ -301,25 +323,7 @@ export default function MessageBubble({ role, content, sources, model, queryId, 
                 </button>
               )}
 
-              {/* View mode toggle — User / Dev (UEP-T3-02) */}
-              {evalResult && showEval && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const next = evalViewMode === 'user' ? 'dev' : 'user';
-                    setEvalViewMode(next);
-                    localStorage.setItem(EVAL_VIEW_KEY, next);
-                  }}
-                  className="inline-flex items-center gap-1 rounded-lg border border-border/50 bg-card/60 px-2 py-1 text-[10px] font-medium text-muted-foreground transition-all duration-150 hover:border-primary/30 hover:text-primary"
-                  title={evalViewMode === 'user' ? 'Switch to developer view' : 'Switch to user view'}
-                >
-                  {evalViewMode === 'user' ? (
-                    <><IconUser className="h-3 w-3" /> User</>
-                  ) : (
-                    <><IconWrench className="h-3 w-3" /> Dev</>
-                  )}
-                </button>
-              )}
+
 
               {/* Re-evaluate button — shown when existing eval has incomplete scores */}
               {evalResult && isIncomplete && !evalLoading && (
@@ -337,21 +341,14 @@ export default function MessageBubble({ role, content, sources, model, queryId, 
               )}
             </div>
 
-            {/* Inline evaluation score card — dual view (UEP-T3-01 + T3-02) */}
+            {/* Inline evaluation score card */}
             {showEval && (
               <div className="rounded-xl border border-border/40 bg-card/50 p-3 animate-in slide-in-from-top-2 fade-in duration-200">
-                {evalLoading && !evalResult && (
-                  <div className="flex items-center justify-center py-3">
-                    <IconSpinner className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                )}
                 {evalError && (
                   <div className="text-xs text-destructive">{evalError}</div>
                 )}
                 {evalResult && (
-                  evalViewMode === 'user'
-                    ? <InlineEvalCard evaluation={evalResult} />
-                    : <EvalScoreCard evaluation={evalResult} locale="en" />
+                  <EvalScoreCard evaluation={evalResult} locale="en" />
                 )}
               </div>
             )}

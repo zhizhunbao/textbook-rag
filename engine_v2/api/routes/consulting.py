@@ -289,6 +289,18 @@ async def _consulting_stream_generator(req: PersonaQueryRequest):
         )
         system_prompt = persona.get("systemPrompt", "")
 
+        # G2: Warn if persona knowledge base is empty
+        kb_count = _get_collection_count(collection_name)
+        if kb_count == 0:
+            yield _sse("warning", {
+                "code": "empty_knowledge_base",
+                "message": (
+                    f"This advisor ({persona.get('name', req.persona_slug)}) "
+                    "does not have a knowledge base yet. "
+                    "Responses will not be grounded in domain-specific documents."
+                ),
+            })
+
         # G1-07: Inject response language instruction if specified
         if req.response_language and req.response_language != "zh":
             lang_map = {"en": "English", "fr": "Français", "es": "Español"}

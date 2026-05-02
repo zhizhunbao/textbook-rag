@@ -10,7 +10,7 @@ export const lifeHomeBuying: PersonaSeed = {
   description:
     "First-time home buying process, inspections, mortgages, and real estate lawyers.",
   chromaCollection: "ca_life-home-buying",
-  isEnabled: true,
+  isEnabled: false,
   sortOrder: 12,
   systemPrompt: `## Role Definition
 You are a professional Home Buying & Property Advisor specializing in Canadian real estate for newcomers and first-time buyers.

@@ -17,6 +17,8 @@
 | **G2** | [31-sprint-g2-canada-p0.md](./roadmap/31-sprint-g2-canada-p0.md) | 加拿大 P0 角色上线 — 10 角色 Seed + Prompt + 知识库 | TBD | ❌ |
 | **G3** | [32-sprint-g3-landing-rebuild.md](./roadmap/32-sprint-g3-landing-rebuild.md) | Landing 页重构 — 7 类目卡片 + 国家选择 | TBD | ❌ |
 | **G4** | [33-sprint-g4-qa-deploy.md](./roadmap/33-sprint-g4-qa-deploy.md) | 质量验收 + 部署 | TBD | ❌ |
+| **G5** | [34-sprint-g5-user-library.md](./roadmap/34-sprint-g5-user-library.md) | 用户 Library + 侧边栏整理 + 知识库数据源改造 | 10 | ❌ |
+| **G6** | [35-sprint-g6-auth-permissions.md](./roadmap/35-sprint-g6-auth-permissions.md) | 认证权限 — 会话超时 · 角色分离 · Engine Cookie 鉴权 | TBD | ❌ |
 
 ---
 
@@ -41,16 +43,16 @@
 
 | Sprint | 内容 | 状态 |
 |--------|------|------|
-| G5 | 加拿大 P1 角色上线 (10 个) | ⏸️ |
-| G6 | 真人顾问对接基础功能 | ⏸️ |
-| G7 | 匿名咨询模式 (无需注册) | ⏸️ |
+| G7 | 加拿大 P1 角色上线 (10 个) | ⏸️ |
+| G8 | 真人顾问对接基础功能 | ⏸️ |
+| G9 | 匿名咨询模式 (无需注册) | ⏸️ |
 
 ### 阶段三：全球复制期
 
 | Sprint | 内容 | 状态 |
 |--------|------|------|
-| G8 | 美国模板复制 (10 个 P0 角色) | ⏸️ |
-| G9 | 多语种包 (英/中/法/西) | ⏸️ |
+| G10 | 美国模板复制 (10 个 P0 角色) | ⏸️ |
+| G11 | 多语种包 (英/中/法/西) | ⏸️ |
 
 ---
 

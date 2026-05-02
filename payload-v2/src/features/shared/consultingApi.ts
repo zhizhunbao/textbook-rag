@@ -114,6 +114,7 @@ export async function queryConsultingStream(
   callbacks: {
     onToken: (token: string) => void
     onRetrievalDone?: (data: { stats: Record<string, number>; sources: SourceInfo[] }) => void
+    onWarning?: (data: { code: string; message: string }) => void
     onDone: (result: ConsultingQueryResponse) => void
     onError: (error: Error) => void
     signal?: AbortSignal
@@ -174,6 +175,8 @@ export async function queryConsultingStream(
 
             if (currentEvent === 'token') {
               callbacks.onToken(data.t ?? '')
+            } else if (currentEvent === 'warning') {
+              callbacks.onWarning?.(data)
             } else if (currentEvent === 'retrieval_done') {
               const sources = (data.sources ?? []).map(normaliseSource)
               callbacks.onRetrievalDone?.({ stats: data.stats ?? {}, sources })

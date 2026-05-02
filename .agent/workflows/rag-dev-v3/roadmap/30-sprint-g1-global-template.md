@@ -1,9 +1,9 @@
-# Sprint G1 — 全球架构改造 (Global Template)
+# Sprint G1 — 全球架构改造 (Global Template) 🔒 CLOSED
 
 > 目标：把现有加拿大单国家 Consulting 系统改造为多国家通用架构，不破坏已有功能。
 >
 > 前置条件：无（v2 架构起点）
-> **状态**: ✅ 7/7
+> **状态**: ✅ 7/7 — **已关闭** (2026-05-01)
 
 ## 概览
 

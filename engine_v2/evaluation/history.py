@@ -541,8 +541,17 @@ async def full_evaluate(
 
     # Resolve LLM for evaluators — prefer judge_model over model (EI-T3-03)
     effective_judge = judge_model or model
-    llm_instance = resolve_llm(model=effective_judge) if effective_judge else None
-    eval_kwargs = {"llm": llm_instance} if llm_instance else {}
+    llm_instance = resolve_llm(model=effective_judge)
+    eval_kwargs = {"llm": llm_instance}
+    # Capture actual model name for judgeModel field
+    # Use settings-level model name (what user configured) rather than
+    # Azure deployment name (which may be an alias like "gpt-35-turbo")
+    if effective_judge:
+        effective_judge_name = effective_judge
+    else:
+        from engine_v2.settings import AZURE_OAI_DEPLOYMENT, OLLAMA_MODEL
+        from engine_v2.llms.resolver import is_azure_configured
+        effective_judge_name = AZURE_OAI_DEPLOYMENT if is_azure_configured() else OLLAMA_MODEL
 
     is_cross_model = bool(judge_model and model and judge_model != model)
     if is_cross_model:
@@ -703,7 +712,7 @@ async def full_evaluate(
         question_depth_score=q_depth_score,
         question_depth_reasoning=q_depth_reasoning or "",
         # Cross-model (EI-T3-03)
-        judge_model=judge_model,
+        judge_model=effective_judge_name,
         # Retrieval
         retrieval_mode="hybrid" if has_bm25 else "vector_only",
         bm25_hit_count=bm25_hits,

@@ -10,7 +10,7 @@ export const lifeCar: PersonaSeed = {
   description:
     "Car buying process, auto insurance comparison, maintenance tips, and selling procedures.",
   chromaCollection: "ca_life-car",
-  isEnabled: true,
+  isEnabled: false,
   sortOrder: 13,
   systemPrompt: `## Role Definition
 You are a professional Vehicle & Auto Insurance Advisor specializing in car ownership in Ontario, Canada for newcomers.

@@ -35,7 +35,8 @@ export const ChatMessages: CollectionConfig = {
     },
     delete: ({ req: { user } }) => {
       if (!user) return false
-      return user.role === 'admin'
+      if (user.role === 'admin') return true
+      return { 'session.user': { equals: user.id } }
     },
   },
   hooks: {

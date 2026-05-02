@@ -103,19 +103,55 @@ export async function createServerSession(opts: {
   return res.doc
 }
 
-/** Delete all ChatMessages belonging to a session. */
+/** Delete all ChatMessages belonging to a session, cascading to Queries & Evaluations. */
 async function deleteSessionMessages(sessionId: number): Promise<void> {
-  // Fetch IDs of all messages for this session
+  // Fetch all messages for this session (need queryId for cascade)
   const params = new URLSearchParams()
   params.set('where[session][equals]', String(sessionId))
   params.set('limit', '500')
   params.set('depth', '0')
 
-  const data = await request<{ docs: { id: number }[] }>(
+  const data = await request<{ docs: { id: number; queryId?: number | null }[] }>(
     `/api/chat-messages?${params}`,
   )
 
-  // Delete each message
+  // Collect linked Query IDs (skip nulls/undefined)
+  const queryIds = data.docs
+    .map((msg) => msg.queryId)
+    .filter((qid): qid is number => typeof qid === 'number' && qid > 0)
+
+  // Cascade: delete Evaluations that reference these Queries
+  if (queryIds.length > 0) {
+    await Promise.all(
+      queryIds.map(async (qid) => {
+        try {
+          const evalParams = new URLSearchParams()
+          evalParams.set('where[queryRef][equals]', String(qid))
+          evalParams.set('limit', '100')
+          evalParams.set('depth', '0')
+          const evalData = await request<{ docs: { id: number }[] }>(
+            `/api/evaluations?${evalParams}`,
+          )
+          await Promise.all(
+            evalData.docs.map((ev) =>
+              request<unknown>(`/api/evaluations/${ev.id}`, { method: 'DELETE' }),
+            ),
+          )
+        } catch {
+          // ignore — eval cleanup is best-effort
+        }
+      }),
+    )
+
+    // Cascade: delete the Queries themselves
+    await Promise.all(
+      queryIds.map((qid) =>
+        request<unknown>(`/api/queries/${qid}`, { method: 'DELETE' }).catch(() => {}),
+      ),
+    )
+  }
+
+  // Delete the messages
   await Promise.all(
     data.docs.map((msg) =>
       request<unknown>(`/api/chat-messages/${msg.id}`, { method: 'DELETE' }),

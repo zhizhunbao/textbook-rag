@@ -202,15 +202,13 @@ def compute_aggregate_scores(
     result.llm_score = result.faithfulness
 
     # Answer score = mean(correctness, answer_relevancy, completeness, clarity)
-    # Plus guidelines_pass (True=1.0, False=0.0) if present
+    # guidelines_pass is a separate boolean check — not included in numeric average
     ans_dims = [
         v for v in (
             result.correctness, result.answer_relevancy,
             result.completeness, result.clarity,
         ) if v is not None
     ]
-    if result.guidelines_pass is not None:
-        ans_dims.append(1.0 if result.guidelines_pass else 0.0)
 
     result.answer_score = (sum(ans_dims) / len(ans_dims)) if ans_dims else None
 

@@ -21,7 +21,7 @@ export const Evaluations: CollectionConfig = {
     read: isAdmin,
     create: () => true,   // Engine writes eval results
     update: isAdmin,
-    delete: isAdmin,
+    delete: ({ req: { user } }) => !!user, // Allow cascade delete from chat history
   },
   fields: [
     // ── Query reference ──

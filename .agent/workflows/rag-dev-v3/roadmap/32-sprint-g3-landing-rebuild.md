@@ -1,9 +1,10 @@
-# Sprint G3 — Landing 页重构
+# Sprint G3 — Landing 页重构 🔴 Tier 1
 
 > 目标：Landing 页改为 PRD v2 的 7 大类卡片 + 国家选择布局，Onboarding 按类分组，咨询页优化。
 >
 > 前置条件：Sprint G1 ✅ 国家/语种选择器已完成
 > **状态**: ❌ 0/5
+> **优先级**: 🔴 Tier 1 关键路径 — G3-01/02/03 最高优先，G3-04/05 降为 Tier 3
 
 ## 概览
 

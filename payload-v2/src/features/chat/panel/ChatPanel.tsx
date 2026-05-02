@@ -118,7 +118,8 @@ export default function ChatPanel({
   const activeSession = activeSessionId ? chatHistory.getSession(activeSessionId) : null;
   const effectiveMode = activeSession?.mode ?? chatMode;
   const effectivePersonaSlug = activeSession?.personaSlug ?? selectedPersonaSlug;
-  const modeLocked = hasMessages || !!activeSessionId;
+  const isAdmin = currentUser?.role === 'admin';
+  const modeLocked = isAdmin ? false : (hasMessages || !!activeSessionId);
 
   /** Track current session id across renders inside callbacks */
   const sessionIdRef = useRef<string | null>(activeSessionId);
@@ -149,11 +150,13 @@ export default function ChatPanel({
   }, [currentUser?.selectedPersona]);
 
   // C4-06: Propagate persona selection to parent for sidebar integration
+  // Use selectedPersonaSlug (user's current selection) instead of effectivePersonaSlug
+  // (which is locked to the active session) so the questions sidebar updates immediately
   useEffect(() => {
-    if (effectiveMode !== "consulting" || !effectivePersonaSlug) return;
-    const persona = personas.find((p) => p.slug === effectivePersonaSlug);
-    onConsultingPersonaChange?.(effectivePersonaSlug, persona?.name ?? null);
-  }, [effectiveMode, effectivePersonaSlug, personas, onConsultingPersonaChange]);
+    if (!selectedPersonaSlug) return;
+    const persona = personas.find((p) => p.slug === selectedPersonaSlug);
+    onConsultingPersonaChange?.(selectedPersonaSlug, persona?.name ?? null);
+  }, [selectedPersonaSlug, personas, onConsultingPersonaChange]);
 
   // C4-07: Auto-resume most recent consulting session for selected persona
   useEffect(() => {
@@ -370,6 +373,12 @@ export default function ChatPanel({
             onRetrievalDone: ({ sources }) => {
               setStreamingSources(sources);
             },
+            onWarning: ({ message }) => {
+              setMessages((prev) => [
+                ...prev,
+                { role: "assistant", content: `⚠️ ${message}`, timestamp: new Date().toISOString() },
+              ]);
+            },
             onDone: (res) => {
               setMessages((prev) => [
                 ...prev,
@@ -412,7 +421,30 @@ export default function ChatPanel({
                   model: selectedModel,
                   latencyMs,
                 }),
-              }).catch(() => { /* ignore logging errors */ });
+              })
+                .then(async (r) => {
+                  if (r.ok) {
+                    const doc = await r.json();
+                    if (doc?.doc?.id) {
+                      const qId = doc.doc.id as number;
+                      setMessages((prev) => {
+                        const updated = [...prev];
+                        const last = updated[updated.length - 1];
+                        if (last?.role === 'assistant') {
+                          updated[updated.length - 1] = { ...last, queryId: qId };
+                        }
+                        return updated;
+                      });
+                      if (sessionId) {
+                        chatHistory.updateLastAssistantQueryId(sessionId, qId);
+                      }
+                      if (autoEvaluateRef.current) {
+                        evaluateFromHistory(qId).catch(() => { /* ignore eval errors */ });
+                      }
+                    }
+                  }
+                })
+                .catch(() => { /* ignore logging errors */ });
             },
             onError: (err) => {
               setError(err.message);

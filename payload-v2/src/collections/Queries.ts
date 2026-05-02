@@ -21,7 +21,7 @@ export const Queries: CollectionConfig = {
     read: isOwnerOrAdmin,
     create: () => true,   // Engine writes logs
     update: isAdmin,
-    delete: isAdmin,
+    delete: isOwnerOrAdmin,
   },
   fields: [
     {
