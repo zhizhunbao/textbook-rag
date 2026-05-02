@@ -1,24 +1,23 @@
 /**
- * SourcesTab — Data source registry with PDF discovery.
+ * SourcesTab — Data source registry with table view.
  *
- * Displays pre-configured data sources (seeded from project-brief.md Section 3).
- * Each source card shows: name, category, URL, sync stats, and a [Discover] button.
- * Clicking Discover crawls the source URL via Engine API and shows found PDFs.
+ * Displays data sources grouped by Consulting Persona.
+ * Table columns: Name, URL, Type, Schedule, Docs, Status, Actions.
+ * Clicking [Discover] crawls the source URL via Engine API for PDF discovery.
  *
  * Layout:
- *  ┌───────────────────────────────────────────────────────┐
- *  │ 🏛️ City of Ottawa — ED Updates  [Discover] [Sync Now]│
- *  │    URL: ottawa.ca/...  │  Found: 16  │  Imported: 12  │
- *  │ ┌─ Discovered PDFs ──────────────────────────────────┐│
- *  │ │ ☑ economic_update_q1_2025.pdf       NEW            ││
- *  │ │ ☐ economic_update_q4_2024.pdf       ✅ imported    ││
- *  │ └───────────────────────────────────────────────────────┘
- *  └───────────────────────────────────────────────────────┘
+ *  ┌────────────────────────────────────────────────────────────────┐
+ *  │ 🎓 edu-school-planning (3 sources)                            │
+ *  ├──────────┬─────────────────┬──────┬─────────┬─────┬──────────┤
+ *  │ Name     │ URL             │ Type │ Schedule│ Docs│ Actions  │
+ *  ├──────────┼─────────────────┼──────┼─────────┼─────┼──────────┤
+ *  │ DLI List │ canada.ca/...   │ web  │ monthly │ 0/0 │[Discover]│
+ *  └──────────┴─────────────────┴──────┴─────────┴─────┴──────────┘
  */
 
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Globe, Search, Loader2, CheckCircle2, AlertCircle,
   Download, ChevronDown, ChevronRight, ExternalLink,
@@ -34,19 +33,19 @@ const ENGINE_URL = process.env.NEXT_PUBLIC_ENGINE_URL || 'http://localhost:8001'
 
 interface DataSource {
   id: number
-  name: string
-  shortName: string
-  category: string
+  nameEn: string
+  nameZh: string
+  description: string
   discoveryUrl: string
   type: string
   pdfPattern?: string
-  schedule: string
-  icon: string
-  description: string
   enabled: boolean
   lastSynced?: string
   docsFound: number
   docsIngested: number
+  persona?: { id: number; slug: string; name: string; icon?: string } | number | null
+  autoSync?: boolean
+  syncInterval?: string
 }
 
 interface DiscoveredPdf {
@@ -67,23 +66,7 @@ interface DiscoverResult {
   error?: string
 }
 
-// Category display config
-const CATEGORY_CONFIG: Record<string, { label: string; color: string }> = {
-  city: { label: 'City of Ottawa', color: 'text-blue-600 bg-blue-500/10' },
-  real_estate: { label: 'Real Estate', color: 'text-emerald-600 bg-emerald-500/10' },
-  tourism: { label: 'Tourism', color: 'text-purple-600 bg-purple-500/10' },
-  commercial: { label: 'Commercial', color: 'text-amber-600 bg-amber-500/10' },
-  research: { label: 'Research', color: 'text-cyan-600 bg-cyan-500/10' },
-  news: { label: 'News', color: 'text-rose-600 bg-rose-500/10' },
-}
-
-// DataSource category → storage directory mapping (must match import-url.ts)
-// DataSource category → raw_pdfs storage directory mapping
-// Each category gets its own directory under data/raw_pdfs/
-const CATEGORY_MAP: Record<string, string> = {
-  city: 'ecdev',
-  // real_estate, tourism, commercial, research, news → keep as-is
-}
+// (Legacy grouping constants removed — persona icon now comes from persona.icon)
 
 // ============================================================
 // Component
@@ -106,14 +89,38 @@ export default function SourcesTab({ onBooksRefresh }: SourcesTabProps) {
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [selectedPdfs, setSelectedPdfs] = useState<Record<string, boolean>>({})
   const [importing, setImporting] = useState(false)
-  // Per-file import status: 'waiting' | 'importing' | 'done' | 'error'
   const [fileImportStatus, setFileImportStatus] = useState<Record<string, 'waiting' | 'importing' | 'done' | 'error'>>({})
+  const [activeCategory, setActiveCategory] = useState<string>('all')
 
-  // ── Fetch data sources from Payload ──
+  // ── Category definitions ──
+  const CATEGORIES = [
+    { key: 'all',          label: 'All',           color: 'text-foreground',    bg: 'bg-secondary',        activeBg: 'bg-primary/15 border-primary/30 text-primary' },
+    { key: 'immigration',  label: 'Immigration',   color: 'text-blue-400',      bg: 'bg-blue-500/10',      activeBg: 'bg-blue-500/20 border-blue-400/40 text-blue-400' },
+    { key: 'education',    label: 'Education',     color: 'text-violet-400',    bg: 'bg-violet-500/10',    activeBg: 'bg-violet-500/20 border-violet-400/40 text-violet-400' },
+    { key: 'career',       label: 'Career',        color: 'text-amber-400',     bg: 'bg-amber-500/10',     activeBg: 'bg-amber-500/20 border-amber-400/40 text-amber-400' },
+    { key: 'finance',      label: 'Finance',       color: 'text-emerald-400',   bg: 'bg-emerald-500/10',   activeBg: 'bg-emerald-500/20 border-emerald-400/40 text-emerald-400' },
+    { key: 'healthcare',   label: 'Healthcare',    color: 'text-rose-400',      bg: 'bg-rose-500/10',      activeBg: 'bg-rose-500/20 border-rose-400/40 text-rose-400' },
+    { key: 'settlement',   label: 'Settlement',    color: 'text-sky-400',       bg: 'bg-sky-500/10',       activeBg: 'bg-sky-500/20 border-sky-400/40 text-sky-400' },
+    { key: 'legal',        label: 'Legal',         color: 'text-orange-400',    bg: 'bg-orange-500/10',    activeBg: 'bg-orange-500/20 border-orange-400/40 text-orange-400' },
+  ] as const
+
+  // Persona slug prefix → category
+  const slugToCategory = useCallback((slug: string): string => {
+    if (slug.startsWith('imm-'))     return 'immigration'
+    if (slug.startsWith('edu-'))     return 'education'
+    if (slug.startsWith('career-'))  return 'career'
+    if (slug.startsWith('fin-'))     return 'finance'
+    if (slug.startsWith('health-'))  return 'healthcare'
+    if (slug.startsWith('life-'))    return 'settlement'
+    if (slug.startsWith('legal-'))   return 'legal'
+    return 'other'
+  }, [])
+
+  // ── Fetch data sources from Payload (depth=1 to populate persona) ──
   const fetchSources = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/data-sources?limit=50&sort=category', {
+      const res = await fetch('/api/data-sources?limit=200&sort=nameEn&depth=1', {
         credentials: 'include',
       })
       const data = await res.json()
@@ -128,6 +135,27 @@ export default function SourcesTab({ onBooksRefresh }: SourcesTabProps) {
 
   useEffect(() => { fetchSources() }, [fetchSources])
 
+  // ── Category counts ──
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: sources.length }
+    for (const s of sources) {
+      if (s.persona && typeof s.persona === 'object') {
+        const cat = slugToCategory(s.persona.slug)
+        counts[cat] = (counts[cat] || 0) + 1
+      }
+    }
+    return counts
+  }, [sources, slugToCategory])
+
+  // ── Filtered sources (flat list) ──
+  const filteredSources = useMemo(() => {
+    if (activeCategory === 'all') return sources
+    return sources.filter((s) => {
+      if (!s.persona || typeof s.persona !== 'object') return false
+      return slugToCategory(s.persona.slug) === activeCategory
+    })
+  }, [sources, activeCategory, slugToCategory])
+
   // ── Discover PDFs from a source ──
   const handleDiscover = useCallback(async (source: DataSource) => {
     setDiscoverState((prev) => ({
@@ -137,7 +165,6 @@ export default function SourcesTab({ onBooksRefresh }: SourcesTabProps) {
     setExpandedId(source.id)
 
     try {
-      // Get existing book IDs for dedup
       const booksRes = await fetch('/api/books?limit=500&depth=0', {
         credentials: 'include',
       })
@@ -146,7 +173,6 @@ export default function SourcesTab({ onBooksRefresh }: SourcesTabProps) {
         (b: { engineBookId?: string }) => b.engineBookId ?? ''
       ).filter(Boolean)
 
-      // Call engine discover API
       const pdfPattern = typeof source.pdfPattern === 'string' && source.pdfPattern
         ? source.pdfPattern
         : undefined
@@ -173,7 +199,6 @@ export default function SourcesTab({ onBooksRefresh }: SourcesTabProps) {
         [source.id]: { loading: false, result },
       }))
 
-      // Auto-select new PDFs
       if (result.success) {
         const newSelections: Record<string, boolean> = {};
         (result.pdfs ?? []).forEach((pdf) => {
@@ -183,7 +208,6 @@ export default function SourcesTab({ onBooksRefresh }: SourcesTabProps) {
         })
         setSelectedPdfs(newSelections)
 
-        // Update source stats in Payload
         fetch(`/api/data-sources/${source.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -196,7 +220,6 @@ export default function SourcesTab({ onBooksRefresh }: SourcesTabProps) {
         }).catch(() => { })
       }
     } catch (err: unknown) {
-      console.error('[SourcesTab] discover error:', err)
       const msg = err instanceof Error
         ? err.message
         : typeof err === 'string'
@@ -204,15 +227,12 @@ export default function SourcesTab({ onBooksRefresh }: SourcesTabProps) {
           : `Discovery failed: ${JSON.stringify(err)}`
       setDiscoverState((prev) => ({
         ...prev,
-        [source.id]: {
-          loading: false,
-          error: msg,
-        },
+        [source.id]: { loading: false, error: msg },
       }))
     }
   }, [])
 
-  // ── Import selected PDFs via URL import ──
+  // ── Import selected PDFs ──
   const handleImportSelected = useCallback(async (source: DataSource) => {
     const urls = Object.entries(selectedPdfs)
       .filter(([, selected]) => selected)
@@ -221,7 +241,6 @@ export default function SourcesTab({ onBooksRefresh }: SourcesTabProps) {
     if (urls.length === 0) return
 
     setImporting(true)
-    // Mark all selected as 'waiting'
     const initialStatus: Record<string, 'waiting' | 'importing' | 'done' | 'error'> = {}
     urls.forEach((url) => { initialStatus[url] = 'waiting' })
     setFileImportStatus(initialStatus)
@@ -231,17 +250,14 @@ export default function SourcesTab({ onBooksRefresh }: SourcesTabProps) {
       setFileImportStatus((prev) => ({ ...prev, [url]: 'importing' }))
 
       try {
-        // Map source category → storage category (city → ecdev)
-        const storageCategory = CATEGORY_MAP[source.category] || source.category
+        const storageCategory = (source.persona && typeof source.persona === 'object')
+          ? `ca_${source.persona.slug}`
+          : 'general'
 
-        // Step 1: Download PDF to data/raw_pdfs/{storageCategory}/ via Engine
         const dlRes = await fetch(`${ENGINE_URL}/engine/sources/download-pdf`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            url,
-            category: storageCategory,
-          }),
+          body: JSON.stringify({ url, category: storageCategory }),
         })
         if (!dlRes.ok) {
           setFileImportStatus((prev) => ({ ...prev, [url]: 'error' }))
@@ -249,25 +265,22 @@ export default function SourcesTab({ onBooksRefresh }: SourcesTabProps) {
         }
         const dlData = await dlRes.json()
         if (!dlData.success) {
-          console.error('[SourcesTab] download failed:', dlData.error)
           setFileImportStatus((prev) => ({ ...prev, [url]: 'error' }))
           continue
         }
 
-        // Step 2: Create Book record in Payload (with file size from download)
         const res = await fetch('/api/books/import-url', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
           body: JSON.stringify({
             url,
-            category: source.category,
+            category: storageCategory,
             fileSize: dlData.size_bytes || 0,
           }),
         })
         if (res.ok) {
           setFileImportStatus((prev) => ({ ...prev, [url]: 'done' }))
-          // Uncheck imported PDF and mark as already_imported in result
           setSelectedPdfs((prev) => ({ ...prev, [url]: false }))
           setDiscoverState((prev) => {
             const state = prev[source.id]
@@ -287,7 +300,6 @@ export default function SourcesTab({ onBooksRefresh }: SourcesTabProps) {
               },
             }
           })
-          // Refresh sidebar after each successful import so books appear incrementally
           onBooksRefresh?.()
         } else {
           setFileImportStatus((prev) => ({ ...prev, [url]: 'error' }))
@@ -298,7 +310,6 @@ export default function SourcesTab({ onBooksRefresh }: SourcesTabProps) {
     }
 
     setImporting(false)
-    // Clear per-file status after a short delay so user sees final state
     setTimeout(() => setFileImportStatus({}), 2000)
   }, [selectedPdfs, onBooksRefresh])
 
@@ -317,11 +328,7 @@ export default function SourcesTab({ onBooksRefresh }: SourcesTabProps) {
       <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4 text-sm text-destructive">
         <AlertCircle className="h-4 w-4 inline mr-2" />
         {error}
-        <button
-          type="button"
-          onClick={fetchSources}
-          className="ml-3 text-xs underline hover:no-underline"
-        >
+        <button type="button" onClick={fetchSources} className="ml-3 text-xs underline hover:no-underline">
           Retry
         </button>
       </div>
@@ -334,310 +341,356 @@ export default function SourcesTab({ onBooksRefresh }: SourcesTabProps) {
         <Globe className="h-10 w-10 text-muted-foreground/30" />
         <p className="text-sm text-muted-foreground">No data sources configured</p>
         <p className="text-xs text-muted-foreground/70">
-          Run Seed → Data Sources to load pre-configured Ottawa data sources
+          Run Seed to load persona-linked data sources
         </p>
       </div>
     )
   }
 
-  // Group by category
-  const grouped = new Map<string, DataSource[]>()
-  for (const s of sources) {
-    const key = s.category || 'other'
-    if (!grouped.has(key)) grouped.set(key, [])
-    grouped.get(key)!.push(s)
-  }
-
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Globe className="h-4 w-4 text-primary" />
-          <span className="text-sm font-semibold text-foreground">
-            {sources.length} Data Sources
-          </span>
-          <span className="text-xs text-muted-foreground">
-            from project-brief.md
-          </span>
+    <div className="space-y-3">
+      {/* Header + Category buttons */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {CATEGORIES.map((cat) => {
+            const count = categoryCounts[cat.key] || 0
+            const isActive = activeCategory === cat.key
+            return (
+              <button
+                key={cat.key}
+                type="button"
+                onClick={() => setActiveCategory(cat.key)}
+                className={cn(
+                  'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium border transition-all',
+                  isActive
+                    ? cat.activeBg
+                    : 'border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground',
+                )}
+              >
+                {cat.label}
+                <span className={cn(
+                  'text-[10px] px-1.5 py-0 rounded-full font-normal',
+                  isActive ? 'bg-white/10' : 'bg-muted text-muted-foreground',
+                )}>
+                  {count}
+                </span>
+              </button>
+            )
+          })}
         </div>
         <button
           type="button"
           onClick={fetchSources}
-          className="p-1.5 rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+          className="p-1.5 rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors shrink-0"
           title="Refresh"
         >
           <RefreshCw className="h-3.5 w-3.5" />
         </button>
       </div>
 
-      {/* Source cards grouped by category */}
-      {Array.from(grouped.entries()).map(([category, catSources]) => {
-        const cfg = CATEGORY_CONFIG[category] || { label: category, color: 'text-foreground bg-muted' }
-        return (
-          <div key={category} className="space-y-2">
-            {/* Category header */}
-            <div className="flex items-center gap-2">
-              <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-full', cfg.color)}>
-                {cfg.label}
-              </span>
-              <span className="text-[10px] text-muted-foreground">
-                {catSources.length} source{catSources.length > 1 ? 's' : ''}
-              </span>
+      {/* Single flat table */}
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-border bg-muted/30 text-muted-foreground">
+                <th className="text-left px-3 py-2 font-medium whitespace-nowrap">Persona</th>
+                <th className="text-left px-3 py-2 font-medium whitespace-nowrap">Name</th>
+                <th className="text-left px-3 py-2 font-medium">URL</th>
+                <th className="text-left px-3 py-2 font-medium whitespace-nowrap w-[70px]">Sync</th>
+                <th className="text-center px-3 py-2 font-medium whitespace-nowrap w-[50px]">Docs</th>
+                <th className="text-right px-3 py-2 font-medium whitespace-nowrap w-[70px]">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/30">
+              {filteredSources.map((source) => {
+                const discover = discoverState[source.id]
+                const isExpanded = expandedId === source.id
+                const result = discover?.result
+
+                return (
+                  <SourceRow
+                    key={source.id}
+                    source={source}
+                    discover={discover}
+                    isExpanded={isExpanded}
+                    result={result}
+                    selectedPdfs={selectedPdfs}
+                    importing={importing}
+                    fileImportStatus={fileImportStatus}
+                    onDiscover={() => handleDiscover(source)}
+                    onToggleExpand={() => setExpandedId(isExpanded ? null : source.id)}
+                    onSelectPdf={(url, checked) => setSelectedPdfs((prev) => ({ ...prev, [url]: checked }))}
+                    onImportSelected={() => handleImportSelected(source)}
+                  />
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+
+// ============================================================
+// SourceRow — Table row + expandable discovery panel
+// ============================================================
+
+interface SourceRowProps {
+  source: DataSource
+  discover?: { loading: boolean; result?: DiscoverResult; error?: string }
+  isExpanded: boolean
+  result?: DiscoverResult
+  selectedPdfs: Record<string, boolean>
+  importing: boolean
+  fileImportStatus: Record<string, 'waiting' | 'importing' | 'done' | 'error'>
+  onDiscover: () => void
+  onToggleExpand: () => void
+  onSelectPdf: (url: string, checked: boolean) => void
+  onImportSelected: () => void
+}
+
+function SourceRow({
+  source, discover, isExpanded, result,
+  selectedPdfs, importing, fileImportStatus,
+  onDiscover, onToggleExpand, onSelectPdf, onImportSelected,
+}: SourceRowProps) {
+  return (
+    <>
+      {/* Main row */}
+      <tr className={cn(
+        'transition-colors',
+        !source.enabled && 'opacity-50',
+        isExpanded && 'bg-muted/20',
+      )}>
+        {/* Persona */}
+        <td className="px-3 py-2 whitespace-nowrap">
+          {source.persona && typeof source.persona === 'object' ? (
+            <span className="text-[11px] font-mono text-muted-foreground" title={source.persona.name}>
+              {source.persona.slug}
+            </span>
+          ) : (
+            <span className="text-[10px] text-muted-foreground/40">—</span>
+          )}
+        </td>
+
+        {/* Name */}
+        <td className="px-3 py-2">
+          <div className="flex flex-col gap-0.5">
+            <span className="font-medium text-foreground" title={source.description}>
+              {source.nameEn}
+            </span>
+            <span className="text-[10px] text-muted-foreground">
+              {source.nameZh}
+            </span>
+            {!source.enabled && (
+              <span className="text-[9px] text-muted-foreground bg-muted rounded px-1 py-0.5 w-fit">OFF</span>
+            )}
+          </div>
+        </td>
+
+        {/* URL — full, no truncation */}
+        <td className="px-3 py-2">
+          <a
+            href={source.discoveryUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-muted-foreground hover:text-primary transition-colors group break-all"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <ExternalLink className="h-2.5 w-2.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <span>{source.discoveryUrl}</span>
+          </a>
+        </td>
+
+        {/* Sync */}
+        <td className="px-3 py-2 text-muted-foreground">
+          {source.autoSync ? (
+            <span className="text-primary">{source.syncInterval || 'weekly'}</span>
+          ) : (
+            <span>manual</span>
+          )}
+        </td>
+
+        {/* Docs count */}
+        <td className="px-3 py-2 text-center">
+          {source.docsIngested > 0 ? (
+            <span className="text-emerald-400">{source.docsIngested}/{source.docsFound}</span>
+          ) : source.docsFound > 0 ? (
+            <span className="text-muted-foreground">0/{source.docsFound}</span>
+          ) : (
+            <span className="text-muted-foreground/40">—</span>
+          )}
+        </td>
+
+        {/* Actions */}
+        <td className="px-3 py-2 text-right">
+          <div className="flex items-center justify-end gap-1">
+            <button
+              type="button"
+              onClick={onDiscover}
+              disabled={discover?.loading || !source.enabled}
+              className={cn(
+                'flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-colors',
+                'bg-primary/10 text-primary hover:bg-primary/20',
+                'disabled:opacity-40 disabled:cursor-not-allowed',
+              )}
+            >
+              {discover?.loading ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Search className="h-3 w-3" />
+              )}
+            </button>
+            {result && (
+              <button
+                type="button"
+                onClick={onToggleExpand}
+                className="p-1 rounded-md text-muted-foreground hover:bg-secondary transition-colors"
+              >
+                {isExpanded ? (
+                  <ChevronDown className="h-3 w-3" />
+                ) : (
+                  <ChevronRight className="h-3 w-3" />
+                )}
+              </button>
+            )}
+          </div>
+        </td>
+      </tr>
+
+      {/* Error row */}
+      {discover?.error && (
+        <tr>
+          <td colSpan={6} className="px-4 py-2">
+            <div className="px-3 py-2 rounded-lg bg-destructive/5 border border-destructive/20 text-xs text-destructive">
+              <AlertCircle className="h-3 w-3 inline mr-1" />
+              {discover.error}
             </div>
+          </td>
+        </tr>
+      )}
 
-            {/* Source cards */}
-            {catSources.map((source) => {
-              const discover = discoverState[source.id]
-              const isExpanded = expandedId === source.id
-              const result = discover?.result
-
-              return (
-                <div
-                  key={source.id}
-                  className="rounded-xl border border-border bg-card overflow-hidden transition-colors hover:border-border/80"
-                >
-                  {/* Card header */}
-                  <div className="flex items-center gap-3 px-4 py-3">
-                    {/* Icon */}
-                    <span className="text-lg shrink-0">{source.icon}</span>
-
-                    {/* Info */}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-medium text-foreground truncate">
-                          {source.name}
-                        </h3>
-                        {!source.enabled && (
-                          <span className="text-[10px] text-muted-foreground bg-muted rounded px-1.5 py-0.5">
-                            Disabled
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-muted-foreground truncate mt-0.5">
-                        {source.description}
-                      </p>
-                      <div className="flex items-center gap-3 mt-1.5 text-[10px] text-muted-foreground">
-                        <a
-                          href={source.discoveryUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1 hover:text-primary transition-colors"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <ExternalLink className="h-2.5 w-2.5" />
-                          <span className="truncate max-w-[200px] underline decoration-dotted underline-offset-2">{source.discoveryUrl}</span>
-                        </a>
-                        <span className="font-mono">{source.type}</span>
-                        <span>{source.schedule}</span>
-
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-2 shrink-0">
-                      {/* Discover button */}
-                      <button
-                        type="button"
-                        onClick={() => handleDiscover(source)}
-                        disabled={discover?.loading || !source.enabled}
-                        className={cn(
-                          'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
-                          'bg-primary text-primary-foreground hover:opacity-90',
-                          'disabled:opacity-50 disabled:cursor-not-allowed',
-                        )}
-                      >
-                        {discover?.loading ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <Search className="h-3 w-3" />
-                        )}
-                        Discover
-                      </button>
-
-                      {/* Expand toggle */}
-                      {result && (
-                        <button
-                          type="button"
-                          onClick={() => setExpandedId(isExpanded ? null : source.id)}
-                          className="p-1.5 rounded-md text-muted-foreground hover:bg-secondary transition-colors"
-                        >
-                          {isExpanded ? (
-                            <ChevronDown className="h-3.5 w-3.5" />
-                          ) : (
-                            <ChevronRight className="h-3.5 w-3.5" />
-                          )}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Discovery result */}
-                  {discover?.error && (
-                    <div className="mx-4 mb-3 px-3 py-2 rounded-lg bg-destructive/5 border border-destructive/20 text-xs text-destructive">
-                      <AlertCircle className="h-3 w-3 inline mr-1" />
-                      {discover.error}
-                    </div>
+      {/* Expanded discovery panel */}
+      {result && isExpanded && (
+        <tr>
+          <td colSpan={6} className="px-0 py-0 bg-muted/10">
+            <div className="border-t border-border/50">
+              {/* Summary bar */}
+              <div className="flex items-center justify-between px-4 py-2 bg-muted/20">
+                <div className="flex items-center gap-3 text-xs">
+                  <span className="text-foreground font-medium">
+                    {result.total_found} PDFs found
+                  </span>
+                  {result.new_count > 0 && (
+                    <span className="text-primary font-medium">{result.new_count} new</span>
                   )}
-
-                  {/* Expanded PDF list */}
-                  {result && isExpanded && (
-                    <div className="border-t border-border">
-                      {/* Summary bar */}
-                      <div className="flex items-center justify-between px-4 py-2 bg-muted/30">
-                        <div className="flex items-center gap-3 text-xs">
-                          <span className="text-foreground font-medium">
-                            {result.total_found} PDFs found
-                          </span>
-                          {result.new_count > 0 && (
-                            <span className="text-primary font-medium">
-                              {result.new_count} new
-                            </span>
-                          )}
-                          {result.existing_count > 0 && (
-                            <span className="text-muted-foreground">
-                              {result.existing_count} already imported
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Import button (stays in place, no page navigation) */}
-                        {importing ? (
-                          <div className="flex items-center gap-2 text-xs text-emerald-500">
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            <span className="font-medium">Importing…</span>
-                          </div>
-                        ) : result.new_count > 0 ? (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault()
-                              handleImportSelected(source)
-                            }}
-                            disabled={Object.values(selectedPdfs).filter(Boolean).length === 0}
-                            className={cn(
-                              'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
-                              'bg-emerald-600 text-white hover:bg-emerald-700',
-                              'disabled:opacity-50 disabled:cursor-not-allowed',
-                            )}
-                          >
-                            <Download className="h-3 w-3" />
-                            Import Selected ({Object.values(selectedPdfs).filter(Boolean).length})
-                          </button>
-                        ) : null}
-                      </div>
-
-                      {/* PDF list */}
-                      <div className="max-h-[300px] overflow-y-auto divide-y divide-border/50">
-                        {(result.pdfs ?? []).map((pdf) => {
-                          const fStatus = fileImportStatus[pdf.url]
-                          return (
-                            <div
-                              key={pdf.url}
-                              className={cn(
-                                'flex items-center gap-3 px-4 py-2 text-xs transition-colors',
-                                pdf.already_imported
-                                  ? 'bg-muted/20 text-muted-foreground'
-                                  : pdf.unavailable
-                                    ? 'bg-amber-500/5 text-muted-foreground'
-                                    : 'hover:bg-muted/30',
-                              )}
-                            >
-                              {/* Checkbox */}
-                              <input
-                                type="checkbox"
-                                checked={selectedPdfs[pdf.url] ?? false}
-                                disabled={pdf.already_imported || pdf.unavailable || importing}
-                                onChange={(e) => setSelectedPdfs((prev) => ({
-                                  ...prev,
-                                  [pdf.url]: e.target.checked,
-                                }))}
-                                className="h-3.5 w-3.5 rounded border-border text-primary accent-primary shrink-0"
-                              />
-
-                              {/* File info + per-file progress bar */}
-                              <div className="min-w-0 flex-1">
-                                <p className="font-medium text-foreground truncate">
-                                  {pdf.title}
-                                </p>
-                                <p className="text-[10px] text-muted-foreground truncate mt-0.5">
-                                  {pdf.filename}
-                                </p>
-                                {/* Per-file progress bar — only shown during import batch */}
-                                {fStatus && (
-                                  <div className="mt-1.5 flex items-center gap-2">
-                                    <div className="h-1.5 flex-1 bg-muted rounded-full overflow-hidden">
-                                      <div
-                                        className={cn(
-                                          'h-full rounded-full transition-all duration-500 ease-out',
-                                          fStatus === 'waiting' && 'bg-muted-foreground/30 w-[15%] animate-pulse',
-                                          fStatus === 'importing' && 'bg-primary w-[60%] animate-pulse',
-                                          fStatus === 'done' && 'bg-emerald-500 w-full',
-                                          fStatus === 'error' && 'bg-destructive w-full',
-                                        )}
-                                        style={{
-                                          width: fStatus === 'waiting' ? '15%'
-                                            : fStatus === 'importing' ? '60%'
-                                              : '100%',
-                                        }}
-                                      />
-                                    </div>
-                                    <span className={cn(
-                                      'text-[10px] font-medium shrink-0',
-                                      fStatus === 'waiting' && 'text-muted-foreground',
-                                      fStatus === 'importing' && 'text-primary',
-                                      fStatus === 'done' && 'text-emerald-500',
-                                      fStatus === 'error' && 'text-destructive',
-                                    )}>
-                                      {fStatus === 'waiting' && 'Queued'}
-                                      {fStatus === 'importing' && 'Importing…'}
-                                      {fStatus === 'done' && '✓ Done'}
-                                      {fStatus === 'error' && '✗ Failed'}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Status badge */}
-                              {pdf.already_imported ? (
-                                <span className="flex items-center gap-1 text-[10px] text-emerald-500 shrink-0">
-                                  <CheckCircle2 className="h-3 w-3" />
-                                  Imported
-                                </span>
-                              ) : pdf.unavailable ? (
-                                <span className="flex items-center gap-1 text-[10px] text-amber-500 shrink-0" title="PDF not yet published by the source">
-                                  <AlertTriangle className="h-3 w-3" />
-                                  Not Published
-                                </span>
-                              ) : fStatus === 'importing' ? (
-                                <Loader2 className="h-3 w-3 animate-spin text-primary shrink-0" />
-                              ) : fStatus === 'done' ? (
-                                <span className="flex items-center gap-1 text-[10px] text-emerald-500 shrink-0">
-                                  <CheckCircle2 className="h-3 w-3" />
-                                  Done
-                                </span>
-                              ) : fStatus === 'error' ? (
-                                <span className="flex items-center gap-1 text-[10px] text-destructive shrink-0">
-                                  <AlertCircle className="h-3 w-3" />
-                                  Error
-                                </span>
-                              ) : (
-                                <span className="text-[10px] text-primary font-medium shrink-0">
-                                  NEW
-                                </span>
-                              )}
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
+                  {result.existing_count > 0 && (
+                    <span className="text-muted-foreground">{result.existing_count} imported</span>
                   )}
                 </div>
-              )
-            })}
-          </div>
-        )
-      })}
-    </div>
+
+                {importing ? (
+                  <div className="flex items-center gap-2 text-xs text-emerald-500">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <span className="font-medium">Importing…</span>
+                  </div>
+                ) : result.new_count > 0 ? (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); onImportSelected() }}
+                    disabled={Object.values(selectedPdfs).filter(Boolean).length === 0}
+                    className={cn(
+                      'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
+                      'bg-emerald-600 text-white hover:bg-emerald-700',
+                      'disabled:opacity-50 disabled:cursor-not-allowed',
+                    )}
+                  >
+                    <Download className="h-3 w-3" />
+                    Import ({Object.values(selectedPdfs).filter(Boolean).length})
+                  </button>
+                ) : null}
+              </div>
+
+              {/* PDF list */}
+              <div className="max-h-[240px] overflow-y-auto divide-y divide-border/30">
+                {(result.pdfs ?? []).map((pdf) => {
+                  const fStatus = fileImportStatus[pdf.url]
+                  return (
+                    <div
+                      key={pdf.url}
+                      className={cn(
+                        'flex items-center gap-3 px-4 py-1.5 text-xs transition-colors',
+                        pdf.already_imported
+                          ? 'bg-muted/10 text-muted-foreground'
+                          : pdf.unavailable
+                            ? 'bg-amber-500/5 text-muted-foreground'
+                            : 'hover:bg-muted/20',
+                      )}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedPdfs[pdf.url] ?? false}
+                        disabled={pdf.already_imported || pdf.unavailable || importing}
+                        onChange={(e) => onSelectPdf(pdf.url, e.target.checked)}
+                        className="h-3.5 w-3.5 rounded border-border text-primary accent-primary shrink-0"
+                      />
+
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-foreground truncate">{pdf.title}</p>
+                        <p className="text-[10px] text-muted-foreground truncate">{pdf.filename}</p>
+                        {fStatus && (
+                          <div className="mt-1 flex items-center gap-2">
+                            <div className="h-1 flex-1 bg-muted rounded-full overflow-hidden">
+                              <div
+                                className={cn(
+                                  'h-full rounded-full transition-all duration-500',
+                                  fStatus === 'waiting' && 'bg-muted-foreground/30 animate-pulse',
+                                  fStatus === 'importing' && 'bg-primary animate-pulse',
+                                  fStatus === 'done' && 'bg-emerald-500',
+                                  fStatus === 'error' && 'bg-destructive',
+                                )}
+                                style={{
+                                  width: fStatus === 'waiting' ? '15%'
+                                    : fStatus === 'importing' ? '60%' : '100%',
+                                }}
+                              />
+                            </div>
+                            <span className={cn(
+                              'text-[10px] font-medium shrink-0',
+                              fStatus === 'done' && 'text-emerald-500',
+                              fStatus === 'error' && 'text-destructive',
+                              fStatus === 'importing' && 'text-primary',
+                            )}>
+                              {fStatus === 'waiting' && 'Queued'}
+                              {fStatus === 'importing' && 'Importing…'}
+                              {fStatus === 'done' && '✓'}
+                              {fStatus === 'error' && '✗'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Status badge */}
+                      {pdf.already_imported ? (
+                        <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
+                      ) : pdf.unavailable ? (
+                        <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0" />
+                      ) : fStatus === 'importing' ? (
+                        <Loader2 className="h-3 w-3 animate-spin text-primary shrink-0" />
+                      ) : (
+                        <span className="text-[10px] text-primary font-medium shrink-0">NEW</span>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
   )
 }

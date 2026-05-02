@@ -28,6 +28,7 @@ dependencies = [
     "llama-index-retrievers-bm25>=0.5.2",
     "xhtml2pdf>=0.2.17",
     "markdown>=3.10.2",
+    "crawl4ai>=0.8.5",
 ]
 
 [project.optional-dependencies]

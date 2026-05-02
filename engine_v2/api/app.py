@@ -19,8 +19,8 @@ configure_logging()
 
 from engine_v2.settings import CORS_ORIGINS, init_settings
 from engine_v2.api.routes import (
-    billing, books, classify, consulting, delete, embeddings, evaluation, health,
-    ingest, llms, query, questions, report, retrievers, sources, suggest,
+    billing, books, classify, consulting, crawl, delete, embeddings, evaluation,
+    health, ingest, llms, query, questions, report, retrievers, sources, suggest,
     vectors,
 )
 
@@ -87,6 +87,7 @@ def create_app() -> FastAPI:
     app.include_router(retrievers.router, prefix="/engine")
     app.include_router(evaluation.router, prefix="/engine")
     app.include_router(sources.router, prefix="/engine")
+    app.include_router(crawl.router, prefix="/engine")
     app.include_router(suggest.router, prefix="/engine")
     app.include_router(report.router, prefix="/engine")
     app.include_router(vectors.router, prefix="/engine")

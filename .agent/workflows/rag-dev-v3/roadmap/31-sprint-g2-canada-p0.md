@@ -3,7 +3,7 @@
 > 目标：29 个角色全量 Seed（全部启用）+ 系统 Prompt + 每角色 DataSource 数据源关联（公开 URL 自动爬取）。
 >
 > 前置条件：Sprint G1 ✅ 全球架构改造完成
-> **状态**: 🟡 3/6 (G2-01 ✅ G2-02 ✅ G2-03 ✅ | G2-04 ❌ G2-05 ❌ G2-06 ❌)
+> **状态**: 🟡 5/6 (G2-01 ✅ G2-02 ✅ G2-03 ✅ | G2-04 ✅ G2-05 ✅ G2-06 ❌)
 
 ## 核心原则
 
@@ -20,8 +20,8 @@
 | T1 架构对齐 | 1 | 1h | ✅ | category 收敛 8 个（7+analysis） |
 | T2 Seed 数据 | 1 | 2h | ✅ | 29 角色 Seed（26 启用） |
 | T3 系统 Prompt | 1 | 6h | ✅ | 29 角色 Prompt 已编写 |
-| T4 DataSource 关联 | 3 | 6h | ❌ | Persona 字段 + 数据源 Seed + 同步端点 |
-| **合计** | **6** | **15h** | **3/6** |
+| T4 DataSource 关联 | 3 | 6h | ✅ | Persona 字段 + 数据源 Seed + 同步端点 |
+| **合计** | **6** | **15h** | **5/6** |
 
 ## 质量门禁
 
@@ -188,7 +188,7 @@ immigration, or financial advice. Please consult a licensed professional.
 
 > **核心变更**: 知识库灌入不再使用 Skill 内容，改为 DataSource 公开 URL 自动爬取。
 
-### [G2-04] DataSource Collection 增加 Persona 关联字段
+### [G2-04] ✅ DataSource Collection 增加 Persona 关联字段
 
 **类型**: Backend (Payload CMS)
 **优先级**: P0
@@ -207,11 +207,11 @@ immigration, or financial advice. Please consult a licensed professional.
 
 #### 验收标准
 
-- [ ] `DataSources` Collection 有 `persona` 关系字段（optional, relationTo: consulting-personas）
-- [ ] 有 `autoSync` 布尔字段（default: false）
-- [ ] 有 `syncInterval` 选择字段
-- [ ] Admin 后台可为数据源选择关联 Persona
-- [ ] 已有数据源不受影响（向后兼容）
+- [x] `DataSources` Collection 有 `persona` 关系字段（optional, relationTo: consulting-personas）
+- [x] 有 `autoSync` 布尔字段（default: false）
+- [x] 有 `syncInterval` 选择字段
+- [x] Admin 后台可为数据源选择关联 Persona
+- [x] 已有数据源不受影响（向后兼容）
 
 #### 文件
 
@@ -219,7 +219,7 @@ immigration, or financial advice. Please consult a licensed professional.
 
 ---
 
-### [G2-05] 29 角色 DataSource Seed 数据
+### [G2-05] ✅ 29 角色 DataSource Seed 数据
 
 **类型**: Backend (Seed)
 **优先级**: P0
@@ -318,11 +318,11 @@ immigration, or financial advice. Please consult a licensed professional.
 
 #### 验收标准
 
-- [ ] 29 个角色各有 2-5 个数据源
-- [ ] 所有 URL 均为**真实可访问**的公开官方页面
-- [ ] 数据源的 `persona` 字段已关联对应角色
-- [ ] `npm run seed` 后 Admin Data Sources 页面可按 Persona 过滤
-- [ ] `autoSync: true` + `syncInterval: 'weekly'` 为默认配置
+- [x] 29 个角色各有 2-5 个数据源
+- [x] 所有 URL 均为**真实可访问**的公开官方页面
+- [x] 数据源的 `persona` 字段已关联对应角色
+- [x] `npm run seed` 后 Admin Data Sources 页面可按 Persona 过滤
+- [x] `autoSync: true` + `syncInterval: 'weekly'` 为默认配置
 
 #### 文件
 

@@ -9,8 +9,10 @@
  *   - prompt-modes → Prompts collection (type='mode')
  *   - prompt-templates → Prompts collection (type='template')
  *   - users        → Users collection
- *   - data-sources → DataSources collection
  *   - consulting-personas → ConsultingPersonas collection
+ *
+ * NOTE: DataSources are seeded separately via seedPersonaDataSources()
+ *       after consulting-personas are created (requires persona IDs).
  */
 
 export type { SeedCollection } from './types'
@@ -19,7 +21,6 @@ export { llmsData } from './llms'
 export { promptModesData } from './prompt-modes'
 export { promptTemplatesData } from './prompt-templates'
 export { usersData } from './users'
-export { dataSourcesData } from './data-sources'
 export { consultingPersonasData } from './consulting-personas'
 
 // ── Registry ────────────────────────────────────────────────────────────────
@@ -29,7 +30,6 @@ import { llmsData } from './llms'
 import { promptModesData } from './prompt-modes'
 import { promptTemplatesData } from './prompt-templates'
 import { usersData } from './users'
-import { dataSourcesData } from './data-sources'
 import { consultingPersonasData } from './consulting-personas'
 
 export const seedCollections: SeedCollection[] = [
@@ -37,6 +37,5 @@ export const seedCollections: SeedCollection[] = [
   { label: 'LLMs', slug: 'llms', uniqueField: 'name', data: llmsData },
   { label: 'Prompt Modes', slug: 'prompts', uniqueField: 'slug', data: promptModesData },
   { label: 'Query Templates', slug: 'prompts', uniqueField: 'slug', data: promptTemplatesData },
-  { label: 'Data Sources', slug: 'data-sources', uniqueField: 'shortName', data: dataSourcesData },
   { label: 'Consulting Personas', slug: 'consulting-personas', uniqueField: 'slug', data: consultingPersonasData },
 ]

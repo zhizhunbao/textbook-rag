@@ -29,9 +29,8 @@ import { useQueryState } from '@/features/shared/hooks/useQueryState'
 interface SeedResult {
   slug: string
   label: string
+  deleted: number
   created: number
-  updated: number
-  skipped: number
   errors: string[]
 }
 
@@ -134,11 +133,11 @@ const SEED_MODULES: SeedModuleMeta[] = [
     category: 'preset',
     targetCollection: 'data-sources',
     targetCollectionLabel: 'DataSources',
-    description: '7 pre-configured Ottawa data sources: ED Updates, OREB, CMHC, Invest Ottawa, etc.',
-    descriptionFr: '7 sources de données Ottawa pré-configurées : ED Updates, OREB, SCHL, Investir Ottawa, etc.',
-    recordCount: 7,
-    dataSummary: '6 categories from project-brief.md Section 3',
-    dataSummaryFr: '6 catégories du projet-brief.md Section 3',
+    description: '59 persona-linked data sources from government & public sites (IRCC, CRA, Ontario.ca, CMHC, etc.)',
+    descriptionFr: '59 sources de données liées aux rôles depuis des sites officiels (IRCC, CRA, Ontario.ca, SCHL, etc.)',
+    recordCount: 59,
+    dataSummary: '28 personas × 2-3 sources each, across 7 categories',
+    dataSummaryFr: '28 rôles × 2-3 sources chacun, dans 7 catégories',
   },
   {
     id: 'consulting-personas',
@@ -319,9 +318,8 @@ function SeedPageInner() {
     if (matching.length === 0) return null
     return {
       ...matching[0],
+      deleted: matching.reduce((s, r) => s + (r.deleted || 0), 0),
       created: matching.reduce((s, r) => s + r.created, 0),
-      updated: matching.reduce((s, r) => s + r.updated, 0),
-      skipped: matching.reduce((s, r) => s + (r.skipped || 0), 0),
       errors: matching.flatMap((r) => r.errors),
     }
   }
@@ -336,11 +334,9 @@ function SeedPageInner() {
           <XCircle className="h-3.5 w-3.5 text-red-500" />
         )}
         <span className="text-muted-foreground">
+          {result.deleted > 0 && <span className="text-amber-500">🗑️{result.deleted}</span>}
+          {result.deleted > 0 && result.created > 0 && ' → '}
           {result.created > 0 && <span className="text-emerald-500">+{result.created}</span>}
-          {result.created > 0 && (result.updated > 0 || result.skipped > 0) && ' / '}
-          {result.updated > 0 && <span className="text-blue-500">↻{result.updated}</span>}
-          {result.updated > 0 && result.skipped > 0 && ' / '}
-          {result.skipped > 0 && <span className="text-amber-500">⊘{result.skipped}</span>}
           {result.errors.length > 0 && (
             <span className="text-red-500 ml-1">✗{result.errors.length}</span>
           )}
@@ -406,11 +402,8 @@ function SeedPageInner() {
         <div className="mb-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm">
           <CheckCircle2 className="h-4 w-4 inline mr-2" />
           {isFr ? 'Terminé !' : 'Done!'}{' '}
-          {isFr ? 'Créé' : 'Created'} {results.reduce((s, r) => s + r.created, 0)},{' '}
-          {isFr ? 'Mis à jour' : 'Updated'} {results.reduce((s, r) => s + r.updated, 0)}
-          {results.reduce((s, r) => s + (r.skipped || 0), 0) > 0 &&
-            `${isFr ? ', Ignoré' : ', Skipped'} ${results.reduce((s, r) => s + (r.skipped || 0), 0)}`
-          }
+          {isFr ? 'Supprimé' : 'Deleted'} {results.reduce((s, r) => s + (r.deleted || 0), 0)},{' '}
+          {isFr ? 'Créé' : 'Created'} {results.reduce((s, r) => s + r.created, 0)}
         </div>
       )}
 
@@ -424,8 +417,8 @@ function SeedPageInner() {
             </h2>
             <span className="text-[10px] text-muted-foreground">
               {isFr
-                ? 'Initialiser les données prédéfinies, les enregistrements existants sont mis à jour'
-                : 'Initialize preset data, existing records auto-update'}
+                ? '覆盖更新：先删除旧数据，再创建新数据'
+                : 'Overwrite: deletes existing → recreates from seed'}
             </span>
           </div>
 

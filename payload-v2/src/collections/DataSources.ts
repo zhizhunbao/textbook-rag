@@ -5,17 +5,17 @@ import { isAdmin } from '../access/isAdmin'
 /**
  * DataSources — Registry of external data sources for PDF discovery.
  *
- * Each record represents a web endpoint (e.g. ottawa.ca ED Updates, OREB)
+ * Each record represents a web endpoint (e.g. government sites, official portals)
  * that the system can crawl to discover new PDF documents for import.
  *
- * Categories align with project-brief.md Section 3:
- *   city, real_estate, tourism, commercial, research, news
+ * Refactored: bilingual naming (nameEn + nameZh), streamlined fields,
+ * removed redundant shortName/icon/schedule in favour of syncInterval.
  */
 export const DataSources: CollectionConfig = {
   slug: 'data-sources',
   admin: {
-    useAsTitle: 'name',
-    defaultColumns: ['name', 'shortName', 'category', 'type', 'enabled', 'docsFound', 'docsIngested', 'lastSynced'],
+    useAsTitle: 'nameEn',
+    defaultColumns: ['nameEn', 'nameZh', 'description', 'persona', 'type', 'enabled', 'syncInterval', 'docsFound', 'docsIngested', 'lastSynced'],
     group: 'Content',
   },
   access: {
@@ -25,48 +25,43 @@ export const DataSources: CollectionConfig = {
     delete: isAdmin,
   },
   fields: [
+    // ── Identity ──
     {
-      name: 'name',
+      name: 'nameEn',
       type: 'text',
       required: true,
-      admin: { description: 'Full name of the data source organization' },
+      label: 'Name (EN)',
+      admin: { description: 'English name of the data source' },
     },
     {
-      name: 'shortName',
+      name: 'nameZh',
       type: 'text',
       required: true,
-      admin: { description: 'Abbreviated name (e.g. OREB, CMHC)' },
+      label: '名称 (ZH)',
+      admin: { description: '数据源的中文名称' },
     },
     {
-      name: 'category',
-      type: 'select',
+      name: 'description',
+      type: 'textarea',
       required: true,
-      defaultValue: 'city',
-      options: [
-        { label: 'City of Ottawa', value: 'city' },
-        { label: 'Real Estate & Housing', value: 'real_estate' },
-        { label: 'Tourism & Creative', value: 'tourism' },
-        { label: 'Commercial & Districts', value: 'commercial' },
-        { label: 'Research & Statistics', value: 'research' },
-        { label: 'News & Business', value: 'news' },
-      ],
+      admin: { description: 'Brief description of what this data source covers' },
     },
+    // ── Source config ──
     {
       name: 'discoveryUrl',
       type: 'text',
       required: true,
-      admin: { description: 'URL to crawl for PDF discovery' },
+      admin: { description: 'URL to crawl for content discovery' },
     },
     {
       name: 'type',
       type: 'select',
       required: true,
-      defaultValue: 'pdf_crawl',
+      defaultValue: 'web_scrape',
       options: [
-        { label: 'PDF Crawl', value: 'pdf_crawl' },
-        { label: 'URL Pattern', value: 'url_pattern' },
-        { label: 'API', value: 'api' },
         { label: 'Web Scrape', value: 'web_scrape' },
+        { label: 'PDF Crawl', value: 'pdf_crawl' },
+        { label: 'API', value: 'api' },
         { label: 'Manual', value: 'manual' },
       ],
     },
@@ -76,31 +71,44 @@ export const DataSources: CollectionConfig = {
       admin: { description: 'Regex pattern to filter discovered PDF filenames (optional)' },
     },
     {
-      name: 'schedule',
-      type: 'select',
-      defaultValue: 'manual',
-      options: [
-        { label: 'Manual', value: 'manual' },
-        { label: 'Weekly', value: 'weekly' },
-        { label: 'Monthly', value: 'monthly' },
-        { label: 'Quarterly', value: 'quarterly' },
-      ],
-    },
-    {
-      name: 'icon',
-      type: 'text',
-      defaultValue: '📄',
-      admin: { description: 'Emoji icon for display' },
-    },
-    {
-      name: 'description',
-      type: 'textarea',
-      admin: { description: 'Brief description of this data source' },
-    },
-    {
       name: 'enabled',
       type: 'checkbox',
       defaultValue: true,
+    },
+    // ── Persona association (G2-04) ──
+    {
+      name: 'persona',
+      type: 'relationship',
+      relationTo: 'consulting-personas',
+      admin: {
+        description: 'Link to a Consulting Persona — crawled content routes to ca_{slug} collection',
+        position: 'sidebar',
+      },
+    },
+    // ── Auto-sync config (G2-04) ──
+    {
+      name: 'autoSync',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        description: 'Enable automatic scheduled sync for this data source',
+        position: 'sidebar',
+      },
+    },
+    {
+      name: 'syncInterval',
+      type: 'select',
+      defaultValue: 'weekly',
+      options: [
+        { label: 'Daily', value: 'daily' },
+        { label: 'Weekly', value: 'weekly' },
+        { label: 'Monthly', value: 'monthly' },
+      ],
+      admin: {
+        description: 'How often to auto-sync (only used when autoSync is enabled)',
+        condition: (_, siblingData) => siblingData?.autoSync,
+        position: 'sidebar',
+      },
     },
     // ── Sync stats (auto-updated) ──
     {
@@ -112,13 +120,13 @@ export const DataSources: CollectionConfig = {
       name: 'docsFound',
       type: 'number',
       defaultValue: 0,
-      admin: { readOnly: true, description: 'PDFs found in last discovery' },
+      admin: { readOnly: true, description: 'Documents found in last discovery' },
     },
     {
       name: 'docsIngested',
       type: 'number',
       defaultValue: 0,
-      admin: { readOnly: true, description: 'PDFs already imported' },
+      admin: { readOnly: true, description: 'Documents already imported' },
     },
   ],
 }
