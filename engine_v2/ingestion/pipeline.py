@@ -134,26 +134,30 @@ def ingest_book(
 # Payload CMS helpers (project-specific, not LlamaIndex)
 # ---------------------------------------------------------------------------
 
-def _payload_headers() -> dict[str, str]:
+def _payload_headers(*, force_refresh: bool = False) -> dict[str, str]:
     """Get auth headers for Payload CMS REST API.
 
     Strategy:
-        1. If PAYLOAD_API_KEY is set, use Bearer token directly.
+        1. If PAYLOAD_API_KEY is set (and not force_refresh), use API-Key header.
+           Payload v3 format: ``users API-Key <key>``
         2. Otherwise, login with PAYLOAD_ADMIN_EMAIL/PASSWORD to get JWT.
         3. Cache the JWT token module-level for reuse.
+
+    Args:
+        force_refresh: If True, skip API key and re-login via email/password.
     """
     global _cached_token
 
     headers = {"Content-Type": "application/json"}
 
-    # Option 1: API key (if configured)
-    if PAYLOAD_API_KEY:
-        headers["Authorization"] = f"Bearer {PAYLOAD_API_KEY}"
+    # Option 1: API key (Payload v3 format: "{collection-slug} API-Key {key}")
+    if PAYLOAD_API_KEY and not force_refresh:
+        headers["Authorization"] = f"users API-Key {PAYLOAD_API_KEY}"
         return headers
 
-    # Option 2: Login with email/password
+    # Option 2: Login with email/password → JWT
     if PAYLOAD_ADMIN_EMAIL and PAYLOAD_ADMIN_PASSWORD:
-        if not _cached_token:
+        if not _cached_token or force_refresh:
             _cached_token = _login_payload()
         if _cached_token:
             headers["Authorization"] = f"JWT {_cached_token}"

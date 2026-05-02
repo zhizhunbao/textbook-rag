@@ -27,6 +27,13 @@ import { cn } from '@/features/shared/utils'
 
 const ENGINE_URL = process.env.NEXT_PUBLIC_ENGINE_URL || 'http://localhost:8001'
 
+/** Format ISO date string as yyyy-MM-dd HH:mm:ss */
+function formatDateTime(iso: string): string {
+  const d = new Date(iso)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+}
+
 // ============================================================
 // Types
 // ============================================================
@@ -91,28 +98,38 @@ export default function SourcesTab({ onBooksRefresh }: SourcesTabProps) {
   const [importing, setImporting] = useState(false)
   const [fileImportStatus, setFileImportStatus] = useState<Record<string, 'waiting' | 'importing' | 'done' | 'error'>>({})
   const [activeCategory, setActiveCategory] = useState<string>('all')
+  const [syncState, setSyncState] = useState<Record<number, {
+    loading: boolean
+    result?: { chunk_count: number; pages_crawled: number; status: string }
+    error?: string
+  }>>({})
+
+  // ── Crawl config ──
+  const [crawlMaxDepth, setCrawlMaxDepth] = useState(2)
+  const [crawlMaxPages, setCrawlMaxPages] = useState(20)
+  const [showBrowser, setShowBrowser] = useState(true)
 
   // ── Category definitions ──
   const CATEGORIES = [
-    { key: 'all',          label: 'All',           color: 'text-foreground',    bg: 'bg-secondary',        activeBg: 'bg-primary/15 border-primary/30 text-primary' },
-    { key: 'immigration',  label: 'Immigration',   color: 'text-blue-400',      bg: 'bg-blue-500/10',      activeBg: 'bg-blue-500/20 border-blue-400/40 text-blue-400' },
-    { key: 'education',    label: 'Education',     color: 'text-violet-400',    bg: 'bg-violet-500/10',    activeBg: 'bg-violet-500/20 border-violet-400/40 text-violet-400' },
-    { key: 'career',       label: 'Career',        color: 'text-amber-400',     bg: 'bg-amber-500/10',     activeBg: 'bg-amber-500/20 border-amber-400/40 text-amber-400' },
-    { key: 'finance',      label: 'Finance',       color: 'text-emerald-400',   bg: 'bg-emerald-500/10',   activeBg: 'bg-emerald-500/20 border-emerald-400/40 text-emerald-400' },
-    { key: 'healthcare',   label: 'Healthcare',    color: 'text-rose-400',      bg: 'bg-rose-500/10',      activeBg: 'bg-rose-500/20 border-rose-400/40 text-rose-400' },
-    { key: 'settlement',   label: 'Settlement',    color: 'text-sky-400',       bg: 'bg-sky-500/10',       activeBg: 'bg-sky-500/20 border-sky-400/40 text-sky-400' },
-    { key: 'legal',        label: 'Legal',         color: 'text-orange-400',    bg: 'bg-orange-500/10',    activeBg: 'bg-orange-500/20 border-orange-400/40 text-orange-400' },
+    { key: 'all', label: 'All', color: 'text-foreground', bg: 'bg-secondary', activeBg: 'bg-primary/15 border-primary/30 text-primary' },
+    { key: 'immigration', label: 'Immigration', color: 'text-blue-400', bg: 'bg-blue-500/10', activeBg: 'bg-blue-500/20 border-blue-400/40 text-blue-400' },
+    { key: 'education', label: 'Education', color: 'text-violet-400', bg: 'bg-violet-500/10', activeBg: 'bg-violet-500/20 border-violet-400/40 text-violet-400' },
+    { key: 'career', label: 'Career', color: 'text-amber-400', bg: 'bg-amber-500/10', activeBg: 'bg-amber-500/20 border-amber-400/40 text-amber-400' },
+    { key: 'finance', label: 'Finance', color: 'text-emerald-400', bg: 'bg-emerald-500/10', activeBg: 'bg-emerald-500/20 border-emerald-400/40 text-emerald-400' },
+    { key: 'healthcare', label: 'Healthcare', color: 'text-rose-400', bg: 'bg-rose-500/10', activeBg: 'bg-rose-500/20 border-rose-400/40 text-rose-400' },
+    { key: 'settlement', label: 'Settlement', color: 'text-sky-400', bg: 'bg-sky-500/10', activeBg: 'bg-sky-500/20 border-sky-400/40 text-sky-400' },
+    { key: 'legal', label: 'Legal', color: 'text-orange-400', bg: 'bg-orange-500/10', activeBg: 'bg-orange-500/20 border-orange-400/40 text-orange-400' },
   ] as const
 
   // Persona slug prefix → category
   const slugToCategory = useCallback((slug: string): string => {
-    if (slug.startsWith('imm-'))     return 'immigration'
-    if (slug.startsWith('edu-'))     return 'education'
-    if (slug.startsWith('career-'))  return 'career'
-    if (slug.startsWith('fin-'))     return 'finance'
-    if (slug.startsWith('health-'))  return 'healthcare'
-    if (slug.startsWith('life-'))    return 'settlement'
-    if (slug.startsWith('legal-'))   return 'legal'
+    if (slug.startsWith('imm-')) return 'immigration'
+    if (slug.startsWith('edu-')) return 'education'
+    if (slug.startsWith('career-')) return 'career'
+    if (slug.startsWith('fin-')) return 'finance'
+    if (slug.startsWith('health-')) return 'healthcare'
+    if (slug.startsWith('life-')) return 'settlement'
+    if (slug.startsWith('legal-')) return 'legal'
     return 'other'
   }, [])
 
@@ -313,6 +330,61 @@ export default function SourcesTab({ onBooksRefresh }: SourcesTabProps) {
     setTimeout(() => setFileImportStatus({}), 2000)
   }, [selectedPdfs, onBooksRefresh])
 
+  // ── Sync web content (Crawl4AI → ChromaDB) ──
+  const handleSync = useCallback(async (source: DataSource) => {
+    setSyncState((prev) => ({
+      ...prev,
+      [source.id]: { loading: true },
+    }))
+
+    try {
+      const personaSlug = source.persona && typeof source.persona === 'object'
+        ? source.persona.slug
+        : undefined
+
+      const res = await fetch(`${ENGINE_URL}/engine/crawl/ingest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: source.discoveryUrl,
+          persona_slug: personaSlug,
+          data_source_id: String(source.id),
+          deep_crawl: true,
+          max_depth: crawlMaxDepth,
+          max_pages: crawlMaxPages,
+          headless: !showBrowser,
+        }),
+      })
+
+      if (!res.ok) {
+        const text = await res.text()
+        throw new Error(`Engine returned ${res.status}: ${text.slice(0, 200)}`)
+      }
+
+      const result = await res.json()
+      setSyncState((prev) => ({
+        ...prev,
+        [source.id]: {
+          loading: false,
+          result: {
+            chunk_count: result.chunk_count || 0,
+            pages_crawled: result.pages_crawled || 1,
+            status: result.status || 'synced',
+          },
+        },
+      }))
+
+      // Refresh sources to show updated lastSynced
+      fetchSources()
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      setSyncState((prev) => ({
+        ...prev,
+        [source.id]: { loading: false, error: msg },
+      }))
+    }
+  }, [fetchSources, crawlMaxDepth, crawlMaxPages, showBrowser])
+
   // ── Render ──
   if (loading) {
     return (
@@ -388,6 +460,45 @@ export default function SourcesTab({ onBooksRefresh }: SourcesTabProps) {
         </button>
       </div>
 
+      {/* Crawl Settings */}
+      <div className="flex items-center gap-4 px-3 py-2 rounded-lg bg-muted/30 border border-border/50 text-xs">
+        <label className="flex items-center gap-1.5">
+          <span className="text-muted-foreground">Depth:</span>
+          <select
+            value={crawlMaxDepth}
+            onChange={(e) => setCrawlMaxDepth(Number(e.target.value))}
+            className="bg-background border border-border rounded px-1.5 py-0.5 text-xs text-foreground"
+          >
+            <option value={1}>1</option>
+            <option value={2}>2</option>
+            <option value={3}>3</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-1.5">
+          <span className="text-muted-foreground">Max Pages:</span>
+          <select
+            value={crawlMaxPages}
+            onChange={(e) => setCrawlMaxPages(Number(e.target.value))}
+            className="bg-background border border-border rounded px-1.5 py-0.5 text-xs text-foreground"
+          >
+            <option value={5}>5</option>
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+          </select>
+        </label>
+        <div className="w-px h-4 bg-border/50" />
+        <label className="flex items-center gap-1.5 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={showBrowser}
+            onChange={(e) => setShowBrowser(e.target.checked)}
+            className="h-3.5 w-3.5 rounded border-border accent-primary"
+          />
+          <span className="text-muted-foreground">Show Browser</span>
+        </label>
+      </div>
+
       {/* Single flat table */}
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="overflow-x-auto">
@@ -397,9 +508,9 @@ export default function SourcesTab({ onBooksRefresh }: SourcesTabProps) {
                 <th className="text-left px-3 py-2 font-medium whitespace-nowrap">Persona</th>
                 <th className="text-left px-3 py-2 font-medium whitespace-nowrap">Name</th>
                 <th className="text-left px-3 py-2 font-medium">URL</th>
-                <th className="text-left px-3 py-2 font-medium whitespace-nowrap w-[70px]">Sync</th>
+                <th className="text-left px-3 py-2 font-medium whitespace-nowrap w-[100px]">Last Synced</th>
                 <th className="text-center px-3 py-2 font-medium whitespace-nowrap w-[50px]">Docs</th>
-                <th className="text-right px-3 py-2 font-medium whitespace-nowrap w-[70px]">Actions</th>
+                <th className="text-right px-3 py-2 font-medium whitespace-nowrap w-[90px]">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/30">
@@ -413,12 +524,14 @@ export default function SourcesTab({ onBooksRefresh }: SourcesTabProps) {
                     key={source.id}
                     source={source}
                     discover={discover}
+                    sync={syncState[source.id]}
                     isExpanded={isExpanded}
                     result={result}
                     selectedPdfs={selectedPdfs}
                     importing={importing}
                     fileImportStatus={fileImportStatus}
                     onDiscover={() => handleDiscover(source)}
+                    onSync={() => handleSync(source)}
                     onToggleExpand={() => setExpandedId(isExpanded ? null : source.id)}
                     onSelectPdf={(url, checked) => setSelectedPdfs((prev) => ({ ...prev, [url]: checked }))}
                     onImportSelected={() => handleImportSelected(source)}
@@ -441,21 +554,23 @@ export default function SourcesTab({ onBooksRefresh }: SourcesTabProps) {
 interface SourceRowProps {
   source: DataSource
   discover?: { loading: boolean; result?: DiscoverResult; error?: string }
+  sync?: { loading: boolean; result?: { chunk_count: number; pages_crawled: number; status: string }; error?: string }
   isExpanded: boolean
   result?: DiscoverResult
   selectedPdfs: Record<string, boolean>
   importing: boolean
   fileImportStatus: Record<string, 'waiting' | 'importing' | 'done' | 'error'>
   onDiscover: () => void
+  onSync: () => void
   onToggleExpand: () => void
   onSelectPdf: (url: string, checked: boolean) => void
   onImportSelected: () => void
 }
 
 function SourceRow({
-  source, discover, isExpanded, result,
+  source, discover, sync, isExpanded, result,
   selectedPdfs, importing, fileImportStatus,
-  onDiscover, onToggleExpand, onSelectPdf, onImportSelected,
+  onDiscover, onSync, onToggleExpand, onSelectPdf, onImportSelected,
 }: SourceRowProps) {
   return (
     <>
@@ -505,12 +620,14 @@ function SourceRow({
           </a>
         </td>
 
-        {/* Sync */}
-        <td className="px-3 py-2 text-muted-foreground">
-          {source.autoSync ? (
-            <span className="text-primary">{source.syncInterval || 'weekly'}</span>
+        {/* Last Synced */}
+        <td className="px-3 py-2">
+          {source.lastSynced ? (
+            <span className="text-foreground text-[11px]">
+              {formatDateTime(source.lastSynced)}
+            </span>
           ) : (
-            <span>manual</span>
+            <span className="text-muted-foreground/40 text-[11px]">-</span>
           )}
         </td>
 
@@ -530,19 +647,27 @@ function SourceRow({
           <div className="flex items-center justify-end gap-1">
             <button
               type="button"
+              onClick={onSync}
+              disabled={sync?.loading || !source.enabled}
+              className={cn(
+                'px-2 py-1 rounded-md text-[11px] font-medium transition-colors',
+                'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20',
+                'disabled:opacity-40 disabled:cursor-not-allowed',
+              )}
+            >
+              {sync?.loading ? 'Syncing…' : 'Sync'}
+            </button>
+            <button
+              type="button"
               onClick={onDiscover}
               disabled={discover?.loading || !source.enabled}
               className={cn(
-                'flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-colors',
+                'px-2 py-1 rounded-md text-[11px] font-medium transition-colors',
                 'bg-primary/10 text-primary hover:bg-primary/20',
                 'disabled:opacity-40 disabled:cursor-not-allowed',
               )}
             >
-              {discover?.loading ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <Search className="h-3 w-3" />
-              )}
+              {discover?.loading ? 'Scanning…' : 'Discover'}
             </button>
             {result && (
               <button
@@ -568,6 +693,30 @@ function SourceRow({
             <div className="px-3 py-2 rounded-lg bg-destructive/5 border border-destructive/20 text-xs text-destructive">
               <AlertCircle className="h-3 w-3 inline mr-1" />
               {discover.error}
+            </div>
+          </td>
+        </tr>
+      )}
+
+      {/* Sync error */}
+      {sync?.error && (
+        <tr>
+          <td colSpan={6} className="px-4 py-2">
+            <div className="px-3 py-2 rounded-lg bg-destructive/5 border border-destructive/20 text-xs text-destructive">
+              <AlertCircle className="h-3 w-3 inline mr-1" />
+              Sync failed: {sync.error}
+            </div>
+          </td>
+        </tr>
+      )}
+
+      {/* Sync success */}
+      {sync?.result && (
+        <tr>
+          <td colSpan={6} className="px-4 py-2">
+            <div className="px-3 py-2 rounded-lg bg-emerald-500/5 border border-emerald-500/20 text-xs text-emerald-600">
+              <CheckCircle2 className="h-3 w-3 inline mr-1" />
+              Synced: {sync.result.chunk_count} chunks from {sync.result.pages_crawled} page(s)
             </div>
           </td>
         </tr>

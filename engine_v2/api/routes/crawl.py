@@ -50,6 +50,14 @@ class IngestWebRequest(BaseModel):
     data_source_id: Optional[str] = Field(
         None, description="Payload data-source ID (for status updates)"
     )
+    deep_crawl: bool = Field(
+        True, description="Follow same-domain links to discover sub-pages"
+    )
+    max_depth: int = Field(2, description="Max link depth for deep crawl")
+    max_pages: int = Field(20, description="Max pages to crawl")
+    headless: bool = Field(
+        True, description="Run browser in headless mode (False = show browser window)"
+    )
 
 
 class IngestWebResponse(BaseModel):
@@ -57,8 +65,8 @@ class IngestWebResponse(BaseModel):
     success: bool
     url: str
     chunk_count: int = 0
-    word_count: int = 0
-    title: str = ""
+    pages_crawled: int = 0
+    total_words: int = 0
     collection: str = ""
     status: str = ""
     errors: list[str] = []
@@ -133,14 +141,18 @@ async def ingest_web(req: IngestWebRequest) -> IngestWebResponse:
         persona_slug=req.persona_slug,
         collection_name=req.collection_name,
         data_source_id=req.data_source_id,
+        deep_crawl=req.deep_crawl,
+        max_depth=req.max_depth,
+        max_pages=req.max_pages,
+        headless=req.headless,
     )
 
     return IngestWebResponse(
         success=result.get("status") == "synced",
         url=result.get("url", req.url),
         chunk_count=result.get("chunk_count", 0),
-        word_count=result.get("word_count", 0),
-        title=result.get("title", ""),
+        pages_crawled=result.get("pages_crawled", 0),
+        total_words=result.get("total_words", 0),
         collection=result.get("collection", ""),
         status=result.get("status", ""),
         errors=result.get("errors", []),

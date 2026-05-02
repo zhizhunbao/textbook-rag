@@ -15,7 +15,7 @@ export const DataSources: CollectionConfig = {
   slug: 'data-sources',
   admin: {
     useAsTitle: 'nameEn',
-    defaultColumns: ['nameEn', 'nameZh', 'description', 'persona', 'type', 'enabled', 'syncInterval', 'docsFound', 'docsIngested', 'lastSynced'],
+    defaultColumns: ['nameEn', 'nameZh', 'persona', 'type', 'enabled', 'syncStatus', 'chunkCount', 'syncInterval', 'lastSynced'],
     group: 'Content',
   },
   access: {
@@ -127,6 +127,30 @@ export const DataSources: CollectionConfig = {
       type: 'number',
       defaultValue: 0,
       admin: { readOnly: true, description: 'Documents already imported' },
+    },
+    {
+      name: 'syncStatus',
+      type: 'select',
+      defaultValue: 'idle',
+      options: [
+        { label: 'Idle', value: 'idle' },
+        { label: 'Syncing', value: 'syncing' },
+        { label: 'Synced', value: 'synced' },
+        { label: 'Error', value: 'error' },
+        { label: 'Empty', value: 'empty' },
+      ],
+      admin: { readOnly: true, description: 'Current sync status (auto-updated by Engine)' },
+    },
+    {
+      name: 'chunkCount',
+      type: 'number',
+      defaultValue: 0,
+      admin: { readOnly: true, description: 'Vector chunks created from web crawl' },
+    },
+    {
+      name: 'syncError',
+      type: 'textarea',
+      admin: { readOnly: true, description: 'Last sync error message (if any)' },
     },
   ],
 }

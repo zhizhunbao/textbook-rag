@@ -39,7 +39,7 @@ def fetch_persona(slug: str) -> dict[str, Any] | None:
 
     headers: dict[str, str] = {"Content-Type": "application/json"}
     if PAYLOAD_API_KEY:
-        headers["Authorization"] = f"Bearer {PAYLOAD_API_KEY}"
+        headers["Authorization"] = f"users API-Key {PAYLOAD_API_KEY}"
 
     try:
         resp = httpx.get(

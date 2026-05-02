@@ -26,9 +26,18 @@ from llama_index.core.schema import Document
 from llama_index.core.settings import Settings
 from loguru import logger
 
-from engine_v2.crawling.web_crawler import CrawlResult, crawl_url, crawl_urls
+from engine_v2.crawling.web_crawler import CrawlResult, crawl_url, crawl_urls, deep_crawl_url
 from engine_v2.ingestion.pipeline import get_vector_store, _payload_headers
 from engine_v2.settings import PAYLOAD_URL
+
+
+def _slugify(text: str) -> str:
+    """Convert heading text to a URL-safe anchor slug."""
+    import re
+    slug = text.lower().strip()
+    slug = re.sub(r"[^\w\s-]", "", slug)
+    slug = re.sub(r"[\s_]+", "-", slug)
+    return slug.strip("-")
 
 
 def _markdown_to_documents(
@@ -47,6 +56,7 @@ def _markdown_to_documents(
 
     md = crawl_result.markdown
     sections = _split_by_headers(md)
+    anchors = crawl_result.heading_anchors
 
     docs: list[Document]= []
     for i, section in enumerate(sections):
@@ -59,10 +69,15 @@ def _markdown_to_documents(
             f"{crawl_result.url}::{i}::{section['heading'][:50]}".encode()
         ).hexdigest()
 
+        # Resolve anchor: exact HTML id match → slugified fallback
+        heading = section["heading"]
+        anchor = anchors.get(heading) or _slugify(heading)
+
         metadata: dict[str, Any] = {
             "source_url": crawl_result.url,
             "source_title": crawl_result.title or "",
-            "section_heading": section["heading"],
+            "section_heading": heading,
+            "section_anchor": anchor,
             "section_index": i,
             "content_type": "text",
             "category": "web_crawl",
@@ -79,10 +94,12 @@ def _markdown_to_documents(
             id_=doc_id,
             metadata=metadata,
             excluded_llm_metadata_keys=[
-                "crawled_at", "section_index", "data_source_id",
+                "crawled_at", "section_index", "section_anchor",
+                "data_source_id",
             ],
             excluded_embed_metadata_keys=[
-                "crawled_at", "source_url", "data_source_id",
+                "crawled_at", "source_url", "section_anchor",
+                "data_source_id",
             ],
         )
         docs.append(doc)
@@ -127,6 +144,10 @@ async def ingest_web_source(
     persona_slug: str | None = None,
     collection_name: str | None = None,
     data_source_id: str | None = None,
+    deep_crawl: bool = True,
+    max_depth: int = 2,
+    max_pages: int = 20,
+    headless: bool = True,
 ) -> dict[str, Any]:
     """Full pipeline: Crawl URL → Markdown → Embed → ChromaDB.
 
@@ -136,9 +157,12 @@ async def ingest_web_source(
         collection_name: ChromaDB collection override.
             Defaults to persona's collection or textbook_chunks.
         data_source_id: Payload CMS data-source ID (for status updates).
+        deep_crawl: If True, follow same-domain links (BFS) to discover sub-pages.
+        max_depth: Max link depth for deep crawl (default 2).
+        max_pages: Max pages to crawl in deep mode (default 20).
 
     Returns:
-        dict with: url, chunk_count, status, collection, errors
+        dict with: url, chunk_count, pages_crawled, status, collection, errors
     """
     from engine_v2.personas.registry import get_collection_name
 
@@ -152,43 +176,62 @@ async def ingest_web_source(
         target_collection = CHROMA_COLLECTION
 
     logger.info(
-        "Web ingest: url={}, persona={}, collection={}",
-        url[:80], persona_slug, target_collection,
+        "Web ingest: url={}, persona={}, collection={}, deep={}",
+        url[:80], persona_slug, target_collection, deep_crawl,
     )
 
-    # Step 2: Crawl the URL
-    crawl_result = await crawl_url(url)
-    if not crawl_result.success:
-        error_msg = f"Crawl failed: {crawl_result.error}"
+    # Step 2: Crawl the URL (single or deep)
+    if deep_crawl:
+        crawl_results = await deep_crawl_url(
+            url, max_depth=max_depth, max_pages=max_pages, headless=headless,
+        )
+    else:
+        single_result = await crawl_url(url, headless=headless)
+        crawl_results = [single_result]
+
+    successful_crawls = [r for r in crawl_results if r.success]
+    if not successful_crawls:
+        error_msg = f"Crawl failed for all pages from {url}"
+        if crawl_results:
+            error_msg = f"Crawl failed: {crawl_results[0].error}"
         logger.error(error_msg)
         _update_data_source_status(data_source_id, "error", error=error_msg)
         return {
             "url": url,
             "chunk_count": 0,
+            "pages_crawled": 0,
             "status": "error",
             "collection": target_collection,
             "errors": [error_msg],
         }
 
-    # Step 3: Convert Markdown → LlamaIndex Documents
-    documents = _markdown_to_documents(
-        crawl_result,
-        persona_slug=persona_slug,
-        source_id=data_source_id,
-    )
+    # Step 3: Convert Markdown → LlamaIndex Documents (all pages)
+    documents: list[Document] = []
+    for crawl_result in successful_crawls:
+        docs = _markdown_to_documents(
+            crawl_result,
+            persona_slug=persona_slug,
+            source_id=data_source_id,
+        )
+        documents.extend(docs)
+
     if not documents:
-        msg = f"No content extracted from {url}"
+        msg = f"No content extracted from {url} ({len(successful_crawls)} pages crawled)"
         logger.warning(msg)
         _update_data_source_status(data_source_id, "empty", error=msg)
         return {
             "url": url,
             "chunk_count": 0,
+            "pages_crawled": len(successful_crawls),
             "status": "empty",
             "collection": target_collection,
             "errors": [msg],
         }
 
-    logger.info("Extracted {} documents from {}", len(documents), url[:60])
+    logger.info(
+        "Extracted {} documents from {} pages (seed: {})",
+        len(documents), len(successful_crawls), url[:60],
+    )
 
     # Step 4: Run LlamaIndex IngestionPipeline
     vector_store = get_vector_store(collection_name=target_collection)
@@ -206,14 +249,14 @@ async def ingest_web_source(
         data_source_id,
         "synced",
         chunk_count=len(nodes),
-        last_synced_at=datetime.now(timezone.utc).isoformat(),
+        last_synced=datetime.now(timezone.utc).isoformat(),
     )
 
     return {
         "url": url,
         "chunk_count": len(nodes),
-        "word_count": crawl_result.word_count,
-        "title": crawl_result.title,
+        "pages_crawled": len(successful_crawls),
+        "total_words": sum(r.word_count for r in successful_crawls),
         "status": "synced",
         "collection": target_collection,
         "errors": [],
@@ -275,7 +318,7 @@ def _update_data_source_status(
     status: str,
     *,
     chunk_count: int | None = None,
-    last_synced_at: str | None = None,
+    last_synced: str | None = None,
     error: str | None = None,
 ) -> None:
     """Update a data-source record in Payload CMS."""
@@ -287,18 +330,20 @@ def _update_data_source_status(
     body: dict[str, Any] = {"syncStatus": status}
     if chunk_count is not None:
         body["chunkCount"] = chunk_count
-    if last_synced_at:
-        body["lastSyncedAt"] = last_synced_at
+    if last_synced:
+        body["lastSynced"] = last_synced
     if error:
         body["syncError"] = error
 
+    url = f"{PAYLOAD_URL}/api/data-sources/{data_source_id}"
+
     try:
-        httpx.patch(
-            f"{PAYLOAD_URL}/api/data-sources/{data_source_id}",
-            json=body,
-            headers=_payload_headers(),
-            timeout=15.0,
-        ).raise_for_status()
+        resp = httpx.patch(url, json=body, headers=_payload_headers(), timeout=15.0)
+        if resp.status_code == 403:
+            # Token expired — force re-login and retry once
+            logger.info("Token expired, refreshing for data-source {}", data_source_id)
+            resp = httpx.patch(url, json=body, headers=_payload_headers(force_refresh=True), timeout=15.0)
+        resp.raise_for_status()
         logger.info("Updated data-source {} status → {}", data_source_id, status)
     except Exception as e:
         logger.warning("Failed to update data-source {}: {}", data_source_id, e)

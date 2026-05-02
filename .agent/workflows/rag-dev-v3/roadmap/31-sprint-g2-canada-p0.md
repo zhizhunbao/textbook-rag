@@ -3,7 +3,7 @@
 > 目标：29 个角色全量 Seed（全部启用）+ 系统 Prompt + 每角色 DataSource 数据源关联（公开 URL 自动爬取）。
 >
 > 前置条件：Sprint G1 ✅ 全球架构改造完成
-> **状态**: 🟡 5/6 (G2-01 ✅ G2-02 ✅ G2-03 ✅ | G2-04 ✅ G2-05 ✅ G2-06 ❌)
+> **状态**: ✅ 6/6 (G2-01 ✅ G2-02 ✅ G2-03 ✅ | G2-04 ✅ G2-05 ✅ G2-06 ✅)
 
 ## 核心原则
 
@@ -331,7 +331,7 @@ immigration, or financial advice. Please consult a licensed professional.
 
 ---
 
-### [G2-06] 数据源同步端点 + 自动灌入
+### [G2-06] ✅ 数据源同步端点 + 自动灌入
 
 **类型**: Backend (Engine)
 **优先级**: P0
@@ -352,10 +352,10 @@ immigration, or financial advice. Please consult a licensed professional.
 
 #### 验收标准
 
-- [ ] `POST /engine/sources/sync-persona/{slug}` 可触发单角色同步
-- [ ] `POST /engine/sources/sync-all` 可触发全量同步
-- [ ] 爬取结果正确进入对应 `ca_{slug}` collection
-- [ ] 重复爬取不创建重复向量（dedup by URL/filename）
+- [x] `POST /engine/crawl/sync-persona` 可触发单角色同步
+- [x] `POST /engine/crawl/sync-all` 可触发全量同步
+- [x] 爬取结果正确进入对应 `ca_{slug}` collection
+- [x] 重复爬取不创建重复向量（dedup by URL hash）
 
 #### 文件
 

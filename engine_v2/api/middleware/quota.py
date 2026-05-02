@@ -205,7 +205,7 @@ def _write_usage_record_async(
     def _write():
         headers: dict[str, str] = {"Content-Type": "application/json"}
         if _PAYLOAD_API_KEY:
-            headers["Authorization"] = f"Bearer {_PAYLOAD_API_KEY}"
+            headers["Authorization"] = f"users API-Key {_PAYLOAD_API_KEY}"
         try:
             resp = httpx.post(
                 f"{_PAYLOAD_URL}/api/usage-records",

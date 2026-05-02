@@ -14,7 +14,7 @@
 | Sprint | 文件 | 目标 | Stories | 状态 |
 |--------|------|------|---------|------|
 | **G1** | [30-sprint-g1-global-template.md](./roadmap/30-sprint-g1-global-template.md) | 全球架构改造 — 多国家通用架构 | 7 | ✅ |
-| **G2** | [31-sprint-g2-canada-p0.md](./roadmap/31-sprint-g2-canada-p0.md) | 加拿大 P0 角色上线 — 10 角色 Seed + Prompt + 知识库 | TBD | ❌ |
+| **G2** | [31-sprint-g2-canada-p0.md](./roadmap/31-sprint-g2-canada-p0.md) | 加拿大 P0 角色上线 — 29 角色 Seed + Prompt + DataSource 关联 | 6 | ✅ |
 | **G3** | [32-sprint-g3-landing-rebuild.md](./roadmap/32-sprint-g3-landing-rebuild.md) | Landing 页重构 — 7 类目卡片 + 国家选择 | TBD | ❌ |
 | **G4** | [33-sprint-g4-qa-deploy.md](./roadmap/33-sprint-g4-qa-deploy.md) | 质量验收 + 部署 | TBD | ❌ |
 | **G5** | [34-sprint-g5-user-library.md](./roadmap/34-sprint-g5-user-library.md) | 用户 Library + 侧边栏整理 + 知识库数据源改造 | 10 | ❌ |

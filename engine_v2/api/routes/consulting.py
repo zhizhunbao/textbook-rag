@@ -391,7 +391,7 @@ async def list_personas(country: str | None = None):
 
     headers: dict[str, str] = {"Content-Type": "application/json"}
     if PAYLOAD_API_KEY:
-        headers["Authorization"] = f"Bearer {PAYLOAD_API_KEY}"
+        headers["Authorization"] = f"users API-Key {PAYLOAD_API_KEY}"
 
     try:
         params: dict[str, str] = {
@@ -707,5 +707,5 @@ def _payload_headers() -> dict[str, str]:
     """Get auth headers for Payload CMS."""
     headers: dict[str, str] = {"Content-Type": "application/json"}
     if PAYLOAD_API_KEY:
-        headers["Authorization"] = f"Bearer {PAYLOAD_API_KEY}"
+        headers["Authorization"] = f"users API-Key {PAYLOAD_API_KEY}"
     return headers

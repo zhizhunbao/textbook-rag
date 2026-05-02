@@ -128,7 +128,7 @@ def _update_parse_stage(
 
     headers = {"Content-Type": "application/json"}
     if PAYLOAD_API_KEY:
-        headers["Authorization"] = f"Bearer {PAYLOAD_API_KEY}"
+        headers["Authorization"] = f"users API-Key {PAYLOAD_API_KEY}"
 
     body: dict = {"status": "processing", "pipeline": {"parse": "done"}}
     if parse_output:
@@ -316,7 +316,7 @@ def _ingest_pipeline(req: IngestRequest) -> None:
         from engine_v2.settings import PAYLOAD_URL, PAYLOAD_API_KEY
         headers = {"Content-Type": "application/json"}
         if PAYLOAD_API_KEY:
-            headers["Authorization"] = f"Bearer {PAYLOAD_API_KEY}"
+            headers["Authorization"] = f"users API-Key {PAYLOAD_API_KEY}"
         httpx.patch(
             f"{PAYLOAD_URL}/api/books/{req.book_id}",
             json={
@@ -383,7 +383,7 @@ def _ingest_pipeline(req: IngestRequest) -> None:
             from engine_v2.settings import PAYLOAD_URL, PAYLOAD_API_KEY
             headers = {"Content-Type": "application/json"}
             if PAYLOAD_API_KEY:
-                headers["Authorization"] = f"Bearer {PAYLOAD_API_KEY}"
+                headers["Authorization"] = f"users API-Key {PAYLOAD_API_KEY}"
             httpx.patch(
                 f"{PAYLOAD_URL}/api/books/{req.book_id}",
                 json={"status": "error", "pipeline": {"parse": "error", "ingest": "error"}},
@@ -402,7 +402,7 @@ def _ingest_pipeline(req: IngestRequest) -> None:
             from engine_v2.settings import PAYLOAD_URL, PAYLOAD_API_KEY
             headers = {"Content-Type": "application/json"}
             if PAYLOAD_API_KEY:
-                headers["Authorization"] = f"Bearer {PAYLOAD_API_KEY}"
+                headers["Authorization"] = f"users API-Key {PAYLOAD_API_KEY}"
             httpx.patch(
                 f"{PAYLOAD_URL}/api/books/{req.book_id}",
                 json={
@@ -508,7 +508,7 @@ async def reset_stale_tasks(req: ResetTasksRequest):
 
     headers: dict[str, str] = {"Content-Type": "application/json"}
     if PAYLOAD_API_KEY:
-        headers["Authorization"] = f"Bearer {PAYLOAD_API_KEY}"
+        headers["Authorization"] = f"users API-Key {PAYLOAD_API_KEY}"
 
     # Fetch stale tasks for this book
     reset_count = 0

@@ -5,7 +5,9 @@ import { sanitizeNewUser } from '../hooks/users/sanitizeNewUser'
 
 export const Users: CollectionConfig = {
   slug: 'users',
-  auth: true,  // Payload built-in auth: email + password + JWT
+  auth: {
+    useAPIKey: true,  // Engine uses API-Key header for machine-to-machine auth
+  },
   admin: {
     useAsTitle: 'email',
     defaultColumns: ['email', 'displayName', 'role', 'createdAt'],
