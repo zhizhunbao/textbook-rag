@@ -4,11 +4,22 @@ Responsibilities:
     - Load .env from project root
     - Export project-specific constants (paths, model config, Payload CMS)
     - Configure LlamaIndex Settings singleton (llm, embed_model)
+    - Set global UTF-8 encoding for Windows
 """
 
 from __future__ import annotations
 
 import os
+import sys
+
+# ── Global UTF-8 encoding (Windows defaults to cp1252) ──────────────────────
+# Must happen before any logging or I/O. Ensures Unicode in crawl4ai logs,
+# Playwright output, etc. works without per-module hacks.
+if sys.platform == "win32":
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 from pathlib import Path
 
 from dotenv import load_dotenv

@@ -1,11 +1,24 @@
-"""crawling — Crawl4AI integration for web data-source ingestion.
+"""crawling — URL discovery + full-page PDF archival for web data sources.
 
-Crawls persona data-source URLs → clean Markdown → LlamaIndex Documents
-→ ChromaDB vector store.  Designed for government / public HTML pages
-(IRCC, Ontario.ca, CIC, etc.) — no heavy anti-bot needed.
+Two-phase pipeline:
+    Phase 1: crawl4ai BFS → manifest.json (URL index)
+    Phase 2: Playwright page.pdf() → meaningful PDF files
+
+Downstream: MinerU processes PDFs → LlamaIndex Documents → ChromaDB.
 """
 
-from engine_v2.crawling.web_crawler import crawl_url, crawl_urls
+from engine_v2.crawling.web_crawler import (
+    discover_urls,
+    save_pdfs_from_manifest,
+    crawl_and_save_pdfs,
+    CrawlResult,
+)
 from engine_v2.crawling.ingest_web import ingest_web_source
 
-__all__ = ["crawl_url", "crawl_urls", "ingest_web_source"]
+__all__ = [
+    "discover_urls",
+    "save_pdfs_from_manifest",
+    "crawl_and_save_pdfs",
+    "CrawlResult",
+    "ingest_web_source",
+]

@@ -32,14 +32,17 @@ STATUS_FILE = OUTPUT_DIR / "batch_status.json"
 LOCK_SUFFIX = ".processing"
 
 # Categories to scan: category_name -> source directory
+CRAWLED_WEB_DIR = PROJECT_ROOT / "data" / "crawled_web"
 SOURCE_DIRS: dict[str, Path] = {
-    "textbook":   RAW_PDFS_DIR / "textbooks",
-    "ecdev":      RAW_PDFS_DIR / "ecdev",
+    "textbook":    RAW_PDFS_DIR / "textbooks",
+    "ecdev":       RAW_PDFS_DIR / "ecdev",
     "real_estate": RAW_PDFS_DIR / "real_estate",
+    # ── Crawled web persona PDFs ──
+    "imm-pathways": CRAWLED_WEB_DIR / "imm-pathways",
 }
 
 # Minimum output size thresholds for completeness validation
-MIN_MD_SIZE_BYTES = 1024        # Markdown must be > 1 KB
+MIN_MD_SIZE_BYTES = 256         # Markdown must be > 256 bytes (lowered for web PDFs)
 MIN_JSON_ENTRIES = 1            # content_list.json must have >= 1 entry
 
 # Books to process: populated by discover_books()
@@ -164,7 +167,7 @@ def _clean_incomplete(short_name: str, category: str) -> None:
     """Remove incomplete output directory so the book can be retried cleanly."""
     out_dir = OUTPUT_DIR / category / short_name
     if out_dir.exists():
-        print(f"  🧹 Cleaning incomplete output: {out_dir}")
+        print(f"  [CLEAN] Cleaning incomplete output: {out_dir}")
         shutil.rmtree(out_dir, ignore_errors=True)
     _release_lock(short_name, category)
 
@@ -266,35 +269,35 @@ def process_book(pdf_path: Path, short_name: str, category: str = "textbook", ba
             if is_valid:
                 _release_lock(short_name, category)
                 _update_status(short_name, "success", elapsed)
-                print(f"✓ {short_name} done in {elapsed:.0f}s ({elapsed/60:.1f} min)")
+                print(f"[OK] {short_name} done in {elapsed:.0f}s ({elapsed/60:.1f} min)")
                 return True
             else:
                 _update_status(short_name, f"invalid: {reason}", elapsed)
-                print(f"✗ {short_name} completed but output invalid: {reason}")
+                print(f"[FAIL] {short_name} completed but output invalid: {reason}")
                 _clean_incomplete(short_name, category)
                 return False
         else:
             _update_status(short_name, f"failed (exit {result.returncode})", time.time() - start)
-            print(f"✗ {short_name} FAILED (exit code {result.returncode})")
+            print(f"[FAIL] {short_name} FAILED (exit code {result.returncode})")
             _clean_incomplete(short_name, category)
             return False
 
     except subprocess.TimeoutExpired:
         elapsed = time.time() - start
         _update_status(short_name, "timeout", elapsed)
-        print(f"✗ {short_name} TIMEOUT (>60 min)")
+        print(f"[FAIL] {short_name} TIMEOUT (>60 min)")
         _clean_incomplete(short_name, category)
         return False
     except KeyboardInterrupt:
         elapsed = time.time() - start
         _update_status(short_name, "interrupted", elapsed)
-        print(f"\n⚠ {short_name} interrupted by user after {elapsed:.0f}s")
+        print(f"\n[WARN] {short_name} interrupted by user after {elapsed:.0f}s")
         # Lock file stays — will be detected on next run
         raise
     except Exception as e:
         elapsed = time.time() - start
         _update_status(short_name, f"error: {e}", elapsed)
-        print(f"✗ {short_name} ERROR: {e}")
+        print(f"[FAIL] {short_name} ERROR: {e}")
         _clean_incomplete(short_name, category)
         return False
 
@@ -371,7 +374,7 @@ def main():
             else:
                 failed.append(short_name)
     except KeyboardInterrupt:
-        print("\n\n⚠ Batch interrupted by user. Progress has been saved.")
+        print("\n\n[WARN] Batch interrupted by user. Progress has been saved.")
         print("  Run again to resume from where you left off.")
 
     # Summary

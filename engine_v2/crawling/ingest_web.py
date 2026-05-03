@@ -26,7 +26,7 @@ from llama_index.core.schema import Document
 from llama_index.core.settings import Settings
 from loguru import logger
 
-from engine_v2.crawling.web_crawler import CrawlResult, crawl_url, crawl_urls, deep_crawl_url
+from engine_v2.crawling.web_crawler import CrawlResult, crawl_and_save_pdfs
 from engine_v2.ingestion.pipeline import get_vector_store, _payload_headers
 from engine_v2.settings import PAYLOAD_URL
 
@@ -138,6 +138,37 @@ def _split_by_headers(markdown: str) -> list[dict[str, str]]:
     return sections
 
 
+def _archive_crawl_result(crawl_result: CrawlResult, persona_slug: str | None) -> None:
+    """Save the crawled Markdown to disk for auditing and debugging."""
+    import re
+    from pathlib import Path
+
+    # Base directory
+    base_dir = Path("data/crawled_web")
+
+    # Subdirectory by persona
+    slug = persona_slug or "general"
+    out_dir = base_dir / slug
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    # Safe filename from URL
+    safe_name = re.sub(r"[^\w\-]", "_", crawl_result.url)
+    safe_name = safe_name.strip("_")
+    
+    # Cap length to avoid OS filename limits
+    if len(safe_name) > 100:
+        safe_name = safe_name[:100].strip("_")
+
+    out_path = out_dir / f"{safe_name}.md"
+
+    try:
+        # Save URL at top of file for reference
+        content = f"<!-- URL: {crawl_result.url} -->\n\n{crawl_result.markdown}"
+        out_path.write_text(content, encoding="utf-8")
+    except Exception as e:
+        logger.warning("Failed to archive {}: {}", crawl_result.url, e)
+
+
 async def ingest_web_source(
     url: str,
     *,
@@ -208,6 +239,7 @@ async def ingest_web_source(
     # Step 3: Convert Markdown → LlamaIndex Documents (all pages)
     documents: list[Document] = []
     for crawl_result in successful_crawls:
+        _archive_crawl_result(crawl_result, persona_slug)
         docs = _markdown_to_documents(
             crawl_result,
             persona_slug=persona_slug,
