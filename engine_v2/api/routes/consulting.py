@@ -40,7 +40,7 @@ from engine_v2.personas.registry import (
     get_collection_count as _get_collection_count,
     get_collection_name as _get_persona_collection,
 )
-from engine_v2.retrievers.consulting import dual_collection_query
+from engine_v2.retrievers.consulting import dual_collection_query, multi_collection_retrieve
 from engine_v2.user_docs.manager import (
     update_user_doc as _update_user_doc,
     user_collection_name as _user_collection_name,
@@ -212,6 +212,9 @@ async def consulting_query(req: PersonaQueryRequest, request: Request):
     from engine_v2.query_engine.citation import get_query_engine
     from engine_v2.schema import build_source, normalize_scores
 
+    # G7-10: Multi-collection retrieval for mixed personas
+    multi_collections = persona.get("multiCollections") or []
+
     # C4: Dual-collection retrieval (GO-MU-06: user_id from JWT auth)
     user_data = getattr(request.state, "user", None)
     user_id = user_data.get("id") if user_data else None
@@ -228,6 +231,38 @@ async def consulting_query(req: PersonaQueryRequest, request: Request):
             provider=req.provider,
             streaming=False,
         )
+    elif multi_collections:
+        # G7-10: Mixed persona — retrieve from all collections, merge via RRF
+        merged_nodes = multi_collection_retrieve(
+            question=req.question,
+            collection_names=multi_collections,
+            top_k=req.top_k,
+        )
+        from engine_v2.query_engine.citation import TextbookCitationQueryEngine
+        from engine_v2.response_synthesizers.citation import get_citation_synthesizer
+        synthesizer = get_citation_synthesizer(
+            streaming=False,
+            model=req.model,
+            provider=req.provider,
+            custom_system_prompt=system_prompt,
+        )
+        engine = TextbookCitationQueryEngine(
+            retriever=None,  # type: ignore[arg-type]
+            response_synthesizer=synthesizer,
+        )
+        citation_nodes = engine._create_citation_nodes(merged_nodes)
+        sources = []
+        for i, nws in enumerate(citation_nodes, start=1):
+            source = build_source(nws, i)
+            origin = nws.node.metadata.get("retrieval_origin", "unknown")
+            source["retrieval_origin"] = origin
+            sources.append(source)
+        normalize_scores(sources)
+        from llama_index.core.schema import QueryBundle
+        response = synthesizer.synthesize(
+            query=QueryBundle(query_str=req.question),
+            nodes=citation_nodes,
+        )
     else:
         engine = get_query_engine(
             similarity_top_k=req.top_k,
@@ -243,12 +278,23 @@ async def consulting_query(req: PersonaQueryRequest, request: Request):
             sources.append(build_source(nws, i))
         normalize_scores(sources)
 
+    # G3: Guard against empty retrieval / "Empty Response"
+    answer = str(response)
+    if not sources or not answer or answer.strip().lower() == "empty response":
+        answer = await _generate_no_retrieval_reply(
+            question=req.question,
+            system_prompt=system_prompt,
+            persona_name=persona.get("name", req.persona_slug),
+            model=req.model,
+            provider=req.provider,
+        )
+
     return {
         "persona": {
             "name": persona.get("name"),
             "slug": persona.get("slug"),
         },
-        "answer": str(response),
+        "answer": answer,
         "sources": sources,
         "stats": {"source_count": len(sources)},
     }
@@ -276,6 +322,49 @@ async def consulting_query_stream(req: PersonaQueryRequest, request: Request):
     )
 
 
+async def _generate_no_retrieval_reply(
+    question: str,
+    system_prompt: str,
+    persona_name: str,
+    model: str | None = None,
+    provider: str | None = None,
+) -> str:
+    """Use the persona's LLM to dynamically generate a 'no results' message.
+
+    Instead of hardcoding a static English fallback, we ask the LLM to produce
+    a contextual reply that matches the persona's language, tone, and scope.
+    Falls back to a minimal static string only if the LLM call itself fails.
+    """
+    from engine_v2.llms import resolve_llm
+
+    no_retrieval_prompt = (
+        f"The user asked: \"{question}\"\n\n"
+        f"You are the \"{persona_name}\" advisor. "
+        "Your knowledge base did NOT return any relevant documents for this query. "
+        "Politely tell the user that you couldn't find relevant information in "
+        "your current knowledge base. Suggest they try rephrasing their question "
+        "or that the topic may not yet be covered. "
+        "Keep your reply concise (3-5 sentences). "
+        "Reply in the SAME LANGUAGE the user used in their question."
+    )
+    try:
+        llm = resolve_llm(model=model, provider=provider, streaming=False)
+        from llama_index.core.llms import ChatMessage, MessageRole
+        messages = []
+        if system_prompt:
+            messages.append(ChatMessage(role=MessageRole.SYSTEM, content=system_prompt))
+        messages.append(ChatMessage(role=MessageRole.USER, content=no_retrieval_prompt))
+        resp = llm.chat(messages)
+        return str(resp).strip()
+    except Exception as e:
+        logger.warning("Failed to generate dynamic no-retrieval reply: {}", e)
+        return (
+            f"I couldn't find relevant information in the {persona_name} "
+            "knowledge base for your question. "
+            "Please try rephrasing or check if the relevant documents have been ingested."
+        )
+
+
 async def _consulting_stream_generator(req: PersonaQueryRequest):
     """Async generator for consulting SSE streaming (C4: dual-collection)."""
     try:
@@ -289,8 +378,14 @@ async def _consulting_stream_generator(req: PersonaQueryRequest):
         )
         system_prompt = persona.get("systemPrompt", "")
 
+        # G7-10: Multi-collection retrieval for mixed personas
+        multi_collections = persona.get("multiCollections") or []
+
         # G2: Warn if persona knowledge base is empty
-        kb_count = _get_collection_count(collection_name)
+        if multi_collections:
+            kb_count = sum(_get_collection_count(c) for c in multi_collections)
+        else:
+            kb_count = _get_collection_count(collection_name)
         if kb_count == 0:
             yield _sse("warning", {
                 "code": "empty_knowledge_base",
@@ -308,6 +403,7 @@ async def _consulting_stream_generator(req: PersonaQueryRequest):
             system_prompt += f"\n\nPlease respond in {lang_name}."
 
         from engine_v2.query_engine.citation import get_query_engine
+        from engine_v2.response_synthesizers.citation import get_citation_synthesizer
         from engine_v2.schema import build_source, normalize_scores
 
         # C4: Dual-collection streaming (GO-MU-06: user_id from JWT auth)
@@ -324,6 +420,38 @@ async def _consulting_stream_generator(req: PersonaQueryRequest):
                 model=req.model,
                 provider=req.provider,
                 streaming=True,
+            )
+        elif multi_collections:
+            # G7-10: Mixed persona — retrieve from all collections, merge via RRF
+            merged_nodes = multi_collection_retrieve(
+                question=req.question,
+                collection_names=multi_collections,
+                top_k=req.top_k,
+            )
+            # Synthesize from merged nodes
+            from engine_v2.query_engine.citation import TextbookCitationQueryEngine
+            synthesizer = get_citation_synthesizer(
+                streaming=True,
+                model=req.model,
+                provider=req.provider,
+                custom_system_prompt=system_prompt,
+            )
+            engine = TextbookCitationQueryEngine(
+                retriever=None,  # type: ignore[arg-type]
+                response_synthesizer=synthesizer,
+            )
+            citation_nodes = engine._create_citation_nodes(merged_nodes)
+            sources = []
+            for i, nws in enumerate(citation_nodes, start=1):
+                source = build_source(nws, i)
+                origin = nws.node.metadata.get("retrieval_origin", "unknown")
+                source["retrieval_origin"] = origin
+                sources.append(source)
+            normalize_scores(sources)
+            from llama_index.core.schema import QueryBundle
+            response = synthesizer.synthesize(
+                query=QueryBundle(query_str=req.question),
+                nodes=citation_nodes,
             )
         else:
             engine = get_query_engine(
@@ -345,15 +473,67 @@ async def _consulting_stream_generator(req: PersonaQueryRequest):
             "sources": sources,
         })
 
+        # G3: If no chunks were retrieved, use a lightweight LLM call with
+        # the persona's system prompt to generate a contextual "no results"
+        # message — never hardcode static text.
+        if len(sources) == 0:
+            yield _sse("no_retrieval", {
+                "message": "No relevant documents found for this question.",
+            })
+            fallback = await _generate_no_retrieval_reply(
+                question=req.question,
+                system_prompt=system_prompt,
+                persona_name=persona.get("name", req.persona_slug),
+                model=req.model,
+                provider=req.provider,
+            )
+            yield _sse("token", {"t": fallback})
+            yield _sse("done", {
+                "persona": {
+                    "name": persona.get("name"),
+                    "slug": persona.get("slug"),
+                },
+                "answer": fallback,
+                "sources": [],
+                "stats": {"source_count": 0},
+                "telemetry": {
+                    "llm_calls": 1,
+                    "input_tokens": len(fallback.split()),
+                    "output_tokens": len(fallback.split()),
+                },
+            })
+            return
+
         # Stream tokens
         full_answer = ""
+        output_token_count = 0
         response_gen = response.response_gen
         if response_gen is not None:
             for token in response_gen:
                 full_answer += token
+                output_token_count += 1
                 yield _sse("token", {"t": token})
         else:
             full_answer = str(response)
+            output_token_count = len(full_answer.split())
+
+        # G3: Guard against LlamaIndex returning "Empty Response" when
+        # synthesis produces no content despite having source nodes.
+        if not full_answer or full_answer.strip().lower() == "empty response":
+            full_answer = await _generate_no_retrieval_reply(
+                question=req.question,
+                system_prompt=system_prompt,
+                persona_name=persona.get("name", req.persona_slug),
+                model=req.model,
+                provider=req.provider,
+            )
+            output_token_count = len(full_answer.split())
+
+        # Estimate input tokens: question + source chunks
+        context_text = " ".join(s.get("full_content", "") or "" for s in sources)
+        input_token_estimate = int(
+            (len(req.question.split()) + len(context_text.split())) / 0.75
+        )
 
         yield _sse("done", {
             "persona": {
@@ -363,6 +543,11 @@ async def _consulting_stream_generator(req: PersonaQueryRequest):
             "answer": full_answer,
             "sources": sources,
             "stats": {"source_count": len(sources)},
+            "telemetry": {
+                "llm_calls": 1,
+                "input_tokens": input_token_estimate,
+                "output_tokens": output_token_count,
+            },
         })
 
     except Exception as e:

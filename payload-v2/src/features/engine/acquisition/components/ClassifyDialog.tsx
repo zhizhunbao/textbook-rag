@@ -56,7 +56,7 @@ export default function ClassifyDialog({
   onCancel,
 }: ClassifyDialogProps) {
   const { locale } = useI18n()
-  const isFr = locale === 'fr'
+  const isZh = locale === 'zh'
 
   // ==========================================================
   // State
@@ -169,10 +169,10 @@ export default function ClassifyDialog({
             </div>
             <div>
               <h2 className="text-sm font-semibold text-foreground">
-                {isFr ? '智能分类' : 'Smart Classification'}
+                {isZh ? '智能分类' : 'Smart Classification'}
               </h2>
               <p className="text-[11px] text-muted-foreground">
-                {isFr ? 'LLM 自动分析，可手动调整' : 'LLM auto-detected, editable'}
+                {isZh ? 'LLM 自动分析，可手动调整' : 'LLM auto-detected, editable'}
               </p>
             </div>
           </div>
@@ -190,7 +190,7 @@ export default function ClassifyDialog({
           {/* Title field */}
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              {isFr ? '标题' : 'Title'}
+              {isZh ? '标题' : 'Title'}
             </label>
             <input
               type="text"
@@ -211,7 +211,7 @@ export default function ClassifyDialog({
             <div className="space-y-1.5">
               <div className="flex items-center gap-1.5">
                 <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  {isFr ? '分类' : 'Category'}
+                  {isZh ? '分类' : 'Category'}
                 </label>
                 {classifying && (
                   <Loader2 className="h-3 w-3 text-primary animate-spin" />
@@ -242,8 +242,8 @@ export default function ClassifyDialog({
                     category ? 'text-foreground' : 'text-muted-foreground',
                   )}>
                     {classifying
-                      ? (isFr ? '分析中...' : 'Analyzing...')
-                      : category || (isFr ? '选择分类' : 'Select category')}
+                      ? (isZh ? '分析中...' : 'Analyzing...')
+                      : category || (isZh ? '选择分类' : 'Select category')}
                   </span>
                   <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                 </button>
@@ -293,7 +293,7 @@ export default function ClassifyDialog({
                         >
                           <Sparkles className="h-3.5 w-3.5" />
                           <span className="flex-1">
-                            {isFr ? 'LLM 建议' : 'LLM suggestion'}: {category}
+                            {isZh ? 'LLM 建议' : 'LLM suggestion'}: {category}
                           </span>
                           <Check className="h-3.5 w-3.5 text-primary shrink-0" />
                         </button>
@@ -308,7 +308,7 @@ export default function ClassifyDialog({
                           value={customCategory}
                           onChange={(e) => setCustomCategory(e.target.value)}
                           onKeyDown={(e) => e.key === 'Enter' && handleCustomCategorySubmit()}
-                          placeholder={isFr ? '自定义分类...' : 'Custom...'}
+                          placeholder={isZh ? '自定义分类...' : 'Custom...'}
                           className={cn(
                             'flex-1 rounded border border-border bg-background px-2 py-1 text-xs',
                             'focus:outline-none focus:ring-1 focus:ring-primary/30',
@@ -337,7 +337,7 @@ export default function ClassifyDialog({
             {/* Subcategory */}
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                {isFr ? '子分类' : 'Subcategory'}
+                {isZh ? '子分类' : 'Subcategory'}
               </label>
               <input
                 type="text"
@@ -351,7 +351,7 @@ export default function ClassifyDialog({
                   'disabled:opacity-50 disabled:cursor-wait',
                   classifying && 'animate-pulse',
                 )}
-                placeholder={isFr ? 'e.g. Python, Q4 报告' : 'e.g. Python, Q4 Report'}
+                placeholder={isZh ? 'e.g. Python, Q4 报告' : 'e.g. Python, Q4 Report'}
               />
             </div>
           </div>
@@ -361,7 +361,7 @@ export default function ClassifyDialog({
             <div className="flex items-center gap-2 rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-600 dark:text-amber-400">
               <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
               <span>
-                {isFr
+                {isZh
                   ? `自动分类失败，已默认为 textbook: ${classifyError}`
                   : `Auto-classify failed, defaulted to textbook: ${classifyError}`}
               </span>
@@ -386,7 +386,7 @@ export default function ClassifyDialog({
               'text-muted-foreground hover:text-foreground hover:bg-secondary',
             )}
           >
-            {isFr ? '取消' : 'Cancel'}
+            {isZh ? '取消' : 'Cancel'}
           </button>
           <button
             type="button"
@@ -398,7 +398,7 @@ export default function ClassifyDialog({
               'disabled:opacity-50 disabled:cursor-not-allowed',
             )}
           >
-            {isFr ? '确认上传' : 'Confirm & Upload'}
+            {isZh ? '确认上传' : 'Confirm & Upload'}
           </button>
         </div>
       </div>

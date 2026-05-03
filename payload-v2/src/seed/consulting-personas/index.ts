@@ -20,6 +20,7 @@ import { eduChildEducation } from "./education/edu-child-education";
 import { immPathways } from "./immigration/imm-pathways";
 import { immPrRenewal } from "./immigration/imm-pr-renewal";
 import { immFamily } from "./immigration/imm-family";
+import { liveStudyImmigration } from "./immigration/live-study-immigration";
 
 // ── Settlement (5) ──────────────────────────────────────────
 import { lifeRental } from "./settlement/life-rental";
@@ -66,6 +67,7 @@ export const consultingPersonasData = [
   immPathways,
   immPrRenewal,
   immFamily,
+  liveStudyImmigration,
   // Settlement
   lifeRental,
   lifeDriving,

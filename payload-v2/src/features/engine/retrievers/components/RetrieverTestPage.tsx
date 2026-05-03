@@ -44,7 +44,7 @@ interface ComparisonRun {
 // ============================================================
 export default function RetrieverTestPage() {
   const { locale } = useI18n()
-  const isFr = locale === 'fr'
+  const isZh = locale === 'zh'
 
   // ── Query state ──
   const [question, setQuestion] = useState('')
@@ -228,10 +228,10 @@ export default function RetrieverTestPage() {
           <Search className="h-5 w-5 text-primary" />
           <div>
             <h1 className="text-lg font-bold text-foreground">
-              {isFr ? '检索测试台' : 'Retriever Test Console'}
+              {isZh ? '检索测试台' : 'Retriever Test Console'}
             </h1>
             <p className="text-xs text-muted-foreground">
-              {isFr
+              {isZh
                 ? '纯检索调试 — 无 LLM 生成，直接查看 BM25 + Vector → RRF 融合结果'
                 : 'Retrieve-only debug — no generation, raw BM25 + Vector → RRF results'}
             </p>
@@ -249,7 +249,7 @@ export default function RetrieverTestPage() {
             )}
           >
             <LayoutList className="h-3.5 w-3.5" />
-            {isFr ? '单次' : 'Single'}
+            {isZh ? '单次' : 'Single'}
           </button>
           <button
             type="button"
@@ -260,7 +260,7 @@ export default function RetrieverTestPage() {
             )}
           >
             <Columns2 className="h-3.5 w-3.5" />
-            {isFr ? '对比' : 'Compare'}
+            {isZh ? '对比' : 'Compare'}
           </button>
         </div>
       </div>
@@ -278,13 +278,13 @@ export default function RetrieverTestPage() {
             {/* Question input */}
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-                {isFr ? '检索查询' : 'Retrieval Query'}
+                {isZh ? '检索查询' : 'Retrieval Query'}
               </label>
               <textarea
                 id="retrieve-input"
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
-                placeholder={isFr ? '输入检索查询…' : 'Enter retrieval query…'}
+                placeholder={isZh ? '输入检索查询…' : 'Enter retrieval query…'}
                 className="w-full h-28 rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none resize-none transition-colors"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
@@ -358,10 +358,10 @@ export default function RetrieverTestPage() {
               <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 space-y-1">
                 <p className="text-xs font-medium text-primary flex items-center gap-1.5">
                   <Zap className="h-3.5 w-3.5" />
-                  {isFr ? '对比模式' : 'Comparison Mode'}
+                  {isZh ? '对比模式' : 'Comparison Mode'}
                 </p>
                 <p className="text-[10px] text-muted-foreground">
-                  {isFr
+                  {isZh
                     ? `将同时运行 3 种配置: top_k=${topK} / top_k=${topK}+Rerank / top_k=${Math.min(topK * 2, 20)}`
                     : `Runs 3 configs in parallel: top_k=${topK} / top_k=${topK}+Rerank / top_k=${Math.min(topK * 2, 20)}`}
                 </p>
@@ -372,7 +372,7 @@ export default function RetrieverTestPage() {
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1.5">
                 <BookOpen className="inline h-3 w-3 mr-1" />
-                {isFr ? '书籍范围（可选）' : 'Book filter (optional)'}
+                {isZh ? '书籍范围（可选）' : 'Book filter (optional)'}
               </label>
               <div className="space-y-1 max-h-32 overflow-y-auto">
                 {books.map((b) => (
@@ -391,7 +391,7 @@ export default function RetrieverTestPage() {
                 ))}
                 {books.length === 0 && (
                   <p className="text-[10px] text-muted-foreground/60 italic px-2">
-                    {isFr ? '无已索引书籍' : 'No indexed books'}
+                    {isZh ? '无已索引书籍' : 'No indexed books'}
                   </p>
                 )}
               </div>
@@ -406,15 +406,15 @@ export default function RetrieverTestPage() {
               >
                 {(loading || compareLoading) ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
                 {compareMode
-                  ? (isFr ? '对比检索' : 'Compare')
-                  : (isFr ? '检索' : 'Retrieve')}
+                  ? (isZh ? '对比检索' : 'Compare')
+                  : (isZh ? '检索' : 'Retrieve')}
               </button>
               {(response || compareRuns.length > 0) && (
                 <button
                   type="button"
                   onClick={handleReset}
                   className="px-3 py-2 rounded-lg border border-border text-muted-foreground hover:bg-secondary transition-colors"
-                  title={isFr ? '重置' : 'Reset'}
+                  title={isZh ? '重置' : 'Reset'}
                 >
                   <RotateCcw className="h-4 w-4" />
                 </button>
@@ -438,10 +438,10 @@ export default function RetrieverTestPage() {
                       <Search className="h-8 w-8 text-muted-foreground/30" />
                     </div>
                     <h3 className="text-sm font-semibold text-foreground mb-1">
-                      {isFr ? '准备就绪' : 'Ready'}
+                      {isZh ? '准备就绪' : 'Ready'}
                     </h3>
                     <p className="text-xs text-muted-foreground max-w-sm">
-                      {isFr
+                      {isZh
                         ? '输入查询后点击"检索"查看 BM25 + Vector 融合结果'
                         : 'Enter a query and click "Retrieve" to see hybrid BM25 + Vector results'}
                     </p>
@@ -452,7 +452,7 @@ export default function RetrieverTestPage() {
                 {error && (
                   <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 mb-4">
                     <p className="text-sm font-medium text-destructive">
-                      {isFr ? '检索失败' : 'Retrieval failed'}
+                      {isZh ? '检索失败' : 'Retrieval failed'}
                     </p>
                     <p className="text-xs text-destructive/70 mt-1">{error}</p>
                   </div>
@@ -463,7 +463,7 @@ export default function RetrieverTestPage() {
                   <div className="flex items-center justify-center h-full gap-3">
                     <Loader2 className="h-5 w-5 animate-spin text-primary" />
                     <span className="text-sm text-muted-foreground">
-                      {isFr ? '检索中…' : 'Retrieving…'}
+                      {isZh ? '检索中…' : 'Retrieving…'}
                     </span>
                   </div>
                 )}
@@ -487,10 +487,10 @@ export default function RetrieverTestPage() {
                       <Columns2 className="h-8 w-8 text-muted-foreground/30" />
                     </div>
                     <h3 className="text-sm font-semibold text-foreground mb-1">
-                      {isFr ? '对比模式' : 'Comparison Mode'}
+                      {isZh ? '对比模式' : 'Comparison Mode'}
                     </h3>
                     <p className="text-xs text-muted-foreground max-w-sm">
-                      {isFr
+                      {isZh
                         ? '同一查询同时运行 3 种配置，对比检索质量差异'
                         : 'Run 3 different configs on the same query to compare retrieval quality'}
                     </p>
@@ -571,7 +571,7 @@ export default function RetrieverTestPage() {
             <div className="px-6 py-2 border-t border-border bg-muted/30 flex items-center gap-4 text-[10px] text-muted-foreground">
               <span className="flex items-center gap-1">
                 <FileText className="h-3 w-3" />
-                {response.count} {isFr ? '条结果' : 'results'}
+                {response.count} {isZh ? '条结果' : 'results'}
               </span>
               {response.reranked && (
                 <span className="flex items-center gap-1 text-primary font-medium">
@@ -582,7 +582,7 @@ export default function RetrieverTestPage() {
               {selectedBookIds.length > 0 && (
                 <span className="flex items-center gap-1">
                   <BookOpen className="h-3 w-3" />
-                  {selectedBookIds.length} {isFr ? '本书' : 'books filtered'}
+                  {selectedBookIds.length} {isZh ? '本书' : 'books filtered'}
                 </span>
               )}
               {elapsedMs != null && (

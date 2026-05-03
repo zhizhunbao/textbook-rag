@@ -17,81 +17,7 @@ import { usePersonas, type Persona } from './usePersonas'
 import { cn } from '@/features/shared/utils'
 import PublicNav from '@/features/layout/PublicNav'
 import { CATEGORIES, AVATAR_MAP, type CategoryDef } from '@/features/shared/consultingRoles'
-
-// ── Role Card ──
-
-function RoleCard({
-  persona,
-  cat,
-  selected,
-  onSelect,
-}: {
-  persona: Persona
-  cat: CategoryDef
-  selected: boolean
-  onSelect: () => void
-}) {
-  const displayName = persona.nameEn || persona.name
-  // Use API avatar, or fallback to shared AVATAR_MAP by slug
-  const avatarSrc = persona.avatar || AVATAR_MAP[persona.slug]
-
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={cn(
-        'group relative flex items-start gap-4 rounded-xl border p-4 text-left transition-all duration-200',
-        selected
-          ? 'border-primary bg-primary/5 shadow-md shadow-primary/10 ring-2 ring-primary/30 dark:bg-primary/10 dark:shadow-primary/5'
-          : 'border-slate-200 bg-white shadow-sm hover:border-blue-200 hover:shadow-md hover:shadow-blue-100/50 dark:border-white/8 dark:bg-slate-900/60 dark:hover:border-white/20 dark:hover:bg-slate-800/60',
-      )}
-    >
-      {/* Selected check */}
-      {selected && (
-        <div className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-primary shadow-lg shadow-primary/30">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-        </div>
-      )}
-
-      {/* Avatar */}
-      {avatarSrc ? (
-        <div className={cn(
-          'h-11 w-11 shrink-0 overflow-hidden rounded-full ring-2 transition-shadow',
-          selected ? 'ring-primary/60 ring-[3px]' : `${cat.ringColor} group-hover:ring-[3px]`,
-        )}>
-          <Image src={avatarSrc} alt={displayName} width={44} height={44} className="h-full w-full object-cover" />
-        </div>
-      ) : (
-        <div className={cn(
-          'flex h-11 w-11 shrink-0 items-center justify-center rounded-full ring-2',
-          cat.bgColor,
-          selected ? 'ring-primary/60' : cat.ringColor,
-        )}>
-          <span className={cn('text-sm font-bold', cat.textColor)}>
-            {displayName.charAt(0)}
-          </span>
-        </div>
-      )}
-
-      {/* Text */}
-      <div className="min-w-0 flex-1">
-        <h4 className={cn(
-          'text-sm font-bold transition-colors',
-          selected ? 'text-primary' : 'text-foreground',
-        )}>
-          {displayName}
-        </h4>
-        {persona.description && (
-          <p className="mt-0.5 text-[12px] leading-[1.5] text-muted-foreground line-clamp-2">
-            {persona.description}
-          </p>
-        )}
-      </div>
-    </button>
-  )
-}
+import AdvisorCard from '@/features/home/AdvisorCard'
 
 // ── Category Section ──
 
@@ -117,10 +43,14 @@ function CategorySection({
       </h3>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {personas.map((p) => (
-          <RoleCard
+          <AdvisorCard
             key={p.id}
-            persona={p}
+            slug={p.slug}
+            name={p.nameEn || p.name}
+            description={p.description}
+            avatar={p.avatar || AVATAR_MAP[p.slug]}
             cat={cat}
+            mode="select"
             selected={selectedId === p.id}
             onSelect={() => onSelect(p.id)}
           />

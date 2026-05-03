@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
 import {
   ArrowRight,
   Bot,
@@ -12,6 +11,7 @@ import {
 import { useAuth } from '@/features/shared/AuthProvider'
 import PublicNav from '@/features/layout/PublicNav'
 import { CATEGORIES, ALL_ROLES, type CategoryDef, type RoleDef } from '@/features/shared/consultingRoles'
+import AdvisorCard from './AdvisorCard'
 
 export default function HomePage() {
   const { user } = useAuth()
@@ -238,7 +238,7 @@ export default function HomePage() {
             {CATEGORIES.map((cat) => {
               const roles = ALL_ROLES.filter((r) => r.category === cat.value)
               return (
-                <CategorySection key={cat.value} cat={cat} roles={roles} href={primaryHref} />
+                <CategorySection key={cat.value} cat={cat} roles={roles} />
               )
             })}
           </div>
@@ -319,67 +319,27 @@ function HowStep({ number, title, text }: { number: string; title: string; text:
 
 /* ── Expert Center — uses shared CATEGORIES + ALL_ROLES from consultingRoles.ts ── */
 
-function CategorySection({ cat, roles, href }: { cat: CategoryDef; roles: RoleDef[]; href: string }) {
+function CategorySection({ cat, roles }: { cat: CategoryDef; roles: RoleDef[] }) {
   return (
     <div>
       <h3 className="mb-4 text-sm font-semibold text-muted-foreground">
         {cat.label}
       </h3>
-      {/* Roles grid */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {roles.map((role) => (
-          <RoleCard key={role.slug} role={role} cat={cat} href={href} />
+          <AdvisorCard
+            key={role.slug}
+            slug={role.slug}
+            name={role.name}
+            description={role.description}
+            avatar={role.avatar}
+            enabled={role.enabled}
+            cat={cat}
+            mode="link"
+          />
         ))}
       </div>
     </div>
-  )
-}
-
-function RoleCard({ role, cat, href }: { role: RoleDef; cat: CategoryDef; href: string }) {
-  const inner = (
-    <div
-      className={`group flex items-start gap-4 rounded-xl border p-4 transition-all ${role.enabled
-          ? 'border-slate-200 bg-white shadow-sm hover:border-blue-200 hover:shadow-md hover:shadow-blue-100/50 dark:border-white/8 dark:bg-slate-900/60 dark:hover:border-white/20 dark:hover:bg-slate-800/60'
-          : 'border-dashed border-slate-200 bg-slate-50/50 dark:border-white/5 dark:bg-slate-900/30'
-        }`}
-    >
-      {/* Avatar or initial */}
-      {role.avatar ? (
-        <div className={`h-12 w-12 shrink-0 overflow-hidden rounded-full ring-2 ${cat.ringColor} transition-shadow group-hover:ring-[3px]`}>
-          <Image src={role.avatar} alt={role.name} width={48} height={48} className="h-full w-full object-cover" />
-        </div>
-      ) : (
-        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${cat.bgColor} ring-2 ${cat.ringColor}`}>
-          <span className={`text-sm font-bold ${cat.textColor}`}>
-            {role.name.charAt(0)}
-          </span>
-        </div>
-      )}
-      {/* Text */}
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <h4 className={`text-sm font-bold ${role.enabled ? 'text-foreground' : 'text-muted-foreground'}`}>
-            {role.name}
-          </h4>
-          {!role.enabled && (
-            <span className="shrink-0 rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
-              Coming soon
-            </span>
-          )}
-        </div>
-        <p className="mt-1 text-[12px] leading-[1.5] text-muted-foreground">
-          {role.description}
-        </p>
-      </div>
-    </div>
-  )
-
-  if (!role.enabled) return <div className="cursor-default opacity-60">{inner}</div>
-
-  return (
-    <Link href={href} className="block">
-      {inner}
-    </Link>
   )
 }
 

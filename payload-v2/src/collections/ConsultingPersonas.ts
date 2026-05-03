@@ -150,6 +150,13 @@ export const ConsultingPersonas: CollectionConfig = {
       admin: { position: 'sidebar' },
     },
     {
+      name: 'multiCollections',
+      type: 'json',
+      admin: {
+        description: 'JSON array of extra ChromaDB collection names for cross-collection retrieval (e.g. ["ca_imm-pathways", "ca_edu-school-planning"])',
+      },
+    },
+    {
       name: 'suggestedQuestions',
       type: 'json',
       admin: {

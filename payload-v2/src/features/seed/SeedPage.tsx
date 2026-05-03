@@ -147,9 +147,9 @@ const SEED_MODULES: SeedModuleMeta[] = [
     category: 'preset',
     targetCollection: 'consulting-personas',
     targetCollectionLabel: 'ConsultingPersonas',
-    description: '28 consulting personas across 7 categories: Education, Immigration, Settlement, Healthcare, Finance, Career, Legal',
+    description: '30 consulting personas across 8 categories: Education, Immigration, Settlement, Healthcare, Finance, Career, Legal, Analysis',
     descriptionFr: '28 rôles de consultation dans 7 catégories : Éducation, Immigration, Installation, Santé, Finance, Carrière, Juridique',
-    recordCount: 28,
+    recordCount: 30,
     dataSummary: 'Persona name, slug, systemPrompt, greeting, ChromaDB collection binding',
     dataSummaryFr: 'Nom du rôle, slug, invite système, message d\'accueil, liaison collection ChromaDB',
   },
@@ -180,7 +180,7 @@ export default function SeedPage() {
 
 function SeedPageInner() {
   const { locale } = useI18n()
-  const isFr = locale === 'fr'
+  const isZh = locale === 'zh'
 
   // UI state
   const [filter, setFilter] = useQueryState('filter', 'all')
@@ -204,13 +204,13 @@ function SeedPageInner() {
   const sidebarItems = useMemo<SidebarItem[]>(() => [
     {
       key: 'all',
-      label: isFr ? 'Tous les modules' : 'All Modules',
+      label: isZh ? 'Tous les modules' : 'All Modules',
       count: SEED_MODULES.length,
       icon: <Layers className="h-4 w-4 shrink-0" />,
     },
     {
       key: 'preset',
-      label: isFr ? 'Données prédéfinies' : 'Preset Data',
+      label: isZh ? 'Données prédéfinies' : 'Preset Data',
       count: presetCount,
       icon: <Sparkles className="h-4 w-4 shrink-0 text-amber-400" />,
       dividerBefore: true,
@@ -219,7 +219,7 @@ function SeedPageInner() {
       const Icon = m.icon
       return {
         key: `preset::${m.id}::${m.label}`,
-        label: isFr ? m.labelFr : m.label,
+        label: isZh ? m.labelFr : m.label,
         count: m.recordCount,
         indent: true,
         icon: <Icon className="h-4 w-4 shrink-0" />,
@@ -227,7 +227,7 @@ function SeedPageInner() {
     }),
     {
       key: 'sync',
-      label: isFr ? 'Synchronisation Engine' : 'Engine Sync',
+      label: isZh ? 'Synchronisation Engine' : 'Engine Sync',
       count: syncModules.length,
       icon: <RefreshCw className="h-4 w-4 shrink-0 text-emerald-400" />,
       dividerBefore: true,
@@ -236,12 +236,12 @@ function SeedPageInner() {
       const Icon = m.icon
       return {
         key: `sync::${m.id}`,
-        label: isFr ? m.labelFr : m.label,
+        label: isZh ? m.labelFr : m.label,
         indent: true,
         icon: <Icon className="h-4 w-4 shrink-0" />,
       }
     }),
-  ], [isFr, presetCount])
+  ], [isZh, presetCount])
 
   // ── Filter logic ──────────────────────────────────────────────────────────
 
@@ -355,19 +355,19 @@ function SeedPageInner() {
 
   return (
     <SidebarLayout
-      title={isFr ? 'Gestion des données' : 'Data Management'}
+      title={isZh ? 'Gestion des données' : 'Data Management'}
       icon={<Database className="h-4 w-4 text-primary" />}
       sidebarItems={sidebarItems}
       activeFilter={filter}
       onFilterChange={setFilter}
-      subtitle={isFr ? 'Données prédéfinies · Synchronisation Engine' : 'Seed preset data · Sync from Engine'}
+      subtitle={isZh ? 'Données prédéfinies · Synchronisation Engine' : 'Seed preset data · Sync from Engine'}
       sidebarFooter={
         <div className="space-y-1">
           <p className="text-[10px] text-muted-foreground">
-            {isFr ? `${presetModules.length} modules prédéfinis` : `${presetModules.length} preset modules`}
+            {isZh ? `${presetModules.length} modules prédéfinis` : `${presetModules.length} preset modules`}
           </p>
           <p className="text-[10px] text-muted-foreground">
-            {isFr ? `${syncModules.length} module(s) de synchronisation` : `${syncModules.length} sync modules`}
+            {isZh ? `${syncModules.length} module(s) de synchronisation` : `${syncModules.length} sync modules`}
           </p>
         </div>
       }
@@ -386,7 +386,7 @@ function SeedPageInner() {
             ) : (
               <Database className="h-3 w-3" />
             )}
-            {isFr ? 'Tout initialiser' : 'Seed All'}
+            {isZh ? 'Tout initialiser' : 'Seed All'}
           </button>
         </div>
       }
@@ -401,9 +401,9 @@ function SeedPageInner() {
       {results.length > 0 && !error && (
         <div className="mb-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm">
           <CheckCircle2 className="h-4 w-4 inline mr-2" />
-          {isFr ? 'Terminé !' : 'Done!'}{' '}
-          {isFr ? 'Supprimé' : 'Deleted'} {results.reduce((s, r) => s + (r.deleted || 0), 0)},{' '}
-          {isFr ? 'Créé' : 'Created'} {results.reduce((s, r) => s + r.created, 0)}
+          {isZh ? 'Terminé !' : 'Done!'}{' '}
+          {isZh ? 'Supprimé' : 'Deleted'} {results.reduce((s, r) => s + (r.deleted || 0), 0)},{' '}
+          {isZh ? 'Créé' : 'Created'} {results.reduce((s, r) => s + r.created, 0)}
         </div>
       )}
 
@@ -413,10 +413,10 @@ function SeedPageInner() {
           <div className="flex items-center gap-2 mb-3">
             <Sparkles className="h-4 w-4 text-amber-400" />
             <h2 className="text-sm font-semibold text-foreground">
-              {isFr ? 'Données prédéfinies (Seed)' : 'Preset Data (Seed)'}
+              {isZh ? 'Données prédéfinies (Seed)' : 'Preset Data (Seed)'}
             </h2>
             <span className="text-[10px] text-muted-foreground">
-              {isFr
+              {isZh
                 ? '覆盖更新：先删除旧数据，再创建新数据'
                 : 'Overwrite: deletes existing → recreates from seed'}
             </span>
@@ -441,10 +441,10 @@ function SeedPageInner() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <h3 className="text-sm font-medium text-foreground">
-                          {isFr ? mod.labelFr : mod.label}
+                          {isZh ? mod.labelFr : mod.label}
                         </h3>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {isFr ? mod.descriptionFr : mod.description}
+                          {isZh ? mod.descriptionFr : mod.description}
                         </p>
                         {/* Data mapping info */}
                         <div className="flex items-center gap-3 mt-2 text-[11px]">
@@ -454,12 +454,12 @@ function SeedPageInner() {
                           </span>
                           {mod.recordCount !== undefined && (
                             <span className="text-muted-foreground">
-                              {mod.recordCount} {isFr ? 'enregistrements' : 'records'}
+                              {mod.recordCount} {isZh ? 'enregistrements' : 'records'}
                             </span>
                           )}
                         </div>
                         <p className="text-[11px] text-muted-foreground/70 mt-1">
-                          {isFr ? mod.dataSummaryFr : mod.dataSummary}
+                          {isZh ? mod.dataSummaryFr : mod.dataSummary}
                         </p>
                       </div>
                     </div>
@@ -497,10 +497,10 @@ function SeedPageInner() {
             <div className="flex items-center gap-2">
               <RefreshCw className="h-4 w-4 text-emerald-400" />
               <h2 className="text-sm font-semibold text-foreground">
-                {isFr ? 'Synchronisation des données Engine' : 'Engine Data Sync'}
+                {isZh ? 'Synchronisation des données Engine' : 'Engine Data Sync'}
               </h2>
               <span className="text-[10px] text-muted-foreground">
-                {isFr
+                {isZh
                   ? 'Scanner les données analysées Engine v2, synchroniser avec la base Payload'
                   : 'Scan Engine v2 parsed data, sync to Payload DB'}
               </span>
@@ -519,8 +519,8 @@ function SeedPageInner() {
                 <RefreshCw className="h-3 w-3" />
               )}
               {syncing
-                ? (isFr ? 'Synchronisation...' : 'Syncing...')
-                : (isFr ? 'Synchroniser les données' : 'Sync Engine Data')}
+                ? (isZh ? 'Synchronisation...' : 'Syncing...')
+                : (isZh ? 'Synchroniser les données' : 'Sync Engine Data')}
             </button>
           </div>
 
@@ -538,10 +538,10 @@ function SeedPageInner() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <h3 className="text-sm font-medium text-foreground">
-                        {isFr ? mod.labelFr : mod.label}
+                        {isZh ? mod.labelFr : mod.label}
                       </h3>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {isFr ? mod.descriptionFr : mod.description}
+                        {isZh ? mod.descriptionFr : mod.description}
                       </p>
                       <div className="flex items-center gap-3 mt-2 text-[11px]">
                         <span className="flex items-center gap-1 text-muted-foreground">
@@ -550,7 +550,7 @@ function SeedPageInner() {
                         </span>
                       </div>
                       <p className="text-[11px] text-muted-foreground/70 mt-1">
-                        {isFr ? mod.dataSummaryFr : mod.dataSummary}
+                        {isZh ? mod.dataSummaryFr : mod.dataSummary}
                       </p>
                     </div>
 
@@ -563,7 +563,7 @@ function SeedPageInner() {
                           {syncResult.created! > 0 && syncResult.updated! > 0 && ' / '}
                           {syncResult.updated! > 0 && <span className="text-blue-500">↻{syncResult.updated}</span>}
                           <span className="ml-1">
-                            {isFr ? `${syncResult.total} au total` : `${syncResult.total} total`}
+                            {isZh ? `${syncResult.total} au total` : `${syncResult.total} total`}
                           </span>
                         </span>
                       </div>
@@ -583,12 +583,12 @@ function SeedPageInner() {
           {syncResult && !syncError && (
             <div className="mt-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm">
               <CheckCircle2 className="h-4 w-4 inline mr-2" />
-              {isFr
+              {isZh
                 ? `Synchronisation terminée ! Créé ${syncResult.created}, mis à jour ${syncResult.updated}.`
                 : `Sync complete! Created ${syncResult.created}, updated ${syncResult.updated}.`}
               {syncResult.errors && syncResult.errors.length > 0 && (
                 <span className="text-amber-400 ml-2">
-                  ({syncResult.errors.length} {isFr ? 'erreur(s)' : 'errors'})
+                  ({syncResult.errors.length} {isZh ? 'erreur(s)' : 'errors'})
                 </span>
               )}
             </div>

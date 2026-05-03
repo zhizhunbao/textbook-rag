@@ -81,7 +81,7 @@ export default function ImportPage() {
 
 function ImportPageInner() {
   const { locale } = useI18n()
-  const isFr = locale === 'fr'
+  const isZh = locale === 'zh'
   const [activeTab, setActiveTab] = useQueryState('tab', 'files') as [ImportTab, (v: string) => void]
   const [filter, setFilter] = useQueryState('filter', 'all')
   const [deleting, setDeleting] = useState(false)
@@ -145,8 +145,8 @@ function ImportPageInner() {
 
   const { sidebarItems: rawSidebarItems, filterBooks } = useBookSidebar(booksForSidebar, {
     mode: 'by-book',
-    isFr,
-    allLabel: isFr ? '全部' : 'All',
+    isZh,
+    allLabel: isZh ? '全部' : 'All',
     allIcon: <Layers className="h-4 w-4 shrink-0" />,
     bookIcon: <BookOpen className="h-3.5 w-3.5 shrink-0" />,
     categoryIcons,
@@ -165,7 +165,7 @@ function ImportPageInner() {
   // ── Delete handler (works for any book) ──
   const handleDeleteBook = useCallback(async (book: { id: number; book_id: string; title: string }) => {
     const confirmed = window.confirm(
-      isFr
+      isZh
         ? `确定删除「${book.title}」？\n将同时清除 Engine 侧数据（向量、MinerU 输出）。此操作不可撤销。`
         : `Delete "${book.title}"?\nThis will also clean up Engine-side data (vectors, MinerU output). This cannot be undone.`,
     )
@@ -182,14 +182,14 @@ function ImportPageInner() {
     } catch (err) {
       console.error('Delete failed:', err)
       window.alert(
-        isFr
+        isZh
           ? `删除失败: ${err instanceof Error ? err.message : String(err)}`
           : `Delete failed: ${err instanceof Error ? err.message : String(err)}`,
       )
     } finally {
       setDeleting(false)
     }
-  }, [isFr, refetch, setFilter, filter])
+  }, [isZh, refetch, setFilter, filter])
 
   // ── Add delete action to book-level sidebar items ──
   const sidebarItems = useMemo(() =>
@@ -209,21 +209,21 @@ function ImportPageInner() {
 
   return (
     <SidebarLayout
-      title={isFr ? '数据源管理' : 'Data Sources'}
+      title={isZh ? '数据源管理' : 'Data Sources'}
       icon={<Globe className="h-4 w-4 text-primary" />}
       sidebarItems={sidebarItems}
       activeFilter={filter}
       onFilterChange={setFilter}
       sidebarFooter={
         <p className="text-[10px] text-muted-foreground">
-          {isFr ? `共 ${books.length} 本` : `${books.length} total`}
+          {isZh ? `共 ${books.length} 本` : `${books.length} total`}
         </p>
       }
       loading={loading}
-      loadingText={isFr ? '正在加载...' : 'Loading...'}
+      loadingText={isZh ? '正在加载...' : 'Loading...'}
       error={error?.message ?? null}
       onRetry={refetch}
-      subtitle={isFr
+      subtitle={isZh
         ? '数据源 → 导入 → 文件 → 管线 → 向量'
         : 'Sources → Import → Files → Pipeline → Vectors'}
       toolbar={
@@ -239,10 +239,10 @@ function ImportPageInner() {
                 'text-destructive hover:bg-destructive/10',
                 'disabled:opacity-50 disabled:cursor-not-allowed',
               )}
-              title={isFr ? '删除此书' : 'Delete this book'}
+              title={isZh ? '删除此书' : 'Delete this book'}
             >
               <Trash2 className="h-3.5 w-3.5" />
-              {isFr ? '删除' : 'Delete'}
+              {isZh ? '删除' : 'Delete'}
             </button>
           )}
           {/* Refresh button */}
@@ -250,7 +250,7 @@ function ImportPageInner() {
             type="button"
             onClick={refetch}
             className="p-1.5 rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
-            title={isFr ? '刷新' : 'Refresh'}
+            title={isZh ? '刷新' : 'Refresh'}
           >
             <RefreshCw className="h-3.5 w-3.5" />
           </button>
@@ -275,7 +275,7 @@ function ImportPageInner() {
               )}
             >
               <Icon className="h-3.5 w-3.5" />
-              {isFr ? tab.labelFr : tab.label}
+              {isZh ? tab.labelFr : tab.label}
               {isActive && (
                 <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t" />
               )}
@@ -301,7 +301,7 @@ function ImportPageInner() {
 // ============================================================
 function ImportTabContent({ onBooksRefresh }: { onBooksRefresh: () => void }) {
   const { locale } = useI18n()
-  const isFr = locale === 'fr'
+  const isZh = locale === 'zh'
 
   const handleComplete = () => {
     // Auto-refresh sidebar book list after upload/import
@@ -316,7 +316,7 @@ function ImportTabContent({ onBooksRefresh }: { onBooksRefresh: () => void }) {
           <div className="flex items-center gap-2 px-1">
             <Upload className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {isFr ? '文件上传' : 'File Upload'}
+              {isZh ? '文件上传' : 'File Upload'}
             </span>
           </div>
           <FileUploadCard onUploadComplete={handleComplete} />
@@ -327,7 +327,7 @@ function ImportTabContent({ onBooksRefresh }: { onBooksRefresh: () => void }) {
           <div className="flex items-center gap-2 px-1">
             <Link2 className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {isFr ? 'URL 导入' : 'URL Import'}
+              {isZh ? 'URL 导入' : 'URL Import'}
             </span>
           </div>
           <UrlImportCard onImportComplete={handleComplete} />

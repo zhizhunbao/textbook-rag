@@ -1,0 +1,14 @@
+{
+  "appName": "ConsultRAG",
+  "appVersion": "v2.0",
+  "signIn": "Sign In",
+  "signOut": "Sign Out",
+  "settings": "Settings",
+  "send": "Send",
+  "cancel": "Cancel",
+  "confirm": "Confirm",
+  "loading": "Loading...",
+  "error": "An error occurred",
+  "close": "Close",
+  "back": "Back"
+}

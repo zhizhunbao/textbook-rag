@@ -17,6 +17,8 @@ export interface PersonaSeed {
   avatar?: string;
   description: string;
   chromaCollection: string;
+  /** Optional array of ChromaDB collection names for cross-collection retrieval. */
+  multiCollections?: string[];
   isEnabled: boolean;
   sortOrder: number;
   systemPrompt: string;

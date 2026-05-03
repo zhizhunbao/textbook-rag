@@ -70,14 +70,14 @@ interface EvalTrendChartProps {
   /** Evaluation results to visualize (sorted chronologically). */
   evaluations: EvaluationResult[]
   /** UI locale. */
-  locale?: 'en' | 'fr'
+  locale?: 'en' | 'zh'
 }
 
 // ============================================================
 // Component
 // ============================================================
 export default function EvalTrendChart({ evaluations, locale = 'en' }: EvalTrendChartProps) {
-  const isFr = locale === 'fr'
+  const isZh = locale === 'zh'
   const svgRef = useRef<SVGSVGElement>(null)
   const [range, setRange] = useState<RangeFilter>(50)
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
@@ -130,7 +130,7 @@ export default function EvalTrendChart({ evaluations, locale = 'en' }: EvalTrend
     return (
       <div className="rounded-lg border border-border/30 bg-card/30 px-3 py-2 text-center">
         <span className="text-[9px] text-muted-foreground">
-          {isFr ? '需要至少 2 条评估数据才能显示趋势' : 'Need at least 2 evaluations to show trends'}
+          {isZh ? '需要至少 2 条评估数据才能显示趋势' : 'Need at least 2 evaluations to show trends'}
         </span>
       </div>
     )
@@ -142,7 +142,7 @@ export default function EvalTrendChart({ evaluations, locale = 'en' }: EvalTrend
       <div className="flex items-center gap-2">
         <TrendingUp className="h-3.5 w-3.5 text-emerald-400" />
         <span className="text-[10px] font-semibold text-foreground flex-1">
-          {isFr ? '评分趋势' : 'Score Trends'}
+          {isZh ? '评分趋势' : 'Score Trends'}
         </span>
 
         {/* Range selector */}
@@ -302,7 +302,7 @@ export default function EvalTrendChart({ evaluations, locale = 'en' }: EvalTrend
               return (
                 <div key={line.key} className="flex items-center gap-1.5 text-[9px]">
                   <span className={cn('inline-block w-1.5 h-1.5 rounded-full', line.dotColor)} />
-                  <span className="text-muted-foreground w-10">{isFr ? line.labelFr : line.label}</span>
+                  <span className="text-muted-foreground w-10">{isZh ? line.labelFr : line.label}</span>
                   <span className="font-bold tabular-nums text-foreground">
                     {val != null ? (val * 100).toFixed(0) + '%' : '—'}
                   </span>
@@ -326,7 +326,7 @@ export default function EvalTrendChart({ evaluations, locale = 'en' }: EvalTrend
           return (
             <div key={key} className="flex items-center gap-1">
               <span className={cn('inline-block w-2 h-2 rounded-full', dotColor)} />
-              <span className="text-[9px] text-muted-foreground">{isFr ? labelFr : label}</span>
+              <span className="text-[9px] text-muted-foreground">{isZh ? labelFr : label}</span>
               <TIcon className={cn('h-3 w-3', trendCls)} />
               <span className={cn('text-[8px] tabular-nums', trendCls)}>
                 {trend.delta > 0 ? '+' : ''}{(trend.delta * 100).toFixed(0)}%

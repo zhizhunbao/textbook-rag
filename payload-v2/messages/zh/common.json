@@ -1,0 +1,14 @@
+{
+  "appName": "ConsultRAG",
+  "appVersion": "v2.0",
+  "signIn": "登录",
+  "signOut": "退出登录",
+  "settings": "设置",
+  "send": "发送",
+  "cancel": "取消",
+  "confirm": "确认",
+  "loading": "加载中...",
+  "error": "出错了",
+  "close": "关闭",
+  "back": "返回"
+}

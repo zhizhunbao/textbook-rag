@@ -5,6 +5,7 @@
  */
 
 import type { SourceInfo } from '@/features/shared/types'
+import type { LlmTelemetry } from '@/features/engine/query_engine/types'
 
 const ENGINE = process.env.NEXT_PUBLIC_ENGINE_URL || 'http://localhost:8001'
 
@@ -38,6 +39,7 @@ export interface ConsultingQueryResponse {
   answer: string
   sources: SourceInfo[]
   stats: { source_count: number }
+  telemetry?: LlmTelemetry
 }
 
 export interface PersonaInfo {
@@ -175,7 +177,7 @@ export async function queryConsultingStream(
 
             if (currentEvent === 'token') {
               callbacks.onToken(data.t ?? '')
-            } else if (currentEvent === 'warning') {
+            } else if (currentEvent === 'warning' || currentEvent === 'no_retrieval') {
               callbacks.onWarning?.(data)
             } else if (currentEvent === 'retrieval_done') {
               const sources = (data.sources ?? []).map(normaliseSource)
@@ -187,6 +189,7 @@ export async function queryConsultingStream(
                 answer: data.answer ?? '',
                 sources,
                 stats: data.stats ?? { source_count: sources.length },
+                telemetry: data.telemetry ?? undefined,
               })
             } else if (currentEvent === 'error') {
               callbacks.onError(new Error(data.message ?? 'Unknown error'))

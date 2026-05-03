@@ -1,5 +1,5 @@
 /**
- * i18n locale dictionaries — English / French bilingual messages
+ * i18n locale dictionaries — English / Chinese bilingual messages
  *
  * Architecture:
  *   - Flat key structure kept for backward compatibility (`t.appName`)
@@ -7,7 +7,7 @@
  *   - `tpl()` helper for safe string interpolation: `tpl(t.deleteConfirm, { count: 3 })`
  */
 
-export type Locale = 'en' | 'fr'
+export type Locale = 'en' | 'zh'
 
 // ────────────────────────────────────────
 // Message shape — grouped by UI section
@@ -177,7 +177,7 @@ export function tpl(template: string, vars: Record<string, string | number>): st
 
 const en: Messages = {
   // Common
-  appName: 'EcDev Research',
+  appName: 'ConsultRAG',
   appVersion: 'v2.0',
   signIn: 'Sign In',
   signOut: 'Sign Out',
@@ -230,8 +230,8 @@ const en: Messages = {
   ctaSubtitle: 'Sign in and start asking questions about Ottawa economic reports today.',
 
   // Login
-  loginHeading: 'EcDev Research',
-  loginSubheading: 'Sign in to access the AI-powered research assistant',
+  loginHeading: 'ConsultRAG',
+  loginSubheading: 'Sign in to access the AI-powered consulting assistant',
   emailLabel: 'Email',
   emailPlaceholder: 'you@example.com',
   passwordLabel: 'Password',
@@ -296,12 +296,12 @@ const en: Messages = {
   deleteConfirm: 'Delete {count} document(s)? This cannot be undone.',
 
   // Chat Panel
-  chatWelcomeTitle: 'EcDev Research Assistant',
-  chatWelcomeBody: 'Searching across {count} documents. Ask about employment, housing, inflation, or any economic indicator.',
+  chatWelcomeTitle: 'ConsultRAG Assistant',
+  chatWelcomeBody: 'Ask your consulting questions. The AI will search across {count} knowledge base documents.',
   chatWelcomeHint: 'Browse suggested questions in the panel on the right →',
   chatSearchAllDocs: 'Searching all {count} documents',
   chatPlaceholderSingle: 'Ask about {title}...',
-  chatPlaceholderMulti: 'Ask about Ottawa economic data...',
+  chatPlaceholderMulti: 'Ask your question...',
   chatInputHint: 'Enter to send · Shift+Enter for new line',
   chatSendTitle: 'Send message (Enter)',
   chatSearching: 'Searching the documents…',
@@ -318,149 +318,149 @@ const en: Messages = {
 }
 
 // ────────────────────────────────────────
-// Français
+// 中文 (Chinese)
 // ────────────────────────────────────────
 
-const fr: Messages = {
+const zh: Messages = {
   // Common
-  appName: 'EcDev Research',
+  appName: 'ConsultRAG',
   appVersion: 'v2.0',
-  signIn: 'Se connecter',
-  signOut: 'Se déconnecter',
-  startAsking: 'Poser une question',
-  settings: 'Paramètres',
-  collapse: 'Réduire',
-  adminAccess: 'Accès administrateur ?',
-  goToAdminPanel: 'Accéder au panneau admin →',
+  signIn: '登录',
+  signOut: '退出登录',
+  startAsking: '开始提问',
+  settings: '设置',
+  collapse: '收起',
+  adminAccess: '管理员入口',
+  goToAdminPanel: '进入管理后台 →',
 
   // Hero
-  heroTitle1: 'Assistant de recherche',
-  heroTitleHighlight: ' propulsé par l\'IA',
-  heroSubtitle: 'Posez des questions sur les rapports économiques de la Ville d\'Ottawa et obtenez des réponses instantanées et précises avec traçabilité des sources et citations au niveau de la page.',
+  heroTitle1: 'AI 智能',
+  heroTitleHighlight: '顾问助手',
+  heroSubtitle: '向 AI 专业顾问提问，获得即时、准确的回答，每条回答都附带来源追溯和页码引用。',
 
   // Stats
-  statMultiTextbook: 'Documents',
-  statDeepTrace: 'Conversations',
-  statPageCitations: 'Questions posées',
-  statMultiModels: 'Modèles IA',
+  statMultiTextbook: '知识文档',
+  statDeepTrace: '对话次数',
+  statPageCitations: '已回答问题',
+  statMultiModels: 'AI 模型',
 
   // Features
-  featuresTitle: 'Fonctionnalités',
-  featuresSubtitle: 'Tout ce dont vous avez besoin pour analyser les données économiques',
-  featureQATitle: 'Questions-réponses intelligentes',
-  featureQADesc: 'Posez des questions en langage naturel et obtenez des réponses précises basées sur les rapports économiques officiels de la Ville d\'Ottawa.',
-  featurePDFTitle: 'Visionneuse PDF avec surbrillance',
-  featurePDFDesc: 'Consultez les rapports côte à côte avec le chat. Les passages sources sont surlignés directement sur la page PDF.',
-  featureTraceTitle: 'Traçabilité et analytique complètes',
-  featureTraceDesc: 'Voyez exactement comment l\'IA a trouvé sa réponse — scores de recherche, classement des segments et trace complète de la requête.',
+  featuresTitle: '核心功能',
+  featuresSubtitle: '帮助您高效获取专业咨询的全部工具',
+  featureQATitle: '智能问答',
+  featureQADesc: '用自然语言提问，AI 基于专业知识库文档为您提供精准回答。',
+  featurePDFTitle: 'PDF 阅读与高亮',
+  featurePDFDesc: '聊天界面与 PDF 并排显示，来源段落直接在 PDF 页面高亮标注。',
+  featureTraceTitle: '完整追溯与分析',
+  featureTraceDesc: '查看 AI 如何找到答案 — 检索评分、片段排名和完整查询追踪。',
 
   // How It Works
-  howTitle: 'Comment ça marche',
-  howSubtitle: 'Trois étapes simples pour commencer',
-  howStep1Title: 'Téléverser des rapports',
-  howStep1Desc: 'L\'administrateur téléverse des rapports PDF. Le système ingère, segmente et indexe automatiquement le contenu.',
-  howStep2Title: 'Poser des questions',
-  howStep2Desc: 'Saisissez une question en langage naturel. L\'IA effectue une recherche dans tous les contenus indexés.',
-  howStep3Title: 'Obtenir des réponses citées',
-  howStep3Desc: 'Recevez des réponses précises avec des citations au niveau de la page. Cliquez sur une source pour accéder à la page PDF exacte.',
+  howTitle: '如何使用',
+  howSubtitle: '三步即可开始',
+  howStep1Title: '上传文档',
+  howStep1Desc: '管理员上传 PDF 文档，系统自动解析、分块并建立索引。',
+  howStep2Title: '提出问题',
+  howStep2Desc: '用自然语言输入问题，AI 将搜索所有已索引的文档内容。',
+  howStep3Title: '获取引用回答',
+  howStep3Desc: '获得精准回答并附带页码级引用。点击来源即可跳转到 PDF 对应页面。',
 
   // Pricing
-  pricingTitle: 'Tarification simple et transparente',
-  pricingSubtitle: 'Commencez gratuitement. Passez à la version supérieure quand vous en avez besoin.',
-  pricingGetStarted: 'Commencer',
-  pricingUpgrade: 'Passer à Pro',
-  pricingPopular: 'Recommandé',
+  pricingTitle: '简单透明的定价',
+  pricingSubtitle: '免费开始使用，按需升级。',
+  pricingGetStarted: '立即开始',
+  pricingUpgrade: '升级到专业版',
+  pricingPopular: '推荐',
 
   // CTA
-  ctaTitle: 'Prêt à explorer les données ?',
-  ctaSubtitle: 'Connectez-vous et commencez à poser des questions sur les rapports économiques d\'Ottawa.',
+  ctaTitle: '准备好开始了吗？',
+  ctaSubtitle: '登录并立即开始向 AI 顾问提问。',
 
   // Login
-  loginHeading: 'EcDev Research',
-  loginSubheading: 'Connectez-vous pour accéder à l\'assistant de recherche propulsé par l\'IA',
-  emailLabel: 'Courriel',
-  emailPlaceholder: 'vous@exemple.com',
-  passwordLabel: 'Mot de passe',
-  passwordPlaceholder: 'Entrez votre mot de passe',
-  signingIn: 'Connexion en cours...',
-  loginErrorEmpty: 'Veuillez saisir votre courriel et votre mot de passe',
-  loginErrorFailed: 'Échec de la connexion. Veuillez vérifier vos identifiants.',
-  loginNoAccount: 'Pas de compte ?',
-  loginGoToRegister: 'Créer un compte →',
+  loginHeading: 'ConsultRAG',
+  loginSubheading: '登录以使用 AI 智能顾问助手',
+  emailLabel: '邮箱',
+  emailPlaceholder: 'you@example.com',
+  passwordLabel: '密码',
+  passwordPlaceholder: '请输入密码',
+  signingIn: '登录中...',
+  loginErrorEmpty: '请输入邮箱和密码',
+  loginErrorFailed: '登录失败，请检查您的账号和密码。',
+  loginNoAccount: '还没有账号？',
+  loginGoToRegister: '立即注册 →',
 
   // Register
-  registerHeading: 'Créer un compte',
-  registerSubheading: 'Inscrivez-vous pour accéder à l\'assistant de consultation propulsé par l\'IA',
-  registerDisplayNameLabel: 'Nom d\'affichage (optionnel)',
-  registerDisplayNamePlaceholder: 'Votre nom',
-  registerPasswordPlaceholder: 'Minimum 6 caractères',
-  registerConfirmPasswordLabel: 'Confirmer le mot de passe',
-  registerConfirmPasswordPlaceholder: 'Saisissez à nouveau votre mot de passe',
-  registerSubmit: 'Créer un compte',
-  registerCreating: 'Création du compte...',
-  registerErrorEmpty: 'Veuillez saisir votre courriel et votre mot de passe',
-  registerErrorShortPassword: 'Le mot de passe doit comporter au moins 6 caractères',
-  registerErrorPasswordMismatch: 'Les mots de passe ne correspondent pas',
-  registerErrorEmailExists: 'Ce courriel est déjà enregistré. Essayez de vous connecter.',
-  registerErrorFailed: 'Échec de l\'inscription. Veuillez réessayer.',
-  registerHasAccount: 'Vous avez déjà un compte ?',
-  registerGoToLogin: 'Se connecter →',
+  registerHeading: '创建账号',
+  registerSubheading: '注册以使用 AI 智能顾问助手',
+  registerDisplayNameLabel: '显示名称（可选）',
+  registerDisplayNamePlaceholder: '您的姓名',
+  registerPasswordPlaceholder: '至少 6 个字符',
+  registerConfirmPasswordLabel: '确认密码',
+  registerConfirmPasswordPlaceholder: '再次输入密码',
+  registerSubmit: '创建账号',
+  registerCreating: '创建中...',
+  registerErrorEmpty: '请输入邮箱和密码',
+  registerErrorShortPassword: '密码至少需要 6 个字符',
+  registerErrorPasswordMismatch: '两次输入的密码不一致',
+  registerErrorEmailExists: '该邮箱已注册，请直接登录。',
+  registerErrorFailed: '注册失败，请重试。',
+  registerHasAccount: '已有账号？',
+  registerGoToLogin: '去登录 →',
 
   // Sidebar Nav
-  navNewChat: 'Nouvelle conversation',
-  navReaders: 'Bibliothèque',
-  navQuestionGen: 'Génération de questions',
-  navGroupChat: 'Chat',
-  navGroupResources: 'Ressources',
-  navGroupAdmin: 'Administration',
-  navGroupDataPipeline: 'Pipeline de données',
-  navGroupQueryPipeline: 'Pipeline de requêtes',
-  navGroupQuality: 'Qualité',
-  navAnalytics: 'Analytique',
-  navEvaluation: 'Évaluation',
-  navFeedback: 'Rétroaction',
-  navLlms: 'LLMs',
-  navResponseSynthesizers: 'Prompts',
-  navAcquisition: 'Sources de données',
-  navIngestion: 'Ingestion',
-  navRetrievers: 'Récupérateurs',
-  navQueryEngine: 'Moteur de requêtes',
-  navSeed: 'Base de données initiale',
-  navReports: 'Rapports',
-  navConsulting: 'Consultation',
-  navPersonas: 'Personas',
+  navNewChat: '新对话',
+  navReaders: '文档库',
+  navQuestionGen: '问题生成',
+  navGroupChat: '对话',
+  navGroupResources: '资源',
+  navGroupAdmin: '管理',
+  navGroupDataPipeline: '数据管线',
+  navGroupQueryPipeline: '查询管线',
+  navGroupQuality: '质量',
+  navAnalytics: '分析',
+  navEvaluation: '评估',
+  navFeedback: '反馈',
+  navLlms: '大模型',
+  navResponseSynthesizers: '提示词',
+  navAcquisition: '数据源',
+  navIngestion: '数据摄入',
+  navRetrievers: '检索器',
+  navQueryEngine: '查询引擎',
+  navSeed: '初始化数据',
+  navReports: '报告',
+  navConsulting: '顾问咨询',
+  navPersonas: '角色管理',
 
   // Upload
-  uploadPdf: 'Téléverser un PDF',
-  uploadDragDrop: 'Glissez-déposez un PDF ici',
-  uploadClickBrowse: 'cliquez pour parcourir',
-  uploadOr: 'ou',
-  uploadDropRelease: 'Relâchez pour téléverser',
-  uploadProgress: 'Téléversement en cours',
-  uploadSuccess: 'Téléversement terminé ! Traitement en cours...',
-  uploadDismiss: 'Fermer',
-  deleteConfirm: 'Supprimer {count} document(s) ? Cette action est irréversible.',
+  uploadPdf: '上传 PDF',
+  uploadDragDrop: '拖拽 PDF 文件到此处',
+  uploadClickBrowse: '点击浏览',
+  uploadOr: '或',
+  uploadDropRelease: '松开以上传',
+  uploadProgress: '上传中',
+  uploadSuccess: '上传完成！正在处理...',
+  uploadDismiss: '关闭',
+  deleteConfirm: '确定删除 {count} 个文档吗？此操作不可撤销。',
 
   // Chat Panel
-  chatWelcomeTitle: 'Assistant de recherche EcDev',
-  chatWelcomeBody: 'Recherche dans {count} documents. Posez des questions sur l\'emploi, le logement, l\'inflation ou tout indicateur économique.',
-  chatWelcomeHint: 'Parcourez les questions suggérées dans le panneau de droite →',
-  chatSearchAllDocs: 'Recherche dans les {count} documents',
-  chatPlaceholderSingle: 'Poser une question sur {title}...',
-  chatPlaceholderMulti: 'Poser une question sur les données économiques d\'Ottawa...',
-  chatInputHint: 'Entrée pour envoyer · Maj+Entrée pour un saut de ligne',
-  chatSendTitle: 'Envoyer le message (Entrée)',
-  chatSearching: 'Recherche dans les documents…',
-  chatJumpToLatest: '↓ Aller au plus récent',
+  chatWelcomeTitle: 'ConsultRAG 智能顾问',
+  chatWelcomeBody: '提出您的咨询问题，AI 将从 {count} 篇知识库文档中为您检索回答。',
+  chatWelcomeHint: '在右侧面板浏览推荐问题 →',
+  chatSearchAllDocs: '正在搜索 {count} 篇文档',
+  chatPlaceholderSingle: '关于 {title} 提问...',
+  chatPlaceholderMulti: '请输入您的问题...',
+  chatInputHint: 'Enter 发送 · Shift+Enter 换行',
+  chatSendTitle: '发送消息 (Enter)',
+  chatSearching: '正在搜索文档…',
+  chatJumpToLatest: '↓ 跳转到最新',
 
   // Onboarding
-  onboardingTitle: 'Bienvenue ! Choisissez votre service de consultation',
-  onboardingSubtitle: 'Sélectionnez un rôle pour commencer la consultation assistée par IA.',
-  onboardingConfirm: 'Confirmer la sélection',
-  onboardingNoPersona: 'Veuillez sélectionner un rôle pour continuer',
-  onboardingSaving: 'Enregistrement...',
-  sidebarPersonaLabel: 'Rôle actuel',
-  sidebarNoPersona: 'Aucun rôle sélectionné',
+  onboardingTitle: '欢迎！选择您的咨询服务',
+  onboardingSubtitle: '选择一个顾问角色，开始 AI 智能咨询。',
+  onboardingConfirm: '确认选择',
+  onboardingNoPersona: '请选择一个角色以继续',
+  onboardingSaving: '保存中...',
+  sidebarPersonaLabel: '当前角色',
+  sidebarNoPersona: '未选择角色',
 }
 
-export const messages: Record<Locale, Messages> = { en, fr }
+export const messages: Record<Locale, Messages> = { en, zh }

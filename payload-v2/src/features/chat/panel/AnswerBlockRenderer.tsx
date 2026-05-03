@@ -127,6 +127,9 @@ export default function AnswerBlockRenderer({
   // ── Parse answer into blocks ──────────────────────────────
   const blocks = useMemo(() => parseAnswerBlocks(content), [content]);
 
+  // G3: Guard — if content is empty or literal "Empty Response", render friendly fallback
+  const isEmpty = !content.trim() || content.trim().toLowerCase() === "empty response";
+
   // ── Expanded citations state (multiple panels can be open) ──
   const [expandedCitations, setExpandedCitations] = useState<Set<number>>(new Set());
 
@@ -224,6 +227,22 @@ export default function AnswerBlockRenderer({
   const [showAllSources, setShowAllSources] = useState(false);
 
   // ── Render ────────────────────────────────────────────────
+  if (isEmpty) {
+    return (
+      <div className="flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3">
+        <svg className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+        </svg>
+        <div className="text-sm leading-relaxed text-foreground/80">
+          <p className="font-medium text-amber-600">No relevant information found</p>
+          <p className="mt-1 text-muted-foreground text-xs">
+            The knowledge base didn't return any matching documents for this question. Try rephrasing with different keywords or check if the relevant documents have been ingested.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="answer-blocks space-y-3">
       {blocksWithGlobalIndex.map((block, blockIdx) => (

@@ -302,16 +302,16 @@ function preprocessMarkdown(content: string): string {
 }
 
 /** Animated progress steps shown during report generation (frontend-only). */
-function GenerationProgress({ sessionTitle, isFr }: { sessionTitle: string; isFr: boolean }) {
+function GenerationProgress({ sessionTitle, isZh }: { sessionTitle: string; isZh: boolean }) {
   const [currentStep, setCurrentStep] = useState(0)
 
   const steps = [
-    { label: isFr ? '收集对话消息' : 'Collecting chat messages' },
-    { label: isFr ? '获取评估数据' : 'Fetching evaluation data' },
-    { label: isFr ? '分析对话模式' : 'Analyzing conversation patterns' },
-    { label: isFr ? '构建报告大纲' : 'Building report outline' },
-    { label: isFr ? '撰写报告章节' : 'Writing report sections' },
-    { label: isFr ? '最终格式化' : 'Finalizing document' },
+    { label: isZh ? '收集对话消息' : 'Collecting chat messages' },
+    { label: isZh ? '获取评估数据' : 'Fetching evaluation data' },
+    { label: isZh ? '分析对话模式' : 'Analyzing conversation patterns' },
+    { label: isZh ? '构建报告大纲' : 'Building report outline' },
+    { label: isZh ? '撰写报告章节' : 'Writing report sections' },
+    { label: isZh ? '最终格式化' : 'Finalizing document' },
   ]
 
   useEffect(() => {
@@ -332,7 +332,7 @@ function GenerationProgress({ sessionTitle, isFr }: { sessionTitle: string; isFr
           <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 mb-4">
             <Loader2 size={14} className="animate-spin text-primary" />
             <span className="text-xs font-medium text-primary">
-              {isFr ? '生成报告中' : 'Generating Report'}
+              {isZh ? '生成报告中' : 'Generating Report'}
             </span>
           </div>
           <p className="text-sm text-muted-foreground truncate">{sessionTitle}</p>
@@ -398,7 +398,7 @@ function GenerationProgress({ sessionTitle, isFr }: { sessionTitle: string; isFr
 // ============================================================
 export default function ReportPage() {
   const { locale } = useI18n()
-  const isFr = locale === 'fr'
+  const isZh = locale === 'zh'
   const { user } = useAuth()
   const isAdmin = user?.role === 'admin'
 
@@ -544,10 +544,10 @@ export default function ReportPage() {
         <FileText className="h-5 w-5 text-blue-400" />
         <div className="flex-1">
           <h1 className="text-lg font-bold text-foreground">
-            {isFr ? '研究报告' : 'Research Reports'}
+            {isZh ? '研究报告' : 'Research Reports'}
           </h1>
           <p className="text-xs text-muted-foreground">
-            {isFr
+            {isZh
               ? '选择对话 → 生成结构化研究报告 → 导出 PDF'
               : 'Select a session → generate structured analysis report → export PDF'}
           </p>
@@ -562,8 +562,8 @@ export default function ReportPage() {
               onChange={(e) => setQualityFilter(e.target.value as 'all' | 'pass_only')}
               className="text-xs bg-transparent text-foreground focus:outline-none cursor-pointer"
             >
-              <option value="all">{isFr ? '全部回答' : 'All answers'}</option>
-              <option value="pass_only">{isFr ? '仅高分回答' : 'Pass only'}</option>
+              <option value="all">{isZh ? '全部回答' : 'All answers'}</option>
+              <option value="pass_only">{isZh ? '仅高分回答' : 'Pass only'}</option>
             </select>
           </div>
 
@@ -572,14 +572,14 @@ export default function ReportPage() {
             onClick={handleGlobalReport}
             disabled={generatingGlobal || generating}
             className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted transition-colors disabled:opacity-40"
-            title={isFr ? '生成跨会话全局质量报告' : 'Generate cross-session quality report'}
+            title={isZh ? '生成跨会话全局质量报告' : 'Generate cross-session quality report'}
           >
             {generatingGlobal ? (
               <Loader2 size={13} className="animate-spin" />
             ) : (
               <Globe size={13} />
             )}
-            {isFr ? '全局报告' : 'Global Report'}
+            {isZh ? '全局报告' : 'Global Report'}
           </button>
         </div>
       </div>
@@ -592,7 +592,7 @@ export default function ReportPage() {
           <div className="px-3 py-3 border-b border-border flex items-center gap-2">
             <MessageSquare className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="text-[11px] font-medium text-foreground flex-1">
-              {isFr ? '对话记录' : 'Sessions'}
+              {isZh ? '对话记录' : 'Sessions'}
               {filteredSessions.length > 0 && (
                 <span className="ml-1 text-[9px] text-muted-foreground font-normal">({filteredSessions.length})</span>
               )}
@@ -601,7 +601,7 @@ export default function ReportPage() {
               type="button"
               onClick={loadSessions}
               className="p-1 rounded hover:bg-secondary transition-colors"
-              title={isFr ? '刷新' : 'Refresh'}
+              title={isZh ? '刷新' : 'Refresh'}
             >
               <RotateCcw className={cn('h-3 w-3 text-muted-foreground', sessionsLoading && 'animate-spin')} />
             </button>
@@ -622,7 +622,7 @@ export default function ReportPage() {
                   )}
                 >
                   <User className="h-3 w-3" />
-                  {isFr ? '我的' : 'Mine'}
+                  {isZh ? '我的' : 'Mine'}
                 </button>
                 <button
                   type="button"
@@ -635,7 +635,7 @@ export default function ReportPage() {
                   )}
                 >
                   <Users className="h-3 w-3" />
-                  {isFr ? '全部' : 'All'}
+                  {isZh ? '全部' : 'All'}
                 </button>
               </div>
             </div>
@@ -648,10 +648,10 @@ export default function ReportPage() {
               onChange={(e) => setTimeFilter(e.target.value as TimeFilter)}
               className="w-full text-[10px] bg-transparent text-muted-foreground border border-border/50 rounded px-1.5 py-1 focus:outline-none focus:border-primary/50"
             >
-              <option value="all">{isFr ? '全部时间' : 'All time'}</option>
-              <option value="today">{isFr ? '今天' : 'Today'}</option>
-              <option value="7d">{isFr ? '最近 7 天' : 'Last 7 days'}</option>
-              <option value="30d">{isFr ? '最近 30 天' : 'Last 30 days'}</option>
+              <option value="all">{isZh ? '全部时间' : 'All time'}</option>
+              <option value="today">{isZh ? '今天' : 'Today'}</option>
+              <option value="7d">{isZh ? '最近 7 天' : 'Last 7 days'}</option>
+              <option value="30d">{isZh ? '最近 30 天' : 'Last 30 days'}</option>
             </select>
           </div>
 
@@ -667,10 +667,10 @@ export default function ReportPage() {
               <div className="flex flex-col items-center justify-center h-32 text-center px-3">
                 <Search className="h-5 w-5 text-muted-foreground/30 mb-2" />
                 <p className="text-[10px] text-muted-foreground">
-                  {isFr ? '暂无对话记录' : 'No sessions found'}
+                  {isZh ? '暂无对话记录' : 'No sessions found'}
                 </p>
                 <p className="text-[9px] text-muted-foreground/60 mt-0.5">
-                  {isFr ? '先在 Chat 中开始对话' : 'Start a conversation in Chat first'}
+                  {isZh ? '先在 Chat 中开始对话' : 'Start a conversation in Chat first'}
                 </p>
               </div>
             )}
@@ -697,12 +697,12 @@ export default function ReportPage() {
                       {s.createdAt ? new Date(s.createdAt).toLocaleDateString() : '—'}
                     </span>
                     <span className="text-[9px] text-muted-foreground/50">
-                      {s.queryCount} {isFr ? '轮' : 'turns'}
+                      {s.queryCount} {isZh ? '轮' : 'turns'}
                     </span>
                     {s.hasReport && (
                       <span className="ml-auto inline-flex items-center gap-0.5 text-[8px] text-green-500 bg-green-500/10 px-1.5 py-0.5 rounded-full">
                         <FileText className="h-2.5 w-2.5" />
-                        {isFr ? '已有报告' : 'Report'}
+                        {isZh ? '已有报告' : 'Report'}
                       </span>
                     )}
                   </div>
@@ -735,7 +735,7 @@ export default function ReportPage() {
           {generating ? (
             <GenerationProgress
               sessionTitle={selectedSession?.title || ''}
-              isFr={isFr}
+              isZh={isZh}
             />
           ) : selectedReport ? (
             <>
@@ -761,10 +761,10 @@ export default function ReportPage() {
                     onClick={handleGenerate}
                     disabled={generating}
                     className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted transition-colors disabled:opacity-40"
-                    title={isFr ? '重新生成' : 'Regenerate'}
+                    title={isZh ? '重新生成' : 'Regenerate'}
                   >
                     <RefreshCw size={13} className={generating ? 'animate-spin' : ''} />
-                    {isFr ? '重新生成' : 'Regenerate'}
+                    {isZh ? '重新生成' : 'Regenerate'}
                   </button>
 
                   {/* Export PDF button */}
@@ -801,20 +801,20 @@ export default function ReportPage() {
                   <div className="flex flex-col items-center justify-center py-24">
                     <Loader2 size={32} className="animate-spin text-primary mb-3" />
                     <p className="text-sm text-muted-foreground">
-                      {isFr ? '正在生成报告...' : 'Generating report...'}
+                      {isZh ? '正在生成报告...' : 'Generating report...'}
                     </p>
                     <p className="text-xs text-muted-foreground/60 mt-1">
-                      {isFr ? '这可能需要一分钟' : 'This may take a minute'}
+                      {isZh ? '这可能需要一分钟' : 'This may take a minute'}
                     </p>
                   </div>
                 ) : selectedReport.status === 'failed' ? (
                   <div className="flex flex-col items-center justify-center py-24 text-center px-8">
                     <AlertCircle size={32} className="text-red-400 mb-3" />
                     <p className="text-sm font-medium text-foreground">
-                      {isFr ? '报告生成失败' : 'Report generation failed'}
+                      {isZh ? '报告生成失败' : 'Report generation failed'}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1 max-w-md">
-                      {selectedReport.content || (isFr ? '发生未知错误' : 'An unexpected error occurred')}
+                      {selectedReport.content || (isZh ? '发生未知错误' : 'An unexpected error occurred')}
                     </p>
                     <button
                       type="button"
@@ -823,7 +823,7 @@ export default function ReportPage() {
                       className="mt-4 flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-medium text-primary-foreground hover:opacity-90 transition-opacity"
                     >
                       <RefreshCw size={14} />
-                      {isFr ? '重试' : 'Retry'}
+                      {isZh ? '重试' : 'Retry'}
                     </button>
                   </div>
                 ) : (
@@ -862,15 +862,15 @@ export default function ReportPage() {
                 <FileText size={48} className="text-muted-foreground/30" />
               </div>
               <h2 className="text-lg font-semibold text-foreground">
-                {isFr ? '生成研究报告' : 'Generate Research Report'}
+                {isZh ? '生成研究报告' : 'Generate Research Report'}
               </h2>
               <p className="text-sm text-muted-foreground mt-2 max-w-md">
-                {isFr
+                {isZh
                   ? `从对话「${selectedSession.title}」生成结构化研究报告，包含关键发现、质量评估和来源分析。`
                   : `Generate a structured analysis report from "${selectedSession.title}" with key findings, quality assessment, and source analysis.`}
               </p>
               <p className="text-xs text-muted-foreground/60 mt-1">
-                {selectedSession.queryCount} {isFr ? '轮对话' : 'turns in this session'}
+                {selectedSession.queryCount} {isZh ? '轮对话' : 'turns in this session'}
               </p>
               <button
                 type="button"
@@ -881,12 +881,12 @@ export default function ReportPage() {
                 {generating ? (
                   <>
                     <Loader2 size={16} className="animate-spin" />
-                    {isFr ? '生成中...' : 'Generating...'}
+                    {isZh ? '生成中...' : 'Generating...'}
                   </>
                 ) : (
                   <>
                     <Plus size={16} />
-                    {isFr ? '生成报告' : 'Generate Report'}
+                    {isZh ? '生成报告' : 'Generate Report'}
                   </>
                 )}
               </button>
@@ -898,10 +898,10 @@ export default function ReportPage() {
                 <FileText className="h-8 w-8 text-muted-foreground/30" />
               </div>
               <h3 className="text-sm font-semibold text-foreground mb-1">
-                {isFr ? '选择对话生成报告' : 'Select a Session to Generate Report'}
+                {isZh ? '选择对话生成报告' : 'Select a Session to Generate Report'}
               </h3>
               <p className="text-xs text-muted-foreground max-w-sm">
-                {isFr
+                {isZh
                   ? '从左侧选择一个对话，系统将从对话内容生成结构化研究报告，包含关键发现、来源追溯和质量评估。'
                   : 'Select a session from the left. A structured research report will be generated from the conversation, including key findings, source tracing, and quality assessment.'}
               </p>

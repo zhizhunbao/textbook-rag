@@ -34,7 +34,7 @@ interface CatalogCardProps {
   isRegistered?: boolean
   /** Pull 完成后回调 / Callback after pull + register completes */
   onPulled?: () => void
-  isFr?: boolean
+  isZh?: boolean
 }
 
 export function CatalogCard({
@@ -42,7 +42,7 @@ export function CatalogCard({
   isInstalled: isInstalledProp,
   isRegistered = false,
   onPulled,
-  isFr = false,
+  isZh = false,
 }: CatalogCardProps) {
   // Installed status: API response (m.installed) takes priority, prop as override
   const isInstalled = isInstalledProp ?? m.installed ?? false
@@ -130,24 +130,24 @@ export function CatalogCard({
       <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 mb-3">
         <div className="flex items-center gap-1.5 text-xs">
           <Cpu className="h-3 w-3 text-muted-foreground shrink-0" />
-          <span className="text-muted-foreground">{isFr ? 'Paramètres' : 'Params'}</span>
+          <span className="text-muted-foreground">{isZh ? 'Paramètres' : 'Params'}</span>
           <span className="text-foreground font-medium ml-auto">{m.parameterSize}</span>
         </div>
         <div className="flex items-center gap-1.5 text-xs">
           <Zap className="h-3 w-3 text-muted-foreground shrink-0" />
-          <span className="text-muted-foreground">{isFr ? 'Contexte' : 'Context'}</span>
+          <span className="text-muted-foreground">{isZh ? 'Contexte' : 'Context'}</span>
           <span className="text-foreground font-medium ml-auto">
             {m.contextWindow >= 1000 ? `${(m.contextWindow / 1000).toFixed(0)}K` : m.contextWindow || '—'}
           </span>
         </div>
         <div className="flex items-center gap-1.5 text-xs">
           <Globe className="h-3 w-3 text-muted-foreground shrink-0" />
-          <span className="text-muted-foreground">{isFr ? 'Langues' : 'Languages'}</span>
+          <span className="text-muted-foreground">{isZh ? 'Langues' : 'Languages'}</span>
           <span className="text-foreground font-medium ml-auto truncate max-w-[80px]">{m.languages || '—'}</span>
         </div>
         <div className="flex items-center gap-1.5 text-xs">
           <Download className="h-3 w-3 text-muted-foreground shrink-0" />
-          <span className="text-muted-foreground">{isFr ? 'Téléchargements' : 'Downloads'}</span>
+          <span className="text-muted-foreground">{isZh ? 'Téléchargements' : 'Downloads'}</span>
           <span className="text-foreground font-medium ml-auto">
             {m.downloads > 1_000_000
               ? `${(m.downloads / 1_000_000).toFixed(1)}M`
@@ -158,7 +158,7 @@ export function CatalogCard({
         </div>
         <div className="flex items-center gap-1.5 text-xs">
           <Star className="h-3 w-3 text-amber-400 shrink-0" />
-          <span className="text-muted-foreground">{isFr ? 'Classement' : 'Ranking'}</span>
+          <span className="text-muted-foreground">{isZh ? 'Classement' : 'Ranking'}</span>
           <span className="text-foreground font-medium ml-auto">
             {m.likes > 1_000_000
               ? `${(m.likes / 1_000_000).toFixed(1)}M`
@@ -224,14 +224,14 @@ export function CatalogCard({
           {done ? (
             <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium text-emerald-400">
               <CheckCircle2 className="h-3 w-3" />
-              {isFr ? 'Installé' : 'Installed'}
+              {isZh ? 'Installé' : 'Installed'}
             </span>
           ) : isInstalled ? (
             <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium text-emerald-400">
               <CheckCircle2 className="h-3 w-3" />
               {isRegistered
-                ? (isFr ? 'Enregistré' : 'Registered')
-                : (isFr ? 'Installé' : 'Installed')}
+                ? (isZh ? 'Enregistré' : 'Registered')
+                : (isZh ? 'Installé' : 'Installed')}
             </span>
           ) : pulling ? (
             <button
@@ -239,7 +239,7 @@ export function CatalogCard({
               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-medium text-red-400 hover:bg-red-500/10 transition-colors"
             >
               <XCircle className="h-3 w-3" />
-              {isFr ? 'Annuler' : 'Cancel'}
+              {isZh ? 'Annuler' : 'Cancel'}
             </button>
           ) : (
             <button
@@ -250,7 +250,7 @@ export function CatalogCard({
               )}
             >
               <Download className="h-3 w-3" />
-              {isFr ? 'Télécharger' : 'Pull'}
+              {isZh ? 'Télécharger' : 'Pull'}
             </button>
           )}
         </div>

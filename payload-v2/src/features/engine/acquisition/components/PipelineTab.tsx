@@ -199,7 +199,7 @@ const TASK_STATUS: Record<string, { icon: React.ElementType; color: string; labe
 // ============================================================
 export default function PipelineTab({ books, filter, onBooksRefresh }: PipelineTabProps) {
   const { locale } = useI18n()
-  const isFr = locale === 'fr'
+  const isZh = locale === 'zh'
 
   // ==========================================================
   // State
@@ -684,7 +684,7 @@ export default function PipelineTab({ books, filter, onBooksRefresh }: PipelineT
     // If parse already done, confirm re-parse with user
     let forceParse = false
     if (pipeline.parse === 'done') {
-      const msg = isFr
+      const msg = isZh
         ? 'MinerU 解析结果已存在。\n是否删除缓存并重新解析？（耗时较长）'
         : 'MinerU parse output already exists.\nDelete cache and re-parse? (this may take a while)'
       forceParse = window.confirm(msg)
@@ -758,7 +758,7 @@ export default function PipelineTab({ books, filter, onBooksRefresh }: PipelineT
     } finally {
       setTriggerLoading(false)
     }
-  }, [selectedBook, pipeline, isFr, fetchTasks])
+  }, [selectedBook, pipeline, isZh, fetchTasks])
 
   // ==========================================================
   // Cancel pipeline
@@ -846,7 +846,7 @@ export default function PipelineTab({ books, filter, onBooksRefresh }: PipelineT
 
   const fmtDate = (d: string | null) => {
     if (!d) return '—'
-    return new Date(d).toLocaleString(isFr ? 'zh-CN' : 'en-US', {
+    return new Date(d).toLocaleString(isZh ? 'zh-CN' : 'en-US', {
       month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
     })
   }
@@ -867,7 +867,7 @@ export default function PipelineTab({ books, filter, onBooksRefresh }: PipelineT
       <BatchPipelineView
         books={books}
         filter={filter}
-        isFr={isFr}
+        isZh={isZh}
         onBooksRefresh={onBooksRefresh}
       />
     )
@@ -894,17 +894,17 @@ export default function PipelineTab({ books, filter, onBooksRefresh }: PipelineT
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-semibold text-foreground">
-                {isFr ? stageConfig.labelFr : stageConfig.label}
+                {isZh ? stageConfig.labelFr : stageConfig.label}
               </h3>
               <span className={cn(
                 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium',
                 statusCfg.bg, statusCfg.color,
               )}>
-                {isFr ? statusCfg.labelFr : statusCfg.label}
+                {isZh ? statusCfg.labelFr : statusCfg.label}
               </span>
             </div>
             <p className="text-[10px] text-muted-foreground mt-0.5">
-              {isFr ? stageConfig.descriptionZh : stageConfig.description}
+              {isZh ? stageConfig.descriptionZh : stageConfig.description}
             </p>
           </div>
         </div>
@@ -914,7 +914,7 @@ export default function PipelineTab({ books, filter, onBooksRefresh }: PipelineT
                      text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
         >
           <RefreshCw className={cn('h-3 w-3', loadingTasks && 'animate-spin')} />
-          {isFr ? '刷新' : 'Refresh'}
+          {isZh ? '刷新' : 'Refresh'}
         </button>
       </div>
 
@@ -971,7 +971,7 @@ export default function PipelineTab({ books, filter, onBooksRefresh }: PipelineT
                         'text-[13px] font-semibold block leading-tight',
                         isActive ? 'text-foreground' : 'text-muted-foreground',
                       )}>
-                        {isFr ? stage.labelFr : stage.label}
+                        {isZh ? stage.labelFr : stage.label}
                       </span>
                       <span className={cn(
                         'text-[10px] font-medium mt-0.5 block',
@@ -979,7 +979,7 @@ export default function PipelineTab({ books, filter, onBooksRefresh }: PipelineT
                           isError ? 'text-red-500' :
                             'text-muted-foreground/50',
                       )}>
-                        {isFr ? sc.labelFr : sc.label}
+                        {isZh ? sc.labelFr : sc.label}
                       </span>
                     </div>
                   </button>
@@ -1012,7 +1012,7 @@ export default function PipelineTab({ books, filter, onBooksRefresh }: PipelineT
                            hover:bg-red-700 disabled:opacity-40 transition-colors"
               >
                 {cancelLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Square className="h-3.5 w-3.5" />}
-                {isFr ? '取消 Pipeline' : 'Cancel Pipeline'}
+                {isZh ? '取消 Pipeline' : 'Cancel Pipeline'}
               </button>
             ) : (
               /* Run / Re-run button — visible when idle */
@@ -1025,8 +1025,8 @@ export default function PipelineTab({ books, filter, onBooksRefresh }: PipelineT
               >
                 {triggerLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
                 {pipeline.parse === 'done' && pipeline.ingest === 'done'
-                  ? (isFr ? '重新运行' : 'Re-run Pipeline')
-                  : (isFr ? '运行 Pipeline' : 'Run Pipeline')}
+                  ? (isZh ? '重新运行' : 'Re-run Pipeline')
+                  : (isZh ? '运行 Pipeline' : 'Run Pipeline')}
               </button>
             )}
             {/* Reset stale tasks — only show when there are stale (old) queued/running tasks */}
@@ -1039,7 +1039,7 @@ export default function PipelineTab({ books, filter, onBooksRefresh }: PipelineT
                            hover:text-foreground hover:bg-secondary/50 disabled:opacity-40 transition-colors"
               >
                 {resetLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
-                {isFr ? '清理僵尸任务' : 'Reset Stale Tasks'}
+                {isZh ? '清理僵尸任务' : 'Reset Stale Tasks'}
               </button>
             )}
           </div>
@@ -1093,7 +1093,7 @@ export default function PipelineTab({ books, filter, onBooksRefresh }: PipelineT
                         : <ChevronRight className="h-3 w-3 shrink-0" />}
                     <span className="text-[11px] leading-relaxed">
                       <span className="text-muted-foreground/40 mr-1">{i + 1}.</span>
-                      {isFr ? step.labelFr : step.label}
+                      {isZh ? step.labelFr : step.label}
                     </span>
                   </button>
                   {isExpanded && (
@@ -1108,7 +1108,7 @@ export default function PipelineTab({ books, filter, onBooksRefresh }: PipelineT
                         )}
                       >
                         <span className="text-muted-foreground/60 shrink-0 uppercase tracking-wider font-medium" style={{ fontSize: '9px' }}>IN</span>
-                        <span className="text-muted-foreground font-mono">{resolvePath(isFr ? step.inputZh : step.input)}</span>
+                        <span className="text-muted-foreground font-mono">{resolvePath(isZh ? step.inputZh : step.input)}</span>
                       </button>
                       <button
                         type="button"
@@ -1121,7 +1121,7 @@ export default function PipelineTab({ books, filter, onBooksRefresh }: PipelineT
                       >
                         <span className="text-emerald-500/60 shrink-0 uppercase tracking-wider font-medium" style={{ fontSize: '9px' }}>OUT</span>
                         {(() => {
-                          const raw = isFr ? step.outputZh : step.output
+                          const raw = isZh ? step.outputZh : step.output
                           const items = Array.isArray(raw) ? raw : [raw]
                           return (
                             <span className="text-muted-foreground font-mono flex flex-col">
@@ -1176,7 +1176,7 @@ export default function PipelineTab({ books, filter, onBooksRefresh }: PipelineT
                 {hasRunning && sseLines.length > 0 && (
                   <Radio className="h-2.5 w-2.5 text-emerald-400 animate-pulse" />
                 )}
-                {isFr ? '任务日志' : 'Task Log'}
+                {isZh ? '任务日志' : 'Task Log'}
                 {hasRunning && sseLines.length > 0 && (
                   <span className="text-emerald-400 font-normal">LIVE</span>
                 )}
@@ -1186,7 +1186,7 @@ export default function PipelineTab({ books, filter, onBooksRefresh }: PipelineT
                   <button
                     onClick={() => copyText(sseLines.length > 0 ? sseLines.join('\n') : latestTask?.log || '')}
                     className="text-muted-foreground hover:text-foreground p-0.5"
-                    title={isFr ? '复制日志' : 'Copy log'}
+                    title={isZh ? '复制日志' : 'Copy log'}
                   >
                     <Copy className="h-2.5 w-2.5" />
                   </button>
@@ -1194,7 +1194,7 @@ export default function PipelineTab({ books, filter, onBooksRefresh }: PipelineT
                 <button
                   onClick={() => setLogExpanded((v) => !v)}
                   className="text-muted-foreground hover:text-foreground p-0.5"
-                  title={logExpanded ? (isFr ? '缩小' : 'Minimize') : (isFr ? '放大' : 'Maximize')}
+                  title={logExpanded ? (isZh ? '缩小' : 'Minimize') : (isZh ? '放大' : 'Maximize')}
                 >
                   {logExpanded ? <Minimize2 className="h-2.5 w-2.5" /> : <Maximize2 className="h-2.5 w-2.5" />}
                 </button>
@@ -1211,7 +1211,7 @@ export default function PipelineTab({ books, filter, onBooksRefresh }: PipelineT
             >
               {sseLines.length > 0
                 ? sseLines.join('\n')
-                : latestTask?.log || (isFr ? '等待执行...' : 'Waiting for execution...')}
+                : latestTask?.log || (isZh ? '等待执行...' : 'Waiting for execution...')}
             </pre>
           </div>
 
@@ -1249,7 +1249,7 @@ export default function PipelineTab({ books, filter, onBooksRefresh }: PipelineT
             const tStep = tStage?.steps[inspectorTarget.stepIdx]
             if (!tStage || !tStep) return null
             const isIn = inspectorTarget.direction === 'in'
-            const rawPath = isIn ? (isFr ? tStep.inputZh : tStep.input) : (isFr ? tStep.outputZh : tStep.output)
+            const rawPath = isIn ? (isZh ? tStep.inputZh : tStep.input) : (isZh ? tStep.outputZh : tStep.output)
             const bookDirName = (selectedBook?.title || '').toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '') || `book_${selectedBook?.id}`
             const pdfName = (selectedBook as any)?.pdfMedia?.filename || (selectedBook as any)?.pdfFilename || `${bookDirName}.pdf`
             const rawPathStr = Array.isArray(rawPath) ? rawPath.join('\n') : rawPath
@@ -1257,7 +1257,7 @@ export default function PipelineTab({ books, filter, onBooksRefresh }: PipelineT
               .replace(/\{filename\}/g, pdfName.replace(/\.pdf$/i, ''))
               .replace(/\{category\}/g, selectedBook?.category || 'textbooks')
               .replace(/\{book\}/g, bookDirName)
-            const stepLabel = isFr ? tStep.labelFr : tStep.label
+            const stepLabel = isZh ? tStep.labelFr : tStep.label
 
             return (
               <>
@@ -1271,7 +1271,7 @@ export default function PipelineTab({ books, filter, onBooksRefresh }: PipelineT
                       {isIn ? 'INPUT' : 'OUTPUT'}
                     </span>
                     <span className="text-xs font-semibold text-foreground">
-                      {isFr ? tStage.labelFr : tStage.label} › {stepLabel}
+                      {isZh ? tStage.labelFr : tStage.label} › {stepLabel}
                     </span>
                   </div>
                   <button
@@ -1283,7 +1283,7 @@ export default function PipelineTab({ books, filter, onBooksRefresh }: PipelineT
                 {/* Path */}
                 <div className="mb-4">
                   <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium block mb-1">
-                    {isFr ? '路径' : 'Path'}
+                    {isZh ? '路径' : 'Path'}
                   </span>
                   <div className="flex items-start gap-2">
                     <div className="text-[11px] font-mono text-foreground bg-muted/50 px-2 py-1 rounded border border-border/50 flex-1 flex flex-col gap-0.5">
@@ -1300,7 +1300,7 @@ export default function PipelineTab({ books, filter, onBooksRefresh }: PipelineT
                 {/* Live data — always JSON */}
                 <div className="flex-1 min-h-0">
                   <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium block mb-1">
-                    {isFr ? '实际数据' : 'Live Data'}
+                    {isZh ? '实际数据' : 'Live Data'}
                   </span>
                   {inspectLoading ? (
                     <div className="flex items-center justify-center py-10">
@@ -1314,7 +1314,7 @@ export default function PipelineTab({ books, filter, onBooksRefresh }: PipelineT
                     </pre>
                   ) : (
                     <div className="text-[10px] text-muted-foreground/40 py-4 text-center">
-                      {isFr ? '无数据' : 'No data available'}
+                      {isZh ? '无数据' : 'No data available'}
                     </div>
                   )}
                 </div>
@@ -1324,10 +1324,10 @@ export default function PipelineTab({ books, filter, onBooksRefresh }: PipelineT
             <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
               <FileSearch className="h-8 w-8 mb-3 opacity-30" />
               <span className="text-xs font-medium">
-                {isFr ? '数据检查器' : 'Data Inspector'}
+                {isZh ? '数据检查器' : 'Data Inspector'}
               </span>
               <span className="text-[10px] text-muted-foreground/60 mt-1 text-center max-w-[200px]">
-                {isFr
+                {isZh
                   ? '展开步骤并点击 IN 或 OUT 查看实际数据'
                   : 'Expand a step and click IN or OUT to inspect live data'}
               </span>
@@ -1368,11 +1368,11 @@ let _batchCache: BatchCache | null = null
 interface BatchPipelineViewProps {
   books: BookBase[]
   filter: string
-  isFr: boolean
+  isZh: boolean
   onBooksRefresh?: () => void
 }
 
-function BatchPipelineView({ books, filter, isFr, onBooksRefresh }: BatchPipelineViewProps) {
+function BatchPipelineView({ books, filter, isZh, onBooksRefresh }: BatchPipelineViewProps) {
   const ENGINE_URL = process.env.NEXT_PUBLIC_ENGINE_URL || 'http://localhost:8001'
 
   // ── State (initialise from cache if available) ──
@@ -1619,13 +1619,13 @@ function BatchPipelineView({ books, filter, isFr, onBooksRefresh }: BatchPipelin
 
   // ── Derived label for the current filter ──
   const filterLabel = useMemo(() => {
-    if (filter === 'all') return isFr ? '全部' : 'All'
+    if (filter === 'all') return isZh ? '全部' : 'All'
     if (filter.includes('::')) {
       const [cat, sub] = filter.split('::')
       return sub || cat
     }
     return filter.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
-  }, [filter, isFr])
+  }, [filter, isZh])
 
   // ── Selection helpers ──
   const toggleSelect = useCallback((id: number) => {
@@ -1740,7 +1740,7 @@ function BatchPipelineView({ books, filter, isFr, onBooksRefresh }: BatchPipelin
 
     if (skippedCount > 0) {
       pushLog(prev => [...prev,
-      `⏩ ${isFr ? `跳过 ${skippedCount} 本已完成的书` : `Skipped ${skippedCount} already-completed book(s)`}`
+      `⏩ ${isZh ? `跳过 ${skippedCount} 本已完成的书` : `Skipped ${skippedCount} already-completed book(s)`}`
       ])
     }
 
@@ -1754,7 +1754,7 @@ function BatchPipelineView({ books, filter, isFr, onBooksRefresh }: BatchPipelin
           }
           return next
         })
-        pushLog(prev => [...prev, `⛔ ${isFr ? '批量处理已取消' : 'Batch cancelled by user'}`])
+        pushLog(prev => [...prev, `⛔ ${isZh ? '批量处理已取消' : 'Batch cancelled by user'}`])
         break
       }
 
@@ -1808,7 +1808,7 @@ function BatchPipelineView({ books, filter, isFr, onBooksRefresh }: BatchPipelin
           throw new Error(`Engine returned ${engineRes.status}`)
         }
 
-        pushLog(prev => [...prev, `🚀 ${isFr ? '流水线已启动，等待完成...' : 'Pipeline started, waiting for completion...'}`])
+        pushLog(prev => [...prev, `🚀 ${isZh ? '流水线已启动，等待完成...' : 'Pipeline started, waiting for completion...'}`])
 
         // 4. Wait for engine thread to register its log queue, then connect SSE
         await new Promise<void>((r) => setTimeout(r, 1500))
@@ -1829,7 +1829,7 @@ function BatchPipelineView({ books, filter, isFr, onBooksRefresh }: BatchPipelin
               if (!resolved) {
                 resolved = true
                 es.close()
-                pushLog(prev => [...prev, `⏱️ ${isFr ? '超时，继续下一本' : 'Timeout, moving to next book'}`])
+                pushLog(prev => [...prev, `⏱️ ${isZh ? '超时，继续下一本' : 'Timeout, moving to next book'}`])
                 resolve()
               }
             }, 30 * 60 * 1000) // 30 minutes max per book
@@ -1872,7 +1872,7 @@ function BatchPipelineView({ books, filter, isFr, onBooksRefresh }: BatchPipelin
                 // Retry if engine queue wasn't ready yet
                 if (retryCount < maxRetries) {
                   retryCount++
-                  pushLog(prev => [...prev, `  ⟳ ${isFr ? '重连 SSE...' : 'Reconnecting SSE...'}`])
+                  pushLog(prev => [...prev, `  ⟳ ${isZh ? '重连 SSE...' : 'Reconnecting SSE...'}`])
                   setTimeout(connectSSE, 2000)
                 } else {
                   resolved = true
@@ -1888,10 +1888,10 @@ function BatchPipelineView({ books, filter, isFr, onBooksRefresh }: BatchPipelin
         // Determine outcome based on SSE error detection
         if (sseHadError) {
           pushStatus(prev => new Map(prev).set(book.id, 'error'))
-          pushLog(prev => [...prev, `❌ ${book.title} ${isFr ? '失败（引擎报错）' : 'failed (engine error)'}`])
+          pushLog(prev => [...prev, `❌ ${book.title} ${isZh ? '失败（引擎报错）' : 'failed (engine error)'}`])
         } else {
           pushStatus(prev => new Map(prev).set(book.id, 'done'))
-          pushLog(prev => [...prev, `✅ ${book.title} ${isFr ? '完成' : 'completed'}`])
+          pushLog(prev => [...prev, `✅ ${book.title} ${isZh ? '完成' : 'completed'}`])
         }
         completed++
 
@@ -1906,10 +1906,10 @@ function BatchPipelineView({ books, filter, isFr, onBooksRefresh }: BatchPipelin
 
     pushCurrentBook(null)
     pushRunning(false)
-    pushLog(prev => [...prev, `\n🏁 ${isFr ? '批量处理完成' : 'Batch processing finished'}`])
+    pushLog(prev => [...prev, `\n🏁 ${isZh ? '批量处理完成' : 'Batch processing finished'}`])
     // Refresh book list to pick up pipeline status changes
     setTimeout(() => onBooksRefresh?.(), 2000)
-  }, [selected, books, skipDone, isFr, onBooksRefresh, filter])
+  }, [selected, books, skipDone, isZh, onBooksRefresh, filter])
 
   const cancelBatch = useCallback(() => {
     cancelRef.current = true
@@ -1926,7 +1926,7 @@ function BatchPipelineView({ books, filter, isFr, onBooksRefresh }: BatchPipelin
         cfg.bg, cfg.color,
       )}>
         <Icon className="h-2.5 w-2.5" />
-        {isFr ? cfg.labelFr : cfg.label}
+        {isZh ? cfg.labelFr : cfg.label}
       </span>
     )
   }
@@ -1949,7 +1949,7 @@ function BatchPipelineView({ books, filter, isFr, onBooksRefresh }: BatchPipelin
         c.bg, c.color,
       )}>
         <Icon className={cn('h-2.5 w-2.5', status === 'running' && 'animate-spin')} />
-        {isFr ? c.labelFr : c.label}
+        {isZh ? c.labelFr : c.label}
       </span>
     )
   }
@@ -1976,10 +1976,10 @@ function BatchPipelineView({ books, filter, isFr, onBooksRefresh }: BatchPipelin
           </div>
           <div>
             <h3 className="text-sm font-semibold text-foreground">
-              {isFr ? '批量 Pipeline' : 'Batch Pipeline'}
+              {isZh ? '批量 Pipeline' : 'Batch Pipeline'}
             </h3>
             <p className="text-[10px] text-muted-foreground">
-              {filterLabel} · {books.length} {isFr ? '本' : 'book(s)'}
+              {filterLabel} · {books.length} {isZh ? '本' : 'book(s)'}
             </p>
           </div>
         </div>
@@ -1989,19 +1989,19 @@ function BatchPipelineView({ books, filter, isFr, onBooksRefresh }: BatchPipelin
           {stats.done > 0 && (
             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-500/10 text-[10px] font-medium text-emerald-400">
               <CheckCircle2 className="h-3 w-3" />
-              {stats.done} {isFr ? '已完成' : 'done'}
+              {stats.done} {isZh ? '已完成' : 'done'}
             </span>
           )}
           {stats.pending > 0 && (
             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-muted text-[10px] font-medium text-muted-foreground">
               <Clock className="h-3 w-3" />
-              {stats.pending} {isFr ? '待处理' : 'pending'}
+              {stats.pending} {isZh ? '待处理' : 'pending'}
             </span>
           )}
           {stats.error > 0 && (
             <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-red-500/10 text-[10px] font-medium text-red-400">
               <AlertTriangle className="h-3 w-3" />
-              {stats.error} {isFr ? '错误' : 'error'}
+              {stats.error} {isZh ? '错误' : 'error'}
             </span>
           )}
         </div>
@@ -2018,7 +2018,7 @@ function BatchPipelineView({ books, filter, isFr, onBooksRefresh }: BatchPipelin
                        disabled:opacity-40 transition-colors"
           >
             <CheckSquare className="h-3 w-3" />
-            {isFr ? '全选' : 'All'}
+            {isZh ? '全选' : 'All'}
           </button>
           <button
             onClick={selectPending}
@@ -2028,7 +2028,7 @@ function BatchPipelineView({ books, filter, isFr, onBooksRefresh }: BatchPipelin
                        disabled:opacity-40 transition-colors"
           >
             <Clock className="h-3 w-3" />
-            {isFr ? '待处理' : 'Pending'}
+            {isZh ? '待处理' : 'Pending'}
           </button>
           <button
             onClick={selectNone}
@@ -2038,7 +2038,7 @@ function BatchPipelineView({ books, filter, isFr, onBooksRefresh }: BatchPipelin
                        disabled:opacity-40 transition-colors"
           >
             <SquareDashedBottom className="h-3 w-3" />
-            {isFr ? '取消全选' : 'None'}
+            {isZh ? '取消全选' : 'None'}
           </button>
           <div className="h-4 w-px bg-border mx-1" />
           <label className="inline-flex items-center gap-1.5 text-[10px] text-muted-foreground cursor-pointer select-none">
@@ -2049,7 +2049,7 @@ function BatchPipelineView({ books, filter, isFr, onBooksRefresh }: BatchPipelin
               disabled={batchRunning}
               className="rounded border-border"
             />
-            {isFr ? '跳过已完成' : 'Skip completed'}
+            {isZh ? '跳过已完成' : 'Skip completed'}
           </label>
         </div>
 
@@ -2062,7 +2062,7 @@ function BatchPipelineView({ books, filter, isFr, onBooksRefresh }: BatchPipelin
                          hover:bg-red-700 transition-colors"
             >
               <Square className="h-3.5 w-3.5" />
-              {isFr ? '取消批量' : 'Cancel Batch'}
+              {isZh ? '取消批量' : 'Cancel Batch'}
             </button>
           ) : (
             <button
@@ -2073,7 +2073,7 @@ function BatchPipelineView({ books, filter, isFr, onBooksRefresh }: BatchPipelin
                          hover:bg-primary/90 disabled:opacity-40 transition-colors"
             >
               <Play className="h-3.5 w-3.5" />
-              {isFr
+              {isZh
                 ? `批量运行 (${selected.size})`
                 : `Run Batch (${selected.size})`}
             </button>
@@ -2095,7 +2095,7 @@ function BatchPipelineView({ books, filter, isFr, onBooksRefresh }: BatchPipelin
               {batchProgress.done} / {batchProgress.total}
             </span>
             <span className="text-[10px] text-muted-foreground">
-              {isFr ? '处理中...' : 'Processing...'}
+              {isZh ? '处理中...' : 'Processing...'}
             </span>
           </div>
         </div>
@@ -2119,7 +2119,7 @@ function BatchPipelineView({ books, filter, isFr, onBooksRefresh }: BatchPipelin
                   />
                 </th>
                 <th className="text-left px-2 py-2 font-medium text-muted-foreground">
-                  {isFr ? '书名' : 'Title'}
+                  {isZh ? '书名' : 'Title'}
                 </th>
                 <th className="text-center px-2 py-2 font-medium text-muted-foreground w-20">
                   Parse
@@ -2129,7 +2129,7 @@ function BatchPipelineView({ books, filter, isFr, onBooksRefresh }: BatchPipelin
                 </th>
                 {batchRunning && (
                   <th className="text-center px-2 py-2 font-medium text-muted-foreground w-24">
-                    {isFr ? '批量状态' : 'Batch'}
+                    {isZh ? '批量状态' : 'Batch'}
                   </th>
                 )}
               </tr>
@@ -2197,7 +2197,7 @@ function BatchPipelineView({ books, filter, isFr, onBooksRefresh }: BatchPipelin
               {books.length === 0 && (
                 <tr>
                   <td colSpan={4} className="text-center py-8 text-muted-foreground text-xs">
-                    {isFr ? '此目录下没有书籍' : 'No books in this directory'}
+                    {isZh ? '此目录下没有书籍' : 'No books in this directory'}
                   </td>
                 </tr>
               )}
@@ -2211,13 +2211,13 @@ function BatchPipelineView({ books, filter, isFr, onBooksRefresh }: BatchPipelin
             <div className="flex items-center justify-between px-3 py-1.5 bg-secondary/50 border-b border-border">
               <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                 {batchRunning && <Radio className="h-2.5 w-2.5 text-emerald-400 animate-pulse" />}
-                {isFr ? '批量日志' : 'Batch Log'}
+                {isZh ? '批量日志' : 'Batch Log'}
                 {batchRunning && <span className="text-emerald-400 font-normal">LIVE</span>}
               </span>
               <button
                 onClick={() => navigator.clipboard.writeText(batchLog.join('\n'))}
                 className="text-muted-foreground hover:text-foreground p-0.5"
-                title={isFr ? '复制日志' : 'Copy log'}
+                title={isZh ? '复制日志' : 'Copy log'}
               >
                 <Copy className="h-2.5 w-2.5" />
               </button>

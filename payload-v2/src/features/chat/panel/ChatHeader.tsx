@@ -105,14 +105,17 @@ export default function ChatHeader({
   onRerankerChange,
   onAutoEvaluateChange,
 }: ChatHeaderProps) {
+  const selectedPersona = personas.find((p) => p.slug === selectedPersonaSlug)
   const isScoped = sessionBooks.length < totalBookCount && totalBookCount > 0;
 
   return (
     <div className="shrink-0 border-b border-border bg-card px-4 py-2">
       <div className="flex items-center gap-3">
-        {/* Title + scope */}
+        {/* Title + persona indicator */}
         <div className="min-w-0 shrink-0">
-          <h2 className="text-sm font-semibold text-foreground">EcDev Research</h2>
+          <h2 className="text-sm font-semibold text-foreground">
+            {selectedPersona?.name ?? 'ConsultRAG'}
+          </h2>
           <div className="flex items-center gap-1.5">
             {isScoped ? (
               <>
@@ -135,7 +138,9 @@ export default function ChatHeader({
               </>
             ) : (
               <p className="text-[11px] text-muted-foreground">
-                {`Searching all ${sessionBooks.length} documents`}
+                {selectedPersona
+                  ? (selectedPersona.description ?? 'AI Consulting')
+                  : `Searching all ${sessionBooks.length} documents`}
               </p>
             )}
           </div>

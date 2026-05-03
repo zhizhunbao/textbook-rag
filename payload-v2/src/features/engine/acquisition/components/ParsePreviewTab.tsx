@@ -72,13 +72,13 @@ const PAGE_SIZE = 50
 // ============================================================
 export default function ParsePreviewTab() {
   const { locale } = useI18n()
-  const isFr = locale === 'fr'
+  const isZh = locale === 'zh'
   const { books, loading: booksLoading, refetch } = useBooks()
 
   // Build sidebar items with category folders
   const { sidebarItems } = useBookSidebar(books, {
     mode: 'by-book',
-    isFr,
+    isZh,
     bookIcon: <BookOpen className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />,
     categoryIcons: {},
   })
@@ -188,7 +188,7 @@ export default function ParsePreviewTab() {
     const book = books.find((b) => b.book_id === bookId)
     const title = book?.title ?? bookId
     const confirmed = window.confirm(
-      isFr
+      isZh
         ? `确定删除「${title}」？将同时清理向量库和解析文件。`
         : `Delete "${title}"? This will also clean up vectors and parsed files.`,
     )
@@ -207,7 +207,7 @@ export default function ParsePreviewTab() {
     } finally {
       setDeletingBookId(null)
     }
-  }, [books, isFr, selectedBookId, refetch])
+  }, [books, isZh, selectedBookId, refetch])
 
   // ==========================================================
   // Determine visible sidebar items (respecting collapsed state)
@@ -246,7 +246,7 @@ export default function ParsePreviewTab() {
       <div className="w-56 shrink-0 rounded-lg border border-border bg-card overflow-y-auto">
         <div className="px-3 py-2.5 border-b border-border">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            {isFr ? '选择书本' : 'Select Book'}
+            {isZh ? '选择书本' : 'Select Book'}
           </span>
         </div>
 
@@ -258,7 +258,7 @@ export default function ParsePreviewTab() {
           <div className="px-3 py-6 text-center">
             <Layers className="h-5 w-5 text-muted-foreground mx-auto mb-1.5" />
             <p className="text-xs text-muted-foreground">
-              {isFr ? '暂无书本' : 'No books available'}
+              {isZh ? '暂无书本' : 'No books available'}
             </p>
           </div>
         ) : (
@@ -314,7 +314,7 @@ export default function ParsePreviewTab() {
                       onClick={(e) => { e.stopPropagation(); handleDeleteBook(bookId!) }}
                       disabled={deletingBookId === bookId}
                       className="opacity-0 group-hover/item:opacity-100 flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all disabled:opacity-50"
-                      title={isFr ? '删除' : 'Delete'}
+                      title={isZh ? '删除' : 'Delete'}
                     >
                       <Trash2 className="h-3 w-3" />
                     </button>
@@ -340,8 +340,8 @@ export default function ParsePreviewTab() {
       <div className="flex-1 min-w-0 flex flex-col overflow-y-auto">
         {!selectedBookId && (
           <EmptyState
-            title={isFr ? '选择一本书查看解析数据' : 'Select a book to view parse data'}
-            subtitle={isFr
+            title={isZh ? '选择一本书查看解析数据' : 'Select a book to view parse data'}
+            subtitle={isZh
               ? '左侧选择已解析的书本，按内容类型浏览 MinerU 解析产物。'
               : 'Choose a parsed book from the left panel to browse MinerU parse products by content type.'}
             icon={FileSearch}
@@ -398,9 +398,9 @@ export default function ParsePreviewTab() {
             {/* ── Error ── */}
             {error && (
               <EmptyState
-                title={isFr ? '未找到解析数据' : 'No parse data found'}
+                title={isZh ? '未找到解析数据' : 'No parse data found'}
                 subtitle={error.includes('404')
-                  ? (isFr ? '该书尚未被 MinerU 解析，请先在导入 Tab 上传并触发解析。' : 'This book has not been parsed by MinerU yet. Upload and trigger parsing in the Import tab.')
+                  ? (isZh ? '该书尚未被 MinerU 解析，请先在导入 Tab 上传并触发解析。' : 'This book has not been parsed by MinerU yet. Upload and trigger parsing in the Import tab.')
                   : error}
                 icon={FileSearch}
               />
@@ -415,14 +415,14 @@ export default function ParsePreviewTab() {
                   </span>
                   {samples.length > 0 && (
                     <span className="text-[10px] text-muted-foreground tabular-nums">
-                      {isFr ? `显示 ${samples.length} / ${filteredCount}` : `Showing ${samples.length} / ${filteredCount}`}
+                      {isZh ? `显示 ${samples.length} / ${filteredCount}` : `Showing ${samples.length} / ${filteredCount}`}
                     </span>
                   )}
                 </div>
 
                 {samples.length === 0 && !loadingStats ? (
                   <div className="px-4 py-8 text-center text-xs text-muted-foreground">
-                    {isFr
+                    {isZh
                       ? `无 ${activeSubTab} 类型内容`
                       : `No ${activeSubTab} content found`}
                   </div>
@@ -490,7 +490,7 @@ export default function ParsePreviewTab() {
                       ) : (
                         <ChevronDown className="h-3 w-3" />
                       )}
-                      <span>{isFr ? '加载更多' : 'Load More'}</span>
+                      <span>{isZh ? '加载更多' : 'Load More'}</span>
                       <span className="text-[10px] tabular-nums text-muted-foreground">
                         ({samples.length}/{filteredCount})
                       </span>

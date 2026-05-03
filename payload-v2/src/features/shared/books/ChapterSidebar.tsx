@@ -66,7 +66,7 @@ export function ChapterSidebar({
   hint,
 }: ChapterSidebarProps) {
   const { locale } = useI18n()
-  const isFr = locale === 'fr'
+  const isZh = locale === 'zh'
 
   // ==========================================================
   // State
@@ -99,7 +99,7 @@ export function ChapterSidebar({
       >
         <div className="flex items-center gap-2 text-xs text-muted-foreground p-3">
           <Loader2 className="h-3 w-3 animate-spin" />
-          {isFr ? '加载目录…' : 'Loading…'}
+          {isZh ? '加载目录…' : 'Loading…'}
         </div>
       </div>
     )
@@ -115,7 +115,7 @@ export function ChapterSidebar({
       {/* Header */}
       <div className="px-3 py-2 border-b border-border">
         <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-          {isFr ? '章节' : 'Chapters'}
+          {isZh ? '章节' : 'Chapters'}
         </span>
         {selectedKeys.size > 0 && (
           <span className="text-[10px] text-primary ml-1">({selectedKeys.size})</span>
@@ -159,7 +159,7 @@ export function ChapterSidebar({
       {/* Footer hint */}
       <div className="px-3 py-1.5 border-t border-border">
         <p className="text-[9px] text-muted-foreground/60">
-          {hint ?? (isFr ? '不选=全书' : 'None = whole book')}
+          {hint ?? (isZh ? '不选=全书' : 'None = whole book')}
         </p>
       </div>
     </div>

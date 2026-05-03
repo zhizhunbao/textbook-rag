@@ -198,7 +198,7 @@ function useColumnResize(initial: Record<string, number>) {
 export default function MediaTab({ books, filter, onBooksRefresh }: MediaTabProps) {
   const router = useRouter()
   const { locale } = useI18n()
-  const isFr = locale === 'fr'
+  const isZh = locale === 'zh'
 
   const [viewMode, setViewMode] = useState<ViewMode>('table')
   const [localSearch, setLocalSearch] = useState('')
@@ -223,7 +223,7 @@ export default function MediaTab({ books, filter, onBooksRefresh }: MediaTabProp
   // ── Delete handler ──
   const handleDeleteSingle = useCallback(async (book: BookBase) => {
     const confirmed = window.confirm(
-      isFr
+      isZh
         ? `确定删除「${book.title}」？此操作不可撤销。`
         : `Delete "${book.title}"? This cannot be undone.`,
     )
@@ -242,12 +242,12 @@ export default function MediaTab({ books, filter, onBooksRefresh }: MediaTabProp
     } finally {
       setDeleting(null)
     }
-  }, [isFr, onBooksRefresh])
+  }, [isZh, onBooksRefresh])
 
   // ── Batch delete ──
   const handleBatchDelete = useCallback(async () => {
     const confirmed = window.confirm(
-      isFr
+      isZh
         ? `确定删除 ${selected.size} 本书？此操作不可撤销。`
         : `Delete ${selected.size} book(s)? This cannot be undone.`,
     )
@@ -259,7 +259,7 @@ export default function MediaTab({ books, filter, onBooksRefresh }: MediaTabProp
     } catch {
       // Error handled by individual deleteBook calls
     }
-  }, [selected, isFr, onBooksRefresh])
+  }, [selected, isZh, onBooksRefresh])
 
   // ── Start new chat with selected books ──
   const startNewChat = useCallback(() => {
@@ -315,10 +315,10 @@ export default function MediaTab({ books, filter, onBooksRefresh }: MediaTabProp
           <HardDrive className="h-7 w-7 text-muted-foreground" />
         </div>
         <h3 className="text-sm font-semibold text-foreground mb-1">
-          {isFr ? '暂无书籍' : 'No books'}
+          {isZh ? '暂无书籍' : 'No books'}
         </h3>
         <p className="text-xs text-muted-foreground text-center max-w-xs">
-          {isFr
+          {isZh
             ? '在「导入」标签页上传 PDF 即可开始。'
             : 'Upload PDFs via the Import tab to get started.'}
         </p>
@@ -340,7 +340,7 @@ export default function MediaTab({ books, filter, onBooksRefresh }: MediaTabProp
               type="text"
               value={localSearch}
               onChange={(e) => setLocalSearch(e.target.value)}
-              placeholder={isFr ? '搜索书名、作者、分类...' : 'Search title, author, category...'}
+              placeholder={isZh ? '搜索书名、作者、分类...' : 'Search title, author, category...'}
               className="w-full h-8 pl-9 pr-3 rounded-md border border-input bg-background text-xs text-foreground
                          placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring/30 transition-colors"
             />
@@ -363,7 +363,7 @@ export default function MediaTab({ books, filter, onBooksRefresh }: MediaTabProp
                 className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
               >
                 <MessageSquarePlus className="h-3.5 w-3.5" />
-                {isFr ? `开始对话 (${selected.size})` : `Chat (${selected.size})`}
+                {isZh ? `开始对话 (${selected.size})` : `Chat (${selected.size})`}
               </button>
               <button
                 type="button"
@@ -371,7 +371,7 @@ export default function MediaTab({ books, filter, onBooksRefresh }: MediaTabProp
                 className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors"
               >
                 <Trash2 className="h-3.5 w-3.5" />
-                {isFr ? `删除 (${selected.size})` : `Delete (${selected.size})`}
+                {isZh ? `删除 (${selected.size})` : `Delete (${selected.size})`}
               </button>
             </>
           )}
@@ -408,10 +408,10 @@ export default function MediaTab({ books, filter, onBooksRefresh }: MediaTabProp
         {displayBooks.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16">
             <h3 className="text-sm font-semibold text-foreground mb-1">
-              {isFr ? '未找到匹配结果' : 'No matches found'}
+              {isZh ? '未找到匹配结果' : 'No matches found'}
             </h3>
             <p className="text-xs text-muted-foreground">
-              {isFr ? '尝试不同的关键词' : 'Try different keywords'}
+              {isZh ? '尝试不同的关键词' : 'Try different keywords'}
             </p>
           </div>
         )}
@@ -423,7 +423,7 @@ export default function MediaTab({ books, filter, onBooksRefresh }: MediaTabProp
               <PdfBookCard
                 key={book.id}
                 book={book}
-                isFr={isFr}
+                isZh={isZh}
                 isSelected={selected.has(book.id)}
                 onSelect={() => toggleSelect(book)}
                 onEdit={() => setEditingBookId(book.id)}
@@ -450,7 +450,7 @@ export default function MediaTab({ books, filter, onBooksRefresh }: MediaTabProp
                 className="relative shrink-0 flex items-center gap-1 px-2 py-2 group/th hover:text-foreground transition-colors"
                 style={{ width: widths.title }}
               >
-                {isFr ? '书名' : 'Title'}
+                {isZh ? '书名' : 'Title'}
                 <SortIcon field="title" />
                 <ResizeGrip col="title" />
               </button>
@@ -461,20 +461,20 @@ export default function MediaTab({ books, filter, onBooksRefresh }: MediaTabProp
                 className="relative shrink-0 flex items-center gap-1 px-2 py-2 group/th hover:text-foreground transition-colors"
                 style={{ width: widths.author }}
               >
-                {isFr ? '作者' : 'Author'}
+                {isZh ? '作者' : 'Author'}
                 <SortIcon field="authors" />
                 <ResizeGrip col="author" />
               </button>
 
               {/* Category */}
               <span className="relative shrink-0 flex items-center px-2 py-2" style={{ width: widths.category }}>
-                {isFr ? '分类' : 'Category'}
+                {isZh ? '分类' : 'Category'}
                 <ResizeGrip col="category" />
               </span>
 
               {/* Subcategory */}
               <span className="relative shrink-0 flex items-center px-2 py-2" style={{ width: widths.subcategory }}>
-                {isFr ? '子分类' : 'Subcategory'}
+                {isZh ? '子分类' : 'Subcategory'}
                 <ResizeGrip col="subcategory" />
               </span>
 
@@ -495,7 +495,7 @@ export default function MediaTab({ books, filter, onBooksRefresh }: MediaTabProp
                 className="relative shrink-0 flex items-center gap-1 justify-end px-2 py-2 group/th hover:text-foreground transition-colors"
                 style={{ width: widths.pages }}
               >
-                {isFr ? '页数' : 'Pages'}
+                {isZh ? '页数' : 'Pages'}
                 <SortIcon field="pages" />
                 <ResizeGrip col="pages" />
               </button>
@@ -506,7 +506,7 @@ export default function MediaTab({ books, filter, onBooksRefresh }: MediaTabProp
                 className="relative shrink-0 flex items-center gap-1 justify-end px-2 py-2 group/th hover:text-foreground transition-colors"
                 style={{ width: widths.size }}
               >
-                {isFr ? '大小' : 'Size'}
+                {isZh ? '大小' : 'Size'}
                 <SortIcon field="size" />
                 <ResizeGrip col="size" />
               </button>
@@ -517,7 +517,7 @@ export default function MediaTab({ books, filter, onBooksRefresh }: MediaTabProp
                 className="relative shrink-0 flex items-center gap-1 px-2 py-2 group/th hover:text-foreground transition-colors"
                 style={{ width: widths.status }}
               >
-                {isFr ? '状态' : 'Status'}
+                {isZh ? '状态' : 'Status'}
                 <SortIcon field="status" />
                 <ResizeGrip col="status" />
               </button>
@@ -530,7 +530,7 @@ export default function MediaTab({ books, filter, onBooksRefresh }: MediaTabProp
 
               {/* Actions */}
               <span className="relative shrink-0 flex items-center justify-center px-2 py-2" style={{ width: widths.actions }}>
-                {isFr ? '操作' : 'Actions'}
+                {isZh ? '操作' : 'Actions'}
               </span>
             </div>
 
@@ -642,7 +642,7 @@ export default function MediaTab({ books, filter, onBooksRefresh }: MediaTabProp
                   <div className="shrink-0 px-2 py-2.5 flex items-center gap-1.5" style={{ width: widths.status }}>
                     <StatusIcon className={cn('h-3.5 w-3.5', st.color, book.status === 'processing' && 'animate-spin')} />
                     <span className={cn('text-[11px]', st.color)}>
-                      {isFr ? st.labelFr : st.label}
+                      {isZh ? st.labelFr : st.label}
                     </span>
                   </div>
 
@@ -662,7 +662,7 @@ export default function MediaTab({ books, filter, onBooksRefresh }: MediaTabProp
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                      title={isFr ? '原始 PDF' : 'Origin PDF'}
+                      title={isZh ? '原始 PDF' : 'Origin PDF'}
                     >
                       <Eye className="h-3 w-3" />
                     </a>
@@ -673,7 +673,7 @@ export default function MediaTab({ books, filter, onBooksRefresh }: MediaTabProp
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:text-blue-400 hover:bg-blue-400/10 transition-colors"
-                        title={isFr ? '布局 PDF' : 'Layout PDF'}
+                        title={isZh ? '布局 PDF' : 'Layout PDF'}
                       >
                         <Layers className="h-3 w-3" />
                       </a>
@@ -683,7 +683,7 @@ export default function MediaTab({ books, filter, onBooksRefresh }: MediaTabProp
                       type="button"
                       onClick={(e) => { e.stopPropagation(); setEditingBookId(book.id) }}
                       className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                      title={isFr ? '编辑' : 'Edit'}
+                      title={isZh ? '编辑' : 'Edit'}
                     >
                       <Pencil className="h-3 w-3" />
                     </button>
@@ -693,7 +693,7 @@ export default function MediaTab({ books, filter, onBooksRefresh }: MediaTabProp
                       onClick={(e) => { e.stopPropagation(); handleDeleteSingle(book) }}
                       disabled={deleting === book.id}
                       className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
-                      title={isFr ? '删除' : 'Delete'}
+                      title={isZh ? '删除' : 'Delete'}
                     >
                       <Trash2 className="h-3 w-3" />
                     </button>
@@ -758,7 +758,7 @@ function CoverImage({
 // ============================================================
 function PdfBookCard({
   book,
-  isFr,
+  isZh,
   isSelected,
   onSelect,
   onEdit,
@@ -766,7 +766,7 @@ function PdfBookCard({
   deleting,
 }: {
   book: BookBase
-  isFr: boolean
+  isZh: boolean
   isSelected: boolean
   onSelect: () => void
   onEdit: () => void
@@ -793,7 +793,7 @@ function PdfBookCard({
         <div className="absolute top-2 right-2 flex items-center gap-1 rounded-md bg-card/60 backdrop-blur-sm px-1.5 py-0.5">
           <StatusIcon className={cn('h-3 w-3', st.color, book.status === 'processing' && 'animate-spin')} />
           <span className={cn('text-[10px] font-medium', st.color)}>
-            {isFr ? st.labelFr : st.label}
+            {isZh ? st.labelFr : st.label}
           </span>
         </div>
 
@@ -826,7 +826,7 @@ function PdfBookCard({
           {book.pageCount > 0 && (
             <span className="flex items-center gap-1">
               <Hash className="h-3 w-3" />
-              {book.pageCount} {isFr ? '页' : 'pages'}
+              {book.pageCount} {isZh ? '页' : 'pages'}
             </span>
           )}
           {book.fileSize > 0 && (
@@ -870,7 +870,7 @@ function PdfBookCard({
               type="button"
               onClick={(e) => { e.stopPropagation(); onEdit() }}
               className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors opacity-0 group-hover:opacity-100"
-              title={isFr ? '编辑' : 'Edit'}
+              title={isZh ? '编辑' : 'Edit'}
             >
               <Pencil className="h-3 w-3" />
             </button>
@@ -879,7 +879,7 @@ function PdfBookCard({
               onClick={(e) => { e.stopPropagation(); onDelete() }}
               disabled={deleting}
               className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-50"
-              title={isFr ? '删除' : 'Delete'}
+              title={isZh ? '删除' : 'Delete'}
             >
               <Trash2 className="h-3 w-3" />
             </button>

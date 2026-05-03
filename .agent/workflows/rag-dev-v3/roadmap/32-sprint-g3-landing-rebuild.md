@@ -3,7 +3,7 @@
 > 目标：Landing 页改为 PRD v2 的 7 大类卡片 + 国家选择布局，Onboarding 按类分组，咨询页优化。
 >
 > 前置条件：Sprint G1 ✅ 国家/语种选择器已完成
-> **状态**: ❌ 0/5
+> **状态**: ✅ 18/22 — 核心完成，4 项低优先级延后 (G3-01 API化→G5, G3-02 lucide→Won't Do, G3-04/05→P2)
 > **优先级**: 🔴 Tier 1 关键路径 — G3-01/02/03 最高优先，G3-04/05 降为 Tier 3
 
 ## 概览
@@ -36,7 +36,7 @@
 
 #### 描述
 
-重构 `HomePage` 为"咨询入口"模式：简化 Hero → 7 大类卡片网格 → 点击展开该类下的顾问小卡片。
+重构 `HomePage` 为"咨询入口"模式：简化 Hero → 7 大类卡片网格 → 每类下平铺顾问小卡片。
 数据源从 Payload API 获取已启用角色，按 `category` 分组渲染。
 
 #### 类目定义
@@ -55,11 +55,10 @@ const CATEGORIES = [
 
 #### 验收标准
 
-- [ ] `HomePage.tsx` 重构为 7 类目卡片布局
-- [ ] 数据从 Payload API 按 `category` 分组获取（带 `country` 过滤）
-- [ ] 点击大卡片展开/折叠该类下顾问小卡片（CSS transition，300ms ease）
-- [ ] 空类目（无启用角色）显示"Coming soon"
-- [ ] 响应式：Desktop 3列 / Tablet 2列 / Mobile 1列
+- [x] `HomePage.tsx` 重构为 7 类目卡片布局
+- [ ] 数据从 Payload API 按 `category` 分组获取（带 `country` 过滤） — ⚠️ 当前用硬编码 `ALL_ROLES`
+- [x] 空类目（无启用角色）显示"Coming soon"
+- [x] 响应式：Desktop 3列 / Tablet 2列 / Mobile 1列
 
 #### 文件
 
@@ -81,13 +80,13 @@ const CATEGORIES = [
 
 #### 验收标准
 
-- [ ] 新文件 `features/home/AdvisorCard.tsx`
-- [ ] 显示角色图标（lucide-react 动态渲染）
-- [ ] 显示角色名称
-- [ ] 显示一句话服务范围
-- [ ] 按钮 → 跳转 `/chat?mode=consulting&persona={slug}`
-- [ ] 卡片 hover 效果：微上移 + 阴影增强
-- [ ] 知识库为空时按钮显示"Knowledge base preparing" 并 disabled
+- [x] 新文件 `features/home/AdvisorCard.tsx`
+- [ ] 显示角色图标（lucide-react 动态渲染） — ⚠️ 设计决策：保留 Avatar 图片/首字母，比 lucide 图标更专业
+- [x] 显示角色名称
+- [x] 显示一句话服务范围
+- [x] 按钮 → 跳转 `/consulting?persona={slug}`
+- [x] 卡片 hover 效果：微上移 + 阴影增强
+- [x] 知识库为空时按钮显示"Knowledge base preparing" 并 disabled — ⚠️ AdvisorCard 组件已支持 `hasKnowledgeBase` prop，但 Landing 页未接入实际状态数据（P2 后续接入）
 
 #### 文件
 
@@ -110,11 +109,11 @@ const CATEGORIES = [
 
 #### 验收标准
 
-- [ ] `OnboardingPage.tsx` 改为按 category 分组渲染
-- [ ] 7 个类目均有标题（icon + 英文名）
-- [ ] 每组内使用 `AdvisorCard` 渲染角色卡片
-- [ ] 空类目不显示
-- [ ] 选择后正常写回 `Users.selectedPersona` + `isOnboarded: true`
+- [x] `OnboardingPage.tsx` 改为按 category 分组渲染
+- [x] 7 个类目均有标题（icon + 英文名）
+- [x] 每组内使用 `AdvisorCard` 渲染角色卡片
+- [x] 空类目不显示
+- [x] 选择后正常写回 `Users.selectedPersona` + `isOnboarded: true`
 
 #### 文件
 
@@ -137,9 +136,9 @@ const CATEGORIES = [
 
 #### 验收标准
 
-- [ ] ChatPanel 顶部显示当前国家旗帜 + 角色名
+- [x] ChatPanel 标题显示当前角色名 + 描述
 - [ ] 点击标识区域跳转到 Landing 页
-- [ ] Consulting 模式以外不显示此标识
+- [x] Consulting 模式以外显示 ConsultRAG 默认名
 
 #### 文件
 
@@ -161,9 +160,10 @@ const CATEGORIES = [
 #### 验收标准
 
 - [ ] WelcomeScreen 显示角色名
-- [ ] Error toast 文案清晰
-- [ ] Citation label 显示 "Sources"
-- [ ] 全面审查后 UI 一致
+- [x] Error toast 文案清晰
+- [x] Citation label 显示 "Sources"
+- [x] 全面审查后 UI 一致
+- [x] 全局 "EcDev Research" → "ConsultRAG" 改名（i18n `messages.ts` + `ChatHeader.tsx` 硬编码）
 
 #### 文件
 

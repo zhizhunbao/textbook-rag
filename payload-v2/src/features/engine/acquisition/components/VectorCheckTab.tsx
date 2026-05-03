@@ -44,7 +44,7 @@ interface VectorCheckTabProps {
 // ============================================================
 export default function VectorCheckTab({ books, filter }: VectorCheckTabProps) {
   const { locale } = useI18n()
-  const isFr = locale === 'fr'
+  const isZh = locale === 'zh'
 
   const [stats, setStats] = useState<VectorStats | null>(null)
   const [loading, setLoading] = useState(false)
@@ -89,7 +89,7 @@ export default function VectorCheckTab({ books, filter }: VectorCheckTabProps) {
           <div className="flex items-center gap-2">
             <Database className="h-4 w-4 text-primary" />
             <h3 className="text-sm font-semibold text-foreground">
-              {isFr ? '向量数据库总览' : 'Vector Database Overview'}
+              {isZh ? '向量数据库总览' : 'Vector Database Overview'}
             </h3>
           </div>
           <button
@@ -99,7 +99,7 @@ export default function VectorCheckTab({ books, filter }: VectorCheckTabProps) {
                        text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
           >
             <RefreshCw className={cn('h-3 w-3', loading && 'animate-spin')} />
-            {isFr ? '刷新' : 'Refresh'}
+            {isZh ? '刷新' : 'Refresh'}
           </button>
         </div>
 
@@ -122,19 +122,19 @@ export default function VectorCheckTab({ books, filter }: VectorCheckTabProps) {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <StatCard
               icon={<Layers className="h-4 w-4" />}
-              label={isFr ? '总向量数' : 'Total Vectors'}
+              label={isZh ? '总向量数' : 'Total Vectors'}
               value={stats.totalVectors.toLocaleString()}
               color="text-blue-400"
             />
             <StatCard
               icon={<Ruler className="h-4 w-4" />}
-              label={isFr ? '嵌入维度' : 'Dimensions'}
+              label={isZh ? '嵌入维度' : 'Dimensions'}
               value={stats.dimensions > 0 ? String(stats.dimensions) : '—'}
               color="text-emerald-400"
             />
             <StatCard
               icon={<Database className="h-4 w-4" />}
-              label={isFr ? 'Collection' : 'Collection'}
+              label={isZh ? 'Collection' : 'Collection'}
               value={stats.collectionName}
               color="text-violet-400"
               mono
@@ -143,7 +143,7 @@ export default function VectorCheckTab({ books, filter }: VectorCheckTabProps) {
         )}
 
         <p className="text-xs text-muted-foreground/60 text-center pt-4">
-          {isFr
+          {isZh
             ? '在左侧选择一本书查看其向量详情和随机采样'
             : 'Select a book from the sidebar to view its vector details and samples'}
         </p>
@@ -159,7 +159,7 @@ export default function VectorCheckTab({ books, filter }: VectorCheckTabProps) {
         <div className="flex items-center gap-2">
           <Database className="h-4 w-4 text-primary" />
           <h3 className="text-sm font-semibold text-foreground">
-            {isFr ? '向量检查' : 'Vector Check'}
+            {isZh ? '向量检查' : 'Vector Check'}
           </h3>
           <span className="text-xs text-muted-foreground">
             — {selectedBook.title}
@@ -172,7 +172,7 @@ export default function VectorCheckTab({ books, filter }: VectorCheckTabProps) {
                      text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
         >
           <RefreshCw className={cn('h-3 w-3', loading && 'animate-spin')} />
-          {isFr ? '刷新' : 'Refresh'}
+          {isZh ? '刷新' : 'Refresh'}
         </button>
       </div>
 
@@ -200,30 +200,30 @@ export default function VectorCheckTab({ books, filter }: VectorCheckTabProps) {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <StatCard
               icon={<Layers className="h-4 w-4" />}
-              label={isFr ? '集合总向量' : 'Collection Total'}
+              label={isZh ? '集合总向量' : 'Collection Total'}
               value={stats.totalVectors.toLocaleString()}
               color="text-blue-400"
             />
             <StatCard
               icon={<BookOpen className="h-4 w-4" />}
-              label={isFr ? '本书向量' : 'Book Vectors'}
+              label={isZh ? '本书向量' : 'Book Vectors'}
               value={stats.bookVectors.toLocaleString()}
               color={hasMismatch ? 'text-amber-400' : 'text-emerald-400'}
               warning={hasMismatch
-                ? (isFr
+                ? (isZh
                   ? `Chunk 数 ${chunkCount} ≠ 向量数 ${vectorCount}`
                   : `Chunks ${chunkCount} ≠ vectors ${vectorCount}`)
                 : undefined}
             />
             <StatCard
               icon={<Ruler className="h-4 w-4" />}
-              label={isFr ? '嵌入维度' : 'Dimensions'}
+              label={isZh ? '嵌入维度' : 'Dimensions'}
               value={stats.dimensions > 0 ? String(stats.dimensions) : '—'}
               color="text-violet-400"
             />
             <StatCard
               icon={<Hash className="h-4 w-4" />}
-              label={isFr ? 'Payload Chunks' : 'Payload Chunks'}
+              label={isZh ? 'Payload Chunks' : 'Payload Chunks'}
               value={chunkCount > 0 ? chunkCount.toLocaleString() : '—'}
               color={hasMismatch ? 'text-amber-400' : 'text-muted-foreground'}
             />
@@ -234,7 +234,7 @@ export default function VectorCheckTab({ books, filter }: VectorCheckTabProps) {
             <div className="rounded-lg border border-border overflow-hidden">
               <div className="px-3 py-2 bg-muted/30 border-b border-border">
                 <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  {isFr ? `随机采样 (${stats.samples.length} 条)` : `Random Samples (${stats.samples.length})`}
+                  {isZh ? `随机采样 (${stats.samples.length} 条)` : `Random Samples (${stats.samples.length})`}
                 </span>
               </div>
               <div className="overflow-x-auto">
@@ -243,16 +243,16 @@ export default function VectorCheckTab({ books, filter }: VectorCheckTabProps) {
                     <tr className="border-b border-border bg-muted/10">
                       <th className="px-3 py-2 text-left text-muted-foreground font-medium w-8">#</th>
                       <th className="px-3 py-2 text-left text-muted-foreground font-medium min-w-[200px]">
-                        {isFr ? '文本' : 'Text'}
+                        {isZh ? '文本' : 'Text'}
                       </th>
                       <th className="px-3 py-2 text-left text-muted-foreground font-medium w-20">
-                        {isFr ? '类型' : 'Type'}
+                        {isZh ? '类型' : 'Type'}
                       </th>
                       <th className="px-3 py-2 text-left text-muted-foreground font-medium w-16">
-                        {isFr ? '页码' : 'Page'}
+                        {isZh ? '页码' : 'Page'}
                       </th>
                       <th className="px-3 py-2 text-left text-muted-foreground font-medium min-w-[180px]">
-                        {isFr ? '向量预览' : 'Vector Preview'}
+                        {isZh ? '向量预览' : 'Vector Preview'}
                       </th>
                     </tr>
                   </thead>
@@ -306,7 +306,7 @@ export default function VectorCheckTab({ books, filter }: VectorCheckTabProps) {
             <div className="rounded-lg border border-border bg-muted/10 p-8 text-center">
               <Database className="h-8 w-8 mx-auto mb-3 text-muted-foreground/30" />
               <p className="text-sm text-muted-foreground">
-                {isFr
+                {isZh
                   ? '此书尚未生成向量。请先运行 Pipeline 的 Ingest 阶段。'
                   : 'No vectors found for this book. Run the Pipeline Ingest stage first.'}
               </p>

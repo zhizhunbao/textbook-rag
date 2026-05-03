@@ -26,7 +26,7 @@ interface ByBookOptions {
   /** Map of book_id → count for the sidebar badge. */
   countMap?: Map<string, number>
   /** Whether to use Chinese labels. Default: false. */
-  isFr?: boolean
+  isZh?: boolean
   /** "All" label. Default: 'All'. */
   allLabel?: string
   /** Icon for each book item. */
@@ -40,7 +40,7 @@ interface ByBookOptions {
 interface ByCategoryOptions {
   mode: 'by-category'
   /** Whether to use Chinese labels. Default: false. */
-  isFr?: boolean
+  isZh?: boolean
   /** "All" label. Default: 'All Books'. */
   allLabel?: string
   /** Icon for "All" item. */
@@ -126,7 +126,7 @@ export function useBookSidebar(
 
 function buildByBook(books: BookBase[], opts: ByBookOptions): SidebarItem[] {
   const countMap = opts.countMap ?? new Map()
-  const isFr = opts.isFr ?? false
+  const isZh = opts.isZh ?? false
 
   const items: SidebarItem[] = [
     {
@@ -168,7 +168,7 @@ function buildByBook(books: BookBase[], opts: ByBookOptions): SidebarItem[] {
     // Category shows book count (always visible)
     items.push({
       key: catKey,
-      label: isFr ? cfg.labelFr : cfg.label,
+      label: isZh ? cfg.labelFr : cfg.label,
       count: allCatBooks.length,
       icon: opts.categoryIcons?.[catKey],
       collapsible: true,
@@ -247,7 +247,7 @@ function buildByBook(books: BookBase[], opts: ByBookOptions): SidebarItem[] {
 }
 
 function buildByCategory(books: BookBase[], opts: ByCategoryOptions): SidebarItem[] {
-  const isFr = opts.isFr ?? false
+  const isZh = opts.isZh ?? false
 
   // Count per category and subcategory
   const counts: Record<string, number> = { all: books.length }
@@ -267,7 +267,7 @@ function buildByCategory(books: BookBase[], opts: ByCategoryOptions): SidebarIte
   const items: SidebarItem[] = [
     {
       key: 'all',
-      label: opts.allLabel ?? (isFr ? '全部' : 'All Books'),
+      label: opts.allLabel ?? (isZh ? '全部' : 'All Books'),
       count: counts.all || 0,
       icon: opts.allIcon,
     },
@@ -290,7 +290,7 @@ function buildByCategory(books: BookBase[], opts: ByCategoryOptions): SidebarIte
 
     items.push({
       key: catKey,
-      label: isFr ? cfg.labelFr : cfg.label,
+      label: isZh ? cfg.labelFr : cfg.label,
       count,
       icon: opts.categoryIcons?.[catKey],
       collapsible: !!subMap[catKey],

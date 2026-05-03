@@ -26,10 +26,10 @@ import { fetchBenchmarkQuestions, testBatch } from '../api'
 interface BenchmarkConsoleProps {
   /** 可用模型列表 / Available models to test */
   models: RuntimeModel[]
-  isFr?: boolean
+  isZh?: boolean
 }
 
-export function BenchmarkConsole({ models, isFr = false }: BenchmarkConsoleProps) {
+export function BenchmarkConsole({ models, isZh = false }: BenchmarkConsoleProps) {
   // ── State ────────────────────────────────────────────────────────────────
   const [questions, setQuestions] = useState<BenchmarkQuestion[]>([])
   const [selectedModels, setSelectedModels] = useState<string[]>([])
@@ -148,9 +148,9 @@ export function BenchmarkConsole({ models, isFr = false }: BenchmarkConsoleProps
       <div>
         <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
           <Zap className="h-4 w-4 text-primary" />
-          {isFr ? 'Sélectionner les modèles' : 'Select Models'}
+          {isZh ? 'Sélectionner les modèles' : 'Select Models'}
           <span className="text-[10px] text-muted-foreground font-normal">
-            ({selectedModels.length} {isFr ? 'sélectionné(s)' : 'selected'})
+            ({selectedModels.length} {isZh ? 'sélectionné(s)' : 'selected'})
           </span>
         </h3>
         <div className="flex flex-wrap gap-2">
@@ -173,7 +173,7 @@ export function BenchmarkConsole({ models, isFr = false }: BenchmarkConsoleProps
               </button>
             ))}
           {models.filter((m) => m.availability.status === 'available').length === 0 && (
-            <p className="text-xs text-muted-foreground">{isFr ? 'Aucun modèle disponible' : 'No available models'}</p>
+            <p className="text-xs text-muted-foreground">{isZh ? 'Aucun modèle disponible' : 'No available models'}</p>
           )}
         </div>
       </div>
@@ -185,9 +185,9 @@ export function BenchmarkConsole({ models, isFr = false }: BenchmarkConsoleProps
           className="flex items-center gap-2 text-sm font-semibold text-foreground mb-3 hover:text-primary transition-colors"
         >
           <MessageSquare className="h-4 w-4 text-primary" />
-          {isFr ? 'Questions de test' : 'Test Questions'}
+          {isZh ? 'Questions de test' : 'Test Questions'}
           <span className="text-[10px] text-muted-foreground font-normal">
-            ({selectedQuestions.length} {isFr ? 'sélectionnée(s)' : 'selected'})
+            ({selectedQuestions.length} {isZh ? 'sélectionnée(s)' : 'selected'})
           </span>
           {showQuestions ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
         </button>
@@ -235,7 +235,7 @@ export function BenchmarkConsole({ models, isFr = false }: BenchmarkConsoleProps
                 value={customQuestion}
                 onChange={(e) => setCustomQuestion(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && addCustom()}
-                placeholder={isFr ? 'Ajouter une question personnalisée...' : 'Add custom question...'}
+                placeholder={isZh ? 'Ajouter une question personnalisée...' : 'Add custom question...'}
                 disabled={isRunning}
                 className="flex-1 px-3 py-1.5 rounded-lg text-xs bg-card border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
               />
@@ -244,7 +244,7 @@ export function BenchmarkConsole({ models, isFr = false }: BenchmarkConsoleProps
                 disabled={!customQuestion.trim() || isRunning}
                 className="px-3 py-1.5 rounded-lg text-xs font-medium bg-secondary text-foreground hover:bg-secondary/80 disabled:opacity-50"
               >
-                {isFr ? 'Ajouter' : 'Add'}
+                {isZh ? 'Ajouter' : 'Add'}
               </button>
             </div>
           </div>
@@ -259,7 +259,7 @@ export function BenchmarkConsole({ models, isFr = false }: BenchmarkConsoleProps
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors"
           >
             <Square className="h-4 w-4" />
-            {isFr ? 'Arrêter' : 'Stop'}
+            {isZh ? 'Arrêter' : 'Stop'}
           </button>
         ) : (
           <button
@@ -272,7 +272,7 @@ export function BenchmarkConsole({ models, isFr = false }: BenchmarkConsoleProps
             )}
           >
             <Play className="h-4 w-4" />
-            {isFr ? 'Lancer le test' : 'Run Benchmark'}
+            {isZh ? 'Lancer le test' : 'Run Benchmark'}
           </button>
         )}
 
@@ -289,7 +289,7 @@ export function BenchmarkConsole({ models, isFr = false }: BenchmarkConsoleProps
 
         {status === 'done' && (
           <span className="text-xs text-emerald-400 font-medium">
-            ✓ {isFr ? `${results.length} test(s) terminé(s)` : `${results.length} test(s) completed`}
+            ✓ {isZh ? `${results.length} test(s) terminé(s)` : `${results.length} test(s) completed`}
           </span>
         )}
       </div>
@@ -327,7 +327,7 @@ export function BenchmarkConsole({ models, isFr = false }: BenchmarkConsoleProps
                       <p className="text-lg font-bold text-emerald-400">
                         {(avg?.totalCost || 0) === 0 ? 'Free' : `$${avg?.totalCost.toFixed(4)}`}
                       </p>
-                      <p className="text-[10px] text-muted-foreground">{isFr ? 'coût' : 'cost'}</p>
+                      <p className="text-[10px] text-muted-foreground">{isZh ? 'coût' : 'cost'}</p>
                     </div>
                   </div>
                 </div>
@@ -341,7 +341,7 @@ export function BenchmarkConsole({ models, isFr = false }: BenchmarkConsoleProps
               <thead>
                 <tr className="bg-card/80 border-b border-border">
                   <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    {isFr ? 'Question' : 'Question'}
+                    {isZh ? 'Question' : 'Question'}
                   </th>
                   {Array.from(resultsByModel.keys()).map((model) => (
                     <th key={model} className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -357,7 +357,7 @@ export function BenchmarkConsole({ models, isFr = false }: BenchmarkConsoleProps
                     question={q}
                     modelNames={Array.from(resultsByModel.keys())}
                     resultsByModel={resultsByModel}
-                    isFr={isFr}
+                    isZh={isZh}
                   />
                 ))}
               </tbody>
@@ -375,12 +375,12 @@ function BenchmarkResultRow({
   question,
   modelNames,
   resultsByModel,
-  isFr,
+  isZh,
 }: {
   question: string
   modelNames: string[]
   resultsByModel: Map<string, BenchmarkResult[]>
-  isFr: boolean
+  isZh: boolean
 }) {
   const [expanded, setExpanded] = useState(false)
 
@@ -433,7 +433,7 @@ function BenchmarkResultRow({
       {expanded && (
         <tr className="border-b border-border/30 bg-card/30">
           <td className="px-4 py-3 text-[10px] text-muted-foreground align-top">
-            {isFr ? 'Réponses' : 'Answers'}
+            {isZh ? 'Réponses' : 'Answers'}
           </td>
           {modelNames.map((model) => {
             const r = resultsByModel.get(model)?.find((x) => x.question === question)

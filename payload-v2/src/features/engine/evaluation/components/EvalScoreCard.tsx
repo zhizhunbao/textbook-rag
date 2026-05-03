@@ -221,7 +221,7 @@ interface EvalScoreCardProps {
   /** Persisted evaluation result from Payload. */
   evaluation: EvaluationResult
   /** UI locale ('en' or 'fr' for Chinese). */
-  locale?: 'en' | 'fr'
+  locale?: 'en' | 'zh'
 }
 
 // ============================================================

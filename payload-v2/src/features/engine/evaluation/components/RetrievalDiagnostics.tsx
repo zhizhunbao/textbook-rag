@@ -117,7 +117,7 @@ interface RetrievalDiagnosticsProps {
   /** Evaluation result with retrieval strategy data. */
   evaluation: EvaluationResult
   /** UI locale. */
-  locale?: 'en' | 'fr'
+  locale?: 'en' | 'zh'
   /** If true, renders in compact inline mode. */
   compact?: boolean
 }
@@ -130,7 +130,7 @@ export default function RetrievalDiagnostics({
   locale = 'en',
   compact = false,
 }: RetrievalDiagnosticsProps) {
-  const isFr = locale === 'fr'
+  const isZh = locale === 'zh'
 
   const bm25 = evaluation.bm25Hits ?? 0
   const vector = evaluation.vectorHits ?? 0
@@ -178,7 +178,7 @@ export default function RetrievalDiagnostics({
       {/* Mode badge */}
       <div className="flex items-center gap-2">
         <span className="text-[10px] text-muted-foreground">
-          {isFr ? '模式' : 'Mode'}:
+          {isZh ? '模式' : 'Mode'}:
         </span>
         <span className={cn(
           'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-medium border',
@@ -187,8 +187,8 @@ export default function RetrievalDiagnostics({
             : 'text-purple-600 dark:text-purple-400 bg-purple-500/10 border-purple-500/20',
         )}>
           {mode === 'hybrid'
-            ? <><Shuffle className="h-3 w-3" />{isFr ? '混合' : 'Hybrid'}</>
-            : <><Grid3X3 className="h-3 w-3" />{isFr ? '纯向量' : 'Vector-only'}</>
+            ? <><Shuffle className="h-3 w-3" />{isZh ? '混合' : 'Hybrid'}</>
+            : <><Grid3X3 className="h-3 w-3" />{isZh ? '纯向量' : 'Vector-only'}</>
           }
         </span>
       </div>
@@ -228,7 +228,7 @@ export default function RetrievalDiagnostics({
           )}
           {total === 0 && (
             <div className="h-full w-full flex items-center justify-center">
-              <span className="text-[8px] text-muted-foreground">{isFr ? '无数据' : 'No data'}</span>
+              <span className="text-[8px] text-muted-foreground">{isZh ? '无数据' : 'No data'}</span>
             </div>
           )}
         </div>
@@ -239,13 +239,13 @@ export default function RetrievalDiagnostics({
             <div key={key} className="flex items-center gap-1">
               <span className={cn('inline-block w-2 h-2 rounded-full', SOURCE_COLORS[key].dot)} />
               <span className={cn('text-[9px] font-medium', SOURCE_COLORS[key].text)}>
-                {isFr ? SOURCE_COLORS[key].labelFr : SOURCE_COLORS[key].label}
+                {isZh ? SOURCE_COLORS[key].labelFr : SOURCE_COLORS[key].label}
               </span>
               <span className="text-[9px] text-muted-foreground tabular-nums">{count}</span>
             </div>
           ))}
           <span className="ml-auto text-[8px] text-muted-foreground tabular-nums">
-            {isFr ? `共 ${total} 条` : `${total} total`}
+            {isZh ? `共 ${total} 条` : `${total} total`}
           </span>
         </div>
       </div>
@@ -256,14 +256,14 @@ export default function RetrievalDiagnostics({
           <div className="flex items-center gap-1.5">
             <Navigation className="h-3 w-3 text-muted-foreground" />
             <span className="text-[9px] font-medium text-muted-foreground">
-              {isFr ? '路由决策' : 'Routing Decision'}
+              {isZh ? '路由决策' : 'Routing Decision'}
             </span>
             <span className={cn(
               'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-semibold border',
               ROUTING_META[evaluation.routingDecision]?.cls ?? 'text-zinc-400',
             )}>
               {ROUTING_META[evaluation.routingDecision]?.icon}{' '}
-              {isFr
+              {isZh
                 ? ROUTING_META[evaluation.routingDecision]?.labelFr
                 : ROUTING_META[evaluation.routingDecision]?.label
               }
@@ -274,8 +274,8 @@ export default function RetrievalDiagnostics({
                 evaluation.routingCorrect ? 'text-emerald-400' : 'text-red-400',
               )}>
                 {evaluation.routingCorrect
-                  ? <><CheckCircle2 className="h-3 w-3" />{isFr ? '正确' : 'Correct'}</>
-                  : <><AlertTriangle className="h-3 w-3" />{isFr ? '不当' : 'Incorrect'}</>
+                  ? <><CheckCircle2 className="h-3 w-3" />{isZh ? '正确' : 'Correct'}</>
+                  : <><AlertTriangle className="h-3 w-3" />{isZh ? '不当' : 'Incorrect'}</>
                 }
               </span>
             )}
@@ -301,7 +301,7 @@ export default function RetrievalDiagnostics({
             return (
               <div key={i} className="flex items-start gap-1.5 text-[9px] text-muted-foreground">
                 <SIcon className={cn('h-3 w-3 shrink-0 mt-0.5', iconCls)} />
-                <span>{isFr ? s.textFr : s.text}</span>
+                <span>{isZh ? s.textFr : s.text}</span>
               </div>
             )
           })}

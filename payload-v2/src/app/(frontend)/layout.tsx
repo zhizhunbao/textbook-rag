@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import React from 'react'
 
+import { NextIntlClientProvider } from 'next-intl'
+import { getMessages } from 'next-intl/server'
 import { Providers } from '@/features/shared/Providers'
 import AppLayout from '@/features/layout/AppLayout'
 import AuthGuard from '@/features/layout/AuthGuard'
@@ -12,11 +14,14 @@ import './globals.css'
 /**
  * (frontend) root layout
  * - <html>/<body> + dark-mode FOUC prevention
+ * - NextIntlClientProvider (next-intl i18n — new)
  * - Providers (Auth, theme, etc.)
  * - AppLayout (sidebar + header) + ChatHistoryProvider
  * - AuthGuard (login/onboarding route guard)
  */
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const messages = await getMessages()
+
   return (
     <html lang="en" className="h-full" suppressHydrationWarning>
       <head>
@@ -56,15 +61,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
       </head>
       <body className="h-full">
-        <Providers>
-          <ChatHistoryProvider>
-            <AppLayout>
-              <AuthGuard>
-                {children}
-              </AuthGuard>
-            </AppLayout>
-          </ChatHistoryProvider>
-        </Providers>
+        <NextIntlClientProvider messages={messages}>
+          <Providers>
+            <ChatHistoryProvider>
+              <AppLayout>
+                <AuthGuard>
+                  {children}
+                </AuthGuard>
+              </AppLayout>
+            </ChatHistoryProvider>
+          </Providers>
+        </NextIntlClientProvider>
       </body>
     </html>
   )

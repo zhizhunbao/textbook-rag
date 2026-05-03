@@ -32,11 +32,11 @@ function difficultyColor(score: number | null): string {
   return 'text-rose-500'
 }
 
-function difficultyLabel(score: number | null, isFr: boolean): string {
+function difficultyLabel(score: number | null, isZh: boolean): string {
   if (!score) return ''
-  if (score <= 2) return isFr ? '基础' : 'Basic'
-  if (score <= 3) return isFr ? '中等' : 'Medium'
-  return isFr ? '进阶' : 'Advanced'
+  if (score <= 2) return isZh ? '基础' : 'Basic'
+  if (score <= 3) return isZh ? '中等' : 'Medium'
+  return isZh ? '进阶' : 'Advanced'
 }
 
 // ============================================================
@@ -49,14 +49,14 @@ export default function SuggestedQuestions({
   className,
 }: SuggestedQuestionsProps) {
   const { locale } = useI18n()
-  const isFr = locale === 'fr'
+  const isZh = locale === 'zh'
 
   if (loading) {
     return (
       <div className={cn('flex items-center justify-center py-6', className)}>
         <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mr-2" />
         <span className="text-xs text-muted-foreground">
-          {isFr ? '加载推荐问题...' : 'Loading suggestions...'}
+          {isZh ? '加载推荐问题...' : 'Loading suggestions...'}
         </span>
       </div>
     )
@@ -70,7 +70,7 @@ export default function SuggestedQuestions({
       <div className="flex items-center gap-1.5 px-1">
         <Sparkles className="h-3.5 w-3.5 text-primary" />
         <span className="text-xs font-medium text-muted-foreground">
-          {isFr ? '推荐问题' : 'Suggested Questions'}
+          {isZh ? '推荐问题' : 'Suggested Questions'}
         </span>
       </div>
 
@@ -104,7 +104,7 @@ export default function SuggestedQuestions({
               )}
               {q.scoreDifficulty && (
                 <span className={cn('text-[10px] font-medium', difficultyColor(q.scoreDifficulty))}>
-                  {difficultyLabel(q.scoreDifficulty, isFr)}
+                  {difficultyLabel(q.scoreDifficulty, isZh)}
                 </span>
               )}
             </div>

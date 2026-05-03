@@ -1,0 +1,421 @@
+/**
+ * live/live.css — Full-screen dark theme styles for LiveQA broadcast.
+ *
+ * G7-03: Optimized for 1080p streaming — large fonts, high contrast,
+ * deep dark background, gradient accents, typewriter cursor animation.
+ */
+
+/* ── Force dark mode on /live regardless of system theme ── */
+.live-root {
+  --live-bg: #0a0b14;
+  --live-bg-secondary: #12142a;
+  --live-text: #f0f4ff;
+  --live-text-muted: #8892b0;
+  --live-accent: #4facfe;
+  --live-accent-2: #00f2fe;
+  --live-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  --live-card: rgba(20, 22, 46, 0.85);
+  --live-border: rgba(79, 172, 254, 0.15);
+  --live-danger: #ff6b6b;
+
+  background: var(--live-bg);
+  color: var(--live-text);
+  font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+}
+
+/* ── Layout ── */
+.live-container {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+.live-sidebar {
+  width: 320px;
+  min-width: 280px;
+  max-width: 360px;
+  background: var(--live-bg-secondary);
+  border-right: 1px solid var(--live-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width 300ms ease, min-width 300ms ease, opacity 200ms ease;
+}
+
+.live-sidebar.collapsed {
+  width: 0;
+  min-width: 0;
+  opacity: 0;
+  pointer-events: none;
+  border-right: none;
+}
+
+.live-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  position: relative;
+}
+
+/* ── Header bar ── */
+.live-header {
+  padding: 16px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--live-border);
+  background: rgba(10, 11, 20, 0.9);
+  backdrop-filter: blur(12px);
+  z-index: 10;
+}
+
+.live-header-title {
+  font-size: 20px;
+  font-weight: 700;
+  background: var(--live-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.live-header-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: rgba(255, 107, 107, 0.15);
+  color: var(--live-danger);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  animation: livePulse 2s ease-in-out infinite;
+}
+
+/* ── Answer area ── */
+.live-answer-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px 40px 120px;
+  scroll-behavior: smooth;
+}
+
+.live-answer-area::-webkit-scrollbar { width: 6px; }
+.live-answer-area::-webkit-scrollbar-track { background: transparent; }
+.live-answer-area::-webkit-scrollbar-thumb {
+  background: rgba(79, 172, 254, 0.2);
+  border-radius: 9999px;
+}
+
+/* ── Question display ── */
+.live-question {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--live-text);
+  margin-bottom: 24px;
+  line-height: 1.4;
+  padding-left: 20px;
+  border-left: 4px solid var(--live-accent);
+}
+
+/* ── Answer display ── */
+.live-answer {
+  font-size: 22px;
+  line-height: 1.8;
+  color: var(--live-text);
+}
+
+.live-answer p {
+  margin-bottom: 16px;
+}
+
+.live-answer strong {
+  color: var(--live-accent);
+  font-weight: 700;
+}
+
+.live-answer ul, .live-answer ol {
+  padding-left: 24px;
+  margin-bottom: 16px;
+}
+
+.live-answer li {
+  margin-bottom: 8px;
+}
+
+.live-answer h2 {
+  font-size: 26px;
+  font-weight: 700;
+  margin-top: 24px;
+  margin-bottom: 12px;
+  color: var(--live-accent);
+}
+
+.live-answer h3 {
+  font-size: 24px;
+  font-weight: 600;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  color: var(--live-accent-2);
+}
+
+/* ── Typing cursor ── */
+.live-cursor {
+  display: inline-block;
+  width: 3px;
+  height: 1.2em;
+  background: var(--live-accent);
+  margin-left: 4px;
+  vertical-align: text-bottom;
+  animation: liveBlink 0.8s ease-in-out infinite;
+}
+
+/* ── Sources ── */
+.live-sources {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--live-border);
+}
+
+.live-source-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  margin: 4px 6px 4px 0;
+  border-radius: 8px;
+  background: var(--live-card);
+  border: 1px solid var(--live-border);
+  color: var(--live-text-muted);
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 200ms ease;
+}
+
+.live-source-chip:hover {
+  background: rgba(79, 172, 254, 0.1);
+  border-color: var(--live-accent);
+  color: var(--live-text);
+}
+
+/* ── Sidebar questions ── */
+.live-sidebar-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--live-border);
+}
+
+.live-sidebar-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--live-text);
+  margin-bottom: 4px;
+}
+
+.live-sidebar-subtitle {
+  font-size: 12px;
+  color: var(--live-text-muted);
+}
+
+.live-sidebar-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.live-sidebar-scroll::-webkit-scrollbar { width: 4px; }
+.live-sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+.live-sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgba(79, 172, 254, 0.15);
+  border-radius: 9999px;
+}
+
+.live-category-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--live-text-muted);
+  padding: 12px 20px 6px;
+}
+
+.live-q-btn {
+  width: 100%;
+  text-align: left;
+  padding: 10px 20px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--live-text);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 150ms ease;
+  position: relative;
+}
+
+.live-q-btn:hover {
+  background: rgba(79, 172, 254, 0.08);
+}
+
+.live-q-btn.answered {
+  color: var(--live-text-muted);
+}
+
+.live-q-btn.answered::after {
+  content: '';
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #00c853;
+}
+
+/* ── Input bar ── */
+.live-input-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px 40px 20px;
+  background: linear-gradient(to top, var(--live-bg) 60%, transparent);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  z-index: 10;
+}
+
+.live-input {
+  flex: 1;
+  padding: 14px 20px;
+  font-size: 18px;
+  background: var(--live-card);
+  border: 1px solid var(--live-border);
+  border-radius: 14px;
+  color: var(--live-text);
+  outline: none;
+  transition: border-color 200ms ease;
+}
+
+.live-input::placeholder {
+  color: var(--live-text-muted);
+}
+
+.live-input:focus {
+  border-color: var(--live-accent);
+}
+
+.live-send-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--live-gradient);
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+
+.live-send-btn:hover {
+  opacity: 0.85;
+  transform: scale(1.05);
+}
+
+.live-send-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ── Loading dots ── */
+.live-loading {
+  display: flex;
+  gap: 6px;
+  padding: 20px 0;
+}
+
+.live-loading-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--live-accent);
+  animation: liveBounce 1.2s infinite ease-in-out;
+}
+
+.live-loading-dot:nth-child(2) { animation-delay: 0.15s; }
+.live-loading-dot:nth-child(3) { animation-delay: 0.3s; }
+
+/* ── Brand overlay ── */
+.live-brand-overlay {
+  position: fixed;
+  right: 24px;
+  bottom: 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  opacity: 0.6;
+  transition: opacity 200ms ease;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.live-brand-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--live-text-muted);
+  letter-spacing: 0.05em;
+}
+
+/* ── Empty state ── */
+.live-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 16px;
+  opacity: 0.5;
+}
+
+.live-empty-icon {
+  width: 64px;
+  height: 64px;
+  color: var(--live-accent);
+}
+
+.live-empty-text {
+  font-size: 20px;
+  color: var(--live-text-muted);
+}
+
+/* ── Animations ── */
+@keyframes livePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes liveBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes liveBounce {
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1); }
+}
+
+@keyframes liveSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.live-slide-up {
+  animation: liveSlideUp 400ms ease-out both;
+}

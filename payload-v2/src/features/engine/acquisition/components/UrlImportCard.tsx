@@ -32,7 +32,7 @@ export default function UrlImportCard({
   onImportComplete,
 }: UrlImportCardProps) {
   const { locale } = useI18n()
-  const isFr = locale === 'fr'
+  const isZh = locale === 'zh'
 
   // ==========================================================
   // State
@@ -132,7 +132,7 @@ export default function UrlImportCard({
                 <Link2 className="h-6 w-6 text-muted-foreground" />
               </div>
               <p className="text-sm font-medium text-foreground text-center">
-                {isFr ? '粘贴 PDF 链接' : 'Paste a PDF link'}
+                {isZh ? '粘贴 PDF 链接' : 'Paste a PDF link'}
               </p>
               <div className="flex gap-2 w-full max-w-sm">
                 <input
@@ -157,11 +157,11 @@ export default function UrlImportCard({
                     'disabled:opacity-50 disabled:cursor-not-allowed',
                   )}
                 >
-                  {isFr ? '导入' : 'Import'}
+                  {isZh ? '导入' : 'Import'}
                 </button>
               </div>
               <p className="text-xs text-muted-foreground/60 text-center">
-                {isFr ? 'Engine 会服务端下载，无需跨域' : 'Downloaded server-side, no CORS limits'}
+                {isZh ? 'Engine 会服务端下载，无需跨域' : 'Downloaded server-side, no CORS limits'}
               </p>
             </>
           )}
@@ -172,7 +172,7 @@ export default function UrlImportCard({
               <Loader2 className="h-6 w-6 text-primary animate-spin" />
               <div className="text-center w-full max-w-xs">
                 <p className="text-sm font-medium text-foreground">
-                  {isFr ? '正在导入...' : 'Importing...'}
+                  {isZh ? '正在导入...' : 'Importing...'}
                 </p>
                 {stage && (
                   <p className="text-xs text-muted-foreground mt-0.5">{stage}</p>
@@ -193,7 +193,7 @@ export default function UrlImportCard({
             <>
               <CheckCircle className="h-6 w-6 text-emerald-500" />
               <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
-                {isFr ? '导入成功！正在处理...' : 'Import complete! Processing...'}
+                {isZh ? '导入成功！正在处理...' : 'Import complete! Processing...'}
               </p>
             </>
           )}
@@ -209,7 +209,7 @@ export default function UrlImportCard({
                 className="mt-1 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
                 <X className="h-3 w-3" />
-                {isFr ? '关闭' : 'Dismiss'}
+                {isZh ? '关闭' : 'Dismiss'}
               </button>
             </>
           )}

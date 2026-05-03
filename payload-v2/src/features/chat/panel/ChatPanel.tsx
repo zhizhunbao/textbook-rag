@@ -388,6 +388,7 @@ export default function ChatPanel({
                   sources: res.sources,
                   model: selectedModel || undefined,
                   timestamp: new Date().toISOString(),
+                  telemetry: res.telemetry,
                 },
               ]);
               setStreamingContent("");

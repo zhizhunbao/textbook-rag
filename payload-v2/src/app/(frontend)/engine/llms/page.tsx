@@ -135,7 +135,7 @@ export default function Page() {
 
 function LlmsPageInner() {
   const { locale } = useI18n()
-  const isFr = locale === 'fr'
+  const isZh = locale === 'zh'
 
   const {
     models,
@@ -257,13 +257,13 @@ function LlmsPageInner() {
     const items: SidebarItem[] = [
       {
         key: 'all',
-        label: isFr ? 'Tous les modèles' : 'All Models',
+        label: isZh ? 'Tous les modèles' : 'All Models',
         count: catalog.length,
         icon: <BookOpen className="h-4 w-4 shrink-0 text-purple-400" />,
       },
       {
         key: 'installed',
-        label: isFr ? 'Installés' : 'Installed',
+        label: isZh ? 'Installés' : 'Installed',
         count: installedCount,
         icon: <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />,
         highlight: installedCount > 0,
@@ -287,30 +287,30 @@ function LlmsPageInner() {
     // Benchmark tab
     items.push({
       key: 'benchmark',
-      label: isFr ? 'Test de performance' : 'Benchmark',
+      label: isZh ? 'Test de performance' : 'Benchmark',
       dividerBefore: true,
       icon: <FlaskConical className="h-4 w-4 shrink-0 text-amber-400" />,
     })
 
     return items
-  }, [catalog.length, installedCount, familyGroups, isFr])
+  }, [catalog.length, installedCount, familyGroups, isZh])
 
   // ── Subtitle ───────────────────────────────────────────────────────────────
   const subtitle = useMemo(() => {
-    if (filter === 'benchmark') return isFr ? 'Tester la performance des modèles' : 'Test model performance'
+    if (filter === 'benchmark') return isZh ? 'Tester la performance des modèles' : 'Test model performance'
     const total = displayModels.length
     const inst = displayModels.filter((m) => m.installed).length
     const parts: string[] = []
-    parts.push(isFr ? `${total} modèle(s)` : `${total} model(s)`)
-    if (inst > 0) parts.push(isFr ? `${inst} installé(s)` : `${inst} installed`)
-    if (checking) parts.push(isFr ? 'Vérification...' : 'Checking...')
+    parts.push(isZh ? `${total} modèle(s)` : `${total} model(s)`)
+    if (inst > 0) parts.push(isZh ? `${inst} installé(s)` : `${inst} installed`)
+    if (checking) parts.push(isZh ? 'Vérification...' : 'Checking...')
     return parts.join(' · ')
-  }, [filter, displayModels, checking, isFr])
+  }, [filter, displayModels, checking, isZh])
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <SidebarLayout
-      title={isFr ? 'Modèles' : 'Models'}
+      title={isZh ? 'Modèles' : 'Models'}
       icon={<Brain className="h-4 w-4 text-purple-400" />}
       sidebarItems={sidebarItems}
       activeFilter={filter}
@@ -319,13 +319,13 @@ function LlmsPageInner() {
         <div className="space-y-1">
           <div className="flex items-center gap-1.5 text-[10px]">
             <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-            <span className="text-emerald-400">{installedCount} {isFr ? 'installé(s)' : 'installed'}</span>
+            <span className="text-emerald-400">{installedCount} {isZh ? 'installé(s)' : 'installed'}</span>
             <span className="text-muted-foreground mx-1">·</span>
             <Package className="h-3 w-3 text-muted-foreground" />
-            <span className="text-muted-foreground">{catalog.length - installedCount} {isFr ? 'disponible(s)' : 'available'}</span>
+            <span className="text-muted-foreground">{catalog.length - installedCount} {isZh ? 'disponible(s)' : 'available'}</span>
           </div>
           <p className="text-[10px] text-muted-foreground">
-            {isFr ? `${models.length} enregistré(s) dans CMS` : `${models.length} registered in CMS`}
+            {isZh ? `${models.length} enregistré(s) dans CMS` : `${models.length} registered in CMS`}
           </p>
         </div>
       }
@@ -344,12 +344,12 @@ function LlmsPageInner() {
                   ? 'opacity-60 cursor-not-allowed border-border text-muted-foreground'
                   : 'border-primary/30 text-primary hover:bg-primary/10 hover:border-primary/50',
               )}
-              title={isFr ? 'Synchroniser vers Payload CMS' : 'Sync catalog to Payload CMS'}
+              title={isZh ? 'Synchroniser vers Payload CMS' : 'Sync catalog to Payload CMS'}
             >
               {syncing
                 ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 : <Package className="h-3.5 w-3.5" />}
-              {isFr ? 'Sync CMS' : 'Sync CMS'}
+              {isZh ? 'Sync CMS' : 'Sync CMS'}
             </button>
             {syncResult && (
               <div className={cn(
@@ -368,14 +368,14 @@ function LlmsPageInner() {
           <button
             onClick={() => { void reloadCatalog(); void refresh() }}
             className="p-2 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
-            title={isFr ? 'Actualiser' : 'Refresh'}
+            title={isZh ? 'Actualiser' : 'Refresh'}
           >
             <RefreshCw className={cn('h-4 w-4', (checking || catalogLoading) && 'animate-spin')} />
           </button>
         </div>
       }
       loading={(loading || catalogLoading) && catalog.length === 0}
-      loadingText={isFr ? 'Chargement du catalogue...' : 'Loading catalog...'}
+      loadingText={isZh ? 'Chargement du catalogue...' : 'Loading catalog...'}
       error={error && catalog.length === 0 ? error : null}
       onRetry={() => { void reloadCatalog(); void refresh() }}
     >
@@ -385,10 +385,10 @@ function LlmsPageInner() {
           <div className="flex items-center gap-2 mb-4">
             <FlaskConical className="h-4 w-4 text-amber-400" />
             <h2 className="text-sm font-semibold text-foreground">
-              {isFr ? 'Test de performance des modèles' : 'Model Benchmark'}
+              {isZh ? 'Test de performance des modèles' : 'Model Benchmark'}
             </h2>
           </div>
-          <BenchmarkConsole models={models} isFr={isFr} />
+          <BenchmarkConsole models={models} isZh={isZh} />
         </div>
       ) : (
         /* ── Catalog view ── */
@@ -397,7 +397,7 @@ function LlmsPageInner() {
           <div className="flex flex-col gap-3 mb-5 bg-card/30 p-3 rounded-lg border border-border/50">
             {/* Persona row */}
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[11px] font-medium text-muted-foreground w-14 shrink-0 uppercase tracking-wider">{isFr ? 'Persona' : 'Persona'}</span>
+              <span className="text-[11px] font-medium text-muted-foreground w-14 shrink-0 uppercase tracking-wider">{isZh ? 'Persona' : 'Persona'}</span>
               <div className="flex flex-wrap items-center gap-1.5">
                 {ROLE_OPTIONS.map((opt) => (
                   <button
@@ -410,7 +410,7 @@ function LlmsPageInner() {
                         : 'bg-card/50 text-muted-foreground border-border hover:border-primary/30 hover:text-foreground'
                     )}
                   >
-                    {isFr ? opt.labelFr : opt.label}
+                    {isZh ? opt.labelFr : opt.label}
                   </button>
                 ))}
               </div>
@@ -418,7 +418,7 @@ function LlmsPageInner() {
 
             {/* Source row */}
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[11px] font-medium text-muted-foreground w-14 shrink-0 uppercase tracking-wider">{isFr ? 'Source' : 'Source'}</span>
+              <span className="text-[11px] font-medium text-muted-foreground w-14 shrink-0 uppercase tracking-wider">{isZh ? 'Source' : 'Source'}</span>
               <div className="flex flex-wrap items-center gap-1.5">
                 {SOURCE_OPTIONS.map((opt) => (
                   <button
@@ -431,7 +431,7 @@ function LlmsPageInner() {
                         : 'bg-card/50 text-muted-foreground border-border hover:border-primary/30 hover:text-foreground'
                     )}
                   >
-                    {isFr ? opt.labelFr : opt.label}
+                    {isZh ? opt.labelFr : opt.label}
                   </button>
                 ))}
               </div>
@@ -439,7 +439,7 @@ function LlmsPageInner() {
 
             {/* Type row */}
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[11px] font-medium text-muted-foreground w-14 shrink-0 uppercase tracking-wider">{isFr ? 'Type' : 'Type'}</span>
+              <span className="text-[11px] font-medium text-muted-foreground w-14 shrink-0 uppercase tracking-wider">{isZh ? 'Type' : 'Type'}</span>
               <div className="flex flex-wrap items-center gap-1.5">
                 {TYPE_OPTIONS.map((opt) => (
                   <button
@@ -452,7 +452,7 @@ function LlmsPageInner() {
                         : 'bg-card/50 text-muted-foreground border-border hover:border-primary/30 hover:text-foreground'
                     )}
                   >
-                    {isFr ? opt.labelFr : opt.label}
+                    {isZh ? opt.labelFr : opt.label}
                   </button>
                 ))}
               </div>
@@ -462,7 +462,7 @@ function LlmsPageInner() {
           {catalogLoading && catalog.length > 0 && (
             <div className="flex items-center gap-2 mb-4 text-xs text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              {isFr ? 'Actualisation...' : 'Refreshing...'}
+              {isZh ? 'Actualisation...' : 'Refreshing...'}
             </div>
           )}
 
@@ -473,7 +473,7 @@ function LlmsPageInner() {
                 {FAMILY_INFO[filter].badge}
               </span>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                {isFr ? FAMILY_INFO[filter].zh : FAMILY_INFO[filter].en}
+                {isZh ? FAMILY_INFO[filter].zh : FAMILY_INFO[filter].en}
               </p>
             </div>
           )}
@@ -488,7 +488,7 @@ function LlmsPageInner() {
               await removeOllamaModel(name)
               void reloadCatalog()
             }}
-            isFr={isFr}
+            isZh={isZh}
           />
 
           {displayModels.length === 0 && !catalogLoading && (
@@ -496,8 +496,8 @@ function LlmsPageInner() {
               <Brain className="h-10 w-10 text-muted-foreground mb-3" />
               <p className="text-sm text-muted-foreground">
                 {filter === 'installed'
-                  ? (isFr ? 'Aucun modèle installé' : 'No installed models')
-                  : (isFr ? 'Aucun modèle dans cette catégorie' : 'No models in this category')}
+                  ? (isZh ? 'Aucun modèle installé' : 'No installed models')
+                  : (isZh ? 'Aucun modèle dans cette catégorie' : 'No models in this category')}
               </p>
             </div>
           )}
@@ -519,7 +519,7 @@ function CatalogTable({
   onPullAndRegister,
   onRegister,
   onRemove,
-  isFr,
+  isZh,
 }: {
   models: CatalogModel[]
   registeredNames: Set<string>
@@ -534,7 +534,7 @@ function CatalogTable({
     family?: string | null
   }) => Promise<unknown>
   onRemove: (name: string) => Promise<void>
-  isFr: boolean
+  isZh: boolean
 }) {
   const TH = 'text-left px-4 py-2.5 text-xs font-medium text-muted-foreground lowercase tracking-wider'
   return (
@@ -542,17 +542,17 @@ function CatalogTable({
       <table className="w-full text-sm">
         <thead>
           <tr className="bg-card/80 border-b border-border">
-            <th className={TH}>{isFr ? 'modèle' : 'model'}</th>
-            <th className={TH}>{isFr ? 'famille' : 'family'}</th>
-            <th className={TH}>{isFr ? 'paramètres' : 'params'}</th>
-            <th className={TH}>{isFr ? 'ram min.' : 'min ram'}</th>
-            <th className={TH}>{isFr ? 'contexte' : 'context'}</th>
-            <th className={TH}>{isFr ? 'téléchargements' : 'downloads'}</th>
-            <th className={TH}>{isFr ? 'classement' : 'ranking'}</th>
-            <th className={TH}>{isFr ? 'date' : 'date'}</th>
-            <th className={TH}>{isFr ? 'source' : 'source'}</th>
-            <th className={TH}>{isFr ? 'statut' : 'status'}</th>
-            <th className={cn(TH, 'text-right')}>{isFr ? 'actions' : 'actions'}</th>
+            <th className={TH}>{isZh ? 'modèle' : 'model'}</th>
+            <th className={TH}>{isZh ? 'famille' : 'family'}</th>
+            <th className={TH}>{isZh ? 'paramètres' : 'params'}</th>
+            <th className={TH}>{isZh ? 'ram min.' : 'min ram'}</th>
+            <th className={TH}>{isZh ? 'contexte' : 'context'}</th>
+            <th className={TH}>{isZh ? 'téléchargements' : 'downloads'}</th>
+            <th className={TH}>{isZh ? 'classement' : 'ranking'}</th>
+            <th className={TH}>{isZh ? 'date' : 'date'}</th>
+            <th className={TH}>{isZh ? 'source' : 'source'}</th>
+            <th className={TH}>{isZh ? 'statut' : 'status'}</th>
+            <th className={cn(TH, 'text-right')}>{isZh ? 'actions' : 'actions'}</th>
           </tr>
         </thead>
         <tbody>
@@ -565,7 +565,7 @@ function CatalogTable({
               onPullAndRegister={onPullAndRegister}
               onRegister={onRegister}
               onRemove={onRemove}
-              isFr={isFr}
+              isZh={isZh}
             />
           ))}
         </tbody>
@@ -620,7 +620,7 @@ function CatalogTableRow({
   onPullAndRegister,
   onRegister,
   onRemove,
-  isFr,
+  isZh,
 }: {
   model: CatalogModel
   isRegistered: boolean
@@ -635,7 +635,7 @@ function CatalogTableRow({
     family?: string | null
   }) => Promise<unknown>
   onRemove: (name: string) => Promise<void>
-  isFr: boolean
+  isZh: boolean
 }) {
   const [pulling, setPulling] = useState(false)
   const [removing, setRemoving] = useState(false)
@@ -778,7 +778,7 @@ function CatalogTableRow({
       <td className="px-4 py-3">
         <span className={cn('inline-flex items-center gap-1 text-xs', statusCfg.color)}>
           <StatusIcon className={cn('h-3 w-3', state === 'pulling' && 'animate-spin')} />
-          {isFr ? statusCfg.labelFr : statusCfg.label}
+          {isZh ? statusCfg.labelFr : statusCfg.label}
         </span>
       </td>
       {/* Actions — always visible */}

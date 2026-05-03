@@ -164,3 +164,74 @@ def dual_collection_query(
     )
     return sources, response
 
+
+# ============================================================
+# Multi-collection retrieval (G7-10)
+# ============================================================
+
+
+def _merge_n_with_rrf(
+    ranked_lists: list[list[NodeWithScore]],
+    top_k: int,
+) -> list[NodeWithScore]:
+    """Merge N ranked node lists using Reciprocal Rank Fusion."""
+    scored: dict[str, tuple[float, NodeWithScore]] = {}
+
+    for nodes in ranked_lists:
+        for rank, nws in enumerate(nodes, start=1):
+            node_id = nws.node.id_
+            rrf_score = 1.0 / (RRF_K + rank)
+            if node_id in scored:
+                existing_score, existing_node = scored[node_id]
+                scored[node_id] = (existing_score + rrf_score, existing_node)
+            else:
+                scored[node_id] = (rrf_score, nws)
+
+    merged = sorted(scored.values(), key=lambda item: item[0], reverse=True)[:top_k]
+    result: list[NodeWithScore] = []
+    for rrf_score, nws in merged:
+        nws.score = rrf_score
+        result.append(nws)
+    return result
+
+
+def multi_collection_retrieve(
+    question: str,
+    collection_names: list[str],
+    top_k: int = TOP_K,
+) -> list[NodeWithScore]:
+    """Retrieve from multiple ChromaDB collections in parallel, merge via RRF.
+
+    Each collection is tagged with its name as retrieval_origin so sources
+    can be traced back to the originating knowledge base.
+
+    Args:
+        question: User query string.
+        collection_names: List of ChromaDB collection names to search.
+        top_k: Number of merged results to return.
+
+    Returns:
+        Merged and ranked list of NodeWithScore.
+    """
+    with ThreadPoolExecutor(max_workers=len(collection_names)) as executor:
+        futures = [
+            executor.submit(
+                _retrieve_from_collection,
+                question,
+                coll_name,
+                coll_name,  # use collection name as origin tag
+                top_k,
+            )
+            for coll_name in collection_names
+        ]
+        ranked_lists = [f.result() for f in futures]
+
+    merged = _merge_n_with_rrf(ranked_lists, top_k)
+    counts = {name: len(nodes) for name, nodes in zip(collection_names, ranked_lists)}
+    logger.info(
+        "Multi-collection RRF: {} → {} merged",
+        counts, len(merged),
+    )
+    return merged
+
+
