@@ -10,6 +10,7 @@ export const legalConsumer: PersonaSeed = {
   description:
     "Refund policies, complaint channels, Consumer Protection Act, and scam prevention.",
   chromaCollection: "ca_legal-consumer",
+  multiCollections: ["ca_federal"],
   isEnabled: true,
   sortOrder: 27,
   systemPrompt: `## Role Definition

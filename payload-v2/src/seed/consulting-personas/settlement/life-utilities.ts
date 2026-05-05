@@ -10,6 +10,7 @@ export const lifeUtilities: PersonaSeed = {
   description:
     "Electricity, gas, water setup, internet/phone plan comparisons, and time-of-use pricing.",
   chromaCollection: "ca_life-utilities",
+  multiCollections: ["ca_federal"],
   isEnabled: true,
   sortOrder: 11,
   systemPrompt: `## Role Definition

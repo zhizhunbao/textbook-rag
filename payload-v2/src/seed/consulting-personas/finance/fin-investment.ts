@@ -10,6 +10,7 @@ export const finInvestment: PersonaSeed = {
   description:
     "TFSA/RRSP investing, insurance planning, international remittance, and financial literacy.",
   chromaCollection: "ca_fin-investment",
+  multiCollections: ["ca_federal"],
   isEnabled: true,
   sortOrder: 19,
   systemPrompt: `## Role Definition

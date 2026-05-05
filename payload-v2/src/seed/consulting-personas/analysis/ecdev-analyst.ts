@@ -9,6 +9,7 @@ export const ecdevAnalyst: PersonaSeed = {
   description:
     "Ottawa economic development data analysis — labour market, housing, CPI, commercial vacancy, and construction permits.",
   chromaCollection: "ca_ecdev-analyst",
+  multiCollections: ["ca_ecdev", "ca_real_estate"],
   isEnabled: true,
   sortOrder: 0,
   systemPrompt: `## Role Definition

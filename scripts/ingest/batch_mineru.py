@@ -15,7 +15,9 @@ Usage:
     python scripts/batch_mineru.py --force           # Reprocess all (ignore cache)
     python scripts/batch_mineru.py --book bishop --force  # Reprocess one book
 """
+import hashlib
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -34,15 +36,26 @@ LOCK_SUFFIX = ".processing"
 # Categories to scan: category_name -> source directory
 CRAWLED_WEB_DIR = PROJECT_ROOT / "data" / "crawled_web"
 SOURCE_DIRS: dict[str, Path] = {
-    "textbook":    RAW_PDFS_DIR / "textbooks",
+    # "textbooks":   RAW_PDFS_DIR / "textbooks",  # disabled — skip textbooks
     "ecdev":       RAW_PDFS_DIR / "ecdev",
     "real_estate": RAW_PDFS_DIR / "real_estate",
-    # ── Crawled web persona PDFs ──
-    "imm-pathways": CRAWLED_WEB_DIR / "imm-pathways",
+    # ── Source-based: federal + provincial ──
+    "federal-ircc":       CRAWLED_WEB_DIR / "federal-ircc",
+    "prov-ontario":       CRAWLED_WEB_DIR / "prov-ontario",
+    "prov-bc":            CRAWLED_WEB_DIR / "prov-bc",
+    "prov-alberta":       CRAWLED_WEB_DIR / "prov-alberta",
+    "prov-manitoba":      CRAWLED_WEB_DIR / "prov-manitoba",
+    "prov-saskatchewan":  CRAWLED_WEB_DIR / "prov-saskatchewan",
+    "prov-nova-scotia":   CRAWLED_WEB_DIR / "prov-nova-scotia",
+    "prov-new-brunswick": CRAWLED_WEB_DIR / "prov-new-brunswick",
+    "prov-nwt":           CRAWLED_WEB_DIR / "prov-nwt",
+    "prov-quebec":        CRAWLED_WEB_DIR / "prov-quebec",
+    # ── Education: Algonquin College ──
+    "algonquin-programs": CRAWLED_WEB_DIR / "algonquin-programs",
 }
 
 # Minimum output size thresholds for completeness validation
-MIN_MD_SIZE_BYTES = 256         # Markdown must be > 256 bytes (lowered for web PDFs)
+MIN_MD_SIZE_BYTES = 50          # Markdown must be > 50 bytes (lowered: small pages are still valid)
 MIN_JSON_ENTRIES = 1            # content_list.json must have >= 1 entry
 
 # Books to process: populated by discover_books()
@@ -50,7 +63,41 @@ MIN_JSON_ENTRIES = 1            # content_list.json must have >= 1 entry
 BOOKS: list[tuple[Path, str, str]] = []
 
 
+# ── Windows long-path helper ──
+
+def _long_path(p: Path) -> Path:
+    """Return a Windows extended-length path (\\?\\) to bypass MAX_PATH=260."""
+    s = str(p.resolve())
+    if os.name == "nt" and not s.startswith("\\\\?\\"):
+        s = "\\\\?\\" + s
+    return Path(s)
+
+
+def _safe_stat(p: Path):
+    """stat() that works with long Windows paths."""
+    return _long_path(p).stat()
+
+
 # ── Discovery ──
+
+def _unique_short_name(pdf: Path, source_dir: Path) -> str:
+    """Generate a unique short name for a PDF.
+
+    For web-crawled PDFs, the stem alone may collide (e.g. multiple 'overview.pdf'
+    in different subdirs). We append a 6-char hash of the relative path.
+    For textbooks/raw PDFs the stem is already unique enough.
+    """
+    rel = pdf.relative_to(source_dir)
+    parts_str = str(rel).replace("\\", "/")
+    # If the PDF is directly in the source dir (no subdirs), stem is fine
+    if "/" not in parts_str:
+        return pdf.stem
+    # Otherwise, append hash to avoid collisions
+    h = hashlib.md5(parts_str.encode()).hexdigest()[:6]
+    # Truncate stem to avoid overly long output dir names (max 80 chars)
+    stem = pdf.stem[:80]
+    return f"{stem}_{h}"
+
 
 def discover_books():
     """Find all PDFs in all category source directories.
@@ -68,7 +115,7 @@ def discover_books():
             parts = str(rel).replace("\\", "/")
 
             # Textbook-only exclusion filters
-            if category == "textbook":
+            if category == "textbooks":
                 if "david_silver" in parts:
                     continue
                 if "nlpwdl2025" in parts:
@@ -83,7 +130,7 @@ def discover_books():
                     continue
                 if "jurafsky_slp3_jan2026" in parts:
                     continue
-                if pdf.stat().st_size < 50_000:
+                if _safe_stat(pdf).st_size < 50_000:
                     continue
                 if rel.stem[0:2].isdigit() and "-" in rel.stem:
                     continue
@@ -95,7 +142,7 @@ def discover_books():
                 ):
                     continue
 
-            short_name = pdf.stem
+            short_name = _unique_short_name(pdf, source_dir)
             BOOKS.append((pdf, short_name, category))
 
 
@@ -236,7 +283,7 @@ def process_book(pdf_path: Path, short_name: str, category: str = "textbook", ba
     """Process a single PDF with MinerU, with lock file protection."""
     out_dir = OUTPUT_DIR / category / short_name
 
-    size_mb = pdf_path.stat().st_size / (1024 * 1024)
+    size_mb = _safe_stat(pdf_path).st_size / (1024 * 1024)
     print(f"\n{'='*60}")
     print(f"Processing: {short_name} [{category}] ({size_mb:.1f} MB)")
     print(f"  Input:  {pdf_path}")
@@ -342,7 +389,7 @@ def main():
     skip_count = 0
     todo = []
     for pdf_path, short_name, category in books:
-        size_mb = pdf_path.stat().st_size / (1024 * 1024)
+        size_mb = _safe_stat(pdf_path).st_size / (1024 * 1024)
         done, reason = is_processed(short_name, force=force, category=category)
         if done:
             print(f"  [SKIP] {short_name} [{category}] ({size_mb:.1f} MB) — {reason}")

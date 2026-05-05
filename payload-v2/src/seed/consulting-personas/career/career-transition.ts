@@ -9,6 +9,7 @@ export const careerTransition: PersonaSeed = {
   description:
     "Skills assessment, bridge programs, industry analysis, and career change planning.",
   chromaCollection: "ca_career-transition",
+  multiCollections: ["ca_federal", "ca_edu_algonquin"],
   isEnabled: true,
   sortOrder: 23,
   systemPrompt: `## Role Definition

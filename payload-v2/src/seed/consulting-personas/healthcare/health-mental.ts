@@ -10,6 +10,7 @@ export const healthMental: PersonaSeed = {
   description:
     "Mental health resources, EAP programs, crisis hotlines, and community support services.",
   chromaCollection: "ca_health-mental",
+  multiCollections: ["ca_federal"],
   isEnabled: true,
   sortOrder: 15,
   systemPrompt: `## Role Definition

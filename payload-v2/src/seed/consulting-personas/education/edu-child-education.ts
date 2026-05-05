@@ -10,6 +10,7 @@ export const eduChildEducation: PersonaSeed = {
   description:
     "K-12 school selection, ESL programs, extracurricular activities, and school registration processes.",
   chromaCollection: "ca_edu-child-education",
+  multiCollections: ["ca_federal"],
   isEnabled: true,
   sortOrder: 5,
   systemPrompt: `## Role Definition

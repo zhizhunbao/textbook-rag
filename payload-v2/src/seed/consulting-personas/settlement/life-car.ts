@@ -10,6 +10,7 @@ export const lifeCar: PersonaSeed = {
   description:
     "Car buying process, auto insurance comparison, maintenance tips, and selling procedures.",
   chromaCollection: "ca_life-car",
+  multiCollections: ["ca_federal"],
   isEnabled: false,
   sortOrder: 13,
   systemPrompt: `## Role Definition

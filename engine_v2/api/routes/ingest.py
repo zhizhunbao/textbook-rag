@@ -46,6 +46,7 @@ class IngestRequest(BaseModel):
     task_id: int | None = None
     title: str | None = None
     force_parse: bool = False  # Delete existing MinerU output and re-parse
+    collection_name: str | None = None  # Override target collection (e.g., for consulting personas)
 
 
 def _derive_book_dir_name(req: IngestRequest) -> str:
@@ -373,6 +374,7 @@ def _ingest_pipeline(req: IngestRequest) -> None:
             book_dir_name=book_dir_name,
             category=req.category,
             task_id=req.task_id,
+            collection_name=req.collection_name,
         )
 
     except CancelledError:

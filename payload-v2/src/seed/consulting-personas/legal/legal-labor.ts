@@ -10,6 +10,18 @@ export const legalLabor: PersonaSeed = {
   description:
     "Employment Standards Act, minimum wage, overtime pay, termination rules, and WSIB claims.",
   chromaCollection: "ca_legal-labor",
+  multiCollections: [
+    "ca_federal",
+    "ca_prov_ontario",
+    "ca_prov_bc",
+    "ca_prov_alberta",
+    "ca_prov_manitoba",
+    "ca_prov_saskatchewan",
+    "ca_prov_nova_scotia",
+    "ca_prov_new_brunswick",
+    "ca_prov_nwt",
+    "ca_prov_quebec",
+  ],
   isEnabled: true,
   sortOrder: 25,
   systemPrompt: `## Role Definition

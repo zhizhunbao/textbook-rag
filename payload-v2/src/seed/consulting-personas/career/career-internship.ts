@@ -9,6 +9,7 @@ export const careerInternship: PersonaSeed = {
   description:
     "Co-op programs, part-time job channels, work permit restrictions, and internship applications.",
   chromaCollection: "ca_career-internship",
+  multiCollections: ["ca_federal", "ca_edu_algonquin"],
   isEnabled: true,
   sortOrder: 22,
   systemPrompt: `## Role Definition

@@ -10,6 +10,18 @@ export const legalBasics: PersonaSeed = {
   description:
     "Canadian legal system overview, legal aid resources, common legal terminology, and rights awareness.",
   chromaCollection: "ca_legal-basics",
+  multiCollections: [
+    "ca_federal",
+    "ca_prov_ontario",
+    "ca_prov_bc",
+    "ca_prov_alberta",
+    "ca_prov_manitoba",
+    "ca_prov_saskatchewan",
+    "ca_prov_nova_scotia",
+    "ca_prov_new_brunswick",
+    "ca_prov_nwt",
+    "ca_prov_quebec",
+  ],
   isEnabled: true,
   sortOrder: 28,
   systemPrompt: `## Role Definition

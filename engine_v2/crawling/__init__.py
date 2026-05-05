@@ -7,7 +7,8 @@ Two-phase pipeline:
 Downstream: MinerU processes PDFs → LlamaIndex Documents → ChromaDB.
 """
 
-from engine_v2.crawling.web_crawler import (
+# v2: profile-driven engine (site-specific logic in sites/*.py)
+from engine_v2.crawling.web_crawler_v2 import (
     discover_urls,
     save_pdfs_from_manifest,
     crawl_and_save_pdfs,

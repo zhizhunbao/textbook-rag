@@ -10,6 +10,7 @@ export const finBanking: PersonaSeed = {
   description:
     "Bank account opening, credit card selection, credit score building, and newcomer banking offers.",
   chromaCollection: "ca_fin-banking",
+  multiCollections: ["ca_federal"],
   isEnabled: true,
   sortOrder: 17,
   systemPrompt: `## Role Definition

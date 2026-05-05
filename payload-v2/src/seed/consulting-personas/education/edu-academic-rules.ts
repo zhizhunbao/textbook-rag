@@ -10,6 +10,7 @@ export const eduAcademicRules: PersonaSeed = {
   description:
     "Course planning, GPA requirements, graduation rules, and academic integrity policies.",
   chromaCollection: "ca_edu-academic-rules",
+  multiCollections: ["ca_edu_algonquin"],
   isEnabled: true,
   sortOrder: 3,
   systemPrompt: `## Role Definition

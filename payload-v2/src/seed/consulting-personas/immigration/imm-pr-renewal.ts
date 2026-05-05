@@ -10,6 +10,7 @@ export const immPrRenewal: PersonaSeed = {
   description:
     "PR card renewal, citizenship test preparation, residency obligations, and status maintenance.",
   chromaCollection: "ca_imm-pr-renewal",
+  multiCollections: ["ca_federal"],
   isEnabled: true,
   sortOrder: 7,
   systemPrompt: `## Role Definition

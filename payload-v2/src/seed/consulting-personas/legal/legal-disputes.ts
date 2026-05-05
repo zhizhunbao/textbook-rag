@@ -10,6 +10,7 @@ export const legalDisputes: PersonaSeed = {
   description:
     "LTB complaints, labor arbitration, small claims court, and dispute resolution procedures.",
   chromaCollection: "ca_legal-disputes",
+  multiCollections: ["ca_federal"],
   isEnabled: true,
   sortOrder: 26,
   systemPrompt: `## Role Definition

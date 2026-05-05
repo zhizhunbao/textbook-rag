@@ -10,6 +10,7 @@ export const eduVisaCompliance: PersonaSeed = {
   description:
     "Study permit applications, renewals, visa compliance, and common refusal reasons for international students.",
   chromaCollection: "ca_edu-visa-compliance",
+  multiCollections: ["ca_federal"],
   isEnabled: true,
   sortOrder: 2,
   systemPrompt: `## Role Definition

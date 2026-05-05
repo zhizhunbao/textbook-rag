@@ -10,6 +10,7 @@ export const finTax: PersonaSeed = {
   description:
     "T4/T1 tax filing, GST/HST rebates, OSAP, and government benefit applications.",
   chromaCollection: "ca_fin-tax",
+  multiCollections: ["ca_federal"],
   isEnabled: true,
   sortOrder: 18,
   systemPrompt: `## Role Definition

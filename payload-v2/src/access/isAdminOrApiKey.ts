@@ -27,6 +27,7 @@ export const isAdminOrApiKey: Access = ({ req }) => {
       ?? (req.headers as any)?.authorization
       ?? ''
     if (authHeader === `Bearer ${ENGINE_API_KEY}`) return true
+    if (authHeader === `users API-Key ${ENGINE_API_KEY}`) return true
   }
 
   return false

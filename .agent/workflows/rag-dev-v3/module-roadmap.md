@@ -21,6 +21,7 @@
 | **G6** | [35-sprint-g6-auth-permissions.md](./roadmap/35-sprint-g6-auth-permissions.md) | 认证权限 — 会话超时 · 角色分离 · Engine Cookie 鉴权 | TBD | ❌ |
 | **G7** | [36-sprint-g7-wechat-live-qa.md](./roadmap/36-sprint-g7-wechat-live-qa.md) | 微信直播 Q&A — 程序员聊留学移民 · LiveQA 全屏演示 · Streaming 调优 | 10 | ❌ |
 | **G8** | [37-sprint-g8-unified-query.md](./roadmap/37-sprint-g8-unified-query.md) | 统一查询模式 — 砍掉 RAG 分支，Consulting-only 流程 | 7 | ❌ |
+| **G9** | [38-sprint-g9-rag-infrastructure.md](./roadmap/38-sprint-g9-rag-infrastructure.md) | RAG 基础设施升级 — Qdrant + PostgreSQL + LlamaIndex + bge-small-en-v1.5 | 6 | ❌ |
 
 ---
 
@@ -45,9 +46,9 @@
 
 | Sprint | 内容 | 状态 |
 |--------|------|------|
-| G9 | 加拿大 P1 角色上线 (10 个) | ⏸️ |
-| G10 | 真人顾问对接基础功能 | ⏸️ |
-| G11 | 匿名咨询模式 (无需注册) | ⏸️ |
+| G10 | 加拿大 P1 角色上线 (10 个) | ⏸️ |
+| G11 | 真人顾问对接基础功能 | ⏸️ |
+| G12 | 匿名咨询模式 (无需注册) | ⏸️ |
 
 ### 阶段三：全球复制期
 

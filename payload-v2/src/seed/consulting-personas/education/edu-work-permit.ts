@@ -10,6 +10,7 @@ export const eduWorkPermit: PersonaSeed = {
   description:
     "PGWP applications, on/off-campus work rules, and Co-op work permit regulations.",
   chromaCollection: "ca_edu-work-permit",
+  multiCollections: ["ca_federal"],
   isEnabled: true,
   sortOrder: 4,
   systemPrompt: `## Role Definition

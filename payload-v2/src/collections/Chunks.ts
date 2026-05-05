@@ -10,7 +10,7 @@ export const Chunks: CollectionConfig = {
     group: 'Content',
   },
   access: {
-    read: isAdmin,  // GO-MU-08: was () => true
+    read: isAdminOrApiKey,  // GO-MU-08: was () => true
     create: isAdminOrApiKey,
     update: isAdminOrApiKey,
     delete: isAdminOrApiKey,

@@ -10,6 +10,7 @@ export const careerVolunteer: PersonaSeed = {
   description:
     "Volunteer opportunities, reference letters, community involvement, and Canadian experience building.",
   chromaCollection: "ca_career-volunteer",
+  multiCollections: ["ca_federal"],
   isEnabled: true,
   sortOrder: 24,
   systemPrompt: `## Role Definition

@@ -10,6 +10,7 @@ export const lifeRental: PersonaSeed = {
   description:
     "Residential Tenancies Act, standard lease terms, rent increase limits, and LTB dispute processes.",
   chromaCollection: "ca_life-rental",
+  multiCollections: ["ca_federal", "ca_real_estate"],
   isEnabled: true,
   sortOrder: 9,
   systemPrompt: `## Role Definition

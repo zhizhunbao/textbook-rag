@@ -10,6 +10,7 @@ export const finCostSaving: PersonaSeed = {
   description:
     "Grocery store comparisons, credit card cashback, loyalty programs, and budget-friendly living tips.",
   chromaCollection: "ca_fin-cost-saving",
+  multiCollections: ["ca_federal", "ca_edu_algonquin"],
   isEnabled: true,
   sortOrder: 20,
   systemPrompt: `## Role Definition

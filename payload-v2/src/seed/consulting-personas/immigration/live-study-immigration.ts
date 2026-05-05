@@ -10,8 +10,14 @@ export const liveStudyImmigration: PersonaSeed = {
   description:
     "微信直播专用混合角色 — 同时精通加拿大移民路径和留学规划，" +
     "覆盖 EE/PNP/工签/学签/学校选择等领域。",
-  chromaCollection: "ca_imm-pathways",
-  multiCollections: ["ca_imm-pathways", "ca_edu-school-planning"],
+  chromaCollection: "ca_federal",
+  multiCollections: [
+    "ca_federal", "ca_edu_algonquin",
+    "ca_prov_ontario", "ca_prov_bc", "ca_prov_alberta",
+    "ca_prov_manitoba", "ca_prov_saskatchewan",
+    "ca_prov_nova_scotia", "ca_prov_new_brunswick",
+    "ca_prov_nwt", "ca_prov_quebec",
+  ],
   isEnabled: true,
   sortOrder: 100,
   systemPrompt: `## 角色定义

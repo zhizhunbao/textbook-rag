@@ -94,7 +94,7 @@ export const ConsultingPersonas: CollectionConfig = {
       type: 'text',
       required: true,
       admin: {
-        description: 'ChromaDB collection name (e.g. "ca_edu-school-planning")',
+        description: 'ChromaDB collection name (e.g. "ca_federal", "ca_prov_ontario")',
       },
     },
     {
@@ -153,7 +153,7 @@ export const ConsultingPersonas: CollectionConfig = {
       name: 'multiCollections',
       type: 'json',
       admin: {
-        description: 'JSON array of extra ChromaDB collection names for cross-collection retrieval (e.g. ["ca_imm-pathways", "ca_edu-school-planning"])',
+        description: 'JSON array of extra ChromaDB collection names for cross-collection retrieval (e.g. ["ca_federal", "ca_federal"])',
       },
     },
     {

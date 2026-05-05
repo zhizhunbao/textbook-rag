@@ -9,7 +9,14 @@ export const immPathways: PersonaSeed = {
   avatar: "/avatars/immigration.png",
   description:
     "Express Entry, PNP, LMIA, CRS scoring, and immigration pathway comparisons.",
-  chromaCollection: "ca_imm-pathways",
+  chromaCollection: "ca_federal",
+  multiCollections: [
+    "ca_federal",
+    "ca_prov_ontario", "ca_prov_bc", "ca_prov_alberta",
+    "ca_prov_manitoba", "ca_prov_saskatchewan",
+    "ca_prov_nova_scotia", "ca_prov_new_brunswick",
+    "ca_prov_nwt", "ca_prov_quebec",
+  ],
   isEnabled: true,
   sortOrder: 6,
   systemPrompt: `## Role Definition

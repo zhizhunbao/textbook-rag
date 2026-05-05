@@ -10,6 +10,7 @@ export const healthChildcare: PersonaSeed = {
   description:
     "Prenatal care, child vaccinations, daycare subsidies, and pediatric health services.",
   chromaCollection: "ca_health-childcare",
+  multiCollections: ["ca_federal"],
   isEnabled: true,
   sortOrder: 16,
   systemPrompt: `## Role Definition

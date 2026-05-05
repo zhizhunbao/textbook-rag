@@ -9,7 +9,8 @@ export const eduSchoolPlanning: PersonaSeed = {
   avatar: "/avatars/education.png",
   description:
     "DLI school comparison, program selection, tuition analysis, and career prospects for international students.",
-  chromaCollection: "ca_edu-school-planning",
+  chromaCollection: "ca_federal",
+  multiCollections: ["ca_federal", "ca_edu_algonquin"],
   isEnabled: true,
   sortOrder: 1,
   systemPrompt: `## Role Definition

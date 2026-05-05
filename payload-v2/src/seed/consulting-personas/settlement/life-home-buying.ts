@@ -10,6 +10,7 @@ export const lifeHomeBuying: PersonaSeed = {
   description:
     "First-time home buying process, inspections, mortgages, and real estate lawyers.",
   chromaCollection: "ca_life-home-buying",
+  multiCollections: ["ca_federal", "ca_real_estate"],
   isEnabled: false,
   sortOrder: 12,
   systemPrompt: `## Role Definition

@@ -9,6 +9,7 @@ export const careerResume: PersonaSeed = {
   description:
     "Canadian resume format, ATS optimization, LinkedIn SEO, cover letter writing, and job search strategies.",
   chromaCollection: "ca_career-resume",
+  multiCollections: ["ca_federal"],
   isEnabled: true,
   sortOrder: 21,
   systemPrompt: `## Role Definition

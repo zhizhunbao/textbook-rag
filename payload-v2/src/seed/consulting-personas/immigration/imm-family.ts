@@ -10,6 +10,7 @@ export const immFamily: PersonaSeed = {
   description:
     "Spousal sponsorship, parent reunification, Super Visa, and family class immigration.",
   chromaCollection: "ca_imm-family",
+  multiCollections: ["ca_federal"],
   isEnabled: false,
   sortOrder: 8,
   systemPrompt: `## Role Definition

@@ -30,6 +30,46 @@ class MinerUReader(BaseReader):
     def __init__(self, mineru_dir: Path | str) -> None:
         self._mineru_dir = Path(mineru_dir)
 
+    # ------------------------------------------------------------------
+    # Auto-dir resolution: supports both flattened and legacy layouts
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _resolve_auto_dir(
+        book_root: Path, book_dir_name: str,
+    ) -> tuple[Path | None, str | None]:
+        """Find the auto/ directory and file stem under a book's output dir.
+
+        Supports two layouts:
+          - Flattened (post flatten_mineru.py):
+              <book_root>/auto/<book_dir_name>_content_list.json
+          - Legacy nested (raw MinerU output):
+              <book_root>/<pdf_stem>/auto/<pdf_stem>_content_list.json
+
+        Returns:
+            (auto_dir, file_stem) or (None, None) if not found.
+        """
+        # Try flattened layout first
+        flat_auto = book_root / "auto"
+        if flat_auto.is_dir():
+            # Verify it has content_list.json (not just an empty dir)
+            cl = list(flat_auto.glob("*_content_list.json"))
+            if cl:
+                file_stem = cl[0].stem.replace("_content_list", "")
+                return flat_auto, file_stem
+
+        # Try legacy nested layout: <book_root>/<inner_dir>/auto/
+        for inner in book_root.iterdir():
+            if inner.is_dir() and inner.name != "auto":
+                nested_auto = inner / "auto"
+                if nested_auto.is_dir():
+                    cl = list(nested_auto.glob("*_content_list.json"))
+                    if cl:
+                        file_stem = cl[0].stem.replace("_content_list", "")
+                        return nested_auto, file_stem
+
+        return None, None
+
     def lazy_load_data(  # type: ignore[override]
         self,
         book_dir_name: str,
@@ -40,13 +80,16 @@ class MinerUReader(BaseReader):
 
         Args:
             book_dir_name: Directory name of the book under mineru_dir/category/
-            category: textbook | ecdev | real_estate
+            category: textbook | ecdev | real_estate | federal-ircc | prov-* | algonquin-*
         """
-        auto_dir = (
-            self._mineru_dir / category / book_dir_name / book_dir_name / "auto"
-        )
-        content_list_path = auto_dir / f"{book_dir_name}_content_list.json"
-        middle_json_path = auto_dir / f"{book_dir_name}_middle.json"
+        book_root = self._mineru_dir / category / book_dir_name
+        auto_dir, file_stem = self._resolve_auto_dir(book_root, book_dir_name)
+        if auto_dir is None:
+            logger.warning("auto/ dir not found under: {}", book_root)
+            return
+
+        content_list_path = auto_dir / f"{file_stem}_content_list.json"
+        middle_json_path = auto_dir / f"{file_stem}_middle.json"
 
         if not content_list_path.exists():
             logger.warning("content_list.json not found: {}", content_list_path)
@@ -254,4 +297,3 @@ class MinerUReader(BaseReader):
     ) -> str | None:
         """Assign chapter key to page (delegates to chunking.assign_chapter)."""
         return assign_chapter(page_idx, ranges)
-
