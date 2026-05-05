@@ -16,7 +16,6 @@ from dataclasses import dataclass
 
 from loguru import logger
 
-from engine_v2.settings import OLLAMA_BASE_URL
 
 
 # ============================================================

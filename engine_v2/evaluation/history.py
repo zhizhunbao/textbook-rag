@@ -834,7 +834,6 @@ def _assess_routing_correctness(
 
     rag = result.rag_score
     answer = result.answer_score
-    faith = result.faithfulness
 
     # Cannot assess without scores
     if rag is None and answer is None:

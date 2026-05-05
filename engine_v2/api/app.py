@@ -17,8 +17,8 @@ from engine_v2.logging_config import configure_logging
 
 configure_logging()
 
-from engine_v2.settings import CORS_ORIGINS, init_settings
-from engine_v2.api.routes import (
+from engine_v2.settings import CORS_ORIGINS, init_settings  # noqa: E402 — must run after configure_logging()
+from engine_v2.api.routes import (  # noqa: E402
     billing, books, classify, consulting, crawl, delete, embeddings, evaluation,
     health, ingest, llms, query, questions, report, retrievers, sources, suggest,
     vectors,

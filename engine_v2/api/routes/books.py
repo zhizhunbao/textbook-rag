@@ -14,7 +14,6 @@ import json
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import FileResponse
 from loguru import logger
 
 from engine_v2.settings import DATA_DIR, MINERU_OUTPUT_DIR

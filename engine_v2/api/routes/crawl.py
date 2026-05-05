@@ -114,7 +114,7 @@ async def crawl_preview(req: CrawlPreviewRequest) -> CrawlPreviewResponse:
 
     Useful for testing crawl quality before committing to ingest.
     """
-    from engine_v2.crawling.web_crawler import crawl_url
+    from engine_v2.crawling._web_crawler_v1_deprecated import crawl_url  # deprecated
 
     result = await crawl_url(req.url)
 
@@ -134,7 +134,7 @@ async def ingest_web(req: IngestWebRequest) -> IngestWebResponse:
 
     Full pipeline: URL → Crawl4AI → Markdown → Embed → ChromaDB.
     """
-    from engine_v2.crawling.ingest_web import ingest_web_source
+    from engine_v2.crawling._ingest_web_deprecated import ingest_web_source  # deprecated
 
     result = await ingest_web_source(
         url=req.url,
@@ -169,7 +169,7 @@ async def sync_persona(req: SyncPersonaRequest) -> SyncPersonaResponse:
     import httpx
     from engine_v2.ingestion.pipeline import _payload_headers
     from engine_v2.settings import PAYLOAD_URL
-    from engine_v2.crawling.ingest_web import ingest_web_source
+    from engine_v2.crawling._ingest_web_deprecated import ingest_web_source  # deprecated
 
     try:
         # Fetch data sources for this persona from Payload CMS
@@ -292,7 +292,7 @@ async def sync_all(
 
         # Run sync in background
         async def _run_sync():
-            from engine_v2.crawling.ingest_web import ingest_web_source
+            from engine_v2.crawling._ingest_web_deprecated import ingest_web_source  # deprecated
 
             for src in sources:
                 url = src.get("discoveryUrl", "")

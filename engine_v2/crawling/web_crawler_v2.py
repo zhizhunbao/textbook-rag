@@ -23,7 +23,7 @@ from urllib.parse import urlparse
 from loguru import logger
 
 from engine_v2.crawling import js_snippets as JS
-from engine_v2.crawling.site_profile import SiteProfile, get_profile, compute_scope_prefix
+from engine_v2.crawling.site_profile import get_profile, compute_scope_prefix
 
 # Ensure site profiles are registered
 import engine_v2.crawling.sites  # noqa: F401
@@ -138,8 +138,11 @@ async def _discover_urls_impl(
     bfs_filters = []
     if url_filter:
         class _PathScopeFilter(URLFilter):
-            def __init__(self, fn): super().__init__(name="PathScope"); self._fn = fn
-            def apply(self, url: str) -> bool: return self._fn(url)
+            def __init__(self, fn):
+                super().__init__(name="PathScope")
+                self._fn = fn
+            def apply(self, url: str) -> bool:
+                return self._fn(url)
         bfs_filters.append(_PathScopeFilter(url_filter))
 
     deep_strategy = BFSDeepCrawlStrategy(
@@ -174,7 +177,6 @@ async def _discover_urls_impl(
         discovered = [seed_url]
 
     # ── Filter & deduplicate (profile-driven) ────────────────────────────
-    seed_parsed = urlparse(seed_url)
     scope_prefix = compute_scope_prefix(seed_url, profile)
 
     seen: set[str] = set()
@@ -268,7 +270,8 @@ def _write_manifest(entries, persona_slug, seed_url, output_dir):
         if fname in used_names:
             base, counter = fname, 2
             while fname in used_names:
-                fname = f"{base}-{counter}"; counter += 1
+                fname = f"{base}-{counter}"
+                counter += 1
             page["filename"] = fname
         used_names.add(fname)
 
@@ -393,9 +396,12 @@ async def save_pdfs_from_manifest(
         if _is_error:
             logger.warning("    Error page detected (title=%s) — backing off %.0fs...",
                           result.title[:40] if result.title else 'N/A', profile.retry_backoff_sec)
-            try: out_file.unlink(missing_ok=True)
-            except Exception: pass
-            import time; time.sleep(profile.retry_backoff_sec)
+            try:
+                out_file.unlink(missing_ok=True)
+            except Exception:
+                pass
+            import time
+            time.sleep(profile.retry_backoff_sec)
             result = await _save_single_pdf(url, out_file, headless=headless, timeout=timeout)
             result.filename = filename
             _still_error = False
@@ -408,8 +414,10 @@ async def save_pdfs_from_manifest(
                 logger.error("    Still error after retry — skipping")
                 result.success = False
                 result.error = "error_page_after_retry"
-                try: out_file.unlink(missing_ok=True)
-                except Exception: pass
+                try:
+                    out_file.unlink(missing_ok=True)
+                except Exception:
+                    pass
             results[-1] = result
 
         if result.success:

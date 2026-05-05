@@ -9,7 +9,6 @@ capability that MinerU doesn't provide.
 
 from __future__ import annotations
 
-from io import BytesIO
 from pathlib import Path
 
 from loguru import logger

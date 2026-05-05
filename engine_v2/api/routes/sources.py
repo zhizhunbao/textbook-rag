@@ -11,6 +11,7 @@ Supports two discovery strategies:
 
 from __future__ import annotations
 
+import asyncio
 import re
 from typing import Optional
 from urllib.parse import urljoin, urlparse
@@ -218,7 +219,6 @@ def _generate_oreb_urls() -> dict[str, list[str]]:
 
 # ── Playwright-based deep crawl ─────────────────────────────────────────────
 
-import asyncio
 
 _PDF_EXTRACT_JS = """() => {
     const links = new Set();

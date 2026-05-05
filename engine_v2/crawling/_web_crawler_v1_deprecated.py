@@ -21,7 +21,7 @@ import json
 import re
 import sys
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -596,7 +596,8 @@ async def save_pdfs_from_manifest(
                 out_file.unlink(missing_ok=True)
             except Exception:
                 pass
-            import time; time.sleep(15)
+            import time
+            time.sleep(15)
             result = await _save_single_pdf(url, out_file, headless=headless, timeout=timeout, pre_pdf_js=pre_pdf_js)
             result.filename = filename
             # Check again
@@ -611,8 +612,10 @@ async def save_pdfs_from_manifest(
                 logger.error("    Still error after retry — skipping")
                 result.success = False
                 result.error = "error_page_after_retry"
-                try: out_file.unlink(missing_ok=True)
-                except Exception: pass
+                try:
+                    out_file.unlink(missing_ok=True)
+                except Exception:
+                    pass
             results[-1] = result
 
         # Update manifest with title

@@ -16,10 +16,6 @@ from dataclasses import dataclass, field
 import httpx
 from loguru import logger
 
-from engine_v2.evaluation.retrieval_metrics import (
-    RetrievalMetrics,
-    compute_retrieval_metrics,
-)
 from engine_v2.settings import PAYLOAD_URL
 
 

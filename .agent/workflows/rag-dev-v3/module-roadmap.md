@@ -16,12 +16,12 @@
 | **G1** | [30-sprint-g1-global-template.md](./roadmap/30-sprint-g1-global-template.md) | 全球架构改造 — 多国家通用架构 | 7 | ✅ |
 | **G2** | [31-sprint-g2-canada-p0.md](./roadmap/31-sprint-g2-canada-p0.md) | 加拿大 P0 角色上线 — 29 角色 Seed + Prompt + DataSource 关联 | 6 | ✅ |
 | **G3** | [32-sprint-g3-landing-rebuild.md](./roadmap/32-sprint-g3-landing-rebuild.md) | Landing 页重构 — 7 类目卡片 + 国家选择 | 5 | ✅ |
-| **G4** | [33-sprint-g4-qa-deploy.md](./roadmap/33-sprint-g4-qa-deploy.md) | 质量验收 + 部署 | TBD | ❌ |
 | **G5** | [34-sprint-g5-user-library.md](./roadmap/34-sprint-g5-user-library.md) | 用户 Library + 侧边栏整理 + 知识库数据源改造 | 10 | ❌ |
 | **G6** | [35-sprint-g6-auth-permissions.md](./roadmap/35-sprint-g6-auth-permissions.md) | 认证权限 — 会话超时 · 角色分离 · Engine Cookie 鉴权 | TBD | ❌ |
 | **G7** | [36-sprint-g7-wechat-live-qa.md](./roadmap/36-sprint-g7-wechat-live-qa.md) | 微信直播 Q&A — 程序员聊留学移民 · LiveQA 全屏演示 · Streaming 调优 | 10 | ❌ |
 | **G8** | [37-sprint-g8-unified-query.md](./roadmap/37-sprint-g8-unified-query.md) | 统一查询模式 — 砍掉 RAG 分支，Consulting-only 流程 | 7 | ❌ |
 | **G9** | [38-sprint-g9-rag-infrastructure.md](./roadmap/38-sprint-g9-rag-infrastructure.md) | RAG 基础设施升级 — Qdrant + PostgreSQL + LlamaIndex + bge-small-en-v1.5 | 6 | ❌ |
+| **G4** | [33-sprint-g4-qa-deploy.md](./roadmap/33-sprint-g4-qa-deploy.md) | 质量验收 + 部署 | 5 | ✅ (G4-04 部署待验收) |
 
 ---
 

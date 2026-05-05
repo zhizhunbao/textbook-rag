@@ -246,26 +246,6 @@ npx tsc --noEmit   # cwd: payload-v2
 
 ---
 
-## 🌐 部署 (Go-Live)
-
-| 环境 | 配置 | 说明 |
-|------|------|------|
-| **开发** | `.env` + `npm run dev` + `uvicorn --reload` | 本地热部署 |
-| **ngrok 试运行** | `.env` + `.env.ngrok` + `ngrok http 3001` | 本地服务通过 ngrok HTTPS 对外演示/试收费 |
-
-**ngrok 试运行必须项**:
-- `PAYLOAD_SECRET`: 独立密钥 (用于 JWT 签发和验证)
-- `DATABASE_URL` / `DATABASE_URI`: 本地持久化数据库连接串
-- `PAYLOAD_PUBLIC_SERVER_URL`: 当前 ngrok HTTPS URL
-- `CORS_ORIGINS`: `http://localhost:3001,https://<ngrok-domain>` (不允许 `*`)
-- `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET`: Stripe 支付密钥
-- Stripe webhook endpoint: `https://<ngrok-domain>/api/stripe/webhooks`
-- 本机保持开机，PostgreSQL / ChromaDB / user uploads 使用本地持久化路径
-
-> 部署 Sprint 详见 `roadmap/28-sprint-go-deployment.md`，操作手册见 `docs/deployment/ngrok-local.md`
-
----
-
 ## ⚡ 已知坑
 
 | 坑                                | 解决                                               |
@@ -288,6 +268,26 @@ docs: update module-roadmap status for readers
 ```
 
 提交前: `npx tsc --noEmit` + `uv run ruff check engine_v2/` + roadmap 状态已更新。
+
+---
+
+## 🌐 部署 (Go-Live)
+
+| 环境 | 配置 | 说明 |
+|------|------|------|
+| **开发** | `.env` + `npm run dev` + `uvicorn --reload` | 本地热部署 |
+| **ngrok 试运行** | `.env` + `.env.ngrok` + `ngrok http 3001` | 本地服务通过 ngrok HTTPS 对外演示/试收费 |
+
+**ngrok 试运行必须项**:
+- `PAYLOAD_SECRET`: 独立密钥 (用于 JWT 签发和验证)
+- `DATABASE_URL` / `DATABASE_URI`: 本地持久化数据库连接串
+- `PAYLOAD_PUBLIC_SERVER_URL`: 当前 ngrok HTTPS URL
+- `CORS_ORIGINS`: `http://localhost:3001,https://<ngrok-domain>` (不允许 `*`)
+- `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET`: Stripe 支付密钥
+- Stripe webhook endpoint: `https://<ngrok-domain>/api/stripe/webhooks`
+- 本机保持开机，PostgreSQL / ChromaDB / user uploads 使用本地持久化路径
+
+> 部署 Sprint 详见 `roadmap/28-sprint-go-deployment.md`，操作手册见 `docs/deployment/ngrok-local.md`
 
 ---
 

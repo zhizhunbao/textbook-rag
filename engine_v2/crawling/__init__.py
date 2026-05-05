@@ -14,12 +14,13 @@ from engine_v2.crawling.web_crawler_v2 import (
     crawl_and_save_pdfs,
     CrawlResult,
 )
-from engine_v2.crawling.ingest_web import ingest_web_source
+
+# NOTE: ingest_web (Crawl4AI → ChromaDB) is deprecated.
+# Active pipeline: MinerU → PDF → LlamaIndex → ChromaDB.
 
 __all__ = [
     "discover_urls",
     "save_pdfs_from_manifest",
     "crawl_and_save_pdfs",
     "CrawlResult",
-    "ingest_web_source",
 ]

@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import re
 
-from loguru import logger
 
 MAX_CHAPTERS_PER_BOOK = 80
 

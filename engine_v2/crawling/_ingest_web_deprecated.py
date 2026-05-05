@@ -26,7 +26,11 @@ from llama_index.core.schema import Document
 from llama_index.core.settings import Settings
 from loguru import logger
 
-from engine_v2.crawling.web_crawler import CrawlResult, crawl_and_save_pdfs
+from engine_v2.crawling._web_crawler_v1_deprecated import (  # noqa: N812 — deprecated module
+    CrawlResult,
+    crawl_url,
+    deep_crawl_url,
+)
 from engine_v2.ingestion.pipeline import get_vector_store, _payload_headers
 from engine_v2.settings import PAYLOAD_URL
 

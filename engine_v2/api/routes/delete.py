@@ -11,10 +11,9 @@ Ref: AQ-06 — Book delete with engine cleanup
 from __future__ import annotations
 
 import shutil
-from pathlib import Path
 
 import chromadb
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from loguru import logger
 
 from engine_v2.settings import (
