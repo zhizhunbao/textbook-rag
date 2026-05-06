@@ -55,8 +55,7 @@ const MAX_SESSIONS = 50;
 /* ── Helpers ── */
 
 function makeTitle(firstMessage: string): string {
-  const trimmed = firstMessage.trim().replace(/\s+/g, " ");
-  return trimmed.length > 60 ? trimmed.slice(0, 57) + "…" : trimmed;
+  return firstMessage.trim().replace(/\s+/g, " ");
 }
 
 /** Convert a Payload session doc to a local ChatSession shape. */
@@ -73,7 +72,7 @@ function serverToLocal(
     mode: doc.mode ?? "rag",
     personaId: typeof doc.persona === "number" ? doc.persona : doc.persona?.id ?? null,
     personaSlug: doc.personaSlug ?? (typeof doc.persona === "object" ? doc.persona?.slug ?? null : null),
-    personaName: typeof doc.persona === "object" ? doc.persona?.name ?? null : null,
+    personaName: doc.personaName ?? (typeof doc.persona === "object" ? doc.persona?.name ?? null : null),
     messages,
     createdAt: new Date(doc.createdAt).getTime(),
     updatedAt: new Date(doc.updatedAt).getTime(),
@@ -132,6 +131,7 @@ export function useChatHistory(userId?: number | null) {
         mode: opts.mode ?? "rag",
         personaId: opts.personaId ?? null,
         personaSlug: opts.personaSlug ?? null,
+        personaName: opts.personaName ?? null,
         bookIds: opts.sessionBookIds,
         bookTitles: opts.bookTitles,
       });

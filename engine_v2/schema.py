@@ -96,6 +96,10 @@ def build_source(node_with_score: Any, index: int) -> dict[str, Any]:
     # Strip "Source N:\n" prefix added by CitationLabelPostprocessor
     content = re.sub(r"^Source \d+:\n", "", content)
 
+    # Clean LaTeX artifacts from MinerU-extracted text (runtime fix for existing data)
+    from engine_v2.readers.mineru_reader import MinerUReader
+    content = MinerUReader._clean_latex_artifacts(content)
+
     # ── Bounding box resolution ──────────────────────────────
     x0 = float(meta.get("bbox_x0", 0))
     y0 = float(meta.get("bbox_y0", 0))

@@ -187,9 +187,9 @@ async def _fetch_dataset_questions(
     limit: int = 500,
 ) -> list[dict]:
     """Fetch questions belonging to a dataset from Payload CMS."""
-    from engine_v2.evaluation.history import _get_payload_token
+    from engine_v2.evaluation.persistence.auth import get_payload_token
 
-    token = await _get_payload_token()
+    token = await get_payload_token()
     url = (
         f"{PAYLOAD_URL}/api/questions"
         f"?where[datasetId][equals]={dataset_id}"

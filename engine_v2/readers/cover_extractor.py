@@ -69,39 +69,45 @@ def extract_cover(pdf_path: Path, width: int = DEFAULT_WIDTH) -> bytes | None:
 def extract_cover_for_book(
     book_id: str,
     mineru_dir: Path,
-    categories: list[str] | None = None,
 ) -> bytes | None:
-    """Extract cover for a book by scanning known PDF locations.
+    """Extract cover for a book by scanning all category directories.
 
     Search order:
-        1. MinerU auto/{book_id}_origin.pdf
-        2. raw_pdfs/{category}/{book_id}.pdf
+        1. MinerU auto/{book_id}_origin.pdf  (all categories, dynamic scan)
+        2. raw_pdfs/{category}/{book_id}.pdf  (all categories, dynamic scan)
 
     Args:
         book_id: Book identifier (directory name).
         mineru_dir: Base MinerU output directory.
-        categories: Category directories to scan (default: textbooks/ecdev/real_estate).
 
     Returns:
         PNG image bytes, or None if no PDF found.
     """
-    if categories is None:
-        categories = ["textbooks", "ecdev", "real_estate"]
-
     data_dir = mineru_dir.parent  # mineru_output is under data/
 
-    # Priority 1: MinerU auto/ origin PDF
-    for cat in categories:
-        auto_dir = mineru_dir / cat / book_id / book_id / "auto"
-        origin_pdf = auto_dir / f"{book_id}_origin.pdf"
-        if origin_pdf.exists():
-            return extract_cover(origin_pdf)
+    # Priority 1: MinerU auto/ origin PDF (scan all category dirs dynamically)
+    if mineru_dir.is_dir():
+        for cat_dir in sorted(mineru_dir.iterdir()):
+            if not cat_dir.is_dir():
+                continue
+            # New flat layout: {cat}/{book_id}/auto/
+            origin_pdf = cat_dir / book_id / "auto" / f"{book_id}_origin.pdf"
+            if origin_pdf.exists():
+                return extract_cover(origin_pdf)
+            # Legacy nested layout: {cat}/{book_id}/{book_id}/auto/
+            origin_pdf = cat_dir / book_id / book_id / "auto" / f"{book_id}_origin.pdf"
+            if origin_pdf.exists():
+                return extract_cover(origin_pdf)
 
-    # Priority 2: raw_pdfs/
-    for cat in categories:
-        raw_pdf = data_dir / "raw_pdfs" / cat / f"{book_id}.pdf"
-        if raw_pdf.exists():
-            return extract_cover(raw_pdf)
+    # Priority 2: raw_pdfs/ (scan all subdirectories dynamically)
+    raw_pdf_root = data_dir / "raw_pdfs"
+    if raw_pdf_root.is_dir():
+        for raw_dir in sorted(raw_pdf_root.iterdir()):
+            if not raw_dir.is_dir():
+                continue
+            raw_pdf = raw_dir / f"{book_id}.pdf"
+            if raw_pdf.exists():
+                return extract_cover(raw_pdf)
 
     logger.debug("No PDF found for cover extraction: {}", book_id)
     return None

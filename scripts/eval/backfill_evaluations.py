@@ -133,7 +133,7 @@ async def run_backfill(dry_run: bool = False, limit: int | None = None) -> None:
         return
 
     # Import full_evaluate after init_settings
-    from engine_v2.evaluation.history import full_evaluate
+    from engine_v2.evaluation.runners.full import full_evaluate
 
     success = 0
     failed = 0

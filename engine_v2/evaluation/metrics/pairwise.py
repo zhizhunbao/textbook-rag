@@ -1,43 +1,23 @@
-"""pairwise — A/B comparison of two RAG pipeline answers.
+"""pairwise — A/B 对比评估。
 
-Responsibilities:
-    - Compare two answers to the same question using PairwiseComparisonEvaluator
-    - Enforce consensus by flipping answer order (eliminate position bias)
-    - Return winner ("A" / "B" / "tie") with reasoning
-    - Support optional ground-truth reference from Golden Dataset
+Compares two RAG pipeline answers to the same question using
+PairwiseComparisonEvaluator with consensus enforcement.
 
 Ref: llama_index.core.evaluation.pairwise — PairwiseComparisonEvaluator
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 from loguru import logger
 
 from llama_index.core.evaluation import PairwiseComparisonEvaluator
 
-
-# ============================================================
-# Data classes
-# ============================================================
-@dataclass
-class PairwiseResult:
-    """Result of an A/B pairwise comparison.
-
-    Attributes:
-        question: The query both answers respond to.
-        winner: "A", "B", or "tie".
-        score: 1.0 = A wins, 0.0 = B wins, 0.5 = tie.
-        reasoning: LLM judge's explanation.
-        invalid: True if the judge output could not be parsed.
-    """
-
-    question: str
-    winner: str  # "A" | "B" | "tie"
-    score: float  # 1.0=A, 0.0=B, 0.5=tie
-    reasoning: str
-    invalid: bool = False
+from engine_v2.evaluation.models import (
+    BatchCompareResult,
+    CompareItem,
+    MetricResult,
+    PairwiseResult,
+)
 
 
 def _score_to_winner(score: float | None) -> str:
@@ -51,9 +31,15 @@ def _score_to_winner(score: float | None) -> str:
     return "tie"
 
 
-# ============================================================
-# Core comparison function
-# ============================================================
+def _build_eval_kwargs(judge_model: str | None) -> dict:
+    """Build kwargs for the evaluator, optionally resolving a judge LLM."""
+    if not judge_model:
+        return {}
+    from engine_v2.llms.resolver import resolve_llm
+
+    return {"llm": resolve_llm(model=judge_model)}
+
+
 async def compare_answers(
     question: str,
     answer_a: str,
@@ -122,40 +108,6 @@ async def compare_answers(
     )
 
 
-# ============================================================
-# Batch comparison (EI-T4-02)
-# ============================================================
-@dataclass
-class BatchCompareResult:
-    """Summary of batch pairwise comparisons.
-
-    Attributes:
-        results: Individual PairwiseResult per question.
-        a_wins: Number of questions where A won.
-        b_wins: Number of questions where B won.
-        ties: Number of ties.
-        total: Total comparisons run.
-        invalid_count: Number of unparseable judge outputs.
-    """
-
-    results: list[PairwiseResult]
-    a_wins: int = 0
-    b_wins: int = 0
-    ties: int = 0
-    total: int = 0
-    invalid_count: int = 0
-
-
-@dataclass
-class CompareItem:
-    """A single question + two answers for batch comparison."""
-
-    question: str
-    answer_a: str
-    answer_b: str
-    reference: str | None = None
-
-
 async def compare_batch(
     items: list[CompareItem],
     judge_model: str | None = None,
@@ -212,11 +164,22 @@ async def compare_batch(
     )
 
 
-def _build_eval_kwargs(judge_model: str | None) -> dict:
-    """Build kwargs for the evaluator, optionally resolving a judge LLM."""
-    if not judge_model:
-        return {}
-    from engine_v2.llms.resolver import resolve_llm
+async def evaluate_pairwise(
+    question: str,
+    answer_a: str,
+    answer_b: str,
+    reference: str | None = None,
+    judge_model: str | None = None,
+) -> MetricResult:
+    """Evaluate pairwise comparison returning a MetricResult (unified interface).
 
-    return {"llm": resolve_llm(model=judge_model)}
-
+    Returns:
+        MetricResult with name="pairwise", score (1.0=A, 0.0=B, 0.5=tie), label=winner.
+    """
+    result = await compare_answers(question, answer_a, answer_b, reference, judge_model)
+    return MetricResult(
+        name="pairwise",
+        score=result.score,
+        feedback=result.reasoning,
+        label=result.winner,
+    )

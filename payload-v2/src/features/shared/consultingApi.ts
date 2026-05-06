@@ -31,6 +31,8 @@ export interface ConsultingQueryRequest {
   provider?: string | null
   country?: string         // G1-05: ISO 3166-1 alpha-2
   response_language?: string | null  // G1-07: language override
+  // G8-02: Support textbook persona book_id filtering
+  book_id_strings?: string[]
   // GO-MU-06: user_id removed — now extracted from JWT auth server-side
 }
 
@@ -63,18 +65,39 @@ export interface PersonaStatus {
 }
 
 function normaliseSource(s: any): SourceInfo {
+  // Map MinerU bboxes from backend (same logic as query_engine/api.ts)
+  const bboxes: Array<{ x0: number; y0: number; x1: number; y1: number; page_width: number; page_height: number; page_number: number }> = (s.bboxes ?? [])
+    .filter((b: any) => b.x0 != null && b.y0 != null && b.x1 != null && b.y1 != null)
+    .map((b: any) => ({
+      x0: b.x0,
+      y0: b.y0,
+      x1: b.x1,
+      y1: b.y1,
+      page_width: b.page_width ?? 0,
+      page_height: b.page_height ?? 0,
+      page_number: b.page_number ?? 1,
+    }))
+
+  // Backend sends book_id as a string directory name; use as book_id_string fallback
+  const bookIdStr = s.book_id_string ?? (typeof s.book_id === 'string' ? s.book_id : '')
+
   return {
     source_id: s.chunk_id ?? String(s.page_number ?? ''),
     book_id: s.book_id ?? 0,
-    book_id_string: s.book_id_string ?? '',
+    book_id_string: bookIdStr,
     citation_index: s.citation_index ?? undefined,
     book_title: s.book_title ?? '',
     chapter_title: s.chapter_title ?? null,
     page_number: s.page_number ?? 1,
     full_content: s.full_content ?? undefined,
     snippet: s.text ?? s.snippet ?? '',
-    bbox: null,
-    page_dim: null,
+    bbox: s.bbox
+      ? { x0: s.bbox.x0, y0: s.bbox.y0, x1: s.bbox.x1, y1: s.bbox.y1 }
+      : null,
+    bboxes: bboxes.length > 0 ? bboxes : undefined,
+    page_dim: s.bbox?.page_width && s.bbox?.page_height
+      ? { width: s.bbox.page_width, height: s.bbox.page_height }
+      : null,
     confidence: s.score ?? 1,
     score: s.score ?? undefined,
     retrieval_source: s.retrieval_source ?? s.retrieval_origin ?? undefined,
@@ -135,6 +158,7 @@ export async function queryConsultingStream(
         provider: req.provider ?? null,
         country: req.country ?? 'ca',
         response_language: req.response_language ?? null,
+        ...(req.book_id_strings?.length ? { book_id_strings: req.book_id_strings } : {}),
       }),
       signal: callbacks.signal,
     })

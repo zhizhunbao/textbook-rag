@@ -165,6 +165,8 @@ class MinerUReader(BaseReader):
             $2 , 851$     →  2,851
 
         Also fixes:
+            \\mathsf{up}:  \\mathsf { u p }  →  up
+            spaced digits:    5 6.1  →  56.1
             spaced decimals:  1 . 5  →  1.5
             spaced commas:    709 , 002  →  709,002
             dangling $:       leftover dollar signs from math mode
@@ -172,8 +174,16 @@ class MinerUReader(BaseReader):
         """
         import re
 
-        if "$" not in text and "\\%" not in text:
+        if "$" not in text and "\\" not in text:
             return text  # fast path: nothing to clean
+
+        # Step 0: Strip LaTeX font commands: \mathsf{up}, \mathrm{GDP}, \textbf{...}
+        # e.g. \mathsf { u p }  →  up  (also collapse inner spaces for single-char tokens)
+        text = re.sub(
+            r'\\(?:math(?:sf|rm|bf|it|bb|cal)|text(?:bf|it|rm|sf))\s*\{([^}]*)\}',
+            lambda m: m.group(1).replace(" ", ""),
+            text,
+        )
 
         # Step 1: Handle $\$ NNN$ pattern (currency)  →  $NNN
         # e.g. $\$ 709,002$  →  $709,002
@@ -199,21 +209,25 @@ class MinerUReader(BaseReader):
             text,
         )
 
-        # Step 4: Fix spaced decimals outside math mode: 1 . 5 → 1.5
+        # Step 4: Merge spaced digits before decimals: 5 6.1 → 56.1
+        # Handles MinerU splitting numbers across PDF character positions
+        text = re.sub(r'(\d)\s+(\d+\.\d+)', r'\1\2', text)
+
+        # Step 5: Fix spaced decimals outside math mode: 1 . 5 → 1.5
         text = re.sub(r'(\d)\s+\.\s+(\d)', r'\1.\2', text)
 
-        # Step 5: Fix spaced commas in numbers: 709 , 002 → 709,002
+        # Step 6: Fix spaced commas in numbers: 709 , 002 → 709,002
         text = re.sub(r'(\d)\s+,\s+(\d)', r'\1,\2', text)
 
-        # Step 6: Fix standalone \% → %
+        # Step 7: Fix standalone \% → %
         text = text.replace("\\%", "%")
 
-        # Step 7: Clean up any remaining single $ that aren't currency
+        # Step 8: Clean up any remaining single $ that aren't currency
         # (don't remove $ followed by a digit — that's likely currency like $633,000)
         # Remove isolated $ not adjacent to digits
         text = re.sub(r'\$(?!\d)', '', text)
 
-        # Step 8: Fix smart quote / encoding artifacts
+        # Step 9: Fix smart quote / encoding artifacts
         text = text.replace("\u0092", "'").replace("\u0093", "\u201c").replace("\u0094", "\u201d")
 
         return text

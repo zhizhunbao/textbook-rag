@@ -286,14 +286,8 @@ export default function AppSidebar() {
                                 : 'text-sidebar-foreground hover:bg-sidebar-accent/60',
                             )}
                           >
-                            <p className="truncate leading-snug pr-5">{session.title}</p>
-                            {session.bookTitles.length > 0 && (
-                              <p className="truncate text-[10px] text-muted-foreground mt-0.5 pr-5">
-                                {session.bookTitles.slice(0, 2).join(', ')}
-                                {session.bookTitles.length > 2 && ` +${session.bookTitles.length - 2}`}
-                              </p>
-                            )}
-                            {session.mode === 'consulting' && session.personaName && (
+                            <p className="leading-snug pr-5">{session.title}</p>
+                            {session.personaName && (
                               <p className="flex items-center gap-1 text-[10px] text-blue-400 mt-0.5 pr-5">
                                 <Briefcase size={10} className="shrink-0" />
                                 <span className="truncate">{session.personaName}</span>

@@ -111,6 +111,7 @@ export const ConsultingPersonas: CollectionConfig = {
       required: true,
       defaultValue: 'ca',
       options: [
+        { label: '🌐 Global', value: 'global' },
         { label: 'Canada', value: 'ca' },
         { label: 'USA', value: 'us' },
         { label: 'UK', value: 'uk' },

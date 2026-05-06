@@ -29,19 +29,14 @@ from fastapi import APIRouter
 from loguru import logger
 from pydantic import BaseModel
 
-from engine_v2.evaluation.evaluator import (
-    assess_question_depth,
-    evaluate_dataset,
-    evaluate_response,
-    question_dedup,
-)
-from engine_v2.evaluation.history import (
-    evaluate_batch_from_queries,
-    evaluate_single_from_query,
-    full_evaluate,
-    auto_evaluate_query,
-    _fetch_recent_queries,
-)
+from engine_v2.evaluation.metrics.question_depth import assess_question_depth
+from engine_v2.evaluation.metrics.dedup import question_dedup
+from engine_v2.evaluation.runners.response import evaluate_response, evaluate_dataset
+from engine_v2.evaluation.runners.single import evaluate_single_from_query
+from engine_v2.evaluation.runners.batch import evaluate_batch_from_queries
+from engine_v2.evaluation.runners.full import full_evaluate
+from engine_v2.evaluation.runners.auto import auto_evaluate_query
+from engine_v2.evaluation.persistence.queries import fetch_recent_queries
 
 # ============================================================
 # Router
@@ -400,7 +395,7 @@ async def eval_auto(req: AutoEvalRequest):
 async def list_queries(limit: int = 50):
     """List recent Queries for the evaluation page."""
     logger.info("Listing recent {} queries for evaluation", limit)
-    records = await _fetch_recent_queries(limit=limit)
+    records = await fetch_recent_queries(limit=limit)
     return {
         "queries": [
             {
@@ -448,11 +443,11 @@ async def generate_golden_dataset_endpoint(
 
     Ref: EI-T1-03 — Golden Dataset 生成 API
     """
-    from engine_v2.evaluation.golden_dataset import (
+    from engine_v2.evaluation.persistence.golden import (
         generate_golden_dataset,
         persist_golden_records,
     )
-    from engine_v2.evaluation.history import _get_payload_token
+    from engine_v2.evaluation.persistence.auth import get_payload_token
 
     logger.info(
         "generate-golden-dataset — book_id={}, n_questions={}, per_chunk={}",
@@ -473,7 +468,7 @@ async def generate_golden_dataset_endpoint(
         )
 
     # Persist to Payload
-    token = await _get_payload_token()
+    token = await get_payload_token()
     created_ids = await persist_golden_records(result.records, token=token)
 
     return {
@@ -497,7 +492,7 @@ async def compare_pipelines(req: PairwiseRequest):
 
     Returns winner ("A" / "B" / "tie") + reasoning.
     """
-    from engine_v2.evaluation.pairwise import compare_answers
+    from engine_v2.evaluation.metrics.pairwise import compare_answers
 
     logger.info(
         "Pairwise compare — question={}, judge={}",
@@ -531,7 +526,8 @@ async def compare_batch_endpoint(req: BatchPairwiseRequest):
     Runs PairwiseComparisonEvaluator on each item sequentially.
     Returns per-item results + summary (A wins / B wins / ties).
     """
-    from engine_v2.evaluation.pairwise import CompareItem, compare_batch
+    from engine_v2.evaluation.metrics.pairwise import compare_batch
+    from engine_v2.evaluation.models import CompareItem
 
     logger.info(
         "Batch compare — {} items, judge={}",

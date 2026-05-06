@@ -1,78 +1,94 @@
 """evaluation — Unified RAG quality evaluation hub.
 
-Public API:
-    evaluate_response              — 5-dimensional single-query evaluation
-    evaluate_dataset               — batch evaluation via BatchEvalRunner
-    assess_question_depth          — question cognitive depth (surface/understanding/synthesis)
-    question_dedup                 — semantic similarity deduplication
-    build_evaluators               — factory: build evaluator dicts by mode
-    QuestionDepthEvaluator         — CorrectnessEvaluator subclass for depth scoring
-    evaluate_single_from_query     — evaluate a single existing Queries record
-    evaluate_batch_from_queries    — batch-evaluate recent Queries records
-    full_evaluate                  — four-category evaluation (RAG/LLM/Answer/Question) — EV2-T2
-    EvalResult                     — 5-dimensional evaluation result dataclass
-    FullEvalResult                 — four-category evaluation result dataclass — EV2-T2
-    DepthResult                    — depth assessment result dataclass
-    DedupResult                    — deduplication result dataclass
-    QueryRecord                    — fetched Queries record dataclass
-    HistoryEvalResult              — history evaluation result dataclass
-    CompletenessEvaluator          — answer completeness evaluator — EV2-T2
-    ClarityEvaluator               — answer clarity evaluator — EV2-T2
-    compute_aggregate_scores       — compute rag/llm/answer/overall aggregates — EV2-T2
-    generate_suggestions           — rule-based improvement suggestions — EUX-T3
-    Suggestion                     — improvement suggestion dataclass — EUX-T3
+Public API — all imports from this package should come through here.
+Internal subpackages: metrics/, metrics/ir/, runners/, persistence/
 """
 
-from engine_v2.evaluation.answer_evaluators import (
-    ClarityEvaluator,
-    CompletenessEvaluator,
-)
-from engine_v2.evaluation.evaluator import (
+# ── Models (dataclasses) ──
+from engine_v2.evaluation.models import (
+    BatchCompareResult,
+    CompareItem,
     DedupResult,
     DepthResult,
     EvalResult,
     FullEvalResult,
-    QuestionDepthEvaluator,
-    assess_question_depth,
-    build_evaluators,
-    compute_aggregate_scores,
-    evaluate_dataset,
-    evaluate_response,
-    question_dedup,
-)
-from engine_v2.evaluation.history import (
+    GoldenRecord,
+    GoldenDatasetResult,
     HistoryEvalResult,
+    MetricResult,
+    PairwiseResult,
     QueryRecord,
-    auto_evaluate_query,
-    evaluate_batch_from_queries,
-    evaluate_single_from_query,
-    full_evaluate,
-)
-from engine_v2.evaluation.suggestions import (
+    RetrievalMetrics,
     Suggestion,
-    generate_suggestions,
 )
 
+# ── Metrics (one file per metric) ──
+from engine_v2.evaluation.metrics.question_depth import (
+    QuestionDepthEvaluator,
+    assess_question_depth,
+)
+from engine_v2.evaluation.metrics.dedup import question_dedup
+from engine_v2.evaluation.metrics.completeness import CompletenessEvaluator
+from engine_v2.evaluation.metrics.clarity import ClarityEvaluator
+from engine_v2.evaluation.metrics.pairwise import compare_answers, compare_batch
+
+# ── IR Metrics ──
+from engine_v2.evaluation.metrics.ir.aggregate import compute_all_ir_metrics
+
+# ── Aggregation ──
+from engine_v2.evaluation.aggregation import compute_aggregate_scores
+
+# ── Runners ──
+from engine_v2.evaluation.runners.response import evaluate_response, evaluate_dataset
+from engine_v2.evaluation.runners.single import evaluate_single_from_query
+from engine_v2.evaluation.runners.batch import evaluate_batch_from_queries
+from engine_v2.evaluation.runners.full import full_evaluate
+from engine_v2.evaluation.runners.auto import auto_evaluate_query
+
+# ── Suggestions ──
+from engine_v2.evaluation.suggestions import generate_suggestions
+
+# ── Persistence (public helpers) ──
+from engine_v2.evaluation.persistence.auth import get_payload_token
+from engine_v2.evaluation.persistence.queries import fetch_recent_queries
+
+
 __all__ = [
+    # Models
+    "BatchCompareResult",
     "ClarityEvaluator",
+    "CompareItem",
     "CompletenessEvaluator",
     "DedupResult",
     "DepthResult",
     "EvalResult",
     "FullEvalResult",
+    "GoldenRecord",
+    "GoldenDatasetResult",
     "HistoryEvalResult",
+    "MetricResult",
+    "PairwiseResult",
     "QueryRecord",
     "QuestionDepthEvaluator",
+    "RetrievalMetrics",
+    "Suggestion",
+    # Metrics
     "assess_question_depth",
-    "auto_evaluate_query",
-    "build_evaluators",
+    "compare_answers",
+    "compare_batch",
     "compute_aggregate_scores",
+    "compute_all_ir_metrics",
+    "question_dedup",
+    # Runners
+    "auto_evaluate_query",
     "evaluate_batch_from_queries",
     "evaluate_dataset",
     "evaluate_response",
     "evaluate_single_from_query",
     "full_evaluate",
+    # Suggestions
     "generate_suggestions",
-    "question_dedup",
-    "Suggestion",
+    # Persistence
+    "get_payload_token",
+    "fetch_recent_queries",
 ]

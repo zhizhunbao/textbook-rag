@@ -5,6 +5,11 @@ Initialises LlamaIndex Settings on startup via lifespan.
 
 from __future__ import annotations
 
+# ── Suppress harmless third-party warnings on startup ──
+import warnings
+warnings.filterwarnings("ignore", message="urllib3.*doesn't match a supported version")
+warnings.filterwarnings("ignore", message="resource module not available")
+
 import traceback
 from contextlib import asynccontextmanager
 
@@ -20,7 +25,7 @@ configure_logging()
 from engine_v2.settings import CORS_ORIGINS, init_settings  # noqa: E402 — must run after configure_logging()
 from engine_v2.api.routes import (  # noqa: E402
     billing, books, classify, consulting, crawl, delete, embeddings, evaluation,
-    health, ingest, llms, query, questions, report, retrievers, sources, suggest,
+    health, ingest, llms, questions, report, retrievers, sources, suggest,
     vectors,
 )
 
@@ -80,7 +85,7 @@ def create_app() -> FastAPI:
     app.include_router(classify.router, prefix="/engine")
     app.include_router(delete.router, prefix="/engine")
     app.include_router(embeddings.router, prefix="/engine")
-    app.include_router(query.router, prefix="/engine")
+    # G8-06: query.router removed — legacy /engine/query endpoints deprecated
     app.include_router(ingest.router, prefix="/engine")
     app.include_router(questions.router, prefix="/engine")
     app.include_router(llms.router, prefix="/engine")

@@ -18,7 +18,7 @@ export const Evaluations: CollectionConfig = {
     group: 'Analytics',
   },
   access: {
-    read: isAdmin,
+    read: () => true,     // Chat UI reads eval results inline (not sensitive)
     create: () => true,   // Engine writes eval results
     update: isAdmin,
     delete: ({ req: { user } }) => !!user, // Allow cascade delete from chat history

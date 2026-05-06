@@ -6,34 +6,12 @@ Pure rules — no LLM calls. Templates centralised in prompts registry.
 Ref: Sprint EUX-T3-01 — Rule engine for low-score feedback.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from typing import Any
 
 from loguru import logger
 
-
-# ============================================================
-# Data types
-# ============================================================
-@dataclass
-class Suggestion:
-    """A single improvement suggestion."""
-
-    dimension: str
-    severity: str  # 'high' | 'medium' | 'low' | 'info'
-    message_en: str
-    message_zh: str
-
-    def to_dict(self) -> dict[str, str]:
-        """Serialise for JSON persistence."""
-        return {
-            "dimension": self.dimension,
-            "severity": self.severity,
-            "message_en": self.message_en,
-            "message_zh": self.message_zh,
-        }
+from engine_v2.evaluation.models import Suggestion
 
 
 # ============================================================

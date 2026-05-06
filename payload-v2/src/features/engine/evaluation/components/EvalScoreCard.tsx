@@ -1,12 +1,13 @@
 /**
- * EvalScoreCard — Table-based evaluation score card.
+ * EvalScoreCard — Compact 2-table evaluation score card.
  *
- * Each section is a compact table with columns:
- *   Metric | Score (5-pt) | Description | Judge Model
+ * Table 1: Retrieval  — IR metrics (hit_rate, mrr, …). Default open.
+ * Table 2: Quality    — All LLM-judged scores combined. Default collapsed.
+ * + Suggestions (bottom compact block).
  *
- * Null scores are hidden. Scores are on a 5-point scale.
+ * Follows LlamaIndex convention: retrieval metrics first, LLM scores second.
  *
- * Usage: <EvalScoreCard evaluation={evalResult} locale="en" />
+ * Usage: <EvalScoreCard evaluation={evalResult} />
  */
 
 'use client'
@@ -15,7 +16,7 @@ import { useState } from 'react'
 import {
   ChevronRight,
   CheckCircle2, XCircle, Clock,
-  CircleCheck, CircleX,
+  CircleCheck,
   Settings2,
 } from 'lucide-react'
 import { cn } from '@/features/shared/utils'
@@ -54,7 +55,7 @@ const STATUS_META: Record<EvalStatus, { Icon: typeof CheckCircle2; label: string
 }
 
 // ============================================================
-// Metric definitions with descriptions
+// Metric definitions
 // ============================================================
 interface MetricDef {
   key: string
@@ -62,25 +63,24 @@ interface MetricDef {
   desc: string
 }
 
-const RESPONSE_METRICS: MetricDef[] = [
-  { key: 'faithfulness',    label: 'Faithfulness',      desc: 'Is the answer grounded in context, no hallucination?' },
-  { key: 'answerRelevancy', label: 'Answer Relevancy',  desc: 'How relevant is the answer to the question?' },
-  { key: 'completeness',    label: 'Completeness',      desc: 'Does the answer cover all question aspects?' },
-  { key: 'clarity',         label: 'Clarity',           desc: 'Is the answer clear and well-structured?' },
-  { key: 'correctness',     label: 'Correctness',       desc: 'Factual overlap with the reference answer (F1)' },
-]
-
-const RETRIEVAL_METRICS: MetricDef[] = [
-  { key: 'contextRelevancy', label: 'Context Relevancy', desc: 'Quality of retrieved context for the query' },
-  { key: 'relevancy',        label: 'Source Relevancy',  desc: 'Are the retrieved sources relevant to the query?' },
-]
-
+/** IR retrieval metrics — free, computed from golden dataset. */
 const IR_METRICS: MetricDef[] = [
   { key: 'hitRate',      label: 'Hit Rate',      desc: 'Did retrieval include the correct chunk?' },
   { key: 'mrr',          label: 'MRR',           desc: 'Reciprocal rank of the first correct result' },
   { key: 'precisionAtK', label: 'Precision@K',   desc: 'Fraction of top-K results that are correct' },
   { key: 'recallAtK',    label: 'Recall@K',      desc: 'Fraction of correct results retrieved in top-K' },
   { key: 'ndcg',         label: 'NDCG',          desc: 'Are correct results ranked higher?' },
+]
+
+/** LLM-judged quality metrics — costs API calls. */
+const QUALITY_METRICS: MetricDef[] = [
+  { key: 'faithfulness',    label: 'Faithfulness',      desc: 'Is the answer grounded in context, no hallucination?' },
+  { key: 'answerRelevancy', label: 'Answer Relevancy',  desc: 'How relevant is the answer to the question?' },
+  { key: 'completeness',    label: 'Completeness',      desc: 'Does the answer cover all question aspects?' },
+  { key: 'clarity',         label: 'Clarity',           desc: 'Is the answer clear and well-structured?' },
+  { key: 'correctness',     label: 'Correctness',       desc: 'Factual overlap with the reference answer (F1)' },
+  { key: 'contextRelevancy', label: 'Context Relevancy', desc: 'Quality of retrieved context for the query' },
+  { key: 'relevancy',        label: 'Source Relevancy',  desc: 'Are the retrieved sources relevant to the query?' },
 ]
 
 /** Suggestion severity styles. */
@@ -118,17 +118,18 @@ function scoreSummary5(score: number | null | undefined): React.ReactNode {
   )
 }
 
-/** Metric table — renders a table with columns: Metric | Score | Description | Judge */
+/** Metric table — renders rows: Metric | Score | Description | Judge */
 function MetricTable({
   metrics,
   data,
   judgeModel,
+  showJudge = true,
 }: {
   metrics: MetricDef[]
   data: Record<string, any>
   judgeModel: string
+  showJudge?: boolean
 }) {
-  // Filter out null metrics
   const rows = metrics.filter((m) => data[m.key] != null)
   if (rows.length === 0) {
     return <div className="text-[10px] text-muted-foreground/50 py-1">No data available</div>
@@ -141,7 +142,9 @@ function MetricTable({
           <th className="text-left font-medium py-1 pr-2">Metric</th>
           <th className="text-right font-medium py-1 px-2 w-[60px]">Score</th>
           <th className="text-left font-medium py-1 px-2">Description</th>
-          <th className="text-right font-medium py-1 pl-2 w-[100px]">Judge</th>
+          {showJudge && (
+            <th className="text-right font-medium py-1 pl-2 w-[100px]">Judge</th>
+          )}
         </tr>
       </thead>
       <tbody>
@@ -152,9 +155,11 @@ function MetricTable({
               <Score5 value={data[m.key]} />
             </td>
             <td className="py-1.5 px-2 text-muted-foreground/60">{m.desc}</td>
-            <td className="py-1.5 pl-2 text-right text-muted-foreground/50 truncate max-w-[100px]" title={judgeModel}>
-              {judgeModel || '—'}
-            </td>
+            {showJudge && (
+              <td className="py-1.5 pl-2 text-right text-muted-foreground/50 truncate max-w-[100px]" title={judgeModel}>
+                {judgeModel || '—'}
+              </td>
+            )}
           </tr>
         ))}
       </tbody>
@@ -220,7 +225,7 @@ function avg(...values: (number | null | undefined)[]): number | null {
 interface EvalScoreCardProps {
   /** Persisted evaluation result from Payload. */
   evaluation: EvaluationResult
-  /** UI locale ('en' or 'fr' for Chinese). */
+  /** UI locale ('en' or 'zh'). */
   locale?: 'en' | 'zh'
 }
 
@@ -233,28 +238,19 @@ export default function EvalScoreCard({ evaluation, locale = 'en' }: EvalScoreCa
   const overall = evaluation.overallScore
   const judgeModel = evaluation.judgeModel ?? ''
 
-  // Section averages for collapsed summary
-  const responseAvg = avg(
+  // IR metrics availability
+  const hasIR = evaluation.hitRate != null || evaluation.mrr != null
+
+  // Quality score average (all LLM-judged)
+  const qualityAvg = avg(
     evaluation.faithfulness,
     evaluation.answerRelevancy,
     evaluation.completeness,
     evaluation.clarity,
     evaluation.correctness,
-  ) ?? evaluation.answerScore ?? evaluation.llmScore
-  const retrievalAvg = avg(
     evaluation.contextRelevancy,
     evaluation.relevancy,
-  ) ?? evaluation.ragScore
-
-  // IR metrics availability
-  const hasIR = evaluation.irScore != null || evaluation.hitRate != null
-
-  // Question depth
-  const depth = evaluation.questionDepth
-  const depthScore = evaluation.questionDepthScore
-
-  // Retrieval strategy
-  const hasRetrievalStrategy = evaluation.retrievalMode != null
+  ) ?? evaluation.overallScore
 
   // Suggestions
   const hasSuggestions = evaluation.suggestions && evaluation.suggestions.length > 0
@@ -301,13 +297,35 @@ export default function EvalScoreCard({ evaluation, locale = 'en' }: EvalScoreCa
         )}
       </div>
 
-      {/* ── Section 1: Response Quality ── */}
+      {/* ── Table 1: Retrieval (IR metrics) ── */}
       <Section
-        title="Response Quality"
-        summary={scoreSummary5(responseAvg)}
+        title="Retrieval"
+        summary={
+          hasIR
+            ? <span className="text-[10px] font-medium text-emerald-500">
+                {evaluation.hitRate != null ? `HR ${(evaluation.hitRate * 100).toFixed(0)}%` : ''}
+                {evaluation.mrr != null ? ` · MRR ${(evaluation.mrr * 100).toFixed(0)}%` : ''}
+              </span>
+            : <span className="text-[10px] text-muted-foreground/50">No golden match</span>
+        }
+        defaultOpen={hasIR}
+      >
+        {hasIR ? (
+          <MetricTable metrics={IR_METRICS} data={data} judgeModel="" showJudge={false} />
+        ) : (
+          <div className="text-[10px] text-muted-foreground/50 py-1">
+            No golden dataset match — add this question to your Golden Dataset to enable IR metrics.
+          </div>
+        )}
+      </Section>
+
+      {/* ── Table 2: Quality (all LLM-judged scores) ── */}
+      <Section
+        title="Quality"
+        summary={scoreSummary5(qualityAvg)}
         defaultOpen
       >
-        <MetricTable metrics={RESPONSE_METRICS} data={data} judgeModel={judgeModel} />
+        <MetricTable metrics={QUALITY_METRICS} data={data} judgeModel={judgeModel} />
         {/* Guidelines row */}
         {evaluation.guidelinesPass != null && (
           <div className="mt-2 border-t border-border/20 pt-2">
@@ -316,134 +334,7 @@ export default function EvalScoreCard({ evaluation, locale = 'en' }: EvalScoreCa
         )}
       </Section>
 
-      {/* ── Section 2: Retrieval Quality ── */}
-      <Section
-        title="Retrieval Quality"
-        summary={scoreSummary5(retrievalAvg)}
-      >
-        <MetricTable metrics={RETRIEVAL_METRICS} data={data} judgeModel={judgeModel} />
-        {hasIR && (
-          <div className="mt-2 border-t border-border/20 pt-2">
-            <div className="mb-1 text-[9px] font-medium text-muted-foreground/60 uppercase tracking-wider">
-              IR Metrics
-            </div>
-            <MetricTable metrics={IR_METRICS} data={data} judgeModel={judgeModel} />
-          </div>
-        )}
-      </Section>
-
-      {/* ── Section 3: Question Analysis ── */}
-      {(depth || depthScore != null) && (
-        <Section
-          title="Question Analysis"
-          summary={
-            depth
-              ? <span className={cn('font-medium capitalize', GRADE_TEXT[getGrade5(depthScore)])}>{depth}</span>
-              : <span className="text-muted-foreground/50">—</span>
-          }
-        >
-          <table className="w-full text-[10px]">
-            <thead>
-              <tr className="text-muted-foreground/60 border-b border-border/20">
-                <th className="text-left font-medium py-1 pr-2">Metric</th>
-                <th className="text-right font-medium py-1 px-2 w-[80px]">Value</th>
-                <th className="text-left font-medium py-1 px-2">Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              {depth && (
-                <tr className="border-b border-border/10">
-                  <td className="py-1.5 pr-2 text-foreground/80">Depth Level</td>
-                  <td className="py-1.5 px-2 text-right">
-                    <span className={cn('font-semibold capitalize', GRADE_TEXT[getGrade5(depthScore)])}>{depth}</span>
-                  </td>
-                  <td className="py-1.5 px-2 text-muted-foreground/60">Cognitive complexity: surface → understanding → synthesis</td>
-                </tr>
-              )}
-              {depthScore != null && (
-                <tr className="border-b border-border/10 last:border-b-0">
-                  <td className="py-1.5 pr-2 text-foreground/80">Depth Score</td>
-                  <td className="py-1.5 px-2 text-right">
-                    <Score5 value={depthScore} />
-                  </td>
-                  <td className="py-1.5 px-2 text-muted-foreground/60">Normalised depth score (0–5 scale)</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </Section>
-      )}
-
-      {/* ── Section 4: Retrieval Strategy ── */}
-      {hasRetrievalStrategy && (
-        <Section
-          title="Retrieval Strategy"
-          summary={
-            <span className="text-[10px] font-medium text-muted-foreground">
-              {evaluation.retrievalMode === 'hybrid' ? 'Hybrid' : 'Vector-only'}
-            </span>
-          }
-        >
-          <table className="w-full text-[10px]">
-            <thead>
-              <tr className="text-muted-foreground/60 border-b border-border/20">
-                <th className="text-left font-medium py-1 pr-2">Metric</th>
-                <th className="text-right font-medium py-1 px-2 w-[60px]">Value</th>
-                <th className="text-left font-medium py-1 px-2">Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="border-b border-border/10">
-                <td className="py-1.5 pr-2 text-foreground/80">Mode</td>
-                <td className="py-1.5 px-2 text-right font-semibold text-foreground/80">
-                  {evaluation.retrievalMode === 'hybrid' ? 'Hybrid' : 'Vector'}
-                </td>
-                <td className="py-1.5 px-2 text-muted-foreground/60">Retrieval strategy used</td>
-              </tr>
-              {evaluation.bm25Hits != null && (
-                <tr className="border-b border-border/10">
-                  <td className="py-1.5 pr-2 text-foreground/80">BM25 Hits</td>
-                  <td className="py-1.5 px-2 text-right font-semibold tabular-nums text-foreground/80">{evaluation.bm25Hits}</td>
-                  <td className="py-1.5 px-2 text-muted-foreground/60">Sources from BM25 keyword retriever</td>
-                </tr>
-              )}
-              {evaluation.vectorHits != null && (
-                <tr className="border-b border-border/10">
-                  <td className="py-1.5 pr-2 text-foreground/80">Vector Hits</td>
-                  <td className="py-1.5 px-2 text-right font-semibold tabular-nums text-foreground/80">{evaluation.vectorHits}</td>
-                  <td className="py-1.5 px-2 text-muted-foreground/60">Sources from vector retriever</td>
-                </tr>
-              )}
-              {evaluation.bothHits != null && (
-                <tr className="border-b border-border/10">
-                  <td className="py-1.5 pr-2 text-foreground/80">Both Hits</td>
-                  <td className="py-1.5 px-2 text-right font-semibold tabular-nums text-foreground/80">{evaluation.bothHits}</td>
-                  <td className="py-1.5 px-2 text-muted-foreground/60">Sources matched by both retrievers</td>
-                </tr>
-              )}
-              {evaluation.routingDecision && (
-                <tr className="border-b border-border/10">
-                  <td className="py-1.5 pr-2 text-foreground/80">Routing</td>
-                  <td className="py-1.5 px-2 text-right font-semibold capitalize text-foreground/80">{evaluation.routingDecision}</td>
-                  <td className="py-1.5 px-2 text-muted-foreground/60">Router decision: standard / smart / deep</td>
-                </tr>
-              )}
-              {evaluation.routingCorrect != null && (
-                <tr className="border-b border-border/10 last:border-b-0">
-                  <td className="py-1.5 pr-2 text-foreground/80">Routing Correct</td>
-                  <td className="py-1.5 px-2 text-right">
-                    {evaluation.routingCorrect
-                      ? <CircleCheck className="inline h-3.5 w-3.5 text-emerald-500" />
-                      : <CircleX className="inline h-3.5 w-3.5 text-red-500" />}
-                  </td>
-                  <td className="py-1.5 px-2 text-muted-foreground/60">Was the routing decision appropriate?</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </Section>
-      )}
-
+      {/* ── Suggestions (compact bottom block) ── */}
       {hasSuggestions && (
         <Section
           title="Suggestions"
@@ -452,6 +343,7 @@ export default function EvalScoreCard({ evaluation, locale = 'en' }: EvalScoreCa
               {evaluation.suggestions!.length}
             </span>
           }
+          defaultOpen
         >
           <div className="space-y-1.5">
             {evaluation.suggestions!.map((s: EvalSuggestion, i: number) => {

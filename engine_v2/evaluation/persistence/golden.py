@@ -17,34 +17,13 @@ import httpx
 from loguru import logger
 
 from engine_v2.settings import PAYLOAD_URL
+from engine_v2.evaluation.models import GoldenRecord, GoldenDatasetResult
 
 
 # ============================================================
 # Data classes
 # ============================================================
-@dataclass
-class GoldenRecord:
-    """A single Golden Dataset QA pair."""
-
-    question: str
-    expected_answer: str
-    expected_chunk_ids: list[str] = field(default_factory=list)
-    book_id: str | None = None
-    source_page: str = ""
-    verified: bool = False
-    verification_source: str | None = None  # 'auto' | 'manual' (EUX-T1-01)
-    tags: list[str] = field(default_factory=list)
-    id: int | None = None  # Payload record ID (set after persistence)
-
-
-@dataclass
-class GoldenDatasetResult:
-    """Result of golden dataset generation."""
-
-    book_id: str
-    records: list[GoldenRecord]
-    total_generated: int
-    errors: list[str] = field(default_factory=list)
+# GoldenRecord and GoldenDatasetResult imported from models.py
 
 
 # ============================================================
@@ -326,7 +305,7 @@ async def _fetch_golden_records(
     Returns:
         List of GoldenRecord.
     """
-    from engine_v2.evaluation.history import _get_payload_token
+    from engine_v2.evaluation.persistence.auth import get_payload_token
 
     where_clauses: list[str] = []
 
@@ -344,7 +323,7 @@ async def _fetch_golden_records(
         url += f"?limit={limit}"
 
     try:
-        token = await _get_payload_token()
+        token = await get_payload_token()
         headers = {"Authorization": f"JWT {token}"}
         async with httpx.AsyncClient(timeout=30.0) as client:
             resp = await client.get(url, headers=headers)

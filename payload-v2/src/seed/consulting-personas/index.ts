@@ -1,7 +1,7 @@
 /**
- * consulting-personas/index.ts — Barrel export for 29 consulting persona seeds.
+ * consulting-personas/index.ts — Barrel export for 30 consulting persona seeds.
  *
- * Architecture: 8 categories × 29 roles
+ * Architecture: 8 categories × 30 roles
  * Categories: education / immigration / settlement / healthcare / finance / career / legal / analysis
  *
  * Each persona maps to a dedicated ChromaDB collection (ca_{slug}) for domain-specific RAG.
@@ -15,6 +15,7 @@ import { eduVisaCompliance } from "./education/edu-visa-compliance";
 import { eduAcademicRules } from "./education/edu-academic-rules";
 import { eduWorkPermit } from "./education/edu-work-permit";
 import { eduChildEducation } from "./education/edu-child-education";
+import { eduTechLearning } from "./education/edu-tech-learning";
 
 // ── Immigration (3) ─────────────────────────────────────────
 import { immPathways } from "./immigration/imm-pathways";
@@ -63,6 +64,7 @@ export const consultingPersonasData = [
   eduAcademicRules,
   eduWorkPermit,
   eduChildEducation,
+  eduTechLearning,
   // Immigration
   immPathways,
   immPrRenewal,

@@ -112,7 +112,7 @@ class QueryRouter:
 
         # Auto mode — assess depth then route
         try:
-            from engine_v2.evaluation.evaluator import assess_question_depth
+            from engine_v2.evaluation.metrics.question_depth import assess_question_depth
 
             depth_result = await assess_question_depth(question, llm=llm)
             depth = depth_result.depth

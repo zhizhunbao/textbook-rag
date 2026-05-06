@@ -126,10 +126,10 @@ async def generate_dataset(req: GenerateDatasetRequest):
 
     Ref: llama_index.core.llama_dataset.generator — RagDatasetGenerator pattern
     """
-    from engine_v2.evaluation.history import _get_payload_token
+    from engine_v2.evaluation.persistence.auth import get_payload_token
     from engine_v2.question_gen.sampler import StratifiedChunkSampler
 
-    token = await _get_payload_token()
+    token = await get_payload_token()
     headers = {
         "Authorization": f"JWT {token}",
         "Content-Type": "application/json",

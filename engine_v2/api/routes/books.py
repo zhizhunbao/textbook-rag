@@ -88,10 +88,20 @@ def _find_book_dir(book_id: str) -> Path | None:
 
 
 def _get_auto_dir(book_id: str) -> Path | None:
-    """Get the MinerU auto/ output directory for a book."""
+    """Get the MinerU auto/ output directory for a book.
+
+    Supports both layouts:
+      - New (flat): mineru_output/{category}/{book_id}/auto/
+      - Legacy (nested): mineru_output/{category}/{book_id}/{book_id}/auto/
+    """
     book_dir = _find_book_dir(book_id)
     if not book_dir:
         return None
+    # New flat layout
+    auto_dir = book_dir / "auto"
+    if auto_dir.is_dir():
+        return auto_dir
+    # Legacy nested layout
     auto_dir = book_dir / book_id / "auto"
     return auto_dir if auto_dir.is_dir() else None
 
@@ -161,7 +171,10 @@ def _discover_books() -> list[dict]:
                 continue
 
             book_id = book_dir.name
-            auto_dir = book_dir / book_id / "auto"
+            # Support both flat (book_dir/auto/) and legacy (book_dir/book_id/auto/)
+            auto_dir = book_dir / "auto"
+            if not auto_dir.is_dir():
+                auto_dir = book_dir / book_id / "auto"
 
             content_list_path = auto_dir / f"{book_id}_content_list.json"
             if not content_list_path.exists():

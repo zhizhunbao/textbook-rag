@@ -21,6 +21,7 @@ export interface PayloadChatSession {
   mode?: ChatMode | null
   persona?: number | { id: number; name?: string; slug?: string } | null
   personaSlug?: string | null
+  personaName?: string | null
   bookIds: number[]
   bookTitles: string[]
   createdAt: string
@@ -86,6 +87,7 @@ export async function createServerSession(opts: {
   mode?: ChatMode
   personaId?: number | null
   personaSlug?: string | null
+  personaName?: string | null
 }): Promise<PayloadChatSession> {
   // Payload v3 REST POST wraps the doc: { doc: {...}, message: "..." }
   const res = await request<{ doc: PayloadChatSession }>('/api/chat-sessions', {
@@ -96,6 +98,7 @@ export async function createServerSession(opts: {
       mode: opts.mode ?? 'rag',
       persona: opts.personaId ?? null,
       personaSlug: opts.personaSlug ?? null,
+      personaName: opts.personaName ?? null,
       bookIds: opts.bookIds,
       bookTitles: opts.bookTitles,
     }),

@@ -30,7 +30,14 @@ const ENGINE = process.env.NEXT_PUBLIC_ENGINE_URL || 'http://localhost:8001'
 
 /** Generic typed fetch wrapper with error handling. */
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, init)
+  const res = await fetch(url, {
+    credentials: 'include',
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(init?.headers ?? {}),
+    },
+  })
   if (!res.ok) {
     const body = await res.text()
     throw new Error(`${res.status}: ${body}`)

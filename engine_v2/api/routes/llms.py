@@ -83,6 +83,30 @@ async def models():
 
 
 # ============================================================
+# Discover locally installed Ollama models
+# ============================================================
+@router.get("/discover")
+async def discover_local_models():
+    """Discover locally installed Ollama models via /api/tags.
+
+    Returns the raw model list so the frontend can diff against
+    registered models and offer one-click registration.
+    """
+    try:
+        async with httpx.AsyncClient(timeout=OLLAMA_TIMEOUT) as client:
+            resp = await client.get(f"{OLLAMA_BASE_URL}/api/tags")
+            resp.raise_for_status()
+            data = resp.json()
+            return {"models": data.get("models", [])}
+    except httpx.ConnectError:
+        logger.warning("Ollama not reachable at {} — discover returned empty", OLLAMA_BASE_URL)
+        return {"models": []}
+    except Exception as exc:
+        logger.error("Failed to discover local models: {}", exc)
+        return {"models": [], "error": str(exc)}
+
+
+# ============================================================
 # MH-03: Search catalog (dynamic — fetches from Ollama + HuggingFace APIs)
 # ============================================================
 @router.get("/library/search")

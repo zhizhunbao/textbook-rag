@@ -16,7 +16,9 @@ import Markdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import rehypeKatex from "rehype-katex";
 import remarkMath from "remark-math";
+import remarkGfm from "remark-gfm";
 import type { SourceInfo } from "@/features/shared/types";
+import { normalizeMarkdown } from "@/features/shared/markdownNormalizer";
 import { parseAnswerBlocks } from "./answerBlocks";
 import CitationChip from "./CitationChip";
 import { prepareForKatex } from "./textUtils";
@@ -124,11 +126,17 @@ export default function AnswerBlockRenderer({
     return map;
   }, [sources]);
 
+  // ── Normalize markdown + extract disclaimers ─────────────
+  const { content: normalizedContent, disclaimers } = useMemo(
+    () => normalizeMarkdown(content),
+    [content],
+  );
+
   // ── Parse answer into blocks ──────────────────────────────
-  const blocks = useMemo(() => parseAnswerBlocks(content), [content]);
+  const blocks = useMemo(() => parseAnswerBlocks(normalizedContent), [normalizedContent]);
 
   // G3: Guard — if content is empty or literal "Empty Response", render friendly fallback
-  const isEmpty = !content.trim() || content.trim().toLowerCase() === "empty response";
+  const isEmpty = !normalizedContent.trim() || normalizedContent.trim().toLowerCase() === "empty response";
 
   // ── Expanded citations state (multiple panels can be open) ──
   const [expandedCitations, setExpandedCitations] = useState<Set<number>>(new Set());
@@ -249,7 +257,7 @@ export default function AnswerBlockRenderer({
         <div key={blockIdx} className="answer-block">
           {/* ── Paragraph text (Markdown + KaTeX) ── */}
           <Markdown
-            remarkPlugins={[remarkMath]}
+            remarkPlugins={[remarkGfm, remarkMath]}
             rehypePlugins={[rehypeKatex, rehypeRaw]}
             components={{
               h2({ children }) {
@@ -289,6 +297,46 @@ export default function AnswerBlockRenderer({
               },
               li({ children }) {
                 return <li className="leading-7">{children}</li>;
+              },
+              table({ children }) {
+                return (
+                  <div className="my-3 overflow-x-auto rounded-lg border border-border shadow-sm">
+                    <table className="min-w-full divide-y divide-border text-sm">
+                      {children}
+                    </table>
+                  </div>
+                );
+              },
+              thead({ children }) {
+                return <thead className="bg-muted">{children}</thead>;
+              },
+              tbody({ children }) {
+                return (
+                  <tbody className="divide-y divide-border bg-card">
+                    {children}
+                  </tbody>
+                );
+              },
+              tr({ children }) {
+                return (
+                  <tr className="transition-colors hover:bg-muted/60">
+                    {children}
+                  </tr>
+                );
+              },
+              th({ children }) {
+                return (
+                  <th className="border-b border-border px-3 py-2 text-left font-semibold text-foreground">
+                    {children}
+                  </th>
+                );
+              },
+              td({ children }) {
+                return (
+                  <td className="border-b border-border/50 px-3 py-2 text-muted-foreground">
+                    {children}
+                  </td>
+                );
               },
               strong({ children }) {
                 return (
@@ -419,6 +467,17 @@ export default function AnswerBlockRenderer({
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── Disclaimers (compact, merged into single block) ── */}
+      {disclaimers.length > 0 && (
+        <div className="mt-3 rounded-md border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground/70">
+          {disclaimers.map((text, i) => (
+            <p key={i} className={i > 0 ? "mt-1" : ""}>
+              ⚠ {text.replace(/^⚠️?\s*/, "").replace(/^\*{2}Disclaimer\*{2}:\s*/, "")}
+            </p>
+          ))}
         </div>
       )}
     </div>

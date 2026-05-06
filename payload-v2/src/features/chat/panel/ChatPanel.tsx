@@ -9,9 +9,7 @@ import {
   useCallback,
   useEffect,
 } from "react";
-import { queryTextbookStream } from "@/features/engine/query_engine";
 import { evaluateFromHistory } from "@/features/engine/evaluation/api";
-import type { RetrievalMode } from "@/features/engine/query_engine/types";
 import { fetchAvailableModels, discoverLocalModels } from "@/features/engine/llms";
 import { fetchConsultingPersonas, queryConsultingStream } from "@/features/shared/consultingApi";
 import { useAppDispatch, useAppState } from "@/features/shared/AppContext";
@@ -19,7 +17,6 @@ import { useAuth } from "@/features/shared/AuthProvider";
 import { useCountry } from "@/features/shared/CountryContext";
 import { useI18n } from "@/features/shared/i18n";
 import type { ModelInfo, SourceInfo } from "@/features/shared/types";
-import type { ChatMode } from "../history/api";
 import type { PersonaInfo } from "@/features/shared/consultingApi";
 
 import type { Message } from "../types";
@@ -40,7 +37,7 @@ export default function ChatPanel({
   submitRef,
   showQuestions,
   onToggleQuestions,
-  initialMode = "rag",
+  initialMode,  // G8-04: deprecated, kept for backward compat (ignored)
   onConsultingPersonaChange,
 }: {
   activeSessionId: string | null;
@@ -50,7 +47,7 @@ export default function ChatPanel({
   /** Questions sidebar state */
   showQuestions?: boolean;
   onToggleQuestions?: () => void;
-  initialMode?: ChatMode;
+  initialMode?: string;
   /** C4-06: Notify parent when consulting persona changes (for sidebar) */
   onConsultingPersonaChange?: (slug: string, name: string | null) => void;
 }) {
@@ -76,7 +73,6 @@ export default function ChatPanel({
   const [streamingContent, setStreamingContent] = useState("");
   const [streamingSources, setStreamingSources] = useState<SourceInfo[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
-  const [chatMode, setChatMode] = useState<ChatMode>("consulting");
   const [personas, setPersonas] = useState<PersonaInfo[]>([]);
   const [selectedPersonaSlug, setSelectedPersonaSlug] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -84,9 +80,7 @@ export default function ChatPanel({
   const tokenBufferRef = useRef("");
   const rafIdRef = useRef<number | null>(null);
   // Prompt mode state — user-selected system prompt override
-  const [promptSlug, setPromptSlug] = useState<string | null>(null);
   const [customSystemPrompt, setCustomSystemPrompt] = useState<string | null>(null);
-  const [retrievalMode, setRetrievalMode] = useState<RetrievalMode>("standard");
   // Retrieval settings — user-adjustable from ChatHeader settings row
   const [topK, setTopK] = useState(5);
   const [rerankerEnabled, setRerankerEnabled] = useState(false);
@@ -116,7 +110,7 @@ export default function ChatPanel({
   const sessionBooks = books.filter((b) => sessionBookIds.includes(b.id));
   const hasMessages = messages.length > 0;
   const activeSession = activeSessionId ? chatHistory.getSession(activeSessionId) : null;
-  const effectiveMode = activeSession?.mode ?? chatMode;
+  const effectiveMode = "consulting";
   const effectivePersonaSlug = activeSession?.personaSlug ?? selectedPersonaSlug;
   const isAdmin = currentUser?.role === 'admin';
   const modeLocked = isAdmin ? false : (hasMessages || !!activeSessionId);
@@ -129,9 +123,7 @@ export default function ChatPanel({
     sessionIdRef.current = activeSessionId;
   }, [activeSessionId]);
 
-  useEffect(() => {
-    if (!activeSessionId && messages.length === 0) setChatMode(initialMode);
-  }, [activeSessionId, initialMode, messages.length]);
+  // G8-04: chatMode removed — always consulting
 
   useEffect(() => {
     fetchConsultingPersonas()
@@ -205,9 +197,12 @@ export default function ChatPanel({
         setMessages(msgs as Message[]);
       }
     });
-    // Re-run when sessions list arrives (fixes race on page refresh)
+    // Re-run when session count changes (fixes race on page refresh)
+    // ⚠️ Do NOT depend on chatHistory.sessions (object ref) — that causes
+    //    infinite loops because loadSessionMessages calls setSessions to cache,
+    //    which changes the ref, which re-triggers this effect.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeSessionId, chatHistory.sessions]);
+  }, [activeSessionId, chatHistory.sessions.length]);
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
     const thread = threadRef.current;
@@ -299,10 +294,9 @@ export default function ChatPanel({
       const existingSession = sessionIdRef.current
         ? chatHistory.getSession(sessionIdRef.current)
         : null;
-      const messageMode = existingSession?.mode ?? chatMode;
       const personaSlug = existingSession?.personaSlug ?? selectedPersonaSlug;
       const persona = personas.find((item) => item.slug === personaSlug) ?? null;
-      if (messageMode === "consulting" && !personaSlug) {
+      if (!personaSlug) {
         setError("Please select a consulting persona before sending.");
         return;
       }
@@ -334,9 +328,9 @@ export default function ChatPanel({
             sessionBookIds,
             bookTitles,
             firstMessage: trimmed,
-            mode: messageMode,
-            personaSlug: messageMode === "consulting" ? personaSlug : null,
-            personaName: messageMode === "consulting" ? persona?.name ?? null : null,
+            mode: "consulting",
+            personaSlug: personaSlug,
+            personaName: persona?.name ?? null,
           });
           sessionIdRef.current = sessionId;
           onSessionCreated(sessionId);
@@ -348,16 +342,24 @@ export default function ChatPanel({
 
       const startTime = Date.now();
 
-      if (messageMode === "consulting" && personaSlug) {
-        await queryConsultingStream(
+      // G8-02: Map book filter for textbook persona
+      const isAllBooks = sessionBookIds.length === books.length;
+      const engineBookIdStrings = isAllBooks
+        ? undefined
+        : sessionBookIds
+            .map((pid) => books.find((b) => b.id === pid)?.book_id)
+            .filter((s): s is string => !!s);
+
+      await queryConsultingStream(
           {
             persona_slug: personaSlug,
             question: trimmed,
             model: selectedModel,
             provider: selectedProvider,
-            top_k: 5,
+            top_k: topK,
             country,
             response_language: responseLang,
+            book_id_strings: engineBookIdStrings?.length ? engineBookIdStrings : undefined,
           },
           {
             signal: controller.signal,
@@ -380,12 +382,30 @@ export default function ChatPanel({
               ]);
             },
             onDone: (res) => {
+              // G8-03: Source enrichment — enrich book_title from frontend books list
+              const enrichedSources = res.sources.map((s) => {
+                if (s.book_title) return s;
+                const idStr = s.book_id_string || String(s.book_id);
+                let match = books.find((b) => b.book_id === idStr);
+                if (!match && typeof s.book_id === 'number') {
+                  match = books.find((b) => b.id === s.book_id);
+                }
+                if (!match && idStr) {
+                  const lower = idStr.toLowerCase();
+                  match = books.find((b) =>
+                    b.book_id.toLowerCase() === lower ||
+                    b.title.toLowerCase().includes(lower),
+                  );
+                }
+                return match ? { ...s, book_title: match.title } : s;
+              });
+
               setMessages((prev) => [
                 ...prev,
                 {
                   role: "assistant",
                   content: res.answer,
-                  sources: res.sources,
+                  sources: enrichedSources,
                   model: selectedModel || undefined,
                   timestamp: new Date().toISOString(),
                   telemetry: res.telemetry,
@@ -404,7 +424,7 @@ export default function ChatPanel({
               if (sessionId) {
                 chatHistory.appendMessages(sessionId, [
                   { role: "user", content: trimmed, timestamp: new Date().toISOString() },
-                  { role: "assistant", content: res.answer, sources: res.sources, timestamp: new Date().toISOString() },
+                  { role: "assistant", content: res.answer, sources: enrichedSources, timestamp: new Date().toISOString() },
                 ]);
               }
 
@@ -418,7 +438,7 @@ export default function ChatPanel({
                   sessionId: sessionId ?? null,
                   question: trimmed,
                   answer: res.answer,
-                  sources: res.sources,
+                  sources: enrichedSources,
                   model: selectedModel,
                   latencyMs,
                 }),
@@ -460,151 +480,8 @@ export default function ChatPanel({
             },
           },
         );
-        return;
-      }
-
-      // Map Payload CMS IDs → engine book_id strings for correct filtering
-      // DM-T1-02: When ALL books are selected, skip the filter so backend searches entire library
-      const isAllBooks = sessionBookIds.length === books.length;
-      const engineBookIdStrings = isAllBooks
-        ? []
-        : sessionBookIds
-            .map((pid) => books.find((b) => b.id === pid)?.book_id)
-            .filter((s): s is string => !!s);
-      const filters = engineBookIdStrings.length > 0 ? { book_id_strings: engineBookIdStrings } : undefined;
-
-      await queryTextbookStream(
-        { question: trimmed, filters, model: selectedModel, provider: selectedProvider, top_k: topK, reranker: rerankerEnabled ? "llm" : null, custom_system_prompt: customSystemPrompt, retrieval_mode: retrievalMode },
-        {
-          signal: controller.signal,
-          onToken: (token) => {
-            // Accumulate in ref (no re-render), flush to state via RAF
-            tokenBufferRef.current += token;
-            if (rafIdRef.current === null) {
-              rafIdRef.current = requestAnimationFrame(() => {
-                setStreamingContent(tokenBufferRef.current);
-                rafIdRef.current = null;
-              });
-            }
-          },
-          onRetrievalDone: ({ sources }) => {
-            setStreamingSources(sources);
-          },
-          onDone: (res) => {
-            // Enrich sources with book titles from the loaded books list
-            // (backend chunks don't store book_title in metadata)
-            const enrichedSources = res.sources.map((s) => {
-              if (s.book_title) return s;
-              const idStr = s.book_id_string || String(s.book_id);
-              // Try exact match on engineBookId (book_id)
-              let match = books.find((b) => b.book_id === idStr);
-              // Fallback: match by Payload numeric id
-              if (!match && typeof s.book_id === 'number') {
-                match = books.find((b) => b.id === s.book_id);
-              }
-              // Fallback: case-insensitive partial match
-              if (!match && idStr) {
-                const lower = idStr.toLowerCase();
-                match = books.find((b) =>
-                  b.book_id.toLowerCase() === lower ||
-                  b.title.toLowerCase().includes(lower),
-                );
-              }
-              if (!match) {
-                console.warn('[CitationEnrich] No book match for source:', { book_id: s.book_id, book_id_string: s.book_id_string, idStr, availableBookIds: books.map(b => b.book_id) });
-              }
-              return match ? { ...s, book_title: match.title } : s;
-            });
-
-            setMessages((prev) => [
-              ...prev,
-              {
-                role: "assistant",
-                content: res.answer,
-                sources: enrichedSources,
-                trace: res.trace,
-                model: selectedModel || res.trace?.generation?.model || undefined,
-                timestamp: new Date().toISOString(),
-                telemetry: res.telemetry,
-              },
-            ]);
-            setStreamingContent("");
-            setStreamingSources([]);
-            tokenBufferRef.current = "";
-            if (rafIdRef.current !== null) {
-              cancelAnimationFrame(rafIdRef.current);
-              rafIdRef.current = null;
-            }
-            setIsStreaming(false);
-            setLoading(false);
-
-            // Persist both messages to chat history
-            if (sessionId) {
-              chatHistory.appendMessages(sessionId, [
-                { role: "user", content: trimmed, timestamp: new Date().toISOString() },
-                { role: "assistant", content: res.answer, sources: enrichedSources, trace: res.trace, timestamp: new Date().toISOString() },
-              ]);
-            }
-
-            // Log query to Payload QueryLogs and capture queryId for inline eval
-            const latencyMs = Date.now() - startTime;
-            fetch('/api/queries', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              credentials: 'include',
-              body: JSON.stringify({
-                user: currentUser?.id ?? null,
-                sessionId: sessionId ?? null,
-                question: trimmed,
-                answer: res.answer,
-                sources: enrichedSources,
-                trace: res.trace,
-                model: selectedModel,
-                latencyMs,
-              }),
-            })
-              .then(async (r) => {
-                if (r.ok) {
-                  const doc = await r.json();
-                  // Attach queryId to the last assistant message for inline evaluation
-                  if (doc?.doc?.id) {
-                    const qId = doc.doc.id as number;
-                    setMessages((prev) => {
-                      const updated = [...prev];
-                      const last = updated[updated.length - 1];
-                      if (last?.role === 'assistant') {
-                        updated[updated.length - 1] = { ...last, queryId: qId };
-                      }
-                      return updated;
-                    });
-                    // Also persist queryId to the ChatMessages record
-                    if (sessionId) {
-                      chatHistory.updateLastAssistantQueryId(sessionId, qId);
-                    }
-                    // Auto-evaluate if enabled
-                    if (autoEvaluateRef.current) {
-                      evaluateFromHistory(qId).catch(() => { /* ignore eval errors */ });
-                    }
-                  }
-                }
-              })
-              .catch(() => { /* ignore logging errors */ });
-          },
-          onError: (err) => {
-            setError(err.message);
-            tokenBufferRef.current = "";
-            if (rafIdRef.current !== null) {
-              cancelAnimationFrame(rafIdRef.current);
-              rafIdRef.current = null;
-            }
-            setStreamingSources([]);
-            setIsStreaming(false);
-            setLoading(false);
-          },
-        },
-      );
     },
-    [sessionBookIds, selectedModel, selectedProvider, currentUser, books, chatHistory, onSessionCreated, customSystemPrompt, chatMode, selectedPersonaSlug, personas, topK, rerankerEnabled, retrievalMode],
+    [sessionBookIds, selectedModel, selectedProvider, currentUser, books, chatHistory, onSessionCreated, customSystemPrompt, selectedPersonaSlug, personas, topK, country, responseLang, autoEvaluate],
   );
 
   /** Expose submitQuestion to parent (so QuestionsSidebar can call it) */
@@ -623,7 +500,6 @@ export default function ChatPanel({
     setIsNearBottom(true);
     shouldStickToBottomRef.current = true;
     sessionIdRef.current = null;
-    setChatMode("rag");
     dispatch({ type: "RESET_SESSION" });
   }, [dispatch]);
 

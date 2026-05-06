@@ -90,6 +90,14 @@ export const ChatSessions: CollectionConfig = {
       },
     },
     {
+      name: 'personaName',
+      type: 'text',
+      admin: {
+        position: 'sidebar',
+        condition: (_, siblingData) => siblingData?.mode === 'consulting',
+      },
+    },
+    {
       name: 'bookIds',
       type: 'json',
       label: 'Session Book IDs',

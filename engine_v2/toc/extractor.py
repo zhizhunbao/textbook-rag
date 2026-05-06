@@ -272,6 +272,11 @@ def find_pdf_for_book(
         for cat_dir in sorted(mineru_output_dir.iterdir()):
             if not cat_dir.is_dir():
                 continue
+            # New flat layout
+            origin = cat_dir / book_id / "auto" / f"{book_id}_origin.pdf"
+            if origin.exists():
+                return origin
+            # Legacy nested layout
             origin = cat_dir / book_id / book_id / "auto" / f"{book_id}_origin.pdf"
             if origin.exists():
                 return origin
