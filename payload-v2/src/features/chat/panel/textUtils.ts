@@ -16,6 +16,15 @@
  * `$38.2% increase ... $722,400` form a false KaTeX math pair.
  */
 function escapeCurrencyDollars(text: string): string {
+  // Step 0: Protect <mark>...</mark> tags (injected by highlight pipeline).
+  // These may contain $ signs (e.g. <mark>$722,400</mark>) that must NOT
+  // be treated as math delimiters.
+  const markTags: string[] = [];
+  text = text.replace(/<mark[^>]*>[\s\S]*?<\/mark>/gi, (match) => {
+    markTags.push(match);
+    return `\x00MARK${markTags.length - 1}\x00`;
+  });
+
   // Protect display math: $$ ... $$
   const displayMath: string[] = [];
   text = text.replace(/\$\$[\s\S]*?\$\$/g, (match) => {
@@ -40,9 +49,10 @@ function escapeCurrencyDollars(text: string): string {
   // Escape all remaining $ signs (these are currency)
   text = text.replace(/\$/g, '\\$');
 
-  // Restore protected math
+  // Restore protected regions (reverse order)
   text = text.replace(/\x00DMATH(\d+)\x00/g, (_, i) => displayMath[Number(i)]);
   text = text.replace(/\x00IMATH(\d+)\x00/g, (_, i) => inlineMath[Number(i)]);
+  text = text.replace(/\x00MARK(\d+)\x00/g, (_, i) => markTags[Number(i)]);
 
   return text;
 }

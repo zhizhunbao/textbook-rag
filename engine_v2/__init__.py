@@ -9,8 +9,7 @@ Module naming follows llama_index.core.* conventions:
     readers/                 — MinerUReader → Document[] (uses chunking/)
     ingestion/               — IngestionPipeline + transformations → ChromaDB (uses embeddings/)
     retrievers/              — HybridRetriever (BM25 + Vector → RRF)
-    response_synthesizers/   — CitationSynthesizer (citation-aware generation)
-    query_engine/            — RetrieverQueryEngine (retriever + synthesizer)
+    query_engine/            — RetrieverQueryEngine + CitationSynthesizer + intent routing
     llms/                    — LLM resolver (Ollama / Azure OpenAI routing)
     evaluation/              — Faithfulness / Relevancy / Correctness
     question_gen/            — LLM-based question generation

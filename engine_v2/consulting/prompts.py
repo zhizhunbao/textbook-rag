@@ -110,7 +110,17 @@ def build_system_prompt(persona: dict, response_language: str | None = None) -> 
         Complete system prompt string.
     """
     system_prompt = persona.get("systemPrompt", "")
+
+    # Universal: prevent LLM from generating its own disclaimer —
+    # the system auto-appends a standardised one via append_disclaimer().
+    system_prompt += (
+        "\n\nIMPORTANT: Do NOT add any disclaimers, verification notices, "
+        "or 'consult a professional' warnings at the end of your response. "
+        "The system appends one automatically."
+    )
+
     if response_language and response_language != "zh":
         lang_name = LANGUAGE_NAMES.get(response_language, response_language)
         system_prompt += f"\n\nPlease respond in {lang_name}."
     return system_prompt
+

@@ -124,6 +124,8 @@ function normaliseSource(s: any): SourceInfo {
       : null,
     confidence: s.score ?? 1,
     score: s.score ?? undefined,
+    bm25_score: s.bm25_score ?? undefined,
+    vector_score: s.vector_score ?? undefined,
     // EV2-T1-03: pass through retrieval strategy provenance from backend
     retrieval_source: s.retrieval_source ?? undefined,
   }

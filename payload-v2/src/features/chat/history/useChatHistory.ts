@@ -27,6 +27,11 @@ export interface HistoryMessage {
   trace?: QueryTrace;
   queryId?: number;
   timestamp?: string;
+  model?: string;
+  telemetry?: { llm_calls: number; input_tokens: number; output_tokens: number };
+  highlightKeywords?: any[];
+  numericHighlights?: any[];
+  answerHighlightKeywords?: any[];
 }
 
 export interface ChatSession {
@@ -249,6 +254,11 @@ export function useChatHistory(userId?: number | null) {
           trace: d.trace ?? undefined,
           queryId: d.queryId ?? undefined,
           timestamp: d.createdAt ?? undefined,
+          model: d.model ?? undefined,
+          telemetry: d.telemetry ?? undefined,
+          highlightKeywords: d.highlightKeywords ?? undefined,
+          numericHighlights: d.numericHighlights ?? undefined,
+          answerHighlightKeywords: d.answerHighlightKeywords ?? undefined,
         }));
 
         // Cache in state

@@ -86,5 +86,30 @@ export const ChatMessages: CollectionConfig = {
       index: true,
       admin: { description: 'Payload Queries doc ID for inline evaluation' },
     },
+    {
+      name: 'model',
+      type: 'text',
+      label: 'LLM model name (assistant only)',
+    },
+    {
+      name: 'telemetry',
+      type: 'json',
+      label: 'LLM token usage telemetry (assistant only)',
+    },
+    {
+      name: 'highlightKeywords',
+      type: 'json',
+      label: 'Backend-extracted highlight keywords (for UI rendering)',
+    },
+    {
+      name: 'numericHighlights',
+      type: 'json',
+      label: 'Backend-extracted numeric highlights with source verification',
+    },
+    {
+      name: 'answerHighlightKeywords',
+      type: 'json',
+      label: 'Answer-derived keywords for citation panel highlighting',
+    },
   ],
 }

@@ -297,7 +297,7 @@ export default function AppSidebar() {
                           {isHovered && (
                             <button
                               type="button"
-                              onClick={(e) => { e.stopPropagation(); deleteSession(session.id) }}
+                              onClick={(e) => { e.stopPropagation(); deleteSession(session.id); if (session.id === activeSessionId) router.push('/chat?new=1') }}
                               className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-destructive transition-colors"
                               title="Delete"
                             >

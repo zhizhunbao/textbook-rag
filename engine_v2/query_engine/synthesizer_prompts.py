@@ -1,4 +1,4 @@
-"""prompts — Centralised citation synthesizer prompt templates.
+"""synthesizer_prompts — Centralised citation synthesizer prompt templates.
 
 All LLM prompt templates used by the citation response synthesizer
 are defined here. The synthesizer imports from this file to keep

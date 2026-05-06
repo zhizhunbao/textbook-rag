@@ -1,4 +1,4 @@
-"""citation — Citation-aware response synthesizer.
+"""synthesizer — Citation-aware response synthesizer.
 
 Responsibilities:
     - Build a COMPACT synthesizer with citation-aware prompt templates
@@ -19,7 +19,7 @@ from llama_index.core.response_synthesizers import (
 )
 
 from engine_v2.llms.resolver import resolve_llm
-from engine_v2.response_synthesizers.prompts import (
+from engine_v2.query_engine.synthesizer_prompts import (
     CITATION_QA_TEMPLATE,
     CITATION_REFINE_TEMPLATE,
     build_custom_qa_template,
@@ -75,5 +75,3 @@ def get_citation_synthesizer(
     logger.info("CitationSynthesizer ready (mode={}, streaming={}, model={}, custom_prompt={})",
                 mode, streaming, model or 'default', bool(custom_system_prompt))
     return synthesizer
-
-

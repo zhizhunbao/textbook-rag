@@ -52,12 +52,18 @@ export interface SourceInfo {
   page_dim: { width: number; height: number } | null;
   confidence: number;
   citation_label?: string;
-  /** Retrieval relevance score (0.0–1.0, higher = more relevant) */
+  /** Retrieval relevance score (raw RRF score, small number like 0.016) */
   score?: number;
+  /** Raw BM25 Okapi score — 0 means no keyword match */
+  bm25_score?: number;
+  /** Raw Vector cosine similarity (0.0–1.0) */
+  vector_score?: number;
   /** Retrieval strategy that found this source (EV2-T1-03). */
   retrieval_source?: 'bm25' | 'vector' | 'both';
   /** Consulting source class (C4): persona KB or user private document. */
   source_type?: 'persona' | 'user_doc';
+  /** Per-source numeric highlights extracted by backend NLP pipeline */
+  numeric_highlights?: Array<{ text: string; verified: boolean; offset: number }>;
 }
 
 export interface RetrievalStats {

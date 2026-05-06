@@ -1,5 +1,6 @@
 import type { SourceInfo, QueryTrace } from "@/features/shared/types";
 import type { LlmTelemetry } from "@/features/engine/query_engine/types";
+import type { HighlightKeyword, NumericHighlight } from "@/features/shared/consultingApi";
 
 export interface Message {
   role: "user" | "assistant";
@@ -14,6 +15,12 @@ export interface Message {
   timestamp?: string;
   /** LLM token usage telemetry (assistant messages only). */
   telemetry?: LlmTelemetry;
+  /** Backend-extracted, source-cross-referenced keywords for highlighting (assistant messages). */
+  highlightKeywords?: HighlightKeyword[];
+  /** Backend-extracted numeric highlights with source verification (assistant messages). */
+  numericHighlights?: NumericHighlight[];
+  /** Backend-extracted answer-derived keywords for citation panel highlighting. */
+  answerHighlightKeywords?: HighlightKeyword[];
 }
 
 export const NEAR_BOTTOM_THRESHOLD = 160;

@@ -86,12 +86,20 @@ function IconDocument({ className = "h-3 w-3" }: { className?: string }) {
 // Helpers
 // ============================================================
 
-/** Color-coded CSS classes for relevance score badge (UEP-T4-04). */
-function scoreStyle(score: number): string {
-  if (score >= 0.85) return "bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/20";
-  if (score >= 0.7) return "bg-blue-500/15 text-blue-400 ring-1 ring-blue-500/20";
-  if (score >= 0.5) return "bg-amber-500/15 text-amber-400 ring-1 ring-amber-500/20";
-  return "bg-red-500/15 text-red-400 ring-1 ring-red-500/20";
+/** Color-coded CSS classes for Vector score (0–1 range). */
+function vectorScoreStyle(score: number): string {
+  if (score >= 0.85) return "bg-purple-500/15 text-purple-400 ring-1 ring-purple-500/20";
+  if (score >= 0.7) return "bg-purple-500/10 text-purple-400/80 ring-1 ring-purple-500/15";
+  if (score >= 0.5) return "bg-purple-500/8 text-purple-400/60 ring-1 ring-purple-500/10";
+  return "bg-muted-foreground/8 text-muted-foreground/50 ring-1 ring-muted-foreground/10";
+}
+
+/** Color-coded CSS classes for BM25 score (0–∞, but typically 0–20). */
+function bm25ScoreStyle(score: number): string {
+  if (score >= 5) return "bg-blue-500/15 text-blue-400 ring-1 ring-blue-500/20";
+  if (score >= 2) return "bg-blue-500/10 text-blue-400/80 ring-1 ring-blue-500/15";
+  if (score > 0) return "bg-blue-500/8 text-blue-400/60 ring-1 ring-blue-500/10";
+  return "bg-muted-foreground/8 text-muted-foreground/50 ring-1 ring-muted-foreground/10";
 }
 
 /** Retrieval strategy tag config (EV2-T1-03). All SVG, no emoji. */
@@ -209,11 +217,30 @@ export default function CitationChip({
           p.{source.page_number}
         </span>
 
-        {/* Relevance score badge */}
-        {score != null && (
+        {/* Per-retriever raw scores */}
+        {(source.vector_score != null || source.bm25_score != null) ? (
+          <>
+            {source.vector_score != null && source.vector_score > 0 && (
+              <span
+                className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ${vectorScoreStyle(source.vector_score)}`}
+                title={`Vector (cosine similarity): ${source.vector_score.toFixed(4)}`}
+              >
+                V:{source.vector_score.toFixed(2)}
+              </span>
+            )}
+            {source.bm25_score != null && (
+              <span
+                className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ${bm25ScoreStyle(source.bm25_score)}`}
+                title={`BM25 (keyword match): ${source.bm25_score.toFixed(4)}${source.bm25_score === 0 ? ' — no keyword match' : ''}`}
+              >
+                K:{source.bm25_score.toFixed(2)}
+              </span>
+            )}
+          </>
+        ) : score != null && (
           <span
-            className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ${scoreStyle(score)}`}
-            title={`Relevance Score: ${score.toFixed(2)}`}
+            className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ${vectorScoreStyle(score)}`}
+            title={`Score: ${score.toFixed(4)}`}
           >
             {score.toFixed(2)}
           </span>

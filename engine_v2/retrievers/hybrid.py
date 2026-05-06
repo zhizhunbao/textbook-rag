@@ -97,10 +97,12 @@ class TrackedQueryFusionRetriever(QueryFusionRetriever):
 
     After RRF fusion, every NodeWithScore gets:
         metadata["retrieval_source"] = "vector" | "bm25" | "both"
+        metadata["vector_score"]     = raw cosine similarity (0~1)
+        metadata["bm25_score"]       = raw BM25 Okapi score (0~∞)
 
     Implementation:
-        1. Override _run_sync_queries() to capture per-retriever node IDs.
-        2. Override _retrieve() to inject the tag after fusion completes.
+        1. Override _run_sync_queries() to capture per-retriever IDs + raw scores.
+        2. Override _retrieve() to inject tags and raw scores after fusion.
 
     The first retriever (index 0) is always Vector; the second (index 1),
     when present, is BM25.  In vector-only mode all nodes are tagged
@@ -109,17 +111,21 @@ class TrackedQueryFusionRetriever(QueryFusionRetriever):
 
     _vector_ids: set[str]
     _bm25_ids: set[str]
+    _vector_scores: dict[str, float]  # node_id → raw cosine score
+    _bm25_scores: dict[str, float]    # node_id → raw BM25 score
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self._vector_ids = set()
         self._bm25_ids = set()
+        self._vector_scores = {}
+        self._bm25_scores = {}
         # "hybrid" when both retrievers present, else "vector_only"
         self.retrieval_mode: str = (
             "hybrid" if len(self._retrievers) > 1 else "vector_only"
         )
 
-    # -- capture per-retriever IDs during sync execution --
+    # -- capture per-retriever IDs + raw scores during sync execution --
     def _run_sync_queries(
         self, queries: List[QueryBundle],
     ) -> Dict[Tuple[str, int], List[NodeWithScore]]:
@@ -127,16 +133,23 @@ class TrackedQueryFusionRetriever(QueryFusionRetriever):
 
         self._vector_ids = set()
         self._bm25_ids = set()
+        self._vector_scores = {}
+        self._bm25_scores = {}
+
         for (_, retriever_idx), nodes in results.items():
-            ids = {n.node.id_ for n in nodes}
-            if retriever_idx == 0:
-                self._vector_ids |= ids
-            elif retriever_idx == 1:
-                self._bm25_ids |= ids
+            for n in nodes:
+                nid = n.node.id_
+                raw = float(n.score) if n.score is not None else 0.0
+                if retriever_idx == 0:     # Vector
+                    self._vector_ids.add(nid)
+                    self._vector_scores[nid] = raw
+                elif retriever_idx == 1:   # BM25
+                    self._bm25_ids.add(nid)
+                    self._bm25_scores[nid] = raw
 
         return results
 
-    # -- inject retrieval_source after fusion --
+    # -- inject retrieval_source + raw scores after fusion --
     def _retrieve(self, query_bundle: QueryBundle) -> List[NodeWithScore]:
         fused = super()._retrieve(query_bundle)
 
@@ -150,19 +163,27 @@ class TrackedQueryFusionRetriever(QueryFusionRetriever):
             elif in_bm25:
                 source = "bm25"
             else:
-                # default to "vector" (also covers vector-only mode)
                 source = "vector"
 
             nws.node.metadata["retrieval_source"] = source
+            # Raw scores — the honest numbers
+            nws.node.metadata["vector_score"] = self._vector_scores.get(nid, 0.0)
+            nws.node.metadata["bm25_score"] = self._bm25_scores.get(nid, 0.0)
 
-        # Log distribution
+        # Log distribution + sample scores for debugging
         counts = {"vector": 0, "bm25": 0, "both": 0}
         for nws in fused:
             counts[nws.node.metadata.get("retrieval_source", "vector")] += 1
-        logger.debug(
-            "Retrieval provenance: {} (mode={})",
-            counts, self.retrieval_mode,
-        )
+        if fused:
+            top = fused[0]
+            logger.debug(
+                "Retrieval provenance: {} (mode={}) | top node: "
+                "vec={:.4f} bm25={:.4f} rrf={:.6f}",
+                counts, self.retrieval_mode,
+                top.node.metadata.get("vector_score", 0),
+                top.node.metadata.get("bm25_score", 0),
+                float(top.score) if top.score else 0,
+            )
 
         return fused
 
@@ -348,18 +369,60 @@ def get_hybrid_retriever(
                         break
 
                 if bm25_nodes:
-                    bm25_retriever = BM25Retriever.from_defaults(
-                        nodes=bm25_nodes,
-                        similarity_top_k=similarity_top_k,
+                    # ── Language-aware BM25 config ──
+                    # Detect language from first few nodes
+                    sample_text = " ".join(
+                        n.text[:200] for n in bm25_nodes[:5]
                     )
+                    cjk_ratio = sum(
+                        1 for c in sample_text if '\u4e00' <= c <= '\u9fff'
+                    ) / max(len(sample_text), 1)
+                    is_chinese = cjk_ratio > 0.3
+
+                    bm25_kwargs: dict[str, Any] = {
+                        "nodes": bm25_nodes,
+                        "similarity_top_k": similarity_top_k,
+                    }
+
+                    if is_chinese:
+                        # Chinese: jieba word segmentation
+                        import jieba
+                        def _tokenize_zh(text: str) -> list[str]:
+                            """Segment Chinese text with jieba, remove stop words."""
+                            _ZH_STOP = {
+                                '的', '了', '在', '是', '我', '有', '和',
+                                '就', '不', '人', '都', '一', '一个', '上',
+                                '也', '很', '到', '说', '要', '去', '你',
+                                '会', '着', '没有', '看', '好', '自己',
+                                '这', '他', '她', '它', '们', '那', '些',
+                                '什么', '怎么', '如何', '哪', '吗', '吧',
+                                '啊', '呢', '呀', '嗯', '哦', '哈',
+                                '与', '及', '或', '但', '而', '虽', '因',
+                                '为', '所以', '如果', '因为', '但是',
+                            }
+                            tokens = jieba.lcut(text)
+                            return [t for t in tokens
+                                    if t.strip() and t not in _ZH_STOP
+                                    and len(t.strip()) > 0]
+                        bm25_kwargs["tokenizer"] = _tokenize_zh
+                        lang_label = "zh"
+                    else:
+                        # English: stemmer + built-in stop word removal
+                        import Stemmer
+                        stemmer = Stemmer.Stemmer("english")
+                        bm25_kwargs["language"] = "en"       # 去停用词
+                        bm25_kwargs["stemmer"] = stemmer     # 词干化
+                        lang_label = "en"
+
+                    bm25_retriever = BM25Retriever.from_defaults(**bm25_kwargs)
                     retrievers_list.append(bm25_retriever)
                     weights = [0.5, 0.5]
                     # Cache for reuse
                     _put_cached_bm25(collection_name, book_id_strings, bm25_retriever)
                     scope = f"books={book_id_strings}" if book_id_strings else "all-books"
                     logger.info(
-                        "BM25 retriever built from {} ChromaDB nodes ({})",
-                        len(bm25_nodes), scope,
+                        "BM25 retriever built from {} ChromaDB nodes ({}, lang={})",
+                        len(bm25_nodes), scope, lang_label,
                     )
                 else:
                     logger.warning(
@@ -393,3 +456,103 @@ def get_hybrid_retriever(
         mode, similarity_top_k, filter_desc, hybrid_retriever.retrieval_mode,
     )
     return hybrid_retriever
+
+
+# ============================================================
+# Multi-collection hybrid retrieval + RRF merge
+# ============================================================
+
+_MULTI_RRF_K = 60
+
+
+def _retrieve_from_collection(
+    question: str,
+    collection_name: str,
+    origin_tag: str,
+    top_k: int,
+) -> list[NodeWithScore]:
+    """Retrieve nodes from one ChromaDB collection via hybrid BM25+Vector."""
+    try:
+        retriever = get_hybrid_retriever(
+            similarity_top_k=top_k,
+            collection_name=collection_name,
+        )
+        nodes = retriever.retrieve(question)
+
+        for nws in nodes:
+            nws.node.metadata["retrieval_origin"] = origin_tag
+
+        logger.debug(
+            "Hybrid-retrieved {} nodes from {} ({})",
+            len(nodes), collection_name, origin_tag,
+        )
+        return nodes
+    except Exception as exc:
+        logger.warning("Retrieval from {} failed: {}", collection_name, exc)
+        return []
+
+
+def _merge_n_with_rrf(
+    ranked_lists: list[list[NodeWithScore]],
+    top_k: int,
+) -> list[NodeWithScore]:
+    """Merge N ranked node lists using Reciprocal Rank Fusion."""
+    scored: dict[str, tuple[float, NodeWithScore]] = {}
+
+    for nodes in ranked_lists:
+        for rank, nws in enumerate(nodes, start=1):
+            node_id = nws.node.id_
+            rrf_score = 1.0 / (_MULTI_RRF_K + rank)
+            if node_id in scored:
+                existing_score, existing_node = scored[node_id]
+                scored[node_id] = (existing_score + rrf_score, existing_node)
+            else:
+                scored[node_id] = (rrf_score, nws)
+
+    merged = sorted(scored.values(), key=lambda item: item[0], reverse=True)[:top_k]
+    result: list[NodeWithScore] = []
+    for rrf_score, nws in merged:
+        nws.score = rrf_score
+        result.append(nws)
+    return result
+
+
+def multi_collection_retrieve(
+    question: str,
+    collection_names: list[str],
+    top_k: int = TOP_K,
+) -> list[NodeWithScore]:
+    """Retrieve from multiple ChromaDB collections in parallel, merge via RRF.
+
+    Each collection uses hybrid BM25+Vector retrieval internally.
+
+    Args:
+        question: User query string.
+        collection_names: List of ChromaDB collection names to search.
+        top_k: Number of merged results to return.
+
+    Returns:
+        Merged and ranked list of NodeWithScore.
+    """
+    from concurrent.futures import ThreadPoolExecutor
+
+    with ThreadPoolExecutor(max_workers=len(collection_names)) as executor:
+        futures = [
+            executor.submit(
+                _retrieve_from_collection,
+                question,
+                coll_name,
+                coll_name,
+                top_k,
+            )
+            for coll_name in collection_names
+        ]
+        ranked_lists = [f.result() for f in futures]
+
+    merged = _merge_n_with_rrf(ranked_lists, top_k)
+    counts = {name: len(nodes) for name, nodes in zip(collection_names, ranked_lists)}
+    logger.info(
+        "Multi-collection hybrid RRF: {} → {} merged",
+        counts, len(merged),
+    )
+    return merged

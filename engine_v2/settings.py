@@ -91,7 +91,8 @@ RERANKER_MODEL: str = os.getenv(
 RERANKER_TOP_N: int = int(os.getenv("RERANKER_TOP_N", "5"))
 # Similarity cutoff — drop chunks below this threshold after reranking
 # 0.0 = keep all; increase to filter more aggressively
-SIMILARITY_CUTOFF: float = float(os.getenv("SIMILARITY_CUTOFF", "0.01"))
+# Raised from 0.01 → 0.05 to filter borderline-irrelevant chunks after reranking
+SIMILARITY_CUTOFF: float = float(os.getenv("SIMILARITY_CUTOFF", "0.05"))
 
 # ============================================================
 # Auto-evaluation (EV2-T3)

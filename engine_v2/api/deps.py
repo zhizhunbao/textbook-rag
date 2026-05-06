@@ -31,7 +31,7 @@ def get_engine() -> TextbookCitationQueryEngine:
     Composes:
         retrievers/    → QueryFusionRetriever (BM25 + Vector → RRF)
         _create_citation_nodes → merge same-page + Source N labels
-        response_synthesizers/ → CitationSynthesizer
+        query_engine/synthesizer → CitationSynthesizer
     """
     return get_query_engine()
 

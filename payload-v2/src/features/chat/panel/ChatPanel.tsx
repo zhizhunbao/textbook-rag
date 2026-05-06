@@ -17,7 +17,7 @@ import { useAuth } from "@/features/shared/AuthProvider";
 import { useCountry } from "@/features/shared/CountryContext";
 import { useI18n } from "@/features/shared/i18n";
 import type { ModelInfo, SourceInfo } from "@/features/shared/types";
-import type { PersonaInfo } from "@/features/shared/consultingApi";
+import type { PersonaInfo, HighlightKeyword, NumericHighlight } from "@/features/shared/consultingApi";
 
 import type { Message } from "../types";
 import { NEAR_BOTTOM_THRESHOLD } from "../types";
@@ -72,6 +72,8 @@ export default function ChatPanel({
   const [hasNewMessagesBelow, setHasNewMessagesBelow] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
   const [streamingSources, setStreamingSources] = useState<SourceInfo[]>([]);
+  const [streamingKeywords, setStreamingKeywords] = useState<HighlightKeyword[]>([]);
+  const [streamingNumericHighlights, setStreamingNumericHighlights] = useState<NumericHighlight[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [personas, setPersonas] = useState<PersonaInfo[]>([]);
   const [selectedPersonaSlug, setSelectedPersonaSlug] = useState<string | null>(null);
@@ -372,8 +374,10 @@ export default function ChatPanel({
                 });
               }
             },
-            onRetrievalDone: ({ sources }) => {
+            onRetrievalDone: ({ sources, highlight_keywords, numeric_highlights }) => {
               setStreamingSources(sources);
+              setStreamingKeywords(highlight_keywords ?? []);
+              setStreamingNumericHighlights(numeric_highlights ?? []);
             },
             onWarning: ({ message }) => {
               setMessages((prev) => [
@@ -399,20 +403,33 @@ export default function ChatPanel({
                 }
                 return match ? { ...s, book_title: match.title } : s;
               });
-
-              setMessages((prev) => [
-                ...prev,
-                {
+              const kws = res.highlight_keywords ?? [];
+              const numHl = res.numeric_highlights ?? [];
+              const answerKws = res.answer_highlight_keywords ?? [];
+              setMessages((prev) => {
+                // Backfill keywords onto the preceding user message
+                const updated = prev.map((m, i) =>
+                  i === prev.length - 1 && m.role === "user" && kws.length > 0
+                    ? { ...m, highlightKeywords: kws }
+                    : m,
+                );
+                updated.push({
                   role: "assistant",
                   content: res.answer,
                   sources: enrichedSources,
                   model: selectedModel || undefined,
                   timestamp: new Date().toISOString(),
                   telemetry: res.telemetry,
-                },
-              ]);
+                  highlightKeywords: kws,
+                  numericHighlights: numHl,
+                  answerHighlightKeywords: answerKws.length > 0 ? answerKws : undefined,
+                });
+                return updated;
+              });
               setStreamingContent("");
               setStreamingSources([]);
+              setStreamingKeywords([]);
+              setStreamingNumericHighlights([]);
               tokenBufferRef.current = "";
               if (rafIdRef.current !== null) {
                 cancelAnimationFrame(rafIdRef.current);
@@ -423,8 +440,8 @@ export default function ChatPanel({
 
               if (sessionId) {
                 chatHistory.appendMessages(sessionId, [
-                  { role: "user", content: trimmed, timestamp: new Date().toISOString() },
-                  { role: "assistant", content: res.answer, sources: enrichedSources, timestamp: new Date().toISOString() },
+                  { role: "user", content: trimmed, timestamp: new Date().toISOString(), highlightKeywords: kws.length > 0 ? kws : undefined },
+                  { role: "assistant", content: res.answer, sources: enrichedSources, timestamp: new Date().toISOString(), model: selectedModel || undefined, telemetry: res.telemetry, highlightKeywords: kws.length > 0 ? kws : undefined, numericHighlights: numHl.length > 0 ? numHl : undefined, answerHighlightKeywords: answerKws.length > 0 ? answerKws : undefined },
                 ]);
               }
 
@@ -475,6 +492,8 @@ export default function ChatPanel({
                 rafIdRef.current = null;
               }
               setStreamingSources([]);
+              setStreamingKeywords([]);
+              setStreamingNumericHighlights([]);
               setIsStreaming(false);
               setLoading(false);
             },
@@ -547,20 +566,25 @@ export default function ChatPanel({
           />
         ) : (
           <div className="mx-auto flex max-w-3xl flex-col gap-3">
-            {messages.map((message, index) => (
-              <div key={`${message.role}-${index}`} className="space-y-2">
-                <MessageBubble
-                  role={message.role}
-                  content={message.content}
-                  sources={message.sources}
-                  model={message.model}
-                  queryId={message.queryId}
-                  timestamp={message.timestamp}
-                  telemetry={message.telemetry}
-                  onRetry={message.role === "user" && !loading ? (q) => void submitQuestion(q) : undefined}
-                />
-              </div>
-            ))}
+            {messages.map((message, index) => {
+              return (
+                <div key={`${message.role}-${index}`} className="space-y-2">
+                  <MessageBubble
+                    role={message.role}
+                    content={message.content}
+                    sources={message.sources}
+                    model={message.model}
+                    queryId={message.queryId}
+                    timestamp={message.timestamp}
+                    telemetry={message.telemetry}
+                    onRetry={message.role === "user" && !loading ? (q) => void submitQuestion(q) : undefined}
+                    highlightKeywords={message.highlightKeywords}
+                    numericHighlights={message.numericHighlights}
+                    answerHighlightKeywords={message.answerHighlightKeywords}
+                  />
+                </div>
+              );
+            })}
 
             {/* Streaming bubble — shown while tokens arrive */}
             {isStreaming && smoothedText && (

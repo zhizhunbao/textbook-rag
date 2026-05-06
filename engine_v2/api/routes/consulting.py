@@ -41,6 +41,7 @@ from engine_v2.consulting.helpers import (
 )
 from engine_v2.consulting.prompts import build_system_prompt as _build_system_prompt
 from engine_v2.consulting.query_service import execute_consulting_query
+from engine_v2.consulting.keyword_extractor import extract_answer_keywords, extract_numeric_highlights, extract_source_numeric_highlights, extract_verified_keywords, _extract_numeric_values
 from engine_v2.consulting.personas import router as personas_router
 from engine_v2.consulting.user_docs import router as user_docs_router
 from engine_v2.personas.registry import (
@@ -240,6 +241,18 @@ async def consulting_query(req: PersonaQueryRequest, request: Request):
     # G4-03: Auto-append disclaimer
     answer = _append_disclaimer(answer, req.question)
 
+    # ── Extract cross-referenced highlight keywords ──
+    source_texts = [s.get("full_content") or s.get("text", "") for s in result.sources]
+    highlight_keywords = extract_verified_keywords(req.question, source_texts)
+    numeric_highlights = extract_numeric_highlights(answer, source_texts)
+    answer_keywords = extract_answer_keywords(answer, source_texts, highlight_keywords)
+
+    # ── Enrich each source with per-source numeric highlights ──
+    answer_numbers = _extract_numeric_values(answer)
+    for src in result.sources:
+        src_text = src.get("full_content") or src.get("text", "")
+        src["numeric_highlights"] = extract_source_numeric_highlights(src_text, answer_numbers)
+
     return {
         "persona": {
             "name": persona.get("name"),
@@ -248,6 +261,9 @@ async def consulting_query(req: PersonaQueryRequest, request: Request):
         "answer": answer,
         "sources": result.sources,
         "stats": {"source_count": len(result.sources)},
+        "highlight_keywords": highlight_keywords,
+        "numeric_highlights": numeric_highlights,
+        "answer_highlight_keywords": answer_keywords,
     }
 
 
@@ -318,6 +334,10 @@ async def _consulting_stream_generator(req: PersonaQueryRequest):
         yield _sse("retrieval_done", {
             "stats": {"source_count": len(result.sources)},
             "sources": result.sources,
+            "highlight_keywords": extract_verified_keywords(
+                req.question,
+                [s.get("full_content") or s.get("text", "") for s in result.sources],
+            ),
         })
 
         # G3: If no chunks were retrieved, use a lightweight LLM call with
@@ -387,6 +407,16 @@ async def _consulting_stream_generator(req: PersonaQueryRequest):
             (len(req.question.split()) + len(context_text.split())) / 0.75
         )
 
+        done_source_texts = [s.get("full_content") or s.get("text", "") for s in result.sources]
+        done_q_keywords = extract_verified_keywords(req.question, done_source_texts)
+        done_answer_keywords = extract_answer_keywords(full_answer, done_source_texts, done_q_keywords)
+
+        # Enrich each source with per-source numeric highlights
+        answer_numbers = _extract_numeric_values(full_answer)
+        for src in result.sources:
+            src_text = src.get("full_content") or src.get("text", "")
+            src["numeric_highlights"] = extract_source_numeric_highlights(src_text, answer_numbers)
+
         yield _sse("done", {
             "persona": {
                 "name": persona.get("name"),
@@ -395,6 +425,11 @@ async def _consulting_stream_generator(req: PersonaQueryRequest):
             "answer": full_answer,
             "sources": result.sources,
             "stats": {"source_count": len(result.sources)},
+            "highlight_keywords": done_q_keywords,
+            "numeric_highlights": extract_numeric_highlights(
+                full_answer, done_source_texts,
+            ),
+            "answer_highlight_keywords": done_answer_keywords,
             "telemetry": {
                 "llm_calls": 1,
                 "input_tokens": input_token_estimate,

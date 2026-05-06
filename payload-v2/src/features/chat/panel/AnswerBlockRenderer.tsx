@@ -22,6 +22,7 @@ import { normalizeMarkdown } from "@/features/shared/markdownNormalizer";
 import { parseAnswerBlocks } from "./answerBlocks";
 import CitationChip from "./CitationChip";
 import { prepareForKatex } from "./textUtils";
+import { injectHighlightMarks, injectNumericMarks, buildNumericColorMap, type KeywordEntry, type NumericHighlight, type NumericColorMap } from "./keywordHighlight";
 
 // ============================================================
 // Types
@@ -31,6 +32,12 @@ interface AnswerBlockRendererProps {
   content: string;
   /** Source list from the query response */
   sources?: SourceInfo[];
+  /** Keywords extracted from the user question — highlighted in the answer with matching colors */
+  highlightKeywords?: KeywordEntry[];
+  /** Backend-extracted numeric highlights with source verification */
+  numericHighlights?: NumericHighlight[];
+  /** Keywords extracted from the LLM answer — highlighted in citation panels */
+  answerHighlightKeywords?: KeywordEntry[];
 }
 
 // ============================================================
@@ -42,9 +49,16 @@ interface AnswerBlockRendererProps {
 // ============================================================
 // Inline citation content panel
 // ============================================================
-function InlineCitationPanel({ source, index, onClose }: { source: SourceInfo; index: number; onClose: () => void }) {
+function InlineCitationPanel({ source, index, onClose, highlightKeywords, colorMap }: { source: SourceInfo; index: number; onClose: () => void; highlightKeywords?: KeywordEntry[]; colorMap?: NumericColorMap }) {
   const previewContent = source.full_content || source.snippet;
   if (!previewContent) return null;
+
+  // Use per-source numeric highlights from backend NLP pipeline
+  const sourceNumericHighlights: NumericHighlight[] = (source.numeric_highlights ?? []).map(h => ({
+    text: h.text,
+    verified: h.verified,
+    offset: h.offset,
+  }));
 
   return (
     <div className="relative mt-1.5 rounded-lg border border-border/50 border-l-2 border-l-blue-500/60 bg-muted/20 pl-3 pr-8 py-2 text-xs leading-relaxed text-popover-foreground/90 animate-in fade-in slide-in-from-top-1 duration-150">
@@ -94,7 +108,15 @@ function InlineCitationPanel({ source, index, onClose }: { source: SourceInfo; i
           },
         }}
       >
-        {prepareForKatex(previewContent)}
+        {prepareForKatex(
+          injectNumericMarks(
+            highlightKeywords?.length
+              ? injectHighlightMarks(previewContent, highlightKeywords)
+              : previewContent,
+            sourceNumericHighlights,
+            { colorMap },
+          ),
+        )}
       </Markdown>
     </div>
   );
@@ -106,6 +128,9 @@ function InlineCitationPanel({ source, index, onClose }: { source: SourceInfo; i
 export default function AnswerBlockRenderer({
   content,
   sources,
+  highlightKeywords,
+  numericHighlights,
+  answerHighlightKeywords,
 }: AnswerBlockRendererProps) {
 
   // ── Build citation lookup map ─────────────────────────────
@@ -141,6 +166,11 @@ export default function AnswerBlockRenderer({
   // ── Expanded citations state (multiple panels can be open) ──
   const [expandedCitations, setExpandedCitations] = useState<Set<number>>(new Set());
 
+  // ── Shared numeric color map (consistent across answer + citation panels) ──
+  const numericColorMap = useMemo(
+    () => buildNumericColorMap(numericHighlights ?? []),
+    [numericHighlights],
+  );
   const toggleCitation = useCallback((globalIndex: number) => {
     setExpandedCitations((prev) => {
       const next = new Set(prev);
@@ -158,10 +188,9 @@ export default function AnswerBlockRenderer({
     });
   }, []);
 
-  // ── Determine active citation ─────────────────────────────
-  // Track the specific globalIndex that was selected (not just chunk_id)
-  // so only one chip highlights when the same citation appears in multiple blocks
-  const [selectedGlobalIndex, setSelectedGlobalIndex] = useState<number | null>(null);
+  // NOTE: highlight (isActive) is now driven solely by expandedCitations.
+  // No separate selectedGlobalIndex — this eliminates the desync bug
+  // where a collapsed panel could still show a highlighted chip.
 
   // ── Pre-compute global sequential numbering across all blocks ──
   // Each citation index (e.g., Source 2) only appears as a chip under its
@@ -179,7 +208,9 @@ export default function AnswerBlockRenderer({
             entry.source != null,
         )
         // Only show citations that haven't appeared in a previous block
-        .filter((entry) => !shownCitations.has(entry.ci));
+        .filter((entry) => !shownCitations.has(entry.ci))
+        // Sort by citation number ascending so [1] always appears before [2]
+        .sort((a, b) => a.ci - b.ci);
 
       // Mark these citations as shown
       for (const entry of blockSources) {
@@ -370,7 +401,15 @@ export default function AnswerBlockRenderer({
               },
             }}
           >
-            {prepareForKatex(block.text)}
+            {prepareForKatex(
+              injectNumericMarks(
+                highlightKeywords?.length
+                  ? injectHighlightMarks(block.text, highlightKeywords)
+                  : block.text,
+                numericHighlights ?? [],
+                { colorMap: numericColorMap },
+              ),
+            )}
           </Markdown>
 
           {/* ── Citation chips row ── */}
@@ -382,16 +421,8 @@ export default function AnswerBlockRenderer({
                     key={ci}
                     source={source}
                     index={ci}
-                    isActive={
-                      expandedCitations.has(globalIndex) ||
-                      selectedGlobalIndex === globalIndex
-                    }
-                    onChipClick={() => {
-                      toggleCitation(globalIndex);
-                      setSelectedGlobalIndex(
-                        selectedGlobalIndex === globalIndex ? null : globalIndex,
-                      );
-                    }}
+                    isActive={expandedCitations.has(globalIndex)}
+                    onChipClick={() => toggleCitation(globalIndex)}
                   />
                 ))}
               </div>
@@ -404,6 +435,8 @@ export default function AnswerBlockRenderer({
                     source={source}
                     index={globalIndex}
                     onClose={() => closeCitation(globalIndex)}
+                    highlightKeywords={highlightKeywords}
+                    colorMap={numericColorMap}
                   />
                 ) : null,
               )}
@@ -440,16 +473,8 @@ export default function AnswerBlockRenderer({
                     key={`uncited-${ci}`}
                     source={source}
                     index={ci}
-                    isActive={
-                      expandedCitations.has(globalIndex) ||
-                      selectedGlobalIndex === globalIndex
-                    }
-                    onChipClick={() => {
-                      toggleCitation(globalIndex);
-                      setSelectedGlobalIndex(
-                        selectedGlobalIndex === globalIndex ? null : globalIndex,
-                      );
-                    }}
+                    isActive={expandedCitations.has(globalIndex)}
+                    onChipClick={() => toggleCitation(globalIndex)}
                   />
                 ))}
               </div>
@@ -462,6 +487,8 @@ export default function AnswerBlockRenderer({
                     source={source}
                     index={globalIndex}
                     onClose={() => closeCitation(globalIndex)}
+                    highlightKeywords={highlightKeywords}
+                    colorMap={numericColorMap}
                   />
                 ) : null,
               )}
@@ -470,16 +497,33 @@ export default function AnswerBlockRenderer({
         </div>
       )}
 
-      {/* ── Disclaimers (compact, merged into single block) ── */}
-      {disclaimers.length > 0 && (
-        <div className="mt-3 rounded-md border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground/70">
-          {disclaimers.map((text, i) => (
-            <p key={i} className={i > 0 ? "mt-1" : ""}>
-              ⚠ {text.replace(/^⚠️?\s*/, "").replace(/^\*{2}Disclaimer\*{2}:\s*/, "")}
-            </p>
-          ))}
-        </div>
-      )}
+      {/* ── Disclaimers (compact, deduplicated into single block) ── */}
+      {disclaimers.length > 0 && (() => {
+        // Deduplicate: if multiple disclaimers share the same key phrase, keep only the longest
+        const cleaned = disclaimers.map((t) =>
+          t.replace(/^⚠️?\s*/, "").replace(/^\*{2}Disclaimer\*{2}:\s*/, "").trim(),
+        );
+        const deduped = cleaned.filter((text, i) => {
+          // Remove if another (longer) disclaimer covers the same intent
+          const lower = text.toLowerCase();
+          return !cleaned.some(
+            (other, j) =>
+              j !== i &&
+              other.length > text.length &&
+              (lower.includes("informational purposes") && other.toLowerCase().includes("informational purposes")),
+          );
+        });
+        if (deduped.length === 0) return null;
+        return (
+          <div className="mt-3 rounded-md border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground/70">
+            {deduped.map((text, i) => (
+              <p key={i} className={i > 0 ? "mt-1" : ""}>
+                ⚠ {text}
+              </p>
+            ))}
+          </div>
+        );
+      })()}
     </div>
   );
 }

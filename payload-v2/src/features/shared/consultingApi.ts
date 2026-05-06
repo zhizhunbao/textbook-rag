@@ -36,12 +36,38 @@ export interface ConsultingQueryRequest {
   // GO-MU-06: user_id removed — now extracted from JWT auth server-side
 }
 
+/** Backend-verified keyword for cross-referenced highlighting. */
+export interface HighlightKeyword {
+  /** The keyword/phrase text to highlight */
+  text: string
+  /** "phrase" or "data_value" */
+  type: 'phrase' | 'data_value'
+  /** Color palette index (0-7 for phrases, -1 for data_value accent) */
+  color_index: number
+}
+
+/** Backend-extracted numeric highlight entry (verified vs unverified). */
+export interface NumericHighlight {
+  /** The matched numeric value (e.g. "9.8%", "$801,524", "3,941") */
+  text: string
+  /** True if found in source texts, False if LLM-generated */
+  verified: boolean
+  /** Character offset in the answer text */
+  offset: number
+}
+
 export interface ConsultingQueryResponse {
   persona: { name: string; slug: string }
   answer: string
   sources: SourceInfo[]
   stats: { source_count: number }
   telemetry?: LlmTelemetry
+  /** Backend-extracted, source-cross-referenced keywords for highlighting */
+  highlight_keywords?: HighlightKeyword[]
+  /** Backend-extracted numeric highlights with source verification */
+  numeric_highlights?: NumericHighlight[]
+  /** Backend-extracted answer-derived keywords for citation panel highlighting */
+  answer_highlight_keywords?: HighlightKeyword[]
 }
 
 export interface PersonaInfo {
@@ -100,8 +126,11 @@ function normaliseSource(s: any): SourceInfo {
       : null,
     confidence: s.score ?? 1,
     score: s.score ?? undefined,
+    bm25_score: s.bm25_score ?? undefined,
+    vector_score: s.vector_score ?? undefined,
     retrieval_source: s.retrieval_source ?? s.retrieval_origin ?? undefined,
     source_type: s.source_type ?? undefined,
+    numeric_highlights: s.numeric_highlights ?? undefined,
   }
 }
 
@@ -138,7 +167,7 @@ export async function queryConsultingStream(
   req: ConsultingQueryRequest,
   callbacks: {
     onToken: (token: string) => void
-    onRetrievalDone?: (data: { stats: Record<string, number>; sources: SourceInfo[] }) => void
+    onRetrievalDone?: (data: { stats: Record<string, number>; sources: SourceInfo[]; highlight_keywords?: HighlightKeyword[]; numeric_highlights?: NumericHighlight[] }) => void
     onWarning?: (data: { code: string; message: string }) => void
     onDone: (result: ConsultingQueryResponse) => void
     onError: (error: Error) => void
@@ -205,7 +234,11 @@ export async function queryConsultingStream(
               callbacks.onWarning?.(data)
             } else if (currentEvent === 'retrieval_done') {
               const sources = (data.sources ?? []).map(normaliseSource)
-              callbacks.onRetrievalDone?.({ stats: data.stats ?? {}, sources })
+              callbacks.onRetrievalDone?.({
+                stats: data.stats ?? {},
+                sources,
+                highlight_keywords: data.highlight_keywords ?? undefined,
+              })
             } else if (currentEvent === 'done') {
               const sources = (data.sources ?? []).map(normaliseSource)
               callbacks.onDone({
@@ -214,6 +247,9 @@ export async function queryConsultingStream(
                 sources,
                 stats: data.stats ?? { source_count: sources.length },
                 telemetry: data.telemetry ?? undefined,
+                highlight_keywords: data.highlight_keywords ?? undefined,
+                numeric_highlights: data.numeric_highlights ?? undefined,
+                answer_highlight_keywords: data.answer_highlight_keywords ?? undefined,
               })
             } else if (currentEvent === 'error') {
               callbacks.onError(new Error(data.message ?? 'Unknown error'))

@@ -76,8 +76,12 @@ const PLACEHOLDER_RE = /\u0000P_(\d+)\u0000/g;
 const DISCLAIMER_PATTERNS = [
   // Python-appended disclaimer (after ---)
   /\n\n---\n⚠️?\s*\*{0,2}(?:Disclaimer|免责声明)\*{0,2}\s*[:：].*$/s,
-  // LLM-generated data notice with ⚠ emoji
+  // LLM-generated data notice with ⚠ emoji (paragraph-separated)
   /\n\n⚠️?\s*(?:The above|以上).*?(?:official\s+figures|官方数据)\.?\s*$/s,
+  // Inline disclaimer at end of text (⚠ emoji mid-paragraph, after source stripping)
+  /\s*⚠️?\s*(?:The above|以上).*?(?:official\s+figures|官方数据)\.?\s*$/s,
+  // Generic trailing disclaimer: "This information is..." / "This analysis is based on..."
+  /\s*⚠️?\s*(?:This|The above)\s+(?:information|analysis|data|report)\s+(?:is based on|is for|should be).*$/si,
 ];
 
 // ============================================================
@@ -257,6 +261,14 @@ export function normalizeMarkdown(raw: string): NormalizedMarkdown {
 
   // 3. Normalize citation formats → [N]
   text = normalizeCitations(text);
+
+  // 3b. Strip verbose inline source references (redundant — CitationChips handle these)
+  //     [Source: book_id §Section; book_id §Section]
+  //     [Source: book_id_a §Section & SubSection; book_id_b]
+  text = text.replace(
+    /\s*\[Source\s*:\s*[^\[\]]{5,}\]\s*\.?\s*/gi,
+    " ",
+  );
 
   // 4. Escape unknown HTML tags (LLM pseudo-tags)
   text = escapeUnknownTags(text);

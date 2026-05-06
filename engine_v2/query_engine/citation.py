@@ -37,7 +37,7 @@ from llama_index.core.schema import (
 )
 from llama_index.core.settings import Settings
 
-from engine_v2.response_synthesizers.citation import get_citation_synthesizer
+from engine_v2.query_engine.synthesizer import get_citation_synthesizer
 from engine_v2.retrievers.hybrid import get_hybrid_retriever
 from engine_v2.schema import RAGResponse, build_source, normalize_scores
 from engine_v2.settings import TOP_K
@@ -75,6 +75,86 @@ class BookFilterPostprocessor(BaseNodePostprocessor):
                 "BookFilterPostprocessor dropped {} nodes outside book scope",
                 dropped,
             )
+        return filtered
+
+
+class RelevanceFilterPostprocessor(BaseNodePostprocessor):
+    """Drop low-relevance nodes based on per-retriever raw scores.
+
+    Targets the classic "semantic false positive" pattern:
+        - Vector retrieves a chunk because the topic is vaguely similar
+        - BM25 gives it K:0.00 because no actual keywords match
+        - The chunk is noise but RRF still includes it
+
+    Rules (applied only when hybrid scores are available):
+        1. If retrieval_source == "vector" AND vector_score < min_vector_score
+           AND bm25_score == 0 → DROP (no keyword evidence, weak semantic)
+        2. If retrieval_source == "bm25" AND bm25_score < min_bm25_score
+           AND vector_score == 0 → DROP (weak keyword, no semantic evidence)
+
+    Nodes with retrieval_source == "both" are always kept (dual evidence).
+    """
+
+    min_vector_score: float = 0.5
+    min_bm25_score: float = 1.0
+
+    def _postprocess_nodes(
+        self,
+        nodes: list[NodeWithScore],
+        query_bundle: QueryBundle | None = None,
+    ) -> list[NodeWithScore]:
+        if not nodes:
+            return nodes
+
+        # Only filter when hybrid scores are available
+        has_hybrid = any(
+            n.node.metadata.get("retrieval_source") in ("vector", "bm25", "both")
+            for n in nodes
+        )
+        if not has_hybrid:
+            return nodes
+
+        filtered: list[NodeWithScore] = []
+        dropped_reasons: list[str] = []
+
+        for nws in nodes:
+            meta = nws.node.metadata
+            source = meta.get("retrieval_source", "vector")
+            v_score = float(meta.get("vector_score", 0))
+            k_score = float(meta.get("bm25_score", 0))
+
+            # "both" → always keep (dual evidence is strong signal)
+            if source == "both":
+                filtered.append(nws)
+                continue
+
+            # Vector-only: drop if weak semantic AND zero keyword match
+            if source == "vector" and v_score < self.min_vector_score and k_score == 0:
+                dropped_reasons.append(
+                    f"V:{v_score:.2f}/K:{k_score:.2f} (weak vector, no keyword)"
+                )
+                continue
+
+            # BM25-only: drop if weak keyword AND zero semantic match
+            if source == "bm25" and k_score < self.min_bm25_score and v_score == 0:
+                dropped_reasons.append(
+                    f"V:{v_score:.2f}/K:{k_score:.2f} (weak keyword, no semantic)"
+                )
+                continue
+
+            filtered.append(nws)
+
+        if dropped_reasons:
+            logger.info(
+                "RelevanceFilter: dropped {} of {} nodes: {}",
+                len(dropped_reasons), len(nodes), dropped_reasons,
+            )
+
+        # Safety: always keep at least 1 node (never return empty)
+        if not filtered and nodes:
+            filtered = [nodes[0]]
+            logger.warning("RelevanceFilter: kept 1 fallback node to avoid empty results")
+
         return filtered
 
 
@@ -123,23 +203,54 @@ class TextbookCitationQueryEngine(BaseQueryEngine):
     # ==========================================================
     # Core: deduplicate + add Source N labels (per-chunk)
     # ==========================================================
+    @staticmethod
+    def _relevance_sort_key(nws: NodeWithScore) -> float:
+        """Compute composite relevance for citation ordering.
+
+        Priority: both > single-retriever, weighted by raw scores.
+        - "both" nodes get a +10 boost (always first)
+        - Vector score contributes 0-1 (cosine similarity)
+        - BM25 score is normalized to 0-1 range (capped at 10)
+
+        Returns:
+            Float sort key (higher = more relevant).
+        """
+        meta = nws.node.metadata
+        source = meta.get("retrieval_source", "vector")
+        v = float(meta.get("vector_score", 0))
+        k = float(meta.get("bm25_score", 0))
+        # Normalize BM25 to 0-1 range (typical Okapi scores 0-20, cap at 10)
+        k_norm = min(k / 10.0, 1.0)
+
+        boost = 10.0 if source == "both" else 0.0
+        return boost + v + k_norm
+
     def _create_citation_nodes(
         self, nodes: list[NodeWithScore]
     ) -> list[NodeWithScore]:
-        """Deduplicate and label each chunk with Source N.
+        """Deduplicate, sort by relevance, and label each chunk with Source N.
 
         Each retrieved chunk gets its own Source N citation label,
         providing granular references for the LLM to cite.
         Only exact-duplicate texts are removed.
 
+        Sort order: "both" sources first (dual evidence), then by
+        composite relevance score (vector + normalized BM25).
+
         Returns:
             List of citation nodes, each with "Source N:\\n{text}" content.
             The list order determines the citation index (1-based).
         """
+        # Sort by composite relevance BEFORE assigning Source N labels
+        # so the best source always gets citation #1
+        sorted_nodes = sorted(
+            nodes, key=self._relevance_sort_key, reverse=True,
+        )
+
         citation_nodes: list[NodeWithScore] = []
         seen: set[str] = set()
 
-        for nws in nodes:
+        for nws in sorted_nodes:
             text = nws.node.get_content()
             # Strip any leftover "Source N:" prefix from previous runs
             text = re.sub(r"^Source \d+:\n", "", text)
@@ -163,6 +274,16 @@ class TextbookCitationQueryEngine(BaseQueryEngine):
                 "Citation nodes: {} raw → {} unique ({} duplicates removed)",
                 len(nodes), len(citation_nodes), len(nodes) - len(citation_nodes),
             )
+
+        # Log new citation order for debugging
+        if citation_nodes:
+            order_log = [
+                f"#{i+1} {n.node.metadata.get('retrieval_source','?')}"
+                f" V:{n.node.metadata.get('vector_score',0):.2f}"
+                f" K:{n.node.metadata.get('bm25_score',0):.2f}"
+                for i, n in enumerate(citation_nodes[:5])
+            ]
+            logger.debug("Citation order: {}", order_log)
 
         return citation_nodes
 
@@ -315,6 +436,16 @@ def get_query_engine(
         postprocessors.append(
             BookFilterPostprocessor(book_id_strings=book_id_strings)
         )
+
+    # Layer 2.5: RelevanceFilterPostprocessor — drop vector-only noise with K:0.00
+    # This catches the "semantic false positive" pattern where vector retrieval
+    # returns topically similar but factually irrelevant chunks (e.g. wrong quarter)
+    postprocessors.append(
+        RelevanceFilterPostprocessor(
+            min_vector_score=0.55,  # below this + K:0.00 = noise
+            min_bm25_score=1.0,     # below this + V:0.00 = noise
+        )
+    )
 
     # Layer 3: SentenceTransformerRerank — CrossEncoder semantic reranking
     # Ref: llama_index.core.postprocessor.sbert_rerank.SentenceTransformerRerank

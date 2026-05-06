@@ -16,9 +16,10 @@
  * Usage: <MessageBubble role="assistant" content={text} sources={sources} queryId={42} />
  */
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import Markdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
+import rehypeRaw from "rehype-raw";
 import remarkMath from "remark-math";
 import type { SourceInfo } from "@/features/shared/types";
 import type { EvaluationResult } from "@/features/engine/evaluation/types";
@@ -28,6 +29,8 @@ import EvalScoreCard from "@/features/engine/evaluation/components/EvalScoreCard
 import InlineEvalCard from "./InlineEvalCard";
 import AnswerBlockRenderer from "./AnswerBlockRenderer";
 import { prepareForKatex } from "./textUtils";
+import { injectHighlightMarks, injectNumericMarks, buildNumericColorMap, HIGHLIGHT_COLORS, type KeywordEntry, type NumericHighlight } from "./keywordHighlight";
+import type { HighlightKeyword } from "@/features/shared/consultingApi";
 
 // ============================================================
 // SVG Icons
@@ -102,6 +105,12 @@ interface Props {
   telemetry?: LlmTelemetry;
   onRetry?: (content: string) => void;
   isStreaming?: boolean;
+  /** Backend-extracted, source-cross-referenced keywords for highlighting. */
+  highlightKeywords?: HighlightKeyword[];
+  /** Backend-extracted numeric highlights with source verification. */
+  numericHighlights?: NumericHighlight[];
+  /** Backend-extracted answer-derived keywords for citation panel highlighting. */
+  answerHighlightKeywords?: HighlightKeyword[];
 }
 
 // ============================================================
@@ -113,8 +122,39 @@ interface Props {
 // ============================================================
 // Component
 // ============================================================
-export default function MessageBubble({ role, content, sources, model, queryId, timestamp, telemetry, onRetry, isStreaming }: Props) {
+export default function MessageBubble({ role, content, sources, model, queryId, timestamp, telemetry, onRetry, isStreaming, highlightKeywords: apiKeywords, numericHighlights, answerHighlightKeywords: apiAnswerKeywords }: Props) {
   const isUser = role === "user";
+
+  // ── Keyword highlighting ──────────────────────────────────
+  // Convert backend HighlightKeyword[] to frontend KeywordEntry[] for rendering.
+  // All NLP extraction + source cross-referencing is handled server-side (spaCy).
+  const highlightKeywords = useMemo<KeywordEntry[]>(() => {
+    if (isStreaming || !apiKeywords?.length) return [];
+    return apiKeywords.map((kw) => ({
+      keyword: kw.text.toLowerCase(),
+      display: kw.text,
+      color: kw.type === 'data_value'
+        ? { bg: 'rgba(14,165,233,0.12)' as const, text: 'rgb(14,165,233)' as const, border: 'rgba(14,165,233,0.25)' as const }
+        : HIGHLIGHT_COLORS[kw.color_index % HIGHLIGHT_COLORS.length],
+    }));
+  }, [apiKeywords, isStreaming]);
+
+  // ── Answer-derived keywords for citation panels ───────────────
+  // NLP-extracted noun phrases from the LLM answer, cross-referenced with sources.
+  const answerHighlightKeywords = useMemo<KeywordEntry[]>(() => {
+    if (isStreaming || !apiAnswerKeywords?.length) return [];
+    return apiAnswerKeywords.map((kw) => ({
+      keyword: kw.text.toLowerCase(),
+      display: kw.text,
+      color: HIGHLIGHT_COLORS[kw.color_index % HIGHLIGHT_COLORS.length],
+    }));
+  }, [apiAnswerKeywords, isStreaming]);
+
+  // ── Shared numeric color map for consistent colors ────────
+  const numericColorMap = useMemo(
+    () => buildNumericColorMap(numericHighlights ?? []),
+    [numericHighlights],
+  );
 
   // ── Inline evaluation state ──────────────────────────────
   const [evalLoading, setEvalLoading] = useState(false);
@@ -256,10 +296,18 @@ export default function MessageBubble({ role, content, sources, model, queryId, 
           }`}
         >
           {isUser ? (
-            /* ── User message: Markdown + KaTeX ── */
+            /* ── User message: Markdown + KaTeX + inline keyword highlights ── */
             <div className="leading-6 [&_p]:my-0.5 [&_.katex]:text-[0.95em]">
-              <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                {prepareForKatex(content)}
+              <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex, rehypeRaw]}>
+                {prepareForKatex(
+                  injectNumericMarks(
+                    highlightKeywords.length > 0
+                      ? injectHighlightMarks(content, highlightKeywords)
+                      : content,
+                    numericHighlights ?? [],
+                    { colorMap: numericColorMap },
+                  ),
+                )}
               </Markdown>
             </div>
           ) : isStreaming ? (
@@ -269,8 +317,8 @@ export default function MessageBubble({ role, content, sources, model, queryId, 
               <span className="ml-0.5 inline-block h-[1.1em] w-[2px] translate-y-[2px] animate-pulse bg-primary" />
             </div>
           ) : (
-            /* ── Completed AI: semantic AnswerBlocks with citation chips ── */
-            <AnswerBlockRenderer content={content} sources={sources} />
+            /* ── Completed AI: semantic AnswerBlocks with citation chips + keyword highlights ── */
+            <AnswerBlockRenderer content={content} sources={sources} highlightKeywords={highlightKeywords} numericHighlights={numericHighlights} answerHighlightKeywords={answerHighlightKeywords} />
           )}
         </div>
 

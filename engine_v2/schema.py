@@ -58,23 +58,12 @@ _SNIPPET_MAX = 300
 
 
 def normalize_scores(sources: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Normalize raw RRF scores to 0.0–1.0 range for display.
+    """Post-process scores for display.
 
-    RRF scores are naturally tiny (e.g., 0.016) because they use
-    1/(k+rank) formula with k=60. This rescales them so the top
-    result is 1.0 and others are proportional.
+    Raw RRF scores are kept as-is (they're small, e.g. 0.016).
+    The real relevance signal is in bm25_score and vector_score.
+    This function is now a no-op kept for backwards compatibility.
     """
-    if not sources:
-        return sources
-
-    max_score = max((s.get("score", 0) or 0) for s in sources)
-    if max_score <= 0:
-        return sources
-
-    for s in sources:
-        raw = s.get("score", 0) or 0
-        s["score"] = round(raw / max_score, 2)
-
     return sources
 
 
@@ -139,6 +128,9 @@ def build_source(node_with_score: Any, index: int) -> dict[str, Any]:
         "full_content": content[:_FULL_CONTENT_MAX],
         "snippet": content[:_SNIPPET_MAX],
         "score": float(node_with_score.score) if node_with_score.score is not None else 0.0,
+        # Per-retriever raw scores for honest display
+        "vector_score": round(float(meta.get("vector_score", 0)), 4),
+        "bm25_score": round(float(meta.get("bm25_score", 0)), 4),
         # EV2-T1-02: retrieval strategy provenance ("vector" | "bm25" | "both")
         "retrieval_source": meta.get("retrieval_source", "vector"),
         "bbox": {

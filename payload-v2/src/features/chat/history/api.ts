@@ -37,6 +37,11 @@ export interface PayloadChatMessage {
   sources?: SourceInfo[] | null
   trace?: QueryTrace | null
   queryId?: number | null
+  model?: string | null
+  telemetry?: { llm_calls: number; input_tokens: number; output_tokens: number } | null
+  highlightKeywords?: any[] | null
+  numericHighlights?: any[] | null
+  answerHighlightKeywords?: any[] | null
   createdAt: string
 }
 
@@ -210,6 +215,11 @@ export async function appendServerMessages(
     sources?: SourceInfo[] | null
     trace?: QueryTrace | null
     queryId?: number | null
+    model?: string | null
+    telemetry?: { llm_calls: number; input_tokens: number; output_tokens: number } | null
+    highlightKeywords?: any[] | null
+    numericHighlights?: any[] | null
+    answerHighlightKeywords?: any[] | null
   }>,
 ): Promise<void> {
   // Payload REST API doesn't support batch create — send sequentially
@@ -225,6 +235,11 @@ export async function appendServerMessages(
           sources: msg.sources ?? null,
           trace: msg.trace ?? null,
           queryId: msg.queryId ?? null,
+          model: msg.model ?? null,
+          telemetry: msg.telemetry ?? null,
+          highlightKeywords: msg.highlightKeywords ?? null,
+          numericHighlights: msg.numericHighlights ?? null,
+          answerHighlightKeywords: msg.answerHighlightKeywords ?? null,
         }),
       }),
     ),
