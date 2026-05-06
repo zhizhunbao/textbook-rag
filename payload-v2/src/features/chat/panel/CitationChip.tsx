@@ -83,23 +83,81 @@ function IconDocument({ className = "h-3 w-3" }: { className?: string }) {
 
 
 // ============================================================
-// Helpers
+// Helpers — 5-Level Score Grading System
 // ============================================================
 
-/** Color-coded CSS classes for Vector score (0–1 range). */
-function vectorScoreStyle(score: number): string {
-  if (score >= 0.85) return "bg-purple-500/15 text-purple-400 ring-1 ring-purple-500/20";
-  if (score >= 0.7) return "bg-purple-500/10 text-purple-400/80 ring-1 ring-purple-500/15";
-  if (score >= 0.5) return "bg-purple-500/8 text-purple-400/60 ring-1 ring-purple-500/10";
-  return "bg-muted-foreground/8 text-muted-foreground/50 ring-1 ring-muted-foreground/10";
+/**
+ * 5-level grade for Vector cosine similarity (0–1 range).
+ *
+ *   Excellent  ≥0.85   — near-perfect semantic match
+ *   Good       ≥0.70   — strong relevance
+ *   Fair       ≥0.55   — moderate relevance
+ *   Weak       ≥0.40   — marginal match
+ *   Poor       <0.40   — likely irrelevant
+ */
+function vectorGrade(score: number): { label: string; cls: string; tooltip: string } {
+  if (score >= 0.85) return {
+    label: "Excellent",
+    cls: "bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/25",
+    tooltip: "Excellent — near-perfect semantic match",
+  };
+  if (score >= 0.70) return {
+    label: "Good",
+    cls: "bg-purple-500/15 text-purple-400 ring-1 ring-purple-500/20",
+    tooltip: "Good — strong semantic relevance",
+  };
+  if (score >= 0.55) return {
+    label: "Fair",
+    cls: "bg-amber-500/15 text-amber-400 ring-1 ring-amber-500/20",
+    tooltip: "Fair — moderate semantic relevance",
+  };
+  if (score >= 0.40) return {
+    label: "Weak",
+    cls: "bg-orange-500/12 text-orange-400/80 ring-1 ring-orange-500/15",
+    tooltip: "Weak — marginal semantic match",
+  };
+  return {
+    label: "Poor",
+    cls: "bg-red-500/10 text-red-400/60 ring-1 ring-red-500/12",
+    tooltip: "Poor — likely irrelevant",
+  };
 }
 
-/** Color-coded CSS classes for BM25 score (0–∞, but typically 0–20). */
-function bm25ScoreStyle(score: number): string {
-  if (score >= 5) return "bg-blue-500/15 text-blue-400 ring-1 ring-blue-500/20";
-  if (score >= 2) return "bg-blue-500/10 text-blue-400/80 ring-1 ring-blue-500/15";
-  if (score > 0) return "bg-blue-500/8 text-blue-400/60 ring-1 ring-blue-500/10";
-  return "bg-muted-foreground/8 text-muted-foreground/50 ring-1 ring-muted-foreground/10";
+/**
+ * 5-level grade for BM25 Okapi score (0–∞, typical 0–20+).
+ *
+ *   Excellent  ≥8    — strong keyword overlap
+ *   Good       ≥5    — solid keyword match
+ *   Fair       ≥2    — moderate keyword match
+ *   Weak       >0    — minimal keyword signal
+ *   None       =0    — no keyword match at all
+ */
+function bm25Grade(score: number): { label: string; cls: string; tooltip: string } {
+  if (score >= 8) return {
+    label: "Excellent",
+    cls: "bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/25",
+    tooltip: "Excellent — strong keyword overlap",
+  };
+  if (score >= 5) return {
+    label: "Good",
+    cls: "bg-blue-500/15 text-blue-400 ring-1 ring-blue-500/20",
+    tooltip: "Good — solid keyword match",
+  };
+  if (score >= 2) return {
+    label: "Fair",
+    cls: "bg-amber-500/15 text-amber-400 ring-1 ring-amber-500/20",
+    tooltip: "Fair — moderate keyword match",
+  };
+  if (score > 0) return {
+    label: "Weak",
+    cls: "bg-orange-500/12 text-orange-400/80 ring-1 ring-orange-500/15",
+    tooltip: "Weak — minimal keyword signal",
+  };
+  return {
+    label: "None",
+    cls: "bg-muted-foreground/8 text-muted-foreground/50 ring-1 ring-muted-foreground/10",
+    tooltip: "None — no keyword match",
+  };
 }
 
 /** Retrieval strategy tag config (EV2-T1-03). All SVG, no emoji. */
@@ -181,6 +239,12 @@ export default function CitationChip({
     ? STRATEGY_TAG[source.retrieval_source]
     : null;
 
+  // Pre-compute grades for score badges
+  const vGrade = source.vector_score != null && source.vector_score > 0
+    ? vectorGrade(source.vector_score) : null;
+  const kGrade = source.bm25_score != null
+    ? bm25Grade(source.bm25_score) : null;
+
   return (
     <span className="citation-chip group/chip inline-flex items-center gap-0.5">
       {/* ── Info chip (clickable → toggle panel) ── */}
@@ -217,34 +281,65 @@ export default function CitationChip({
           p.{source.page_number}
         </span>
 
-        {/* Per-retriever raw scores */}
+        {/* Per-retriever scores: number pill + grade label pill */}
         {(source.vector_score != null || source.bm25_score != null) ? (
           <>
-            {source.vector_score != null && source.vector_score > 0 && (
-              <span
-                className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ${vectorScoreStyle(source.vector_score)}`}
-                title={`Vector (cosine similarity): ${source.vector_score.toFixed(4)}`}
-              >
-                V:{source.vector_score.toFixed(2)}
-              </span>
+            {vGrade && source.vector_score != null && (
+              <>
+                {/* Vector score number */}
+                <span
+                  className="shrink-0 rounded-full bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-purple-400 ring-1 ring-purple-500/15"
+                  title={`Vector cosine similarity: ${source.vector_score.toFixed(4)}`}
+                >
+                  V:{source.vector_score.toFixed(2)}
+                </span>
+                {/* Vector grade label */}
+                <span
+                  className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold leading-none ${vGrade.cls}`}
+                  title={vGrade.tooltip}
+                >
+                  {vGrade.label}
+                </span>
+              </>
             )}
-            {source.bm25_score != null && (
-              <span
-                className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ${bm25ScoreStyle(source.bm25_score)}`}
-                title={`BM25 (keyword match): ${source.bm25_score.toFixed(4)}${source.bm25_score === 0 ? ' — no keyword match' : ''}`}
-              >
-                K:{source.bm25_score.toFixed(2)}
-              </span>
+            {kGrade && source.bm25_score != null && (
+              <>
+                {/* BM25 score number */}
+                <span
+                  className="shrink-0 rounded-full bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-blue-400 ring-1 ring-blue-500/15"
+                  title={`BM25 keyword score: ${source.bm25_score.toFixed(4)}`}
+                >
+                  K:{source.bm25_score.toFixed(2)}
+                </span>
+                {/* BM25 grade label */}
+                <span
+                  className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold leading-none ${kGrade.cls}`}
+                  title={kGrade.tooltip}
+                >
+                  {kGrade.label}
+                </span>
+              </>
             )}
           </>
-        ) : score != null && (
-          <span
-            className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ${vectorScoreStyle(score)}`}
-            title={`Score: ${score.toFixed(4)}`}
-          >
-            {score.toFixed(2)}
-          </span>
-        )}
+        ) : score != null && (() => {
+          const g = vectorGrade(score);
+          return (
+            <>
+              <span
+                className="shrink-0 rounded-full bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-purple-400 ring-1 ring-purple-500/15"
+                title={`Score: ${score.toFixed(4)}`}
+              >
+                {score.toFixed(2)}
+              </span>
+              <span
+                className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold leading-none ${g.cls}`}
+                title={g.tooltip}
+              >
+                {g.label}
+              </span>
+            </>
+          );
+        })()}
 
         {/* Retrieval strategy tag (SVG icon, EV2-T1-03) */}
         {strategyTag && (

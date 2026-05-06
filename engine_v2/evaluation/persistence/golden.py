@@ -52,7 +52,7 @@ async def generate_golden_dataset(
 
     import chromadb
 
-    from engine_v2.settings import CHROMA_DIR, CHROMA_COLLECTION
+    from engine_v2.settings import CHROMA_PERSIST_DIR, CHROMA_COLLECTION
 
     errors: list[str] = []
 

@@ -391,9 +391,9 @@ export default function MessageBubble({ role, content, sources, model, queryId, 
 
             {/* Inline evaluation score card */}
             {showEval && (
-              <div className="rounded-xl border border-border/40 bg-card/50 p-3 animate-in slide-in-from-top-2 fade-in duration-200">
+              <div className="animate-in slide-in-from-top-2 fade-in duration-200">
                 {evalError && (
-                  <div className="text-xs text-destructive">{evalError}</div>
+                  <div className="mb-2 text-xs text-destructive">{evalError}</div>
                 )}
                 {evalResult && (
                   <EvalScoreCard evaluation={evalResult} locale="en" />
