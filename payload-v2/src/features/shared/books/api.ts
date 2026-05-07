@@ -31,7 +31,8 @@ export interface FetchBooksOptions {
 /** Fetch books from Payload CMS with optional filters. */
 export async function fetchBooks(opts?: FetchBooksOptions): Promise<BookBase[]> {
   const params = new URLSearchParams()
-  params.set('limit', String(opts?.limit ?? 200))
+  // limit=0 in Payload CMS means "fetch all records without pagination"
+  params.set('limit', String(opts?.limit ?? 0))
   params.set('sort', opts?.sort ?? '-updatedAt')
 
   if (opts?.status) params.set('where[status][equals]', opts.status)

@@ -33,6 +33,8 @@ export interface ConsultingQueryRequest {
   response_language?: string | null  // G1-07: language override
   // G8-02: Support textbook persona book_id filtering
   book_id_strings?: string[]
+  // Chat history for follow-up question contextualization
+  chat_history?: Array<{ role: string; content: string }>
   // GO-MU-06: user_id removed — now extracted from JWT auth server-side
 }
 
@@ -188,6 +190,7 @@ export async function queryConsultingStream(
         country: req.country ?? 'ca',
         response_language: req.response_language ?? null,
         ...(req.book_id_strings?.length ? { book_id_strings: req.book_id_strings } : {}),
+        ...(req.chat_history?.length ? { chat_history: req.chat_history } : {}),
       }),
       signal: callbacks.signal,
     })

@@ -1,14 +1,14 @@
-"""Batch ingest real_estate MinerU data → Payload + ChromaDB + BM25.
+"""Batch ingest all MinerU data → Payload + ChromaDB + BM25.
 
 Workflow:
-    1. Call GET /engine/books to discover all real_estate books
+    1. Call GET /engine/books to discover all books
     2. Call POST /api/books/sync-engine to create Book records in Payload
-    3. For each real_estate book, call POST /engine/ingest to run ingestion
+    3. For each book, call POST /engine/ingest to run ingestion
        (MinerU output already exists, so parsing is skipped — only embedding + ChromaDB)
     4. Wait for each pipeline to complete via polling
 
 Usage:
-    uv run python scripts/batch_ingest_real_estate.py
+    uv run python scripts/cms/batch_ingest_real_estate.py
 """
 
 from __future__ import annotations
@@ -52,44 +52,49 @@ def get_payload_headers(token: str) -> dict:
 
 def main():
     print("=" * 60)
-    print("Batch Ingest: real_estate → ChromaDB + Payload")
+    print("Batch Ingest: ALL Categories -> ChromaDB + Payload")
     print("=" * 60)
 
-    # Step 1: Discover real_estate books from engine
-    print("\n[1/4] Discovering real_estate books from engine...")
-    resp = httpx.get(f"{ENGINE_URL}/engine/books", timeout=30.0)
+    # Step 1: Discover all books from engine
+    print("\n[1/4] Discovering all books from engine (this may take a minute for 5000+ books)...")
+    resp = httpx.get(f"{ENGINE_URL}/engine/books", timeout=300.0)
     if not resp.is_success:
         print(f"[ERROR] Engine /books returned {resp.status_code}")
         sys.exit(1)
 
     all_books = resp.json()
-    re_books = [b for b in all_books if b["category"] == "real_estate"]
-    print(f"  Found {len(re_books)} real_estate books (of {len(all_books)} total)")
-    for b in re_books:
+    target_books = all_books
+    print(f"  Found {len(target_books)} books total to process")
+    for b in target_books:
         print(f"    - {b['book_id']} ({b['chunk_count']} items, {b['page_count']} pages)")
 
-    if not re_books:
-        print("[ERROR] No real_estate books found. Check data/mineru_output/real_estate/")
+    if not target_books:
+        print("[ERROR] No books found. Check data/mineru_output/")
         sys.exit(1)
 
     # Step 2: Sync to Payload (creates Book records if missing)
     print("\n[2/4] Syncing books to Payload CMS...")
-    sync_resp = httpx.post(f"{PAYLOAD_URL}/api/books/sync-engine", timeout=60.0)
-    if sync_resp.is_success:
-        result = sync_resp.json()
-        print(f"  Sync result: created={result.get('created')}, updated={result.get('updated')}, total={result.get('total')}")
-    else:
-        print(f"  [WARN] Sync returned {sync_resp.status_code}: {sync_resp.text[:200]}")
+    # Increased timeout from 60.0 to 600.0 to handle thousands of books
+    try:
+        sync_resp = httpx.post(f"{PAYLOAD_URL}/api/books/sync-engine", timeout=600.0)
+        if sync_resp.is_success:
+            result = sync_resp.json()
+            print(f"  Sync result: created={result.get('created')}, updated={result.get('updated')}, total={result.get('total')}")
+        else:
+            print(f"  [WARN] Sync returned {sync_resp.status_code}: {sync_resp.text[:200]}")
+            print("  Continuing anyway — books may already exist...")
+    except Exception as e:
+        print(f"  [ERROR] Sync failed due to timeout or error: {e}")
         print("  Continuing anyway — books may already exist...")
 
     # Step 3: Login and get Payload book IDs
-    print("\n[3/4] Looking up Payload book IDs for real_estate...")
+    print("\n[3/4] Looking up Payload book IDs for all books...")
     token = login_payload()
     headers = get_payload_headers(token)
 
-    # Fetch all books with engineBookId matching real_estate ones
+    # Fetch all books with engineBookId matching
     payload_books = []
-    for rb in re_books:
+    for rb in target_books:
         resp = httpx.get(
             f"{PAYLOAD_URL}/api/books",
             params={
@@ -106,7 +111,7 @@ def main():
                     "payload_id": docs[0]["id"],
                     "engine_book_id": rb["book_id"],
                     "title": docs[0].get("title", rb["book_id"]),
-                    "category": "real_estate",
+                    "category": rb.get("category", "unknown"),
                     "status": docs[0].get("status", "unknown"),
                 })
                 print(f"    ✓ {rb['book_id']} → Payload ID {docs[0]['id']} (status: {docs[0].get('status')})")
@@ -137,7 +142,7 @@ def main():
                 json={
                     "book_id": pb["payload_id"],
                     "title": pb["engine_book_id"],
-                    "category": "real_estate",
+                    "category": pb["category"],
                     "force_parse": False,
                 },
                 timeout=30.0,
@@ -157,7 +162,7 @@ def main():
     print("\n" + "=" * 60)
     print("BATCH INGEST SUMMARY")
     print("=" * 60)
-    print(f"  Total real_estate books: {len(re_books)}")
+    print(f"  Total books: {len(target_books)}")
     print(f"  Skipped (already indexed): {len(skipped)}")
     print(f"  Triggered for ingest: {len(triggered)}")
 

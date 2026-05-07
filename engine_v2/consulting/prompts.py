@@ -48,7 +48,7 @@ NO_RETRIEVAL_TEMPLATE: str = (
     "your current knowledge base. Suggest they try rephrasing their question "
     "or that the topic may not yet be covered. "
     "Keep your reply concise (3-5 sentences). "
-    "Reply in the SAME LANGUAGE the user used in their question."
+    "Reply in English."
 )
 
 
@@ -86,11 +86,11 @@ def get_disclaimer(lang: str) -> str:
 
 
 def append_disclaimer(answer: str, question: str) -> str:
-    """Append disclaimer if not already present.  Language matches the question."""
+    """Append disclaimer if not already present.  Always in English per user request."""
     if any(marker in answer for marker in DISCLAIMER_MARKERS):
         return answer  # already has disclaimer
-    lang = detect_language(question)
-    return answer + get_disclaimer(lang)
+    # Always use English disclaimer — user explicitly requested it not be translated
+    return answer + get_disclaimer("en")
 
 
 # ============================================================
@@ -103,8 +103,7 @@ def build_system_prompt(persona: dict, response_language: str | None = None) -> 
     Args:
         persona: Persona dict from Payload CMS (must have 'systemPrompt' key).
         response_language: Optional ISO 639-1 code for response language override.
-            When set (and not 'zh' which is the default), appends a language
-            instruction to the system prompt.
+            When set, appends a language instruction to the system prompt.
 
     Returns:
         Complete system prompt string.
@@ -119,8 +118,22 @@ def build_system_prompt(persona: dict, response_language: str | None = None) -> 
         "The system appends one automatically."
     )
 
-    if response_language and response_language != "zh":
+    # Universal: require inline source citations for traceability.
+    system_prompt += (
+        "\n\nCITATION RULE: You MUST cite sources inline using [N] bracket format. "
+        "Every factual claim must reference at least one source, e.g. "
+        "'Students can work up to 20 hours per week [1].' "
+        "If multiple sources support a claim, list them: [1] [3]. "
+        "Never use parenthetical formats like (Source 1) or (Sources 1, 3) — "
+        "always use square brackets [N]. "
+        "Never make a factual statement without a source citation."
+    )
+
+    # Default: always respond in English (knowledge base is English)
+    if response_language:
         lang_name = LANGUAGE_NAMES.get(response_language, response_language)
         system_prompt += f"\n\nPlease respond in {lang_name}."
+    else:
+        system_prompt += "\n\nPlease respond in English."
     return system_prompt
 

@@ -23,6 +23,8 @@ import { parseAnswerBlocks } from "./answerBlocks";
 import CitationChip from "./CitationChip";
 import { prepareForKatex } from "./textUtils";
 import { injectHighlightMarks, injectNumericMarks, buildNumericColorMap, type KeywordEntry, type NumericHighlight, type NumericColorMap } from "./keywordHighlight";
+import TranslateButton from "./TranslateButton";
+
 
 // ============================================================
 // Types
@@ -49,9 +51,17 @@ interface AnswerBlockRendererProps {
 // ============================================================
 // Inline citation content panel
 // ============================================================
-function InlineCitationPanel({ source, index, onClose, highlightKeywords, colorMap }: { source: SourceInfo; index: number; onClose: () => void; highlightKeywords?: KeywordEntry[]; colorMap?: NumericColorMap }) {
+function InlineCitationPanel({ source, index, onClose, highlightKeywords, answerHighlightKeywords, colorMap }: { source: SourceInfo; index: number; onClose: () => void; highlightKeywords?: KeywordEntry[]; answerHighlightKeywords?: KeywordEntry[]; colorMap?: NumericColorMap }) {
   const previewContent = source.full_content || source.snippet;
   if (!previewContent) return null;
+
+  // Merge question keywords + answer keywords for comprehensive citation highlighting.
+  // Answer keywords catch phrases that appear in both the LLM answer and the citation
+  // (e.g. "Provincial Attestation Letter") even if the user didn't type them.
+  const mergedKeywords: KeywordEntry[] = [
+    ...(highlightKeywords ?? []),
+    ...(answerHighlightKeywords ?? []),
+  ];
 
   // Use per-source numeric highlights from backend NLP pipeline
   const sourceNumericHighlights: NumericHighlight[] = (source.numeric_highlights ?? []).map(h => ({
@@ -110,14 +120,21 @@ function InlineCitationPanel({ source, index, onClose, highlightKeywords, colorM
       >
         {prepareForKatex(
           injectNumericMarks(
-            highlightKeywords?.length
-              ? injectHighlightMarks(previewContent, highlightKeywords)
+            mergedKeywords?.length
+              ? injectHighlightMarks(previewContent, mergedKeywords)
               : previewContent,
             sourceNumericHighlights,
             { colorMap },
           ),
         )}
       </Markdown>
+
+      {/* Translation toggle — compact icon at bottom-right */}
+      <TranslateButton
+        content={previewContent}
+        className="mt-1"
+      />
+
     </div>
   );
 }
@@ -171,6 +188,14 @@ export default function AnswerBlockRenderer({
     () => buildNumericColorMap(numericHighlights ?? []),
     [numericHighlights],
   );
+
+  // ── Merged keywords for answer body highlighting ────────────
+  // Question keywords + answer keywords so that terms appearing in BOTH
+  // the answer and citations get highlighted consistently everywhere.
+  const allHighlightKeywords = useMemo(() => [
+    ...(highlightKeywords ?? []),
+    ...(answerHighlightKeywords ?? []),
+  ], [highlightKeywords, answerHighlightKeywords]);
   const toggleCitation = useCallback((globalIndex: number) => {
     setExpandedCitations((prev) => {
       const next = new Set(prev);
@@ -403,14 +428,19 @@ export default function AnswerBlockRenderer({
           >
             {prepareForKatex(
               injectNumericMarks(
-                highlightKeywords?.length
-                  ? injectHighlightMarks(block.text, highlightKeywords)
+                allHighlightKeywords?.length
+                  ? injectHighlightMarks(block.text, allHighlightKeywords)
                   : block.text,
                 numericHighlights ?? [],
                 { colorMap: numericColorMap },
               ),
             )}
           </Markdown>
+
+          {/* ── Translate button — right after last answer paragraph, above citations ── */}
+          {blockIdx === blocksWithGlobalIndex.length - 1 && (
+            <TranslateButton content={normalizedContent} className="mt-1" />
+          )}
 
           {/* ── Citation chips row ── */}
           {block.sources.length > 0 && (
@@ -436,6 +466,7 @@ export default function AnswerBlockRenderer({
                     index={globalIndex}
                     onClose={() => closeCitation(globalIndex)}
                     highlightKeywords={highlightKeywords}
+                    answerHighlightKeywords={answerHighlightKeywords}
                     colorMap={numericColorMap}
                   />
                 ) : null,
@@ -488,6 +519,7 @@ export default function AnswerBlockRenderer({
                     index={globalIndex}
                     onClose={() => closeCitation(globalIndex)}
                     highlightKeywords={highlightKeywords}
+                    answerHighlightKeywords={answerHighlightKeywords}
                     colorMap={numericColorMap}
                   />
                 ) : null,

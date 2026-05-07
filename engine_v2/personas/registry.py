@@ -92,11 +92,9 @@ def get_collection_name(slug: str) -> str:
 
 
 def _get_chroma_client() -> chromadb.ClientAPI:
-    """Create a persistent ChromaDB client."""
-    return chromadb.PersistentClient(
-        path=str(CHROMA_PERSIST_DIR),
-        settings=chromadb.Settings(anonymized_telemetry=False),
-    )
+    """Return the process-wide shared ChromaDB client."""
+    from engine_v2.retrievers.hybrid import _get_shared_chroma_client
+    return _get_shared_chroma_client()
 
 
 def ensure_persona_collection(slug: str) -> str:
@@ -145,3 +143,4 @@ def get_collection_count(collection_name: str) -> int:
         return col.count()
     except Exception:
         return 0
+

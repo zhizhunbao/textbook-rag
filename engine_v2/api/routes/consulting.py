@@ -37,6 +37,7 @@ from pydantic import BaseModel
 from engine_v2.consulting.helpers import (
     _append_disclaimer,
     _generate_no_retrieval_reply,
+    _normalize_citations,
     _sse,
 )
 from engine_v2.consulting.prompts import build_system_prompt as _build_system_prompt
@@ -88,6 +89,8 @@ class PersonaQueryRequest(BaseModel):
     response_language: str | None = None  # G1-07: language override
     # G8-02: Support textbook persona book_id filtering
     book_id_strings: list[str] | None = None
+    # Chat history for follow-up question contextualization
+    chat_history: list[dict[str, str]] | None = None
     # GO-MU-06: user_id removed from body — now extracted from JWT auth
 
 
@@ -225,6 +228,7 @@ async def consulting_query(req: PersonaQueryRequest, request: Request):
         country=req.country,
         persona_slug=req.persona_slug,
         book_id_strings=req.book_id_strings,
+        chat_history=req.chat_history,
     )
 
     # G3: Guard against empty retrieval / "Empty Response"
@@ -241,9 +245,13 @@ async def consulting_query(req: PersonaQueryRequest, request: Request):
     # G4-03: Auto-append disclaimer
     answer = _append_disclaimer(answer, req.question)
 
+    # Normalize (Source N) → [N] bracket format for frontend parser
+    answer = _normalize_citations(answer)
+
     # ── Extract cross-referenced highlight keywords ──
+    q_for_keywords = result.retrieval_question or req.question
     source_texts = [s.get("full_content") or s.get("text", "") for s in result.sources]
-    highlight_keywords = extract_verified_keywords(req.question, source_texts)
+    highlight_keywords = extract_verified_keywords(q_for_keywords, source_texts)
     numeric_highlights = extract_numeric_highlights(answer, source_texts)
     answer_keywords = extract_answer_keywords(answer, source_texts, highlight_keywords)
 
@@ -318,6 +326,7 @@ async def _consulting_stream_generator(req: PersonaQueryRequest):
             country=req.country,
             persona_slug=req.persona_slug,
             book_id_strings=req.book_id_strings,
+            chat_history=req.chat_history,
         )
 
         # G2: Warn if persona knowledge base is empty
@@ -331,11 +340,14 @@ async def _consulting_stream_generator(req: PersonaQueryRequest):
                 ),
             })
 
+        # Use English retrieval_question for keyword extraction (sources are in English)
+        q_for_keywords = result.retrieval_question or req.question
+
         yield _sse("retrieval_done", {
             "stats": {"source_count": len(result.sources)},
             "sources": result.sources,
             "highlight_keywords": extract_verified_keywords(
-                req.question,
+                q_for_keywords,
                 [s.get("full_content") or s.get("text", "") for s in result.sources],
             ),
         })
@@ -401,6 +413,9 @@ async def _consulting_stream_generator(req: PersonaQueryRequest):
         # G4-03: Auto-append disclaimer
         full_answer = _append_disclaimer(full_answer, req.question)
 
+        # Normalize (Source N) → [N] bracket format for frontend parser
+        full_answer = _normalize_citations(full_answer)
+
         # Estimate input tokens: question + source chunks
         context_text = " ".join(s.get("full_content", "") or "" for s in result.sources)
         input_token_estimate = int(
@@ -408,7 +423,7 @@ async def _consulting_stream_generator(req: PersonaQueryRequest):
         )
 
         done_source_texts = [s.get("full_content") or s.get("text", "") for s in result.sources]
-        done_q_keywords = extract_verified_keywords(req.question, done_source_texts)
+        done_q_keywords = extract_verified_keywords(q_for_keywords, done_source_texts)
         done_answer_keywords = extract_answer_keywords(full_answer, done_source_texts, done_q_keywords)
 
         # Enrich each source with per-source numeric highlights

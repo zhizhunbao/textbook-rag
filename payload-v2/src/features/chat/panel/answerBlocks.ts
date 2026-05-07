@@ -102,9 +102,11 @@ export function parseAnswerBlocks(text: string): AnswerBlock[] {
       }
     }
 
-    // Remove all [N] markers from the text
+    // Remove all [N] markers from the text and their preceding spaces
     const cleanText = paragraph
-      .replace(ALL_CITATIONS_RE, "")
+      .replace(/\s*\[\d+(?:\.\d+)*\]/g, "")
+      // Clean up orphaned spaces before punctuation that might have surrounded the citation
+      .replace(/\s+([.,;:!?\)])/g, "$1")
       // Clean up extra whitespace left behind after removal
       .replace(/  +/g, " ")
       .trim();

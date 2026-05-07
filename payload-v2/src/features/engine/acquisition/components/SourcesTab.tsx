@@ -137,7 +137,8 @@ export default function SourcesTab({ onBooksRefresh }: SourcesTabProps) {
   const fetchSources = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/data-sources?limit=200&sort=nameEn&depth=1', {
+      // limit=0 fetches all records unconditionally in Payload CMS
+      const res = await fetch('/api/data-sources?limit=0&sort=nameEn&depth=1', {
         credentials: 'include',
       })
       const data = await res.json()

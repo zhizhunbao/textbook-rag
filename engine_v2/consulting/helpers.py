@@ -2,6 +2,7 @@
 
 Provides:
     _append_disclaimer()          — re-export from consulting.prompts
+    _normalize_citations()        — (Source N) → [N] bracket conversion
     _generate_no_retrieval_reply() — LLM fallback when no chunks retrieved
     _sse()                        — format Server-Sent Events
 
@@ -12,6 +13,7 @@ contains runtime logic that uses those prompts.
 from __future__ import annotations
 
 import json
+import re
 from typing import Any
 
 from loguru import logger
@@ -20,6 +22,43 @@ from engine_v2.consulting.prompts import (
     append_disclaimer as _append_disclaimer,        # noqa: F401 — re-exported
     build_no_retrieval_prompt as _build_no_retrieval_prompt,
 )
+
+
+def _normalize_citations(text: str) -> str:
+    """Normalize parenthetical citation formats to [N] bracket format.
+
+    LLMs sometimes ignore the bracket instruction and use:
+        (Source 1)         → [1]
+        (Sources 1, 2, 3) → [1] [2] [3]
+        (Source 1, 3)      → [1] [3]
+
+    This ensures the frontend answerBlocks parser (which only recognizes
+    [N]) can always extract citation indices correctly.
+    """
+    if not text:
+        return text
+
+    def _expand_sources(m: re.Match) -> str:
+        """Convert a (Source(s) N, M, ...) match to [N] [M] ..."""
+        nums_str = m.group(1)
+        nums = re.findall(r'\d+', nums_str)
+        return ' '.join(f'[{n}]' for n in nums)
+
+    # (Sources 1, 2, 3) or (Source 1, 3) — with optional "s" and comma-separated numbers
+    text = re.sub(
+        r'\(Sources?\s+([\d,\s]+)\)',
+        _expand_sources,
+        text,
+        flags=re.IGNORECASE,
+    )
+    # Single (Source 1) without comma
+    text = re.sub(
+        r'\(Source\s+(\d+)\)',
+        r'[\1]',
+        text,
+        flags=re.IGNORECASE,
+    )
+    return text
 
 
 async def _generate_no_retrieval_reply(

@@ -133,11 +133,9 @@ export default function ChatPanel({
         setPersonas(items);
         setSelectedPersonaSlug((current) => {
           if (current) return current;
-          const userPersona = currentUser?.selectedPersona;
-          if (userPersona && typeof userPersona === "object") return userPersona.slug;
-          // Default to analyst persona, fallback to first item
-          const analyst = items.find((p) => p.slug === "ecdev-analyst");
-          return analyst?.slug ?? items[0]?.slug ?? null;
+          // Always default to live-study-immigration for new windows
+          const defaultPersona = items.find((p) => p.slug === "live-study-immigration");
+          return defaultPersona?.slug ?? items[0]?.slug ?? null;
         });
       })
       .catch(() => setPersonas([]));
@@ -152,23 +150,24 @@ export default function ChatPanel({
     onConsultingPersonaChange?.(selectedPersonaSlug, persona?.name ?? null);
   }, [selectedPersonaSlug, personas, onConsultingPersonaChange]);
 
-  // C4-07: Auto-resume most recent consulting session for selected persona
-  useEffect(() => {
-    if (effectiveMode !== "consulting" || !effectivePersonaSlug) return;
-    if (activeSessionId || messages.length > 0) return; // already in a session
-    // Search history for last consulting session with this persona
-    const consultingSession = chatHistory.sessions.find(
-      (s) => s.mode === "consulting" && s.personaSlug === effectivePersonaSlug,
-    );
-    if (consultingSession) {
-      onSessionCreated(consultingSession.id);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [effectiveMode, effectivePersonaSlug, chatHistory.sessions.length]);
 
-  /** When history panel selects an old session (or page refreshes), restore its messages */
+
+  /** When history panel selects an old session, or switches to a new chat */
   useEffect(() => {
-    if (!activeSessionId) return;
+    if (!activeSessionId) {
+      // If we transitioned from an active session to a new chat (null), clear the UI
+      if (prevSessionIdRef.current !== null) {
+        setMessages([]);
+        setInput("");
+        setStreamingContent("");
+        setStreamingSources([]);
+        setLoading(false);
+        setError(null);
+        prevSessionIdRef.current = null;
+        sessionIdRef.current = null;
+      }
+      return;
+    }
 
     // NEVER overwrite messages during an active chat (streaming / loading)
     // This prevents appendMessages() → sessions update → effect re-run
@@ -352,6 +351,13 @@ export default function ChatPanel({
             .map((pid) => books.find((b) => b.id === pid)?.book_id)
             .filter((s): s is string => !!s);
 
+      // Build chat history for follow-up question contextualization
+      // Only send last 6 messages (3 turns) with truncated content to limit payload
+      const recentChatHistory = messages.slice(-6).map((m) => ({
+        role: m.role,
+        content: m.content.slice(0, 500),
+      }));
+
       await queryConsultingStream(
           {
             persona_slug: personaSlug,
@@ -362,6 +368,7 @@ export default function ChatPanel({
             country,
             response_language: responseLang,
             book_id_strings: engineBookIdStrings?.length ? engineBookIdStrings : undefined,
+            chat_history: recentChatHistory.length > 0 ? recentChatHistory : undefined,
           },
           {
             signal: controller.signal,

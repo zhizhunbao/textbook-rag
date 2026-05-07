@@ -1,0 +1,145 @@
+{
+  "version": "v3",
+  "persona": "live-study-immigration",
+  "mode": "sync",
+  "timestamp": "2026-05-06T21:58:21.497037",
+  "total": 3,
+  "avg_score": 91.0,
+  "results": [
+    {
+      "category": "core_concepts",
+      "category_label": "Core Concepts & Terminology",
+      "question": "What is a Provincial Attestation Letter (PAL)?",
+      "answer_preview": "A Provincial Attestation Letter (PAL) is a letter issued by the province or territory where you plan to study in Canada. It confirms that you have been assigned one of the available study spaces allocated to that province or territory. Most study permit applicants must include a PAL when applying, u",
+      "answer_len": 713,
+      "source_count": 3,
+      "has_answer": true,
+      "heading_chunks": 0,
+      "origins": {
+        "ca_federal": 3
+      },
+      "latency_s": 10.43,
+      "first_token_s": null,
+      "scores": {
+        "retrieval": 25,
+        "relevance": 25,
+        "completeness": 25,
+        "compliance": 12,
+        "total": 87
+      },
+      "citations": [
+        {
+          "index": 1,
+          "text_len": 503,
+          "origin": "ca_federal",
+          "retrieval_source": "both",
+          "vector_score": 0.7755,
+          "bm25_score": 11.3284,
+          "is_heading": false,
+          "preview": "The provincial attestation letter or territorial attestation letter (PAL/TAL) is provided by the PT "
+        },
+        {
+          "index": 2,
+          "text_len": 158,
+          "origin": "ca_federal",
+          "retrieval_source": "both",
+          "vector_score": 0.7398,
+          "bm25_score": 7.9701,
+          "is_heading": false,
+          "preview": "As of 8:30 am ET on January 22, 2024, most students must include a provincial attestation letter (PA"
+        },
+        {
+          "index": 3,
+          "text_len": 376,
+          "origin": "ca_federal",
+          "retrieval_source": "vector",
+          "vector_score": 0.7992,
+          "bm25_score": 0.0,
+          "is_heading": false,
+          "preview": "A provincial attestation letter (PAL) or a territorial attestation letter (TAL) is a letter provided"
+        }
+      ],
+      "error": null
+    },
+    {
+      "category": "core_concepts",
+      "category_label": "Core Concepts & Terminology",
+      "question": "Why do I need a PAL to apply for a study permit?",
+      "answer_preview": "You need a PAL (Port of Entry Letter of Introduction) to apply for a study permit as a visiting student because visiting students are not covered under formal exchange agreements between institutions and must pay tuition fees to the host Designated Learning Institution (DLI). The PAL/TAL confirms yo",
+      "answer_len": 667,
+      "source_count": 1,
+      "has_answer": true,
+      "heading_chunks": 0,
+      "origins": {
+        "ca_federal": 1
+      },
+      "latency_s": 27.57,
+      "first_token_s": null,
+      "scores": {
+        "retrieval": 25,
+        "relevance": 25,
+        "completeness": 25,
+        "compliance": 12,
+        "total": 87
+      },
+      "citations": [
+        {
+          "index": 1,
+          "text_len": 225,
+          "origin": "ca_federal",
+          "retrieval_source": "vector",
+          "vector_score": 0.7224,
+          "bm25_score": 0.0,
+          "is_heading": false,
+          "preview": "Visiting students are not covered under formal exchange agreements between institutions, and they do"
+        }
+      ],
+      "error": null
+    },
+    {
+      "category": "core_concepts",
+      "category_label": "Core Concepts & Terminology",
+      "question": "What is a Designated Learning Institution (DLI)?",
+      "answer_preview": "A Designated Learning Institution (DLI) is a school approved or “designated” by a Canadian province or territory to enroll international students. Only DLIs can admit international students who require a study permit to study in Canada (Source 1).\n\n---\n⚠️ **Disclaimer**: This response is generated b",
+      "answer_len": 520,
+      "source_count": 2,
+      "has_answer": true,
+      "heading_chunks": 0,
+      "origins": {
+        "ca_federal": 2
+      },
+      "latency_s": 9.98,
+      "first_token_s": null,
+      "scores": {
+        "retrieval": 25,
+        "relevance": 25,
+        "completeness": 25,
+        "compliance": 24,
+        "total": 99
+      },
+      "citations": [
+        {
+          "index": 1,
+          "text_len": 164,
+          "origin": "ca_federal",
+          "retrieval_source": "vector",
+          "vector_score": 0.7909,
+          "bm25_score": 0.0,
+          "is_heading": false,
+          "preview": "Provinces and territories approve (or “designate”) schools that can enrol international students. Th"
+        },
+        {
+          "index": 2,
+          "text_len": 152,
+          "origin": "ca_federal",
+          "retrieval_source": "vector",
+          "vector_score": 0.7436,
+          "bm25_score": 0.0,
+          "is_heading": false,
+          "preview": "The Designated Learning Institution (DLI) Portal is used by post-secondary institutions to access, c"
+        }
+      ],
+      "error": null
+    }
+  ]
+}

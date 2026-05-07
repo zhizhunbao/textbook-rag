@@ -31,6 +31,7 @@ import AnswerBlockRenderer from "./AnswerBlockRenderer";
 import { prepareForKatex } from "./textUtils";
 import { injectHighlightMarks, injectNumericMarks, buildNumericColorMap, HIGHLIGHT_COLORS, type KeywordEntry, type NumericHighlight } from "./keywordHighlight";
 import type { HighlightKeyword } from "@/features/shared/consultingApi";
+import TranslateButton from "./TranslateButton";
 
 // ============================================================
 // SVG Icons
@@ -321,6 +322,14 @@ export default function MessageBubble({ role, content, sources, model, queryId, 
             <AnswerBlockRenderer content={content} sources={sources} highlightKeywords={highlightKeywords} numericHighlights={numericHighlights} answerHighlightKeywords={answerHighlightKeywords} />
           )}
         </div>
+
+        {/* ── Translate button — user messages only (assistant has its own in AnswerBlockRenderer) ── */}
+        {!isStreaming && isUser && (
+          <TranslateButton
+            content={content}
+            className="mt-1 flex justify-end"
+          />
+        )}
 
         {/* ── Assistant message footer: evaluate button + score card ── */}
         {!isUser && !isStreaming && queryId && (

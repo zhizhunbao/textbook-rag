@@ -26,7 +26,7 @@ from engine_v2.settings import CORS_ORIGINS, init_settings  # noqa: E402 — mus
 from engine_v2.api.routes import (  # noqa: E402
     billing, books, classify, consulting, crawl, delete, embeddings, evaluation,
     health, ingest, llms, questions, report, retrievers, sources, suggest,
-    vectors,
+    vectors, translate,
 )
 
 
@@ -97,6 +97,7 @@ def create_app() -> FastAPI:
     app.include_router(report.router, prefix="/engine")
     app.include_router(vectors.router, prefix="/engine")
     app.include_router(consulting.router, prefix="/engine")
+    app.include_router(translate.router, prefix="/engine")
     app.include_router(billing.router, prefix="/engine")
 
     return app

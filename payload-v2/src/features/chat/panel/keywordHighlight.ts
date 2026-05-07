@@ -68,6 +68,7 @@ function _overlaps(start: number, end: number, ranges: Region[]): boolean {
 // Numeric protect patterns — shared by both keyword and numeric highlighters.
 // Prevents keyword highlighting from splitting numbers at comma boundaries.
 const _NUMERIC_PROTECT: RegExp[] = [
+  /\d{1,2}:\d{2}(?:\s*[ap]\.?m\.?)?/gi,             // time: 8:30, 12:45, 8:30 am
   /Q[1-4]\s*\d{4}/gi,                              // Q4 2021
   /[+-]?\d+(?:,\d{3})*(?:\.\d+)?\s?%/g,            // 36.2%, +9.8%
   /\\?\$\d+(?:,\d{3})*(?:\.\d+)?/g,                 // $671,248 or \$671,248

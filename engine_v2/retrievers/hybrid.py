@@ -20,6 +20,7 @@ Provenance (Sprint EV2):
 
 from __future__ import annotations
 
+import threading
 import time
 from collections import OrderedDict
 from typing import Any, Dict, List, Tuple
@@ -44,6 +45,34 @@ from engine_v2.settings import (
     CHROMA_PERSIST_DIR,
     TOP_K,
 )
+
+# ============================================================
+# Thread-safe ChromaDB client singleton
+# ============================================================
+# ChromaDB PersistentClient uses SQLite internally. On Windows,
+# creating multiple PersistentClient instances concurrently from
+# different threads causes SQLite lock contention, resulting in
+# "Could not connect to tenant default_tenant" errors.
+# A single shared client + lock prevents this.
+_chroma_client: chromadb.ClientAPI | None = None
+_chroma_lock = threading.Lock()
+
+
+def _get_shared_chroma_client() -> chromadb.ClientAPI:
+    """Return (or create) the process-wide ChromaDB PersistentClient."""
+    global _chroma_client
+    if _chroma_client is not None:
+        return _chroma_client
+    with _chroma_lock:
+        # Double-checked locking
+        if _chroma_client is not None:
+            return _chroma_client
+        _chroma_client = chromadb.PersistentClient(
+            path=str(CHROMA_PERSIST_DIR),
+            settings=chromadb.Settings(anonymized_telemetry=False),
+        )
+        logger.info("ChromaDB shared client initialised: {}", CHROMA_PERSIST_DIR)
+        return _chroma_client
 
 
 def _build_metadata_filters(
@@ -262,11 +291,8 @@ def get_hybrid_retriever(
     Returns:
         QueryFusionRetriever ready for use in a QueryEngine.
     """
-    # Connect to existing ChromaDB collection
-    client = chromadb.PersistentClient(
-        path=str(CHROMA_PERSIST_DIR),
-        settings=chromadb.Settings(anonymized_telemetry=False),
-    )
+    # Connect to existing ChromaDB collection (shared singleton)
+    client = _get_shared_chroma_client()
     collection = client.get_or_create_collection(
         name=collection_name,
         metadata={"hnsw:space": "cosine"},
@@ -495,14 +521,26 @@ def _retrieve_from_collection(
 def _merge_n_with_rrf(
     ranked_lists: list[list[NodeWithScore]],
     top_k: int,
+    boost_map: dict[str, float] | None = None,
 ) -> list[NodeWithScore]:
-    """Merge N ranked node lists using Reciprocal Rank Fusion."""
+    """Merge N ranked node lists using Reciprocal Rank Fusion.
+
+    Args:
+        ranked_lists: Per-collection ranked results.
+        top_k: Max results to return.
+        boost_map: Optional mapping of collection_name → weight multiplier.
+            Collections with higher weight (e.g. 1.5) get boosted RRF scores.
+            Default weight is 1.0 for any collection not in the map.
+    """
     scored: dict[str, tuple[float, NodeWithScore]] = {}
 
     for nodes in ranked_lists:
         for rank, nws in enumerate(nodes, start=1):
             node_id = nws.node.id_
-            rrf_score = 1.0 / (_MULTI_RRF_K + rank)
+            # Apply collection boost if available
+            origin = nws.node.metadata.get("retrieval_origin", "")
+            boost = (boost_map or {}).get(origin, 1.0)
+            rrf_score = boost / (_MULTI_RRF_K + rank)
             if node_id in scored:
                 existing_score, existing_node = scored[node_id]
                 scored[node_id] = (existing_score + rrf_score, existing_node)
@@ -514,27 +552,49 @@ def _merge_n_with_rrf(
     for rrf_score, nws in merged:
         nws.score = rrf_score
         result.append(nws)
+
+    if boost_map:
+        logger.debug("RRF merge with boosts: {}", boost_map)
+
     return result
+
+
+# ── Default collection boost weights ──
+# Federal material is the primary authority for immigration/study questions.
+# Provincial material is supplementary (relevant mainly for PNP).
+# Education material is narrowest scope (school-specific info).
+DEFAULT_COLLECTION_BOOSTS: dict[str, float] = {
+    "ca_federal": 1.5,
+    # All ca_prov_* default to 1.0 (no entry needed)
+    # All ca_edu_* get a slight penalty
+    "ca_edu_algonquin": 0.8,
+}
 
 
 def multi_collection_retrieve(
     question: str,
     collection_names: list[str],
     top_k: int = TOP_K,
+    boost_map: dict[str, float] | None = None,
 ) -> list[NodeWithScore]:
     """Retrieve from multiple ChromaDB collections in parallel, merge via RRF.
 
     Each collection uses hybrid BM25+Vector retrieval internally.
+    Federal collections are boosted by default to prioritize authoritative sources.
 
     Args:
         question: User query string.
         collection_names: List of ChromaDB collection names to search.
         top_k: Number of merged results to return.
+        boost_map: Optional per-collection RRF weight overrides.
+            If None, uses DEFAULT_COLLECTION_BOOSTS.
 
     Returns:
         Merged and ranked list of NodeWithScore.
     """
     from concurrent.futures import ThreadPoolExecutor
+
+    effective_boosts = boost_map if boost_map is not None else DEFAULT_COLLECTION_BOOSTS
 
     with ThreadPoolExecutor(max_workers=len(collection_names)) as executor:
         futures = [
@@ -549,10 +609,10 @@ def multi_collection_retrieve(
         ]
         ranked_lists = [f.result() for f in futures]
 
-    merged = _merge_n_with_rrf(ranked_lists, top_k)
+    merged = _merge_n_with_rrf(ranked_lists, top_k, boost_map=effective_boosts)
     counts = {name: len(nodes) for name, nodes in zip(collection_names, ranked_lists)}
     logger.info(
-        "Multi-collection hybrid RRF: {} → {} merged",
-        counts, len(merged),
+        "Multi-collection hybrid RRF: {} → {} merged (boosts={})",
+        counts, len(merged), effective_boosts,
     )
     return merged
