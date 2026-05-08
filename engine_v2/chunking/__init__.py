@@ -7,10 +7,12 @@ text chunks via MinerU's GPU-accelerated layout analysis pipeline:
 
     1. PDF → MinerU GPU parsing → content_list.json (layout + OCR)
     2. Chapter/section detection from heading structure
-    3. Content item extraction (text blocks, tables, image captions)
+    3. Section-aware merging of small content items into retrieval-ready chunks
+    4. Content item extraction (text blocks, tables, image captions)
 
 Components:
     - chapter_extractor.py  — Chapter/section heading detection and assignment
+    - section_merger.py     — Merge small body-text items into section-level chunks
     - (future) mineru_runner.py — MinerU CLI/API wrapper for GPU parsing
 
 Used by:
@@ -24,5 +26,12 @@ from engine_v2.chunking.chapter_extractor import (
     build_chapter_ranges,
     assign_chapter,
 )
+from engine_v2.chunking.section_merger import merge_content_items
 
-__all__ = ["extract_chapters", "build_chapter_ranges", "assign_chapter"]
+__all__ = [
+    "extract_chapters",
+    "build_chapter_ranges",
+    "assign_chapter",
+    "merge_content_items",
+]
+

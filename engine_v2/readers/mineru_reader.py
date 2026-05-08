@@ -76,7 +76,15 @@ class MinerUReader(BaseReader):
         category: str = "textbook",
         **kwargs: Any,
     ) -> Iterable[Document]:
-        """Yield one Document per content item.
+        """Yield one Document per merged section chunk.
+
+        Uses SectionMerger to group consecutive body-text items under the
+        same heading into larger semantic chunks.  This produces richer
+        embeddings and stronger BM25 signal than emitting one Document per
+        raw MinerU content item.
+
+        Multi-page bboxes are preserved in metadata["source_bboxes"] so
+        the frontend can highlight across pages.
 
         Args:
             book_dir_name: Directory name of the book under mineru_dir/category/
@@ -102,27 +110,50 @@ class MinerUReader(BaseReader):
         chapters = self._extract_chapters(content_list)
         chapter_ranges = self._build_chapter_ranges(content_list, chapters)
 
-        reading_order = 0
-        for item in content_list:
-            item_type = item.get("type", "")
-            if item_type == "discarded":
-                continue
+        # ── Section-aware merge ──────────────────────────────
+        from engine_v2.chunking.section_merger import merge_content_items
 
-            text = self._extract_text(item, item_type)
+        merged_items = merge_content_items(
+            content_list,
+            page_sizes=page_sizes,
+        )
+
+        reading_order = 0
+        for merged in merged_items:
+            text = self._clean_latex_artifacts(merged.text)
             if not text:
                 continue
 
-            page_idx = item.get("page_idx", 0)
-            bbox = self._normalise_bbox(
-                item.get("bbox", [0, 0, 0, 0]),
-                page_idx,
-                page_sizes,
-            )
+            page_idx = merged.page_idx
+
+            # Primary bbox (union of all sub-items) — normalised to PDF points
+            if merged.bboxes:
+                primary_bbox = merged.primary_bbox
+                # Normalise using the first page's dimensions
+                primary_bbox = self._normalise_bbox(
+                    primary_bbox, page_idx, page_sizes,
+                )
+            else:
+                primary_bbox = [0.0, 0.0, 0.0, 0.0]
 
             chapter_key = self._assign_chapter(page_idx, chapter_ranges)
 
             # Page dimensions for frontend bbox scaling (PDF points)
             pw, ph = page_sizes.get(page_idx, (0.0, 0.0))
+
+            # Multi-page bboxes for frontend highlighting (JSON-serialised)
+            # Each entry: {page_idx, bbox: [x0,y0,x1,y1], page_width, page_height}
+            source_bboxes = []
+            for bb in merged.bboxes:
+                norm_bbox = self._normalise_bbox(
+                    bb.bbox, bb.page_idx, page_sizes,
+                )
+                source_bboxes.append({
+                    "page_idx": bb.page_idx,
+                    "bbox": norm_bbox,
+                    "page_width": bb.page_width,
+                    "page_height": bb.page_height,
+                })
 
             doc_id = f"{book_dir_name}_{reading_order:06d}"
             yield Document(
@@ -131,17 +162,19 @@ class MinerUReader(BaseReader):
                 metadata={
                     "book_id": book_dir_name,
                     "category": category,
-                    "content_type": item_type,
+                    "content_type": merged.content_type,
                     "page_idx": page_idx,
-                    "bbox": bbox,
+                    "bbox": primary_bbox,
                     "page_width": pw,
                     "page_height": ph,
                     "chapter_key": chapter_key,
                     "reading_order": reading_order,
-                    "text_level": item.get("text_level"),
+                    "text_level": merged.text_level,
+                    "source_bboxes": source_bboxes,
                 },
                 excluded_llm_metadata_keys=[
                     "bbox", "reading_order", "page_width", "page_height",
+                    "source_bboxes",
                 ],
             )
             reading_order += 1

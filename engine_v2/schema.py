@@ -106,7 +106,34 @@ def build_source(node_with_score: Any, index: int) -> dict[str, Any]:
             has_bbox = True
 
     bboxes = []
-    if has_bbox:
+
+    # Priority 1: source_bboxes from section merger (multi-page aware)
+    raw_source_bboxes = meta.get("source_bboxes")
+    if raw_source_bboxes:
+        # May be a JSON string (from ChromaDB metadata serialisation)
+        if isinstance(raw_source_bboxes, str):
+            import json as _json
+            try:
+                raw_source_bboxes = _json.loads(raw_source_bboxes)
+            except (ValueError, TypeError):
+                raw_source_bboxes = []
+
+        if isinstance(raw_source_bboxes, list):
+            for sb in raw_source_bboxes:
+                sb_bbox = sb.get("bbox", [0, 0, 0, 0])
+                if any(v != 0 for v in sb_bbox):
+                    bboxes.append({
+                        "x0": float(sb_bbox[0]),
+                        "y0": float(sb_bbox[1]),
+                        "x1": float(sb_bbox[2]),
+                        "y1": float(sb_bbox[3]),
+                        "page_number": int(sb.get("page_idx", page_idx)) + 1,
+                        "page_width": float(sb.get("page_width", pw)),
+                        "page_height": float(sb.get("page_height", ph)),
+                    })
+
+    # Fallback: single primary bbox (backwards compat)
+    if not bboxes and has_bbox:
         bboxes.append({
             "x0": x0, "y0": y0,
             "x1": x1, "y1": y1,
