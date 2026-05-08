@@ -466,9 +466,10 @@ def get_query_engine(
         SIMILARITY_CUTOFF,
     )
 
-    # Over-fetch 2× from retriever to give reranker enough candidates to filter
-    # The reranker will trim back down to similarity_top_k
-    retrieval_k = similarity_top_k * 2 if RERANKER_ENABLED else similarity_top_k
+    # Over-fetch 3× from retriever to give reranker enough candidates.
+    # Definition-type chunks often rank 10-15 in BM25; CrossEncoder reranker
+    # can boost them if they are included in the candidate set.
+    retrieval_k = similarity_top_k * 3 if RERANKER_ENABLED else similarity_top_k
 
     # Build retriever kwargs — pass collection_name when overriding default
     retriever_kwargs: dict = {

@@ -252,8 +252,10 @@ def execute_consulting_query(
         SIMILARITY_CUTOFF,
     )
 
-    # Over-fetch 2× from each collection to give reranker enough candidates
-    retrieval_k = top_k * 2 if RERANKER_ENABLED else top_k
+    # Over-fetch 3× from each collection to give reranker enough candidates.
+    # With 300-500 char chunks, definition-type chunks may rank 10-15 in BM25
+    # (low term frequency) but should be boosted by the CrossEncoder reranker.
+    retrieval_k = top_k * 3 if RERANKER_ENABLED else top_k
 
     merged_nodes = multi_collection_retrieve(
         question=retrieval_question,
