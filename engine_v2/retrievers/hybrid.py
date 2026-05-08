@@ -446,15 +446,15 @@ def get_hybrid_retriever(
                     weights = [0.5, 0.5]
                     # Cache for reuse
                     _put_cached_bm25(collection_name, book_id_strings, bm25_retriever)
-                    scope = f"books={book_id_strings}" if book_id_strings else "all-books"
+                    scope = f"{len(book_id_strings)} books" if book_id_strings else "all-books"
                     logger.info(
                         "BM25 retriever built from {} ChromaDB nodes ({}, lang={})",
                         len(bm25_nodes), scope, lang_label,
                     )
                 else:
-                    logger.warning(
-                        "No text nodes found in ChromaDB (books={})",
-                        book_id_strings or "all",
+                    scope = f"{len(book_id_strings)} books" if book_id_strings else "all"
+                    logger.debug(
+                        "BM25: no text nodes for scope={}, vector-only", scope,
                     )
 
             except Exception as exc:
