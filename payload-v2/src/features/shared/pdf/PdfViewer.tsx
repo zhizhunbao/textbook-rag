@@ -18,6 +18,7 @@ import {
 } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/esm/Page/TextLayer.css";
+import "react-pdf/dist/esm/Page/AnnotationLayer.css";
 
 import { getPdfUrl, fetchToc } from "@/features/engine/query_engine";
 import { useAppState, useAppDispatch } from "@/features/shared/AppContext";
@@ -73,10 +74,7 @@ const INITIAL_RENDER_RADIUS = 2;
 const VISIBLE_RENDER_RADIUS = 3;
 
 
-// Background progressive loading tuning
-const BG_BATCH_SIZE = 20;
-const BG_BATCH_DELAY_MS = 200;
-const BG_INITIAL_DELAY_MS = 800;
+
 
 /** CMap config for CJK font rendering (Chinese/Japanese/Korean) */
 const PDF_OPTIONS = {
@@ -89,7 +87,6 @@ interface BookCache {
   numPages: number;
   pageDimsByPage: Record<number, { width: number; height: number }>;
   renderedPages: Set<number>;
-  loadedPages: Set<number>;
   tocEntries: TocEntry[];
   renderWidth: number;
   zoomScale: number;
@@ -129,7 +126,7 @@ const PdfPageCanvas = memo(function PdfPageCanvas({
       onGetTextError={handleError}
       loading={<Loading />}
       renderTextLayer
-      renderAnnotationLayer={false}
+      renderAnnotationLayer={true}
     />
   );
 });
@@ -192,6 +189,19 @@ export default function PdfViewer() {
   const bookCacheRef = useRef(new Map<string, BookCache>());
   const prevBookKeyRef = useRef<string | null>(null);
 
+  // Map Payload numeric ID → engine string book_id for PDF/TOC APIs
+  const engineBookId = useMemo(
+    () => books.find((b) => b.id === currentBookId)?.book_id ?? null,
+    [books, currentBookId],
+  );
+
+  const pdfUrl = useMemo(
+    () => (engineBookId ? getPdfUrl(engineBookId, pdfVariant) : ""),
+    [engineBookId, pdfVariant],
+  );
+
+
+
   const hasToc = tocEntries.length > 0;
 
   // Build a map: pageNumber → BboxEntry[] for overlay rendering
@@ -206,17 +216,6 @@ export default function PdfViewer() {
     }
     return map;
   }, [selectedSource?.bboxes]);
-
-  // Map Payload numeric ID → engine string book_id for PDF/TOC APIs
-  const engineBookId = useMemo(
-    () => books.find((b) => b.id === currentBookId)?.book_id ?? null,
-    [books, currentBookId],
-  );
-
-  const pdfUrl = useMemo(
-    () => (engineBookId ? getPdfUrl(engineBookId, pdfVariant) : ""),
-    [engineBookId, pdfVariant],
-  );
 
   const pageNumbers = useMemo(
     () => Array.from({ length: numPages }, (_, index) => index + 1),
@@ -244,12 +243,37 @@ export default function PdfViewer() {
 
   const markPagesRendered = useCallback((centerPage: number, radius: number) => {
     setRenderedPages((prev) => {
-      const next = new Set(prev);
+      const next = new Set<number>();
+
+      // Always keep page 1 for dimensions estimation
+      next.add(1);
+
+      // Keep the target page of a pending jump if any, so it doesn't get unmounted during scroll
+      if (pendingPageJumpRef.current?.pageNumber) {
+        next.add(pendingPageJumpRef.current.pageNumber);
+      }
+      if (pendingSourceScrollRef.current?.pageNumber) {
+        next.add(pendingSourceScrollRef.current.pageNumber);
+      }
+
       const start = Math.max(1, centerPage - radius);
       const end = Math.min(numPages || centerPage + radius, centerPage + radius);
 
       for (let page = start; page <= end; page += 1) {
         next.add(page);
+      }
+
+      // Add a slightly larger "keep-alive" buffer to avoid flashing when scrolling back and forth
+      const keepAliveRadius = radius * 2;
+      for (const page of prev) {
+        if (page >= centerPage - keepAliveRadius && page <= centerPage + keepAliveRadius) {
+          next.add(page);
+        }
+      }
+
+      // If sets are identical, return prev to avoid re-render
+      if (prev.size === next.size && [...prev].every(p => next.has(p))) {
+        return prev;
       }
 
       return next;
@@ -289,11 +313,21 @@ export default function PdfViewer() {
   // Sync loadedPages into ref so polling callbacks can read latest value
   useEffect(() => { loadedPagesRef.current = loadedPages; }, [loadedPages]);
 
-  // Clear waitingForPage once that page finishes loading
+  // Clear waitingForPage once that page finishes loading (or timeout after 5s)
   useEffect(() => {
-    if (waitingForPage !== null && loadedPages.has(waitingForPage)) {
+    if (waitingForPage === null) return;
+
+    if (loadedPages.has(waitingForPage)) {
       setWaitingForPage(null);
+      return;
     }
+
+    const timerId = setTimeout(() => {
+      console.warn(`[PdfViewer] Timeout waiting for page ${waitingForPage} to load. Clearing overlay.`);
+      setWaitingForPage(null);
+    }, 5000);
+
+    return () => clearTimeout(timerId);
   }, [waitingForPage, loadedPages]);
 
   // Detect narrow toolbar for responsive collapse
@@ -316,12 +350,11 @@ export default function PdfViewer() {
     const bookKey = `${currentBookId}:${pdfVariant}`;
 
     // Save outgoing book state to cache
-    if (prevBookKeyRef.current && prevBookKeyRef.current !== bookKey) {
+    if (prevBookKeyRef.current && prevBookKeyRef.current !== bookKey && numPages > 0) {
       bookCacheRef.current.set(prevBookKeyRef.current, {
         numPages,
         pageDimsByPage,
         renderedPages,
-        loadedPages,
         tocEntries,
         renderWidth,
         zoomScale,
@@ -335,12 +368,12 @@ export default function PdfViewer() {
       setNumPages(cached.numPages);
       setPageDimsByPage(cached.pageDimsByPage);
       setRenderedPages(new Set([...cached.renderedPages, currentPage]));
-      setLoadedPages(cached.loadedPages);
+      setLoadedPages(new Set()); // Document is unmounted, so DOM nodes are destroyed
       setTocEntries(cached.tocEntries);
       setRenderWidth(cached.renderWidth);
       setZoomScale(cached.zoomScale);
       setSelectedTocEntryId(null);
-      setDocLoading(false); // PDF is browser-cached → no overlay needed
+      setDocLoading(true); // PDF needs to be re-parsed by react-pdf
       setWaitingForPage(null);
       // pageRefs are DOM nodes — they will be re-created by React when Document mounts
       pageRefs.current.clear();
@@ -369,6 +402,7 @@ export default function PdfViewer() {
     pendingSourceScrollRef.current = null;
 
     if (engineBookId) fetchToc(engineBookId).then(setTocEntries).catch(() => setTocEntries([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentBookId, pdfVariant]);
 
   useEffect(() => {
@@ -450,29 +484,7 @@ export default function PdfViewer() {
     });
   }, [currentPage, markPagesRendered, numPages]);
 
-  // Background progressive loading — render ALL pages in batches after doc loads
-  useEffect(() => {
-    if (numPages === 0) return;
 
-    let batchStart = 1;
-    let timerId: ReturnType<typeof setTimeout>;
-
-    const loadNextBatch = () => {
-      setRenderedPages((prev) => {
-        const next = new Set(prev);
-        const end = Math.min(batchStart + BG_BATCH_SIZE - 1, numPages);
-        for (let i = batchStart; i <= end; i++) next.add(i);
-        batchStart = end + 1;
-        return next;
-      });
-      if (batchStart <= numPages) {
-        timerId = setTimeout(loadNextBatch, BG_BATCH_DELAY_MS);
-      }
-    };
-
-    timerId = setTimeout(loadNextBatch, BG_INITIAL_DELAY_MS);
-    return () => clearTimeout(timerId);
-  }, [numPages]);
 
   useEffect(() => {
     const target = pageRefs.current.get(currentPage);
@@ -577,8 +589,9 @@ export default function PdfViewer() {
       nonce: selectedSourceNonce,
     };
     skipNextScrollRef.current = false;
-    setWaitingForPage(selectedSource.page_number);
-    markPagesRendered(selectedSource.page_number, VISIBLE_RENDER_RADIUS);
+    const targetPage = Number(selectedSource.page_number);
+    setWaitingForPage(targetPage);
+    markPagesRendered(targetPage, VISIBLE_RENDER_RADIUS);
   }, [
     currentBookId,
     markPagesRendered,
@@ -844,8 +857,8 @@ export default function PdfViewer() {
                   <button
                     key={entry.id}
                     className={`block w-full truncate rounded py-0.5 pr-1 text-left hover:bg-accent hover:text-accent-foreground transition-colors ${isActive
-                        ? "bg-accent/80 font-medium text-foreground"
-                        : "text-muted-foreground"
+                      ? "bg-accent/80 font-medium text-foreground"
+                      : "text-muted-foreground"
                       } ${isBold ? "font-semibold" : ""}`}
                     style={{ paddingLeft: `${indent + 8}px` }}
                     title={label}
@@ -930,8 +943,8 @@ export default function PdfViewer() {
                       >
                         <div
                           className={`relative rounded bg-white shadow-sm ring-1 ring-border ${pageNumber === currentPage
-                              ? "shadow-md ring-primary/50 ring-2"
-                              : ""
+                            ? "shadow-md ring-primary/50 ring-2"
+                            : ""
                             }`}
                           style={{ width: stableRenderWidth }}
                         >
@@ -942,8 +955,8 @@ export default function PdfViewer() {
                           {shouldRenderPage ? (
                             <div
                               className={`relative transition-all duration-500 ${isPageLoaded
-                                  ? "opacity-100 blur-0"
-                                  : "opacity-0 blur-[2px]"
+                                ? "opacity-100 blur-0"
+                                : "opacity-0 blur-[2px]"
                                 }`}
                             >
                               <PdfPageCanvas

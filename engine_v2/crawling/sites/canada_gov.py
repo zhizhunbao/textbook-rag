@@ -25,7 +25,11 @@ canada_gov = SiteProfile(
     # ── Algonquin-specific steps not needed here ──
     # Generic expansion (details, bootstrap, etc.) handled by engine defaults
 
-    # ── Print CSS with GC WET selectors ──
+    # ── Strip print media + Remove footer (DOM removal) ──
+    # STRIP_PRINT_MEDIA removes @media print rules from GC WET stylesheets
+    # so the PDF renders with the original screen layout (wider, cleaner).
+    # REMOVE_GC_FOOTER deletes the site footer from DOM (identical on every page).
+    pre_pdf_js=f"({JS.STRIP_PRINT_MEDIA})(); ({JS.REMOVE_GC_FOOTER})();",
     print_css=JS.PRINT_CSS_CANADA_GOV,
 
     # ── Rate Limiting (gov sites are aggressive) ──

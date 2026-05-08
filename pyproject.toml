@@ -17,7 +17,7 @@ dependencies = [
     "loguru>=0.7.0",
     "fastapi>=0.135.1",
     "uvicorn[standard]>=0.41.0",
-    "mineru[all]>=2.7.6",
+    "mineru[all]==2.7.6",
     "torch>=2.6.0",
     "torchvision>=0.21.0",
     "llama-index-core>=0.12.42",
@@ -50,15 +50,23 @@ where = ["."]
 include = ["engine*"]
 
 # ---------------------------------------------------------------------------
-# PyTorch CUDA wheel index
-# Driver 591.74 on RTX 4060 supports CUDA ≥ 12.x; cu128 is the highest
-# stable PyTorch wheel available for torch 2.6+.
+# uv configuration
 # ---------------------------------------------------------------------------
+# Resolve only for Windows; prevents Linux-only deps (nvidia-nccl-cu12) from
+# appearing in the lockfile.
+[tool.uv]
+environments = ["sys_platform == 'win32'"]
+override-dependencies = ["nvidia-nccl-cu12; sys_platform == 'never'"]
+
+# PyTorch CUDA wheel index
+# Driver 591.74 on RTX 4060 supports CUDA >= 12.x; cu128 is the highest
+# stable PyTorch wheel available for torch 2.6+.
 [[tool.uv.index]]
 name = "pytorch-cu128"
 url = "https://download.pytorch.org/whl/cu128"
 explicit = true
 
 [tool.uv.sources]
+# mineru: using PyPI 2.7.6 — local 3.1.8 reference has layout detection regression
 torch = { index = "pytorch-cu128" }
 torchvision = { index = "pytorch-cu128" }

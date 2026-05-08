@@ -29,7 +29,6 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 RAW_PDFS_DIR = PROJECT_ROOT / "data" / "raw_pdfs"
 OUTPUT_DIR = PROJECT_ROOT / "data" / "mineru_output"
-VENV_MINERU = PROJECT_ROOT / ".venv" / "Scripts" / "mineru"
 STATUS_FILE = OUTPUT_DIR / "batch_status.json"
 LOCK_SUFFIX = ".processing"
 
@@ -50,6 +49,7 @@ SOURCE_DIRS: dict[str, Path] = {
     "prov-new-brunswick": CRAWLED_WEB_DIR / "prov-new-brunswick",
     "prov-nwt":           CRAWLED_WEB_DIR / "prov-nwt",
     "prov-quebec":        CRAWLED_WEB_DIR / "prov-quebec",
+    "prov-yukon":         CRAWLED_WEB_DIR / "prov-yukon",
     # ── Education: Algonquin College ──
     "algonquin-programs": CRAWLED_WEB_DIR / "algonquin-programs",
 }
@@ -83,20 +83,16 @@ def _safe_stat(p: Path):
 def _unique_short_name(pdf: Path, source_dir: Path) -> str:
     """Generate a unique short name for a PDF.
 
-    For web-crawled PDFs, the stem alone may collide (e.g. multiple 'overview.pdf'
-    in different subdirs). We append a 6-char hash of the relative path.
-    For textbooks/raw PDFs the stem is already unique enough.
+    For web-crawled PDFs, preserve the original directory structure
+    so that the MinerU output mirrors the crawled layout.
+    e.g. en/immigration-refugees-citizenship/services/study-canada
+
+    For textbooks/raw PDFs (no subdirs), the stem is used directly.
     """
     rel = pdf.relative_to(source_dir)
-    parts_str = str(rel).replace("\\", "/")
-    # If the PDF is directly in the source dir (no subdirs), stem is fine
-    if "/" not in parts_str:
-        return pdf.stem
-    # Otherwise, append hash to avoid collisions
-    h = hashlib.md5(parts_str.encode()).hexdigest()[:6]
-    # Truncate stem to avoid overly long output dir names (max 80 chars)
-    stem = pdf.stem[:80]
-    return f"{stem}_{h}"
+    # Use the relative path without .pdf extension as the output name
+    # This preserves directory structure: en/ircc/services/study-canada
+    return str(rel.with_suffix("")).replace("\\", "/")
 
 
 def discover_books():
@@ -150,9 +146,9 @@ def discover_books():
 
 def _lock_path(short_name: str, category: str) -> Path:
     """Return the lock file path for a given book (per-category lock dir)."""
-    lock_dir = OUTPUT_DIR / category
-    lock_dir.mkdir(parents=True, exist_ok=True)
-    return lock_dir / f"{short_name}{LOCK_SUFFIX}"
+    lock = OUTPUT_DIR / category / f"{short_name}{LOCK_SUFFIX}"
+    lock.parent.mkdir(parents=True, exist_ok=True)
+    return lock
 
 
 def _acquire_lock(short_name: str, category: str) -> None:
@@ -294,7 +290,7 @@ def process_book(pdf_path: Path, short_name: str, category: str = "textbook", ba
     _acquire_lock(short_name, category)
 
     cmd = [
-        str(VENV_MINERU),
+        "uv", "run", "mineru",
         "-p", str(pdf_path),
         "-o", str(out_dir),
         "-b", backend,

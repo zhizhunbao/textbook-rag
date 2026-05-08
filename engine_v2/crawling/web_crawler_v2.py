@@ -30,7 +30,7 @@ import engine_v2.crawling.sites  # noqa: F401
 
 _CRAWL_EXECUTOR = ThreadPoolExecutor(max_workers=2, thread_name_prefix="crawl4ai")
 _DEFAULT_OUTPUT_DIR = Path("data/crawled_web")
-MAX_SEGMENT_LEN = 50
+MAX_SEGMENT_LEN = 200
 
 
 def _run_in_proactor(coro):

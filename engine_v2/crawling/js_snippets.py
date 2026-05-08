@@ -122,17 +122,21 @@ EXPAND_GENERIC_TABS = """() => {
     for (const panel of panels) {
         try {
             if (!panel || !panel.style) continue;
+            // GC WET: hidden via `hidden` attr or classes `out` / `noheight`
+            panel.removeAttribute('hidden');
+            panel.classList.remove('out', 'noheight');
+            panel.classList.add('active', 'show', 'in');
+            panel.setAttribute('aria-hidden', 'false');
+            panel.setAttribute('aria-expanded', 'true');
             panel.style.display = 'block';
             panel.style.visibility = 'visible';
             panel.style.opacity = '1';
             panel.style.height = 'auto';
             panel.style.overflow = 'visible';
-            panel.classList.add('active', 'show', 'in');
         } catch(e) {}
     }
-    main.querySelectorAll('[role="tab"]').forEach(tab => {
-        try { tab.click(); } catch(e) {}
-    });
+    // Do NOT click tab triggers — clicking re-triggers WET/Bootstrap JS
+    // which hides the panels we just forced open. CSS forcing is sufficient.
 }"""
 
 EXPAND_BOOTSTRAP_COLLAPSE = """() => {
@@ -446,21 +450,211 @@ ALGONQUIN_CHATBOT = """() => {
 }"""
 
 ALGONQUIN_PRE_PDF = """() => {
-    // Remove interactive widgets, sliders, and application buttons
+    // ── 1. Remove interactive widgets, sliders, and application buttons ──
     document.querySelectorAll(
         '.slick-slider, ' +
         '.card-program-information, #apply-btn, ' +
         '#monograph-type-btn, .dropdown.show, ' +
         '.footer-nav-wrapper, ' +
-        '#program-banner, ' +
-        '[class*="related-program"], [class*="relatedProgram"], ' +
-        '[class*="get-started"], [id*="get-started"]'
+        '#program-banner'
     ).forEach(el => el.remove());
+
+    // ── 2. Remove "Get Started" section (green CTA buttons) ──
+    //    Matches by class/id AND by heading text content
+    document.querySelectorAll(
+        '[class*="get-started"], [id*="get-started"], ' +
+        '[class*="getStarted"], [id*="getStarted"], ' +
+        '[class*="cta-block"], [class*="cta-section"], ' +
+        '[class*="future-students-cta"], ' +
+        '.campus-tour-block, [class*="campus-tour"]'
+    ).forEach(el => el.remove());
+    // Text-based fallback: find headings containing "Get Started"
+    document.querySelectorAll('h2, h3, h4').forEach(h => {
+        const text = (h.textContent || '').trim();
+        if (/^get\\s+started$/i.test(text)) {
+            // Remove the heading and its parent section/container
+            const section = h.closest('section, .widget, .block, .row, .container')
+                          || h.parentElement;
+            if (section) section.remove();
+        }
+    });
+
+    // ── 3. Remove "Related Programs" section ──
+    document.querySelectorAll(
+        '[class*="related-program"], [class*="relatedProgram"], ' +
+        '[id*="related-program"], [id*="relatedProgram"], ' +
+        '[class*="RelatedProgram"], [id*="RelatedProgram"], ' +
+        'section.related-programs, .related-programs-section'
+    ).forEach(el => el.remove());
+    // Text-based fallback: find headings containing "Related Programs"
+    document.querySelectorAll('h2, h3, h4').forEach(h => {
+        const text = (h.textContent || '').trim();
+        if (/related\\s+programs?/i.test(text)) {
+            const section = h.closest('section, .widget, .block, .row, .container, table')
+                          || h.parentElement;
+            if (section) section.remove();
+        }
+    });
+
+    // ── 4. Remove bottom promotional cards ──
+    //    ("What careers...", "Explore our campuses...", "Want to learn more about AC?")
+    document.querySelectorAll(
+        '[class*="explore-career"], [class*="explore-campus"], ' +
+        '[class*="learn-more-ac"], [class*="promo-card"], ' +
+        '[class*="promoCard"], [class*="future-student-promo"], ' +
+        '[class*="card-deck-cta"], [class*="card-group-cta"]'
+    ).forEach(el => el.remove());
+    // Text-based fallback: find promo cards by known titles
+    const promoTexts = [
+        /what\\s+careers/i,
+        /explore\\s+our\\s+campus/i,
+        /want\\s+to\\s+learn\\s+more\\s+about\\s+ac/i,
+        /take\\s+a\\s+virtual\\s+tour/i,
+        /view\\s+events/i,
+        /explore\\s+careers/i
+    ];
+    document.querySelectorAll('a, h3, h4, h5, p, span').forEach(el => {
+        const text = (el.textContent || '').trim();
+        if (promoTexts.some(re => re.test(text))) {
+            // Walk up to find the card/section container
+            const card = el.closest(
+                '.card, .card-body, [class*="card"], ' +
+                'section, .widget, .block, .col, .col-md-4, .col-lg-4'
+            );
+            if (card) {
+                // Remove the entire card row/group if it's a promotional row
+                const row = card.closest('.row, .card-deck, .card-group, .d-flex');
+                if (row && row.querySelectorAll('.card, [class*="card"]').length <= 3) {
+                    row.remove();
+                } else {
+                    card.remove();
+                }
+            }
+        }
+    });
+
+    // ── 5. Remove site footer, disclaimer, and social icons ──
+    document.querySelectorAll(
+        'footer, .footer, .site-footer, ' +
+        '.footer-nav-wrapper, [class*="footer-nav"], ' +
+        '[role="contentinfo"], ' +
+        '[class*="social-media"], [class*="social-icons"], [class*="socialMedia"], ' +
+        '[class*="disclaimer"], [class*="Disclaimer"]'
+    ).forEach(el => el.remove());
+    // Text-based: remove disclaimer paragraph
+    document.querySelectorAll('p, div, span').forEach(el => {
+        const text = (el.textContent || '').trim();
+        if (/every attempt is made to ensure/i.test(text) &&
+            /reserves the right/i.test(text)) {
+            const container = el.closest('section, .row, .container, div')
+                            || el.parentElement;
+            if (container && container.querySelectorAll('p, div').length <= 3) {
+                container.remove();
+            } else {
+                el.remove();
+            }
+        }
+    });
+
+    // ── 6. Remove green CTA button rows by button text ──
+    const ctaLabels = [
+        /take a campus tour/i,
+        /attend a recruitment/i,
+        /create a custom viewbook/i,
+        /financial aid/i,
+        /co-op education/i,
+        /ac pathways/i
+    ];
+    document.querySelectorAll('a, button, [role="button"]').forEach(el => {
+        const text = (el.textContent || '').trim();
+        if (ctaLabels.some(re => re.test(text))) {
+            const row = el.closest('.row, section, .container, .d-flex, .grid, div');
+            if (row) {
+                // Check if this row contains multiple CTA buttons
+                const btns = row.querySelectorAll('a, button, [role="button"]');
+                const matchCount = Array.from(btns).filter(b =>
+                    ctaLabels.some(re => re.test((b.textContent || '').trim()))
+                ).length;
+                if (matchCount >= 2) {
+                    row.remove();
+                }
+            }
+        }
+    });
 }"""
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  Print CSS
+#  Strip Print Media — force screen layout in PDF rendering
+# ══════════════════════════════════════════════════════════════════════════════
+
+STRIP_PRINT_MEDIA = """() => {
+    // 1. Remove <link media="print"> stylesheets entirely
+    document.querySelectorAll('link[media="print"]').forEach(el => el.remove());
+
+    // 2. Walk all stylesheets and delete @media print rules
+    for (const sheet of document.styleSheets) {
+        try {
+            const rules = sheet.cssRules || sheet.rules;
+            if (!rules) continue;
+            // Walk backwards so deletion doesn't shift indices
+            for (let i = rules.length - 1; i >= 0; i--) {
+                const rule = rules[i];
+                if (rule.type === CSSRule.MEDIA_RULE &&
+                    rule.conditionText &&
+                    rule.conditionText.includes('print')) {
+                    sheet.deleteRule(i);
+                }
+            }
+        } catch(e) {
+            // Cross-origin stylesheets throw SecurityError — skip them
+        }
+    }
+
+    // 3. Force all elements to use screen-visible styles
+    //    (override common print-only hiding patterns)
+    const style = document.createElement('style');
+    style.textContent = `
+        @media print {
+            * {
+                color-adjust: exact !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            body, html {
+                width: 100% !important;
+                font-size: inherit !important;
+            }
+            /* Force all elements to stay as screen layout */
+            .container, .row, [class*="col-"],
+            main, article, section, div {
+                width: auto !important;
+                max-width: none !important;
+                float: none !important;
+                position: static !important;
+                display: block !important;
+                overflow: visible !important;
+            }
+            /* Don't hide navigation/headers (keeps original look) */
+            header, nav, aside,
+            [role="banner"], [role="navigation"] {
+                display: block !important;
+                visibility: visible !important;
+                position: relative !important;
+            }
+            img {
+                display: inline-block !important;
+                visibility: visible !important;
+                max-width: 100% !important;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+}"""
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  Print CSS (legacy — used by sites without STRIP_PRINT_MEDIA)
 # ══════════════════════════════════════════════════════════════════════════════
 
 PRINT_CSS_GENERIC = """
@@ -500,11 +694,16 @@ PRINT_CSS_CANADA_GOV = """
         print-color-adjust: exact !important;
     }
     body, html { width: 100% !important; }
-    /* Neutralize ALL sticky/fixed elements */
+
+    /* ── HIDE site footer only (identical on every page → pollutes RAG) ── */
+    #wb-info, footer, [role="contentinfo"] {
+        display: none !important;
+    }
+
+    /* ── Keep main content visible with proper layout ── */
     [style*="position: fixed"], [style*="position: sticky"],
-    header, footer, nav, aside,
-    .gcweb-menu, #wb-info, #wb-sm, #wb-bnr,
-    [role="banner"], [role="contentinfo"], [role="navigation"] {
+    header, nav, aside,
+    [role="banner"], [role="navigation"] {
         position: relative !important;
         top: auto !important;
         z-index: auto !important;
@@ -552,3 +751,18 @@ SOURCE_BANNER = """(args) => {
     `;
     document.body.insertBefore(banner, document.body.firstChild);
 }"""
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  Remove GC Site Footer (DOM removal — more reliable than CSS display:none)
+# ══════════════════════════════════════════════════════════════════════════════
+
+REMOVE_GC_FOOTER = """() => {
+    // Remove the entire site footer — it's identical on every page
+    // and pollutes RAG vector store with duplicated non-informative chunks
+    const footer = document.getElementById('wb-info');
+    if (footer) footer.remove();
+    // Fallback: remove any <footer> or .global-footer elements
+    document.querySelectorAll('footer, .global-footer').forEach(el => el.remove());
+}"""
+

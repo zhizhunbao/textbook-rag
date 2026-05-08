@@ -217,12 +217,18 @@ export default function ChatPanel({
   const updateNearBottom = useCallback(() => {
     const thread = threadRef.current;
     if (!thread) return;
-    const distanceFromBottom =
-      thread.scrollHeight - thread.scrollTop - thread.clientHeight;
+    const distanceFromBottom = Math.ceil(
+      thread.scrollHeight - thread.scrollTop - thread.clientHeight
+    );
+    
+    // Only lock to bottom if strictly at the bottom (2px leniency for zoom/fractional pixels).
+    const isAtBottom = distanceFromBottom <= 2;
+    // NEAR_BOTTOM_THRESHOLD is for showing the "jump to latest" button.
     const nextNearBottom = distanceFromBottom < NEAR_BOTTOM_THRESHOLD;
-    shouldStickToBottomRef.current = nextNearBottom;
-    setIsNearBottom((prev) => prev === nextNearBottom ? prev : nextNearBottom);
-    if (nextNearBottom) setHasNewMessagesBelow((prev) => prev === false ? prev : false);
+    
+    shouldStickToBottomRef.current = isAtBottom;
+    setIsNearBottom((prev) => (prev === nextNearBottom ? prev : nextNearBottom));
+    if (nextNearBottom) setHasNewMessagesBelow((prev) => (prev === false ? prev : false));
   }, []);
 
   /* ── Load models — cross-check local models with Ollama /api/tags ── */
@@ -564,6 +570,16 @@ export default function ChatPanel({
         ref={threadRef}
         className="chat-thread relative flex-1 overflow-y-auto px-4 pb-44 pt-6"
         onScroll={updateNearBottom}
+        onWheel={(e) => {
+          if (e.deltaY < 0) {
+            shouldStickToBottomRef.current = false;
+            setIsNearBottom(false);
+          }
+        }}
+        onTouchStart={() => {
+          shouldStickToBottomRef.current = false;
+          setIsNearBottom(false);
+        }}
       >
         {!hasMessages && !loading ? (
           <WelcomeScreen

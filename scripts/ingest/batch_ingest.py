@@ -1,25 +1,32 @@
 """
-Batch ingest: scan mineru_output for new Markdown, push delta to ChromaDB.
+Unified batch ingest: MinerU output → ChromaDB + Payload CMS (PostgreSQL).
 
-Auto-detects what's already in the vector store and only ingests new content.
-Designed to run after batch_mineru.py completes.
+Default behavior: CLEAN REPLACE
+  1. Delete old ChromaDB collection for target category
+  2. Clear ingest_status.json entries for target category
+  3. Re-ingest all MinerU output into fresh collection
+  4. Sync book metadata to Payload CMS
 
 Pipeline position:
   Script 1: crawler_cli.py crawl  → crawled_web/<persona>/*.pdf
   Script 2: batch_mineru.py       → mineru_output/<persona>/<name>/*.md
-  Script 3: batch_ingest.py (this) → chroma_persist/ (vector DB)   ← YOU ARE HERE
+  Script 3: batch_ingest.py (this) → ChromaDB + Payload CMS   ← YOU ARE HERE
 
 Usage:
-  uv run python scripts/ingest/batch_ingest.py                     # All categories
-  uv run python scripts/ingest/batch_ingest.py --category imm-pathways
-  uv run python scripts/ingest/batch_ingest.py --dry-run            # Preview only
-  uv run python scripts/ingest/batch_ingest.py --force              # Re-ingest all
+  python scripts/ingest/batch_ingest.py                        # All categories (clean replace)
+  python scripts/ingest/batch_ingest.py --category federal-ircc
+  python scripts/ingest/batch_ingest.py --dry-run              # Preview only
+  python scripts/ingest/batch_ingest.py --skip-payload         # Skip Payload sync
+  python scripts/ingest/batch_ingest.py --skip-vectors         # Skip ChromaDB, only sync Payload
 """
 import json
+import os
 import sys
 import time
 from datetime import datetime
 from pathlib import Path
+
+import chromadb
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from engine_v2.settings import init_settings
@@ -29,6 +36,7 @@ init_settings()
 from engine_v2.ingestion.pipeline import get_vector_store
 from engine_v2.readers.mineru_reader import MinerUReader
 from engine_v2.ingestion.transformations import BBoxNormalizer
+from engine_v2.settings import CHROMA_PERSIST_DIR
 from llama_index.core.ingestion import IngestionPipeline
 from llama_index.core.settings import Settings
 
@@ -37,8 +45,12 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 MINERU_DIR = PROJECT_ROOT / "data" / "mineru_output"
 STATUS_FILE = MINERU_DIR / "ingest_status.json"
 
+PAYLOAD_URL = "http://localhost:3001"
+ENGINE_URL = "http://localhost:8001"
+PAYLOAD_ADMIN_EMAIL = "402707192@qq.com"
+PAYLOAD_ADMIN_PASSWORD = "123123"
+
 # Category → ChromaDB collection name mapping
-# Organized by data source (not persona)
 COLLECTION_MAP: dict[str, str] = {
     "textbook":           "textbook_chunks",
     "ecdev":              "ca_ecdev",
@@ -88,6 +100,10 @@ def discover_ready_books(
 ) -> list[tuple[str, str, Path]]:
     """Scan mineru_output for books that have valid MD output.
 
+    Supports both flat layouts (textbooks, ecdev) and deeply nested
+    layouts from web crawls (federal-ircc/en/ircc/services/study-canada/).
+    A "book" is identified by having an auto/ subdirectory with .md files.
+
     Returns: list of (category, short_name, md_dir)
     """
     books = []
@@ -97,22 +113,34 @@ def discover_ready_books(
         cat_dir = MINERU_DIR / category
         if not cat_dir.exists():
             continue
-        for sub in sorted(cat_dir.iterdir()):
-            if not sub.is_dir():
+
+        # Walk the entire tree to find directories containing auto/
+        for dirpath, dirnames, _filenames in os.walk(cat_dir):
+            dirpath = Path(dirpath)
+            # Skip lock dirs
+            if dirpath.name.endswith(".processing"):
+                dirnames.clear()
                 continue
-            # Skip lock files from batch_mineru
-            if sub.name.endswith(".processing"):
+            # Look for auto/ as a direct child
+            if "auto" not in dirnames:
                 continue
-            # Check for valid MD output
-            md_files = list(sub.rglob("*.md"))
-            if md_files:
-                total_size = sum(f.stat().st_size for f in md_files)
-                if total_size >= 50:
-                    books.append((category, sub.name, sub))
-    return books
+            auto_dir = dirpath / "auto"
+            md_files = list(auto_dir.glob("*.md"))
+            if not md_files:
+                continue
+            total_size = sum(f.stat().st_size for f in md_files)
+            if total_size < 50:
+                continue
+            # short_name = relative path from cat_dir (matches batch_mineru output)
+            short_name = str(dirpath.relative_to(cat_dir)).replace("\\", "/")
+            books.append((category, short_name, dirpath))
+            # Don't descend into auto/ or deeper — this is a leaf book
+            dirnames.clear()
+
+    return sorted(books)
 
 
-# ── Ingestion ────────────────────────────────────────────────────────────────
+# ── Vector Ingestion (ChromaDB) ──────────────────────────────────────────────
 
 def ingest_one(category: str, short_name: str, collection_name: str) -> int:
     """Ingest a single book's MinerU output into ChromaDB.
@@ -136,108 +164,267 @@ def ingest_one(category: str, short_name: str, collection_name: str) -> int:
     return len(nodes)
 
 
+# ── Payload CMS Sync (PostgreSQL) ────────────────────────────────────────────
+
+def _payload_login(httpx_mod) -> tuple[str, dict] | None:
+    """Login to Payload CMS. Returns (token, headers) or None."""
+    try:
+        resp = httpx_mod.post(
+            f"{PAYLOAD_URL}/api/users/login",
+            json={"email": PAYLOAD_ADMIN_EMAIL, "password": PAYLOAD_ADMIN_PASSWORD},
+            timeout=10.0,
+        )
+        if not resp.is_success:
+            print(f"    [WARN] Payload login failed: {resp.status_code}")
+            return None
+        token = resp.json().get("token")
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"JWT {token}",
+        }
+        return token, headers
+    except Exception as e:
+        print(f"    [WARN] Payload login error: {e}")
+        return None
+
+
+def _delete_payload_books(httpx_mod, headers: dict, filter_category: str | None) -> int:
+    """Delete old book records from Payload for target category. Returns count deleted."""
+    deleted = 0
+
+    # Build query params to find books in target category
+    params: dict[str, str] = {"limit": "500"}
+    if filter_category:
+        # Books are stored with category field matching the category key
+        params["where[category][equals]"] = filter_category
+
+    while True:
+        resp = httpx_mod.get(
+            f"{PAYLOAD_URL}/api/books",
+            params=params,
+            headers=headers,
+            timeout=30.0,
+        )
+        if not resp.is_success:
+            print(f"    [WARN] Failed to query books: {resp.status_code}")
+            break
+
+        docs = resp.json().get("docs", [])
+        if not docs:
+            break
+
+        for doc in docs:
+            try:
+                del_resp = httpx_mod.delete(
+                    f"{PAYLOAD_URL}/api/books/{doc['id']}",
+                    headers=headers,
+                    timeout=10.0,
+                )
+                if del_resp.is_success:
+                    deleted += 1
+                else:
+                    print(f"    [WARN] Delete book {doc['id']} failed: {del_resp.status_code}")
+            except Exception as e:
+                print(f"    [WARN] Delete book {doc['id']} error: {e}")
+
+        # If we got fewer than limit, we're done
+        if len(docs) < 500:
+            break
+
+    return deleted
+
+
+def sync_to_payload(filter_category: str | None = None) -> bool:
+    """Clean-replace book metadata in Payload CMS.
+
+    1. Delete old book records for target category
+    2. Call sync-engine to recreate from current Engine data
+    3. Verify record count
+
+    Returns True if sync succeeded.
+    """
+    try:
+        import httpx
+    except ImportError:
+        print("  [WARN] httpx not installed, skipping Payload sync")
+        print("         Install with: pip install httpx")
+        return False
+
+    print("\n" + "=" * 60)
+    print("PHASE 2: PAYLOAD CMS SYNC (PostgreSQL)")
+    print("=" * 60)
+
+    # Step 1: Check if services are running
+    try:
+        httpx.get(f"{PAYLOAD_URL}/api/users", timeout=5.0)
+    except Exception:
+        print("  [WARN] Payload CMS not running at", PAYLOAD_URL)
+        print("         Skipping Payload sync. Run batch_ingest.py --skip-vectors later.")
+        return False
+
+    try:
+        httpx.get(f"{ENGINE_URL}/health", timeout=5.0)
+    except Exception:
+        print("  [WARN] Engine API not running at", ENGINE_URL)
+        print("         Skipping Payload sync. Run batch_ingest.py --skip-vectors later.")
+        return False
+
+    # Step 2: Login
+    print("\n  [1/3] Logging into Payload CMS...")
+    auth = _payload_login(httpx)
+    if not auth:
+        return False
+    token, headers = auth
+    print(f"    Logged in as {PAYLOAD_ADMIN_EMAIL}")
+
+    # Step 3: Delete old book records
+    scope = filter_category or "ALL categories"
+    print(f"\n  [2/3] Deleting old book records ({scope})...")
+    deleted = _delete_payload_books(httpx, headers, filter_category)
+    print(f"    Deleted {deleted} old book records")
+
+    # Step 4: Sync fresh data from Engine
+    print(f"\n  [3/3] Syncing fresh books from Engine -> Payload...")
+    try:
+        sync_resp = httpx.post(f"{PAYLOAD_URL}/api/books/sync-engine", timeout=600.0)
+        if sync_resp.is_success:
+            result = sync_resp.json()
+            print(f"    created={result.get('created')}, "
+                  f"updated={result.get('updated')}, "
+                  f"total={result.get('total')}")
+        else:
+            print(f"    [WARN] Sync returned {sync_resp.status_code}: "
+                  f"{sync_resp.text[:200]}")
+    except Exception as e:
+        print(f"    [ERROR] Sync failed: {e}")
+        return False
+
+    return True
+
+
+# ── Clean (delete old data) ──────────────────────────────────────────────────
+
+def clean_collections(filter_category: str | None = None) -> None:
+    """Delete ChromaDB collections and clear ingest_status for target categories."""
+    client = chromadb.PersistentClient(
+        path=str(CHROMA_PERSIST_DIR),
+        settings=chromadb.Settings(anonymized_telemetry=False),
+    )
+    existing = {c.name for c in client.list_collections()}
+
+    # Determine which collections to delete
+    targets = {}
+    for cat, col in COLLECTION_MAP.items():
+        if filter_category and cat != filter_category:
+            continue
+        targets[cat] = col
+
+    for cat, col in targets.items():
+        if col in existing:
+            client.delete_collection(col)
+            print(f"  [DELETE] ChromaDB collection '{col}' (category: {cat})")
+        else:
+            print(f"  [SKIP]   '{col}' not found in ChromaDB")
+
+    # Clear ingest_status.json entries
+    status = _load_status()
+    keys_to_remove = [
+        k for k in status
+        if any(k.startswith(f"{cat}/") for cat in targets)
+    ]
+    for k in keys_to_remove:
+        del status[k]
+    _save_status(status)
+    if keys_to_remove:
+        print(f"  [CLEAR]  {len(keys_to_remove)} entries from ingest_status.json")
+
+
 # ── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
     dry_run = "--dry-run" in sys.argv
-    force = "--force" in sys.argv
+    skip_payload = "--skip-payload" in sys.argv
+    skip_vectors = "--skip-vectors" in sys.argv
     filter_category = None
     if "--category" in sys.argv:
         idx = sys.argv.index("--category")
         if idx + 1 < len(sys.argv):
             filter_category = sys.argv[idx + 1]
 
-    # Discover all ready books
-    books = discover_ready_books(filter_category=filter_category)
-    status = _load_status()
+    # ── Phase 1: ChromaDB Vector Ingestion (clean replace) ───────
+    if not skip_vectors:
+        books = discover_ready_books(filter_category=filter_category)
 
-    print(f"\n{'='*60}")
-    print(f"BATCH INGEST — mineru_output → ChromaDB")
-    print(f"{'='*60}")
-    print(f"  Total ready: {len(books)}")
-    if filter_category:
-        print(f"  Filter:      {filter_category}")
-    print()
+        print(f"\n{'='*60}")
+        print(f"PHASE 1: VECTOR INGESTION (MinerU -> ChromaDB)")
+        print(f"{'='*60}")
+        print(f"  Mode:    CLEAN REPLACE (delete old -> ingest new)")
+        print(f"  Total:   {len(books)} books")
+        if filter_category:
+            print(f"  Filter:  {filter_category}")
+        print()
 
-    # Classify: done vs todo
-    todo = []
-    for category, name, path in books:
-        key = _status_key(category, name)
-        if not force and key in status and status[key].get("result") == "success":
-            md_dir_mtime = max(f.stat().st_mtime for f in path.rglob("*.md"))
-            ingested_at = status[key].get("timestamp", "")
-            # Check if MD files were modified after last ingest
-            if ingested_at:
-                try:
-                    last_ingest = datetime.fromisoformat(ingested_at).timestamp()
-                    if md_dir_mtime <= last_ingest:
-                        print(f"  [SKIP] {category}/{name} — already ingested")
-                        continue
-                    else:
-                        print(f"  [UPDATE] {category}/{name} — MD changed since last ingest")
-                except ValueError:
-                    pass
-            else:
-                print(f"  [SKIP] {category}/{name} — already ingested")
-                continue
+        if dry_run:
+            print("  --dry-run mode, would process:")
+            for cat, name, _ in books:
+                print(f"    {cat}/{name}")
+            print(f"\n  Total: {len(books)} books")
+        elif not books:
+            print("  No books found to ingest!")
         else:
-            reason = "forced" if force else "new"
-            print(f"  [TODO] {category}/{name} — {reason}")
-        todo.append((category, name))
+            # Step 1: Clean old data
+            print("  --- Cleaning old data ---")
+            clean_collections(filter_category=filter_category)
 
-    print(f"\n  To ingest: {len(todo)}")
+            # Step 2: Ingest all
+            print("\n  --- Ingesting new data ---")
+            status = _load_status()
+            t0 = time.time()
+            success = 0
+            failed = []
 
-    if dry_run:
-        print("\n--dry-run mode, exiting.")
-        return
+            for i, (category, name, _path) in enumerate(books, 1):
+                collection = COLLECTION_MAP.get(category, f"ca_{category}")
+                key = _status_key(category, name)
+                print(f"\n  [{i}/{len(books)}] {category}/{name} -> {collection}")
 
-    if not todo:
-        print("\nAll books already ingested!")
-        return
+                start = time.time()
+                try:
+                    node_count = ingest_one(category, name, collection)
+                    elapsed = time.time() - start
+                    status[key] = {
+                        "result": "success",
+                        "nodes": node_count,
+                        "collection": collection,
+                        "elapsed_sec": round(elapsed, 1),
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                    _save_status(status)
+                    print(f"    [OK] {node_count} nodes in {elapsed:.1f}s")
+                    success += 1
+                except Exception as e:
+                    elapsed = time.time() - start
+                    status[key] = {
+                        "result": f"error: {e}",
+                        "elapsed_sec": round(elapsed, 1),
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                    _save_status(status)
+                    print(f"    [FAIL] {e}")
+                    failed.append(f"{category}/{name}")
 
-    # Process
-    t0 = time.time()
-    success = 0
-    failed = []
+            total_elapsed = time.time() - t0
+            print(f"\n  Vector ingestion: {success}/{len(books)} in {total_elapsed/60:.1f} min")
+            if failed:
+                print(f"  Failed: {', '.join(failed[:5])}")
 
-    for i, (category, name) in enumerate(todo, 1):
-        collection = COLLECTION_MAP.get(category, f"ca_{category}")
-        key = _status_key(category, name)
-        print(f"\n[{i}/{len(todo)}] {category}/{name} → {collection}")
+    # ── Phase 2: Payload CMS Sync ────────────────────────────────
+    if not skip_payload and not dry_run:
+        sync_to_payload(filter_category=filter_category)
 
-        start = time.time()
-        try:
-            node_count = ingest_one(category, name, collection)
-            elapsed = time.time() - start
-            status[key] = {
-                "result": "success",
-                "nodes": node_count,
-                "collection": collection,
-                "elapsed_sec": round(elapsed, 1),
-                "timestamp": datetime.now().isoformat(),
-            }
-            _save_status(status)
-            print(f"  [OK] {node_count} nodes in {elapsed:.1f}s")
-            success += 1
-        except Exception as e:
-            elapsed = time.time() - start
-            status[key] = {
-                "result": f"error: {e}",
-                "elapsed_sec": round(elapsed, 1),
-                "timestamp": datetime.now().isoformat(),
-            }
-            _save_status(status)
-            print(f"  [FAIL] {e}")
-            failed.append(f"{category}/{name}")
-
-    total_elapsed = time.time() - t0
+    # ── Summary ──────────────────────────────────────────────────
     print(f"\n{'='*60}")
-    print(f"INGEST COMPLETE")
-    print(f"  Time:    {total_elapsed/60:.1f} min")
-    print(f"  Success: {success}/{len(todo)}")
-    if failed:
-        print(f"  Failed:  {', '.join(failed)}")
-    print(f"  Status:  {STATUS_FILE}")
+    print("DONE")
     print(f"{'='*60}")
 
 

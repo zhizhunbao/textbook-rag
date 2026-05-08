@@ -29,7 +29,7 @@ from urllib.parse import urlparse
 
 sys.path.insert(0, ".")
 from engine_v2.settings import *  # noqa
-from engine_v2.crawling.web_crawler import (
+from engine_v2.crawling import (
     discover_urls,
     save_pdfs_from_manifest,
 )
@@ -65,6 +65,13 @@ _EXCLUDE_PATTERNS = [
     r"/a-z/",                  # Site index
     r"/accessibility",         # Accessibility
     r"/research/",             # Research
+    r"/pembroke/",             # Pembroke campus — not needed
+    r"/student-experience",    # Student testimonial/marketing pages
+    r"/hs-testimonials",       # Health studies testimonials
+    r"/contact/?$",            # Contact sub-pages
+    r"/campus-tours",          # Campus tour marketing pages
+    r"/prc-orientation",       # Orientation sub-pages
+    r"/assumption-risk",       # Risk release forms
 ]
 
 _compiled_excludes = [re.compile(p) for p in _EXCLUDE_PATTERNS]
@@ -74,16 +81,16 @@ def _algonquin_filter(url: str) -> bool:
     """Keep program-related pages, filter out noise."""
     path = urlparse(url).path.lower()
 
-    # Always keep individual program pages
+    # Exclude noise first (takes priority)
+    if any(pat.search(path) for pat in _compiled_excludes):
+        return False
+
+    # Keep individual program pages (main program pages only)
     if "/program/" in path:
         return True
 
     # Check include prefixes
     if not any(path.startswith(pfx) for pfx in _KEEP_PREFIXES):
-        return False
-
-    # Exclude noise
-    if any(pat.search(path) for pat in _compiled_excludes):
         return False
 
     return True

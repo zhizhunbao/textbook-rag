@@ -8,6 +8,7 @@ Checks:
 Usage: python scripts/backfill_ingest_tasks.py
 """
 import json
+import os
 from pathlib import Path
 
 import chromadb
@@ -50,18 +51,34 @@ def get_vector_count(collection, book_id: str) -> int:
 
 
 def get_mineru_stats() -> dict[str, dict]:
-    """Scan mineru_output to find which books have content_list.json."""
+    """Scan mineru_output to find which books have content_list.json.
+
+    Supports both flat (textbooks) and deeply nested (web-crawled) layouts.
+    """
     stats: dict[str, dict] = {}
     for category_dir in MINERU_OUTPUT_DIR.iterdir():
         if not category_dir.is_dir():
             continue
         category = category_dir.name
-        for book_dir in category_dir.iterdir():
-            if not book_dir.is_dir():
+
+        # Walk tree to find all auto/ directories
+        for dirpath, dirnames, _filenames in os.walk(category_dir):
+            dirpath = Path(dirpath)
+            if "auto" not in dirnames:
                 continue
-            book_id = book_dir.name
-            auto_dir = book_dir / book_id / "auto"
-            content_list = auto_dir / f"{book_id}_content_list.json"
+
+            auto_dir = dirpath / "auto"
+            # book_id = relative path from category_dir
+            book_id = str(dirpath.relative_to(category_dir)).replace("\\", "/")
+
+            # Find content_list.json
+            cl_files = list(auto_dir.glob("*_content_list.json"))
+            if not cl_files:
+                dirnames.clear()
+                continue
+
+            content_list = cl_files[0]
+            file_stem = content_list.stem.replace("_content_list", "")
             chunk_count = 0
             if content_list.exists():
                 try:
@@ -70,12 +87,15 @@ def get_mineru_stats() -> dict[str, dict]:
                 except Exception:
                     pass
 
+            middle_json = auto_dir / f"{file_stem}_middle.json"
             stats[book_id] = {
                 "category": category,
                 "has_content_list": content_list.exists(),
                 "content_list_chunks": chunk_count,
-                "has_middle_json": (auto_dir / f"{book_id}_middle.json").exists(),
+                "has_middle_json": middle_json.exists(),
             }
+            # Don't descend into auto/
+            dirnames.clear()
 
     print(f"  MinerU: {len(stats)} books scanned")
     return stats

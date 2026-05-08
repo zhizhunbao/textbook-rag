@@ -11,6 +11,7 @@ everything from the filesystem.
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
@@ -79,7 +80,12 @@ def _humanize_title(book_id: str) -> str:
 
 
 def _find_book_dir(book_id: str) -> Path | None:
-    """Locate the MinerU book directory across all categories."""
+    """Locate the MinerU book directory across all categories.
+
+    book_id can be either:
+      - Simple name: 'bishop_prml' (textbooks)
+      - Nested path: 'en/immigration-refugees-citizenship/services/study-canada' (web crawls)
+    """
     for category in _list_categories():
         book_dir = MINERU_OUTPUT_DIR / category / book_id
         if book_dir.is_dir():
@@ -90,20 +96,31 @@ def _find_book_dir(book_id: str) -> Path | None:
 def _get_auto_dir(book_id: str) -> Path | None:
     """Get the MinerU auto/ output directory for a book.
 
-    Supports both layouts:
-      - New (flat): mineru_output/{category}/{book_id}/auto/
-      - Legacy (nested): mineru_output/{category}/{book_id}/{book_id}/auto/
+    Supports layouts:
+      - Flat: mineru_output/{category}/{book_id}/auto/
+      - Legacy nested: mineru_output/{category}/{book_id}/{stem}/auto/
+
+    book_id may be a deep path (e.g. 'en/ircc/services/study-canada').
     """
     book_dir = _find_book_dir(book_id)
     if not book_dir:
         return None
-    # New flat layout
+    # Flat layout (post-flatten or web-crawled)
     auto_dir = book_dir / "auto"
     if auto_dir.is_dir():
         return auto_dir
-    # Legacy nested layout
-    auto_dir = book_dir / book_id / "auto"
-    return auto_dir if auto_dir.is_dir() else None
+    # Legacy nested layout: {book_dir}/{stem}/auto/
+    stem = Path(book_id).name  # last component
+    auto_dir = book_dir / stem / "auto"
+    if auto_dir.is_dir():
+        return auto_dir
+    # Fallback: scan for any inner dir with auto/
+    for inner in book_dir.iterdir():
+        if inner.is_dir() and inner.name != "auto":
+            nested_auto = inner / "auto"
+            if nested_auto.is_dir():
+                return nested_auto
+    return None
 
 
 def _find_origin_pdf(book_id: str) -> Path | None:
@@ -158,7 +175,12 @@ def _extract_toc(book_id: str, content_list: list[dict]) -> list[dict]:
 
 
 def _discover_books() -> list[dict]:
-    """Scan mineru_output/ for all processed books."""
+    """Scan mineru_output/ for all processed books.
+
+    Supports both flat layouts (textbooks) and deeply nested
+    layouts from web crawls (federal-ircc/en/ircc/services/study-canada/).
+    A "book" is identified by having an auto/ subdirectory with content_list.json.
+    """
     books: list[dict] = []
 
     for category in _list_categories():
@@ -166,22 +188,27 @@ def _discover_books() -> list[dict]:
         if not category_dir.is_dir():
             continue
 
-        for book_dir in sorted(category_dir.iterdir()):
-            if not book_dir.is_dir():
+        # Walk the entire tree to find directories containing auto/
+        for dirpath, dirnames, _filenames in os.walk(category_dir):
+            dirpath = Path(dirpath)
+            # Look for auto/ as a direct child
+            if "auto" not in dirnames:
                 continue
 
-            book_id = book_dir.name
-            # Support both flat (book_dir/auto/) and legacy (book_dir/book_id/auto/)
-            auto_dir = book_dir / "auto"
-            if not auto_dir.is_dir():
-                auto_dir = book_dir / book_id / "auto"
+            auto_dir = dirpath / "auto"
+            # book_id = relative path from category_dir
+            book_id = str(dirpath.relative_to(category_dir)).replace("\\", "/")
 
-            content_list_path = auto_dir / f"{book_id}_content_list.json"
-            if not content_list_path.exists():
+            # Find content_list.json (may use book_id stem or full name)
+            content_list_files = list(auto_dir.glob("*_content_list.json"))
+            if not content_list_files:
                 logger.debug("Skipping {}: no content_list.json", book_id)
+                dirnames.clear()
                 continue
 
-            middle_json_path = auto_dir / f"{book_id}_middle.json"
+            content_list_path = content_list_files[0]
+            file_stem = content_list_path.stem.replace("_content_list", "")
+            middle_json_path = auto_dir / f"{file_stem}_middle.json"
 
             # Get PDF file size if available
             origin_pdf = _find_origin_pdf(book_id)
@@ -189,12 +216,14 @@ def _discover_books() -> list[dict]:
 
             books.append({
                 "book_id": book_id,
-                "title": _humanize_title(book_id),
+                "title": _humanize_title(Path(book_id).name),
                 "category": category,
                 "page_count": _count_pages(middle_json_path),
                 "chunk_count": _count_content_items(content_list_path),
                 "pdf_size_bytes": pdf_size,
             })
+            # Don't descend into auto/ — this is a leaf book
+            dirnames.clear()
 
     return books
 

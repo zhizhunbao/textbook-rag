@@ -25,10 +25,10 @@ import httpx
 
 sys.path.insert(0, ".")
 from engine_v2.settings import *  # noqa
-from engine_v2.crawling.web_crawler import (
+from engine_v2.crawling.web_crawler_v2 import (
     discover_urls,
     save_pdfs_from_manifest,
-    _save_single_pdf_impl,
+    _save_single_pdf,
 )
 
 # ── Log file setup ───────────────────────────────────────────────────────────
@@ -197,7 +197,7 @@ async def run_single(args):
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
-    result = await _save_single_pdf_impl(args.url, out_path, headless=True)
+    result = await _save_single_pdf(args.url, out_path, headless=True)
 
     if result.success:
         print(f"\n[OK] Saved: {result.file_size / 1024:.1f} KB to {out_path}")

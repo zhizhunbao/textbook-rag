@@ -119,6 +119,7 @@ export interface Messages {
   navQueryEngine: string
   navSeed: string
   navReports: string
+  navLiveQA: string
   navConsulting: string
   navPersonas: string
 
@@ -281,6 +282,7 @@ const en: Messages = {
   navQueryEngine: 'Query Engine',
   navSeed: 'Seed Database',
   navReports: 'Reports',
+  navLiveQA: 'Live Q&A',
   navConsulting: 'Consulting',
   navPersonas: 'Personas',
 
@@ -427,6 +429,7 @@ const zh: Messages = {
   navQueryEngine: '查询引擎',
   navSeed: '初始化数据',
   navReports: '报告',
+  navLiveQA: '直播问答',
   navConsulting: '顾问咨询',
   navPersonas: '角色管理',
 
