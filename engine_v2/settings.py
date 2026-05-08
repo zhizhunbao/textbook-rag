@@ -86,7 +86,7 @@ RERANKER_ENABLED: bool = os.getenv("RERANKER_ENABLED", "true").lower() in (
     "true", "1", "yes",
 )
 RERANKER_MODEL: str = os.getenv(
-    "RERANKER_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    "RERANKER_MODEL", "cross-encoder/ms-marco-MiniLM-L-12-v2"
 )
 RERANKER_TOP_N: int = int(os.getenv("RERANKER_TOP_N", "5"))
 # Similarity cutoff — drop chunks below this threshold after reranking

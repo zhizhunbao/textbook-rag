@@ -207,43 +207,6 @@ def execute_consulting_query(
     # Calculate KB size
     kb_count = sum(_get_collection_count(c) for c in collection_names)
 
-    # ── Step 2: Single collection → get_query_engine (already hybrid) ──
-    if len(collection_names) == 1:
-        engine = get_query_engine(
-            similarity_top_k=top_k,
-            streaming=streaming,
-            collection_name=collection_names[0],
-            custom_system_prompt=system_prompt,
-            model=model,
-            provider=provider,
-            book_id_strings=book_id_strings,
-        )
-        # CJK: use translated English for both retrieval and synthesis
-        response = engine.query(retrieval_question)
-
-        sources = []
-        for i, nws in enumerate(response.source_nodes, start=1):
-            sources.append(build_source(nws, i))
-        normalize_scores(sources)
-
-        # Defense-in-depth: hard filter sources by book_id_strings
-        # MetadataFilters + BookFilterPostprocessor should have done this,
-        # but this guarantees no leaked results from outside the book scope.
-        if book_id_strings:
-            allowed = set(book_id_strings)
-            before = len(sources)
-            sources = [s for s in sources if s.get("book_id", "") in allowed]
-            if len(sources) < before:
-                logger.info(
-                    "Hard book_id filter: {} → {} sources (dropped {} out-of-scope)",
-                    before, len(sources), before - len(sources),
-                )
-
-        return ConsultingQueryResult(
-            sources=sources, response=response, kb_count=kb_count,
-            retrieval_question=retrieval_question,
-        )
-
     # ── Step 3: Multiple collections → hybrid retrieve each → RRF → rerank → synthesize ──
     from engine_v2.settings import (
         RERANKER_ENABLED,
@@ -252,10 +215,11 @@ def execute_consulting_query(
         SIMILARITY_CUTOFF,
     )
 
-    # Over-fetch 3× from each collection to give reranker enough candidates.
-    # With 300-500 char chunks, definition-type chunks may rank 10-15 in BM25
-    # (low term frequency) but should be boosted by the CrossEncoder reranker.
-    retrieval_k = top_k * 3 if RERANKER_ENABLED else top_k
+    # Over-fetch generously to give reranker enough candidates.
+    # With 300-500 char chunks across 12+ books (~166 chunks), definition-type
+    # chunks can rank 25+ in RRF due to low BM25 term frequency.
+    # The CrossEncoder reranker will prune down to top_k accurately.
+    retrieval_k = max(top_k * 5, 50) if RERANKER_ENABLED else top_k
 
     merged_nodes = multi_collection_retrieve(
         question=retrieval_question,
@@ -288,6 +252,16 @@ def execute_consulting_query(
     # Layer 3: CrossEncoder reranker
     if RERANKER_ENABLED:
         reranker_top_n = min(RERANKER_TOP_N, top_k)
+        # Debug: log all pre-reranker nodes
+        for _i, _n in enumerate(merged_nodes):
+            _txt = _n.node.text[:80].replace("\n", " ")
+            _is_def = ") is" in _n.node.text[:200]
+            logger.info(
+                "  pre-rerank[{}]: score={:.4f} src={} def={} text={}",
+                _i, float(_n.score or 0),
+                _n.node.metadata.get("retrieval_source", "?"),
+                _is_def, _txt,
+            )
         try:
             from llama_index.core.postprocessor import SentenceTransformerRerank
             reranker = SentenceTransformerRerank(
