@@ -33,7 +33,7 @@ class MinerUReader(BaseReader):
     """
 
     def __init__(
-        self, mineru_dir: Path | str, *, merge_sections: bool = False,
+        self, mineru_dir: Path | str, *, merge_sections: bool = True,
     ) -> None:
         self._mineru_dir = Path(mineru_dir)
         self._merge_sections = merge_sections

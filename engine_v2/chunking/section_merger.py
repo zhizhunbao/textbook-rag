@@ -1,4 +1,4 @@
-"""section_merger — Merge MinerU content items into section-level chunks.
+"""section_merger — Merge small MinerU content items into appropriately-sized chunks.
 
 MinerU outputs one content item per visual text block (title, paragraph,
 bullet, etc.).  For RAG retrieval these items are often too small: a
@@ -6,18 +6,21 @@ definition split across title + 3 bullets produces 4 chunks of ~60 chars
 each, none of which has enough semantic signal for accurate vector or
 BM25 retrieval.
 
-This module merges consecutive body-text items that belong to the same
-logical section (delimited by headings) into larger, semantically richer
-chunks.  Cross-page merges are supported; multiple bboxes are preserved
-for accurate frontend highlighting.
+This module merges consecutive body-text items into chunks of 300–500
+characters.  The strategy follows Unstructured.io's ``chunk_by_title``
+pattern:
 
-Design decisions:
-    - Headings (text_level != None) START a new section and are PREPENDED
-      to the first body chunk as context ("Section title: ...")
-    - Tables and images are never merged — they stay as independent chunks
-    - A soft character limit (MERGE_CHAR_LIMIT) prevents overly large chunks
-    - All original bbox + page_idx data is preserved per sub-item so the
-      frontend can highlight across pages
+    - Accumulate body-text items into a buffer.
+    - Flush when buffer >= MIN_CHUNK_CHARS (300) — chunk is "big enough".
+    - Flush BEFORE adding an item that would push buffer > MAX_CHUNK_CHARS
+      (500) — prevent oversized chunks.
+    - Headings always trigger a flush (don't merge across sections).
+    - Tables and images are never merged — they stay standalone.
+    - Single items > MAX_CHUNK_CHARS stay as-is (can't split without
+      breaking bbox).
+
+Cross-page merges are supported; multiple bboxes are preserved for
+accurate frontend PDF highlighting.
 """
 
 from __future__ import annotations
@@ -29,8 +32,8 @@ from loguru import logger
 
 
 # ── Tunables ──────────────────────────────────────────────────
-MERGE_CHAR_LIMIT = 800   # Soft limit: flush buffer when text exceeds this
-MIN_MERGE_CHARS = 80     # Don't merge items that are already this big on their own
+MIN_CHUNK_CHARS = 300   # Keep accumulating until buffer reaches this
+MAX_CHUNK_CHARS = 500   # Don't let buffer exceed this
 # Items of these types are never merged (kept standalone)
 STANDALONE_TYPES = {"table", "image", "discarded"}
 
@@ -87,26 +90,28 @@ def merge_content_items(
     items: list[dict[str, Any]],
     *,
     page_sizes: dict[int, tuple[float, float]] | None = None,
-    char_limit: int = MERGE_CHAR_LIMIT,
+    min_chars: int = MIN_CHUNK_CHARS,
+    max_chars: int = MAX_CHUNK_CHARS,
 ) -> list[MergedItem]:
-    """Merge consecutive body-text items into section-level chunks.
+    """Merge consecutive body-text items into 300–500 char chunks.
 
     Algorithm:
         1. Walk items in reading order.
-        2. Skip discarded items.
+        2. Skip discarded / empty items.
         3. When hitting a heading (text_level is set):
-           - Flush the current buffer as a merged chunk.
-           - Remember the heading text as section_title for the next chunk.
-        4. For body text (no text_level):
-           - Accumulate into the current buffer.
-           - Flush when buffer exceeds char_limit or when item type changes
-             to a standalone type.
-        5. Tables/images always emit as standalone chunks.
+           - Flush the current buffer.
+           - Remember the heading text as section_title for context.
+        4. Tables/images always emit as standalone chunks.
+        5. For body text (no text_level):
+           - If buffer + item > max_chars AND buffer is non-empty: flush first.
+           - Accumulate item into buffer.
+           - If buffer >= min_chars: flush (chunk is big enough).
 
     Args:
         items:      Raw MinerU content_list items (dicts with type, text, etc.)
         page_sizes: Optional {page_idx: (width, height)} for bbox context.
-        char_limit: Soft character limit for merged chunks.
+        min_chars:  Minimum character count to flush (default 300).
+        max_chars:  Maximum character count before forced flush (default 500).
 
     Returns:
         List of MergedItem instances ready for Document creation.
@@ -181,18 +186,15 @@ def merge_content_items(
         if text_level is not None:
             _flush()
             buf_section_title = text
-            # Don't add heading text to buffer — it will be prepended
-            # to the next body chunk via buf_section_title.
-            # But if heading stands alone (no body follows), we still
-            # want to emit it. We'll handle that at next heading or EOF.
             continue
 
-        # ── Body text: accumulate into buffer ──
-        # Check if adding this item would exceed the char limit
-        new_len = buf_char_count + len(text)
-        if buf_texts and new_len > char_limit:
+        # ── Body text: accumulate with min/max char strategy ──
+
+        # If adding this item would exceed max_chars, flush first
+        if buf_texts and (buf_char_count + len(text)) > max_chars:
             _flush()
 
+        # Start new buffer if empty
         if not buf_texts:
             buf_first_page = item.get("page_idx", 0)
 
@@ -200,13 +202,15 @@ def merge_content_items(
         buf_bboxes.append(_make_bbox(item))
         buf_char_count += len(text)
 
-    # Flush remaining buffer
+        # If buffer is big enough, flush
+        if buf_char_count >= min_chars:
+            _flush()
+
+    # Flush remaining buffer (even if < min_chars)
     _flush()
 
     # Handle trailing section title with no body
-    # (section_title was set but no body followed before EOF)
     if buf_section_title and (not result or result[-1].section_title != buf_section_title):
-        # Check if the last result already captured this title
         has_title = any(
             r.section_title == buf_section_title or r.text.startswith(buf_section_title)
             for r in result[-3:] if result
@@ -222,21 +226,23 @@ def merge_content_items(
             ))
 
     # Stats
-    original_text_count = sum(
+    original_count = sum(
         1 for item in items
         if item.get("type", "") not in STANDALONE_TYPES
         and item.get("type", "") != "discarded"
         and (item.get("text", "") or "").strip()
         and item.get("text_level") is None
     )
-    merged_text_count = sum(1 for r in result if r.content_type == "text")
-    if original_text_count > 0:
+    merged_count = sum(1 for r in result if r.content_type == "text")
+    avg_chars = (
+        sum(len(r.text) for r in result if r.content_type == "text") / merged_count
+        if merged_count else 0
+    )
+    if original_count > 0:
         logger.info(
-            "SectionMerger: {} body items → {} merged chunks "
-            "(reduction {:.0f}%, char_limit={})",
-            original_text_count, merged_text_count,
-            (1 - merged_text_count / original_text_count) * 100 if original_text_count else 0,
-            char_limit,
+            "SectionMerger: {} body items → {} chunks "
+            "(avg {:.0f} chars, range {}-{})",
+            original_count, merged_count, avg_chars, min_chars, max_chars,
         )
 
     return result
