@@ -40,7 +40,7 @@ def configure_logging(level: str | None = None) -> None:
     if _CONFIGURED:
         return
 
-    log_level = (level or os.getenv("LOG_LEVEL") or "DEBUG").upper()
+    log_level = (level or os.getenv("LOG_LEVEL") or "INFO").upper()
 
     logger.remove()
     logger.add(

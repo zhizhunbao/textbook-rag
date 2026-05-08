@@ -127,7 +127,7 @@ PROVINCES = [
         ],
         max_depth=3,
         max_pages=150,
-        delay_override=15.0,  # Ontario.ca Radware WAF blocks after ~14 reqs at 8s
+        delay_override=20.0,  # Ontario.ca Radware WAF blocks at 15s; use 20s
         # Ontario.ca: /page/ is too broad (includes all gov topics).
         # Use keyword filter: URL must contain immigration-related terms.
         url_filter=_ontario_filter,

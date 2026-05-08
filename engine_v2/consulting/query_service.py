@@ -173,6 +173,21 @@ def execute_consulting_query(
     if _contains_cjk(effective_question):
         retrieval_question = _translate_to_english(effective_question)
 
+    # ── Step 0c: Auto book_id pre-filter ──
+    # When no explicit book_id_strings are provided, auto-match query keywords
+    # against book_id paths to narrow retrieval scope (e.g. 23k → 50 chunks).
+    if not book_id_strings:
+        from engine_v2.retrievers.book_filter import prefilter_book_ids
+        auto_book_ids = prefilter_book_ids(
+            retrieval_question, collection_name, max_books=15,
+        )
+        if auto_book_ids:
+            book_id_strings = auto_book_ids
+            logger.info(
+                "Auto book_id filter: {} books selected for query '{}'",
+                len(auto_book_ids), retrieval_question[:60],
+            )
+
     # ── Step 1: Build collection list ──
     multi_collections = persona.get("multiCollections") or []
 
@@ -211,6 +226,19 @@ def execute_consulting_query(
             sources.append(build_source(nws, i))
         normalize_scores(sources)
 
+        # Defense-in-depth: hard filter sources by book_id_strings
+        # MetadataFilters + BookFilterPostprocessor should have done this,
+        # but this guarantees no leaked results from outside the book scope.
+        if book_id_strings:
+            allowed = set(book_id_strings)
+            before = len(sources)
+            sources = [s for s in sources if s.get("book_id", "") in allowed]
+            if len(sources) < before:
+                logger.info(
+                    "Hard book_id filter: {} → {} sources (dropped {} out-of-scope)",
+                    before, len(sources), before - len(sources),
+                )
+
         return ConsultingQueryResult(
             sources=sources, response=response, kb_count=kb_count,
             retrieval_question=retrieval_question,
@@ -231,6 +259,7 @@ def execute_consulting_query(
         question=retrieval_question,
         collection_names=collection_names,
         top_k=retrieval_k,
+        book_id_strings=book_id_strings,
     )
 
     # ── Post-processing: same layers as single-collection path ──

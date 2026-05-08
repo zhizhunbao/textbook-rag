@@ -311,9 +311,10 @@ def get_hybrid_retriever(
         filters=metadata_filters,
     )
 
-    filter_desc = f", book_filter={book_id_strings}" if book_id_strings else ""
+    filter_desc = f", book_filter={len(book_id_strings)} books" if book_id_strings else ""
     logger.info(
-        "Vector retriever ready (top_k={}{})", similarity_top_k, filter_desc
+        "Vector retriever ready (top_k={}{}, has_metadata_filters={})",
+        similarity_top_k, filter_desc, metadata_filters is not None,
     )
 
     # Build BM25 retriever from ChromaDB text (not empty docstore)
@@ -496,12 +497,14 @@ def _retrieve_from_collection(
     collection_name: str,
     origin_tag: str,
     top_k: int,
+    book_id_strings: list[str] | None = None,
 ) -> list[NodeWithScore]:
     """Retrieve nodes from one ChromaDB collection via hybrid BM25+Vector."""
     try:
         retriever = get_hybrid_retriever(
             similarity_top_k=top_k,
             collection_name=collection_name,
+            book_id_strings=book_id_strings,
         )
         nodes = retriever.retrieve(question)
 
@@ -576,6 +579,7 @@ def multi_collection_retrieve(
     collection_names: list[str],
     top_k: int = TOP_K,
     boost_map: dict[str, float] | None = None,
+    book_id_strings: list[str] | None = None,
 ) -> list[NodeWithScore]:
     """Retrieve from multiple ChromaDB collections in parallel, merge via RRF.
 
@@ -604,6 +608,7 @@ def multi_collection_retrieve(
                 coll_name,
                 coll_name,
                 top_k,
+                book_id_strings,
             )
             for coll_name in collection_names
         ]

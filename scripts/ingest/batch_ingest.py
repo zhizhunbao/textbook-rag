@@ -189,49 +189,32 @@ def _payload_login(httpx_mod) -> tuple[str, dict] | None:
 
 
 def _delete_payload_books(httpx_mod, headers: dict, filter_category: str | None) -> int:
-    """Delete old book records from Payload for target category. Returns count deleted."""
-    deleted = 0
+    """Bulk-delete old book records from Payload for target category.
 
-    # Build query params to find books in target category
-    params: dict[str, str] = {"limit": "500"}
+    Uses Payload v3 bulk DELETE with `where` clause — single HTTP call
+    instead of N individual deletes.
+    """
+    params: dict[str, str] = {}
     if filter_category:
-        # Books are stored with category field matching the category key
         params["where[category][equals]"] = filter_category
 
-    while True:
-        resp = httpx_mod.get(
+    try:
+        resp = httpx_mod.delete(
             f"{PAYLOAD_URL}/api/books",
             params=params,
             headers=headers,
-            timeout=30.0,
+            timeout=120.0,
         )
-        if not resp.is_success:
-            print(f"    [WARN] Failed to query books: {resp.status_code}")
-            break
-
-        docs = resp.json().get("docs", [])
-        if not docs:
-            break
-
-        for doc in docs:
-            try:
-                del_resp = httpx_mod.delete(
-                    f"{PAYLOAD_URL}/api/books/{doc['id']}",
-                    headers=headers,
-                    timeout=10.0,
-                )
-                if del_resp.is_success:
-                    deleted += 1
-                else:
-                    print(f"    [WARN] Delete book {doc['id']} failed: {del_resp.status_code}")
-            except Exception as e:
-                print(f"    [WARN] Delete book {doc['id']} error: {e}")
-
-        # If we got fewer than limit, we're done
-        if len(docs) < 500:
-            break
-
-    return deleted
+        if resp.is_success:
+            result = resp.json()
+            deleted = len(result.get("docs", []))
+            return deleted
+        else:
+            print(f"    [WARN] Bulk delete failed: {resp.status_code} {resp.text[:200]}")
+            return 0
+    except Exception as e:
+        print(f"    [WARN] Bulk delete error: {e}")
+        return 0
 
 
 def sync_to_payload(filter_category: str | None = None) -> bool:
@@ -286,7 +269,10 @@ def sync_to_payload(filter_category: str | None = None) -> bool:
     # Step 4: Sync fresh data from Engine
     print(f"\n  [3/3] Syncing fresh books from Engine -> Payload...")
     try:
-        sync_resp = httpx.post(f"{PAYLOAD_URL}/api/books/sync-engine", timeout=600.0)
+        sync_url = f"{PAYLOAD_URL}/api/books/sync-engine"
+        if filter_category:
+            sync_url += f"?category={filter_category}"
+        sync_resp = httpx.post(sync_url, timeout=600.0)
         if sync_resp.is_success:
             result = sync_resp.json()
             print(f"    created={result.get('created')}, "

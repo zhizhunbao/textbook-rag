@@ -18,6 +18,16 @@ export const syncEngineEndpoint: Endpoint = {
     try {
       const { payload } = req
 
+      // Parse optional category filter from query string or JSON body
+      const url = new URL(req.url || '', 'http://localhost')
+      let categoryFilter = url.searchParams.get('category') || ''
+      if (!categoryFilter) {
+        try {
+          const body = await req.json?.()
+          categoryFilter = body?.category || ''
+        } catch { /* no body */ }
+      }
+
       // 1. Fetch book list from Engine v2 API (filesystem scan)
       const engineRes = await fetch(`${ENGINE}/engine/books`)
       if (!engineRes.ok) {
@@ -27,7 +37,7 @@ export const syncEngineEndpoint: Endpoint = {
         )
       }
 
-      const engineBooks: Array<{
+      const allBooks: Array<{
         book_id: string
         title: string
         category: string
@@ -36,9 +46,24 @@ export const syncEngineEndpoint: Endpoint = {
         pdf_size_bytes: number
       }> = await engineRes.json()
 
-      const results = { created: 0, updated: 0, errors: [] as string[], total: engineBooks.length }
+      // Apply category filter if specified
+      const engineBooks = categoryFilter
+        ? allBooks.filter((b) => b.category === categoryFilter)
+        : allBooks
 
-      for (const eb of engineBooks) {
+      // skipCovers=true by default for bulk sync (much faster)
+      const skipCovers = url.searchParams.get('skipCovers') !== 'false'
+
+      const results = {
+        created: 0, updated: 0, errors: [] as string[],
+        total: engineBooks.length,
+        ...(categoryFilter ? { category: categoryFilter, totalUnfiltered: allBooks.length } : {}),
+      }
+
+      // ── Batch upsert with parallel execution ──
+      const BATCH_SIZE = 30
+
+      const upsertOne = async (eb: typeof engineBooks[number]) => {
         const meta = BOOK_METADATA[eb.book_id]
 
         const bookData: Record<string, unknown> = {
@@ -60,60 +85,66 @@ export const syncEngineEndpoint: Endpoint = {
           },
         }
 
-        try {
-          const existing = await payload.find({
+        const existing = await payload.find({
+          collection: 'books',
+          where: { engineBookId: { equals: eb.book_id } },
+          limit: 1,
+        })
+
+        let bookDoc: { id: number; coverImage?: unknown }
+
+        if (existing.docs.length > 0) {
+          bookDoc = await payload.update({
             collection: 'books',
-            where: { engineBookId: { equals: eb.book_id } },
-            limit: 1,
-          })
+            id: existing.docs[0].id,
+            data: bookData,
+          }) as { id: number; coverImage?: unknown }
+          results.updated++
+        } else {
+          bookDoc = await payload.create({
+            collection: 'books',
+            data: bookData,
+          }) as { id: number; coverImage?: unknown }
+          results.created++
+        }
 
-          let bookDoc: { id: number; coverImage?: unknown }
-
-          if (existing.docs.length > 0) {
-            bookDoc = await payload.update({
-              collection: 'books',
-              id: existing.docs[0].id,
-              data: bookData,
-            }) as { id: number; coverImage?: unknown }
-            results.updated++
-          } else {
-            bookDoc = await payload.create({
-              collection: 'books',
-              data: bookData,
-            }) as { id: number; coverImage?: unknown }
-            results.created++
-          }
-
-          // Auto-extract cover if book doesn't have one yet
-          if (!bookDoc.coverImage) {
-            try {
-              const coverRes = await fetch(`${ENGINE}/engine/books/cover/${eb.book_id}`)
-              if (coverRes.ok) {
-                const coverBuffer = Buffer.from(await coverRes.arrayBuffer())
-                const mediaDoc = await payload.create({
-                  collection: 'media',
-                  data: { alt: `${meta?.title ?? eb.title} cover` },
-                  file: {
-                    data: coverBuffer,
-                    mimetype: 'image/png',
-                    name: `${eb.book_id}_cover.png`,
-                    size: coverBuffer.length,
-                  },
-                })
-                // Link cover to book
-                await payload.update({
-                  collection: 'books',
-                  id: bookDoc.id,
-                  data: { coverImage: mediaDoc.id },
-                })
-              }
-            } catch {
-              // Cover extraction is best-effort — don't fail the sync
+        // Auto-extract cover (skipped by default for speed)
+        if (!skipCovers && !bookDoc.coverImage) {
+          try {
+            const coverRes = await fetch(`${ENGINE}/engine/books/cover/${eb.book_id}`)
+            if (coverRes.ok) {
+              const coverBuffer = Buffer.from(await coverRes.arrayBuffer())
+              const mediaDoc = await payload.create({
+                collection: 'media',
+                data: { alt: `${meta?.title ?? eb.title} cover` },
+                file: {
+                  data: coverBuffer,
+                  mimetype: 'image/png',
+                  name: `${eb.book_id}_cover.png`,
+                  size: coverBuffer.length,
+                },
+              })
+              await payload.update({
+                collection: 'books',
+                id: bookDoc.id,
+                data: { coverImage: mediaDoc.id },
+              })
             }
+          } catch {
+            // Cover extraction is best-effort
           }
-        } catch (err) {
-          const msg = `${eb.book_id}: ${err instanceof Error ? err.message : String(err)}`
-          results.errors.push(msg)
+        }
+      }
+
+      for (let i = 0; i < engineBooks.length; i += BATCH_SIZE) {
+        const batch = engineBooks.slice(i, i + BATCH_SIZE)
+        const settled = await Promise.allSettled(batch.map(upsertOne))
+        for (let j = 0; j < settled.length; j++) {
+          if (settled[j].status === 'rejected') {
+            const eb = batch[j]
+            const reason = (settled[j] as PromiseRejectedResult).reason
+            results.errors.push(`${eb.book_id}: ${reason instanceof Error ? reason.message : String(reason)}`)
+          }
         }
       }
 
