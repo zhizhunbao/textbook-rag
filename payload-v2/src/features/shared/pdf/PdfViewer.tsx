@@ -949,7 +949,7 @@ export default function PdfViewer() {
                           style={{ width: stableRenderWidth }}
                         >
                           <div
-                            className={`absolute inset-0 rounded bg-gradient-to-br from-muted via-card to-muted transition-opacity duration-500 ${isPageLoaded ? "opacity-0" : "opacity-100"
+                            className={`pointer-events-none absolute inset-0 rounded bg-gradient-to-br from-muted via-card to-muted transition-opacity duration-500 ${isPageLoaded ? "opacity-0" : "opacity-100"
                               }`}
                           />
                           {shouldRenderPage ? (

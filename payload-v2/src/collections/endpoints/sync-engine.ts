@@ -87,7 +87,7 @@ export const syncEngineEndpoint: Endpoint = {
           // Auto-extract cover if book doesn't have one yet
           if (!bookDoc.coverImage) {
             try {
-              const coverRes = await fetch(`${ENGINE}/engine/books/${eb.book_id}/cover`)
+              const coverRes = await fetch(`${ENGINE}/engine/books/cover/${eb.book_id}`)
               if (coverRes.ok) {
                 const coverBuffer = Buffer.from(await coverRes.arrayBuffer())
                 const mediaDoc = await payload.create({

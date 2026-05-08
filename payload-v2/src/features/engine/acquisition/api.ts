@@ -61,7 +61,7 @@ export async function fetchParseStats(
   if (opts?.offset != null) params.set('offset', String(opts.offset))
 
   const qs = params.toString()
-  const url = `${ENGINE_URL}/engine/books/${bookId}/parse-stats${qs ? `?${qs}` : ''}`
+  const url = `${ENGINE_URL}/engine/books/parse-stats/${bookId}${qs ? `?${qs}` : ''}`
   const res = await fetch(url)
   if (!res.ok) {
     throw new Error(`Failed to fetch parse stats: ${res.status}`)
@@ -197,7 +197,7 @@ export interface TocEntry {
  * Returns hierarchical heading list (level 1-3).
  */
 export async function fetchToc(bookId: string): Promise<TocEntry[]> {
-  const res = await fetch(`${ENGINE_URL}/engine/books/${bookId}/toc`)
+  const res = await fetch(`${ENGINE_URL}/engine/books/toc/${bookId}`)
   if (!res.ok) {
     throw new Error(`Failed to fetch TOC: ${res.status}`)
   }
@@ -233,7 +233,7 @@ export async function fetchChunks(
   if (opts?.limit != null) params.set('limit', String(opts.limit))
 
   const qs = params.toString()
-  const url = `${ENGINE_URL}/engine/books/${bookId}/chunks${qs ? `?${qs}` : ''}`
+  const url = `${ENGINE_URL}/engine/books/chunks/${bookId}${qs ? `?${qs}` : ''}`
   const res = await fetch(url)
   if (!res.ok) {
     throw new Error(`Failed to fetch chunks: ${res.status}`)

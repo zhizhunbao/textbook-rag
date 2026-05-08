@@ -63,12 +63,12 @@ export async function fetchBook(bookId: number): Promise<BookDetail> {
 
 /** Fetch TOC entries for a specific book from Engine. */
 export async function fetchToc(bookId: string): Promise<TocEntry[]> {
-  return request<TocEntry[]>(`${ENGINE}/engine/books/${bookId}/toc`)
+  return request<TocEntry[]>(`${ENGINE}/engine/books/toc/${bookId}`)
 }
 
 /** Build the PDF download URL for a book. */
 export function getPdfUrl(bookId: string, variant: 'origin' | 'layout' = 'origin'): string {
-  return `${ENGINE}/engine/books/${bookId}/pdf?variant=${variant}`
+  return `${ENGINE}/engine/books/pdf/${bookId}?variant=${variant}`
 }
 
 // ============================================================

@@ -111,7 +111,7 @@ export default function GenerationPanel({
     const bookId = targetBookIds[0]
     setChaptersLoading(true)
 
-    fetch(`${ENGINE}/engine/books/${bookId}/toc`)
+    fetch(`${ENGINE}/engine/books/toc/${bookId}`)
       .then((res) => (res.ok ? res.json() : []))
       .then((data: TocEntry[]) => setChapters(data))
       .catch(() => setChapters([]))

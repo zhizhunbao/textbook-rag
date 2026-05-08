@@ -536,7 +536,7 @@ export default function MediaTab({ books, filter, onBooksRefresh }: MediaTabProp
 
             {/* Rows */}
             {displayBooks.map((book, idx) => {
-              const pdfUrl = `${ENGINE_URL}/engine/books/${book.book_id}/pdf`
+              const pdfUrl = `${ENGINE_URL}/engine/books/pdf/${book.book_id}`
               const layoutUrl = `${pdfUrl}?variant=layout`
               const st = STATUS_CONFIG[book.status]
               const StatusIcon = st.icon
@@ -727,7 +727,7 @@ function CoverImage({
   const handleError = useCallback(() => setFailed(true), [])
 
   const coverUrl = status === 'indexed' && !failed
-    ? `${ENGINE_URL}/engine/books/${bookId}/cover`
+    ? `${ENGINE_URL}/engine/books/cover/${bookId}`
     : null
 
   if (coverUrl) {
@@ -773,7 +773,7 @@ function PdfBookCard({
   onDelete: () => void
   deleting: boolean
 }) {
-  const pdfUrl = `${ENGINE_URL}/engine/books/${book.book_id}/pdf`
+  const pdfUrl = `${ENGINE_URL}/engine/books/pdf/${book.book_id}`
   const layoutUrl = `${pdfUrl}?variant=layout`
   const st = STATUS_CONFIG[book.status]
   const StatusIcon = st.icon

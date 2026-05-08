@@ -210,7 +210,7 @@ function QuestionsPageInner() {
     if (!isSingleBook || !selectedBookId) return
 
     setChaptersLoading(true)
-    fetch(`${ENGINE}/engine/books/${selectedBookId}/toc`)
+    fetch(`${ENGINE}/engine/books/toc/${selectedBookId}`)
       .then((res) => (res.ok ? res.json() : []))
       .then((data: TocEntry[]) => setChapters(data))
       .catch(() => setChapters([]))
@@ -1040,7 +1040,7 @@ function QuestionsPageInner() {
               {/* PDF rendered via react-pdf — single page with nav */}
               <div className="flex-1 min-h-0 overflow-auto bg-muted/20 p-4 flex flex-col items-center" id="pdf-scroll-container">
                 <Document
-                  file={`${ENGINE}/engine/books/${selectedBookId}/pdf`}
+                  file={`${ENGINE}/engine/books/pdf/${selectedBookId}`}
                   loading={
                     <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />

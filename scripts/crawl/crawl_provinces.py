@@ -418,7 +418,7 @@ async def crawl_province(prov: ProvinceConfig, *, delay: float = 3.0, headless: 
         added = 0
         for surl in prov.static_urls:
             if surl not in existing_urls:
-                from engine_v2.crawling.web_crawler import _url_to_filename
+                from engine_v2.crawling.web_crawler_v2 import _url_to_filename
                 manifest["pages"].append({"url": surl, "filename": _url_to_filename(surl)})
                 added += 1
         if added:

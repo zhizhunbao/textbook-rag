@@ -149,10 +149,13 @@ async def _discover_urls_impl(
         max_depth=max_depth, max_pages=max_pages, include_external=False,
         filter_chain=FilterChain(bfs_filters) if bfs_filters else FilterChain())
 
+    # Use profile's min_delay as BFS mean_delay (e.g. Ontario.ca Radware WAF = 15s)
+    bfs_mean_delay = max(8.0, profile.min_delay_between)
+
     run_config = CrawlerRunConfig(
         cache_mode=CacheMode.BYPASS, page_timeout=30_000,
         deep_crawl_strategy=deep_strategy, delay_before_return_html=2.0,
-        mean_delay=8.0, max_range=3.0, stream=True,
+        mean_delay=bfs_mean_delay, max_range=3.0, stream=True,
         excluded_tags=["nav", "header", "footer", "aside"],
         exclude_external_links=True)
 

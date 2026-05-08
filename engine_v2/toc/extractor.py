@@ -164,7 +164,9 @@ def load_content_list(auto_dir: Path, book_id: str) -> list[dict]:
     Returns:
         Parsed content_list as a list of dicts, or empty list on failure.
     """
-    content_list_path = auto_dir / f"{book_id}_content_list.json"
+    # MinerU uses the stem (last path component) for output filenames
+    stem = Path(book_id).name
+    content_list_path = auto_dir / f"{stem}_content_list.json"
     if not content_list_path.exists():
         return []
     try:
@@ -272,12 +274,14 @@ def find_pdf_for_book(
         for cat_dir in sorted(mineru_output_dir.iterdir()):
             if not cat_dir.is_dir():
                 continue
+            # MinerU uses the stem (last path component) for output filenames
+            stem = Path(book_id).name
             # New flat layout
-            origin = cat_dir / book_id / "auto" / f"{book_id}_origin.pdf"
+            origin = cat_dir / book_id / "auto" / f"{stem}_origin.pdf"
             if origin.exists():
                 return origin
             # Legacy nested layout
-            origin = cat_dir / book_id / book_id / "auto" / f"{book_id}_origin.pdf"
+            origin = cat_dir / book_id / stem / "auto" / f"{stem}_origin.pdf"
             if origin.exists():
                 return origin
 

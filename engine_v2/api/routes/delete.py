@@ -38,7 +38,7 @@ CATEGORIES = ["textbooks", "ecdev", "real_estate"]
 # ============================================================
 
 
-@router.delete("/books/{book_dir_name}")
+@router.delete("/books/{book_dir_name:path}")
 async def delete_book_data(book_dir_name: str):
     """Delete all engine-side data for a book.
 

@@ -90,12 +90,14 @@ def extract_cover_for_book(
         for cat_dir in sorted(mineru_dir.iterdir()):
             if not cat_dir.is_dir():
                 continue
+            # MinerU uses the stem (last path component) for output filenames
+            stem = Path(book_id).name
             # New flat layout: {cat}/{book_id}/auto/
-            origin_pdf = cat_dir / book_id / "auto" / f"{book_id}_origin.pdf"
+            origin_pdf = cat_dir / book_id / "auto" / f"{stem}_origin.pdf"
             if origin_pdf.exists():
                 return extract_cover(origin_pdf)
-            # Legacy nested layout: {cat}/{book_id}/{book_id}/auto/
-            origin_pdf = cat_dir / book_id / book_id / "auto" / f"{book_id}_origin.pdf"
+            # Legacy nested layout: {cat}/{book_id}/{stem}/auto/
+            origin_pdf = cat_dir / book_id / stem / "auto" / f"{stem}_origin.pdf"
             if origin_pdf.exists():
                 return extract_cover(origin_pdf)
 

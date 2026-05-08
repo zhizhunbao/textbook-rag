@@ -127,14 +127,22 @@ def _find_origin_pdf(book_id: str) -> Path | None:
     """Find origin (source) PDF.
 
     Priority:
-      1. MinerU auto/{book_id}_origin.pdf
-      2. raw_pdfs/{category}/{book_id}.pdf
+      1. MinerU auto/{stem}_origin.pdf  (stem = last component of book_id)
+      2. MinerU auto/{book_id}_origin.pdf  (flat book_id)
+      3. raw_pdfs/{category}/{book_id}.pdf
     """
     auto_dir = _get_auto_dir(book_id)
     if auto_dir:
-        origin_pdf = auto_dir / f"{book_id}_origin.pdf"
+        # MinerU uses the stem (last path component) as the PDF filename
+        stem = Path(book_id).name
+        origin_pdf = auto_dir / f"{stem}_origin.pdf"
         if origin_pdf.exists():
             return origin_pdf
+        # Fallback: try full book_id (flat layout)
+        if stem != book_id:
+            origin_pdf = auto_dir / f"{book_id}_origin.pdf"
+            if origin_pdf.exists():
+                return origin_pdf
 
     # Fallback: scan raw_pdfs directories
     for d in _list_raw_pdf_dirs():
@@ -152,9 +160,16 @@ def _find_layout_pdf(book_id: str) -> Path | None:
     """
     auto_dir = _get_auto_dir(book_id)
     if auto_dir:
-        layout_pdf = auto_dir / f"{book_id}_layout.pdf"
+        # MinerU uses the stem (last path component) as the PDF filename
+        stem = Path(book_id).name
+        layout_pdf = auto_dir / f"{stem}_layout.pdf"
         if layout_pdf.exists():
             return layout_pdf
+        # Fallback: try full book_id (flat layout)
+        if stem != book_id:
+            layout_pdf = auto_dir / f"{book_id}_layout.pdf"
+            if layout_pdf.exists():
+                return layout_pdf
 
     # Fallback to origin
     return _find_origin_pdf(book_id)
@@ -241,7 +256,7 @@ async def list_books():
     return _discover_books()
 
 
-@router.get("/books/{book_id}/pdf")
+@router.get("/books/pdf/{book_id:path}")
 async def get_pdf(book_id: str, variant: str = "origin"):
     """Serve PDF file for a book.
 
@@ -275,7 +290,7 @@ async def get_pdf(book_id: str, variant: str = "origin"):
     )
 
 
-@router.get("/books/{book_id}/toc")
+@router.get("/books/toc/{book_id:path}")
 async def get_toc(book_id: str):
     """Get table of contents for a book.
 
@@ -297,7 +312,7 @@ async def get_toc(book_id: str):
     return toc
 
 
-@router.get("/books/{book_id}/cover")
+@router.get("/books/cover/{book_id:path}")
 async def get_cover(book_id: str):
     """Get book cover image (rendered from PDF page 1).
 
@@ -321,7 +336,7 @@ async def get_cover(book_id: str):
     )
 
 
-@router.get("/books/{book_id}/chunks")
+@router.get("/books/chunks/{book_id:path}")
 async def get_chunks(book_id: str, toc_id: int | None = None, limit: int = 30):
     """Get text content for a book chapter from MinerU content_list.json.
 
@@ -394,7 +409,7 @@ async def get_chunks(book_id: str, toc_id: int | None = None, limit: int = 30):
     return {"chunks": chunks, "count": len(chunks)}
 
 
-@router.get("/books/{book_id}/parse-stats")
+@router.get("/books/parse-stats/{book_id:path}")
 async def get_parse_stats(
     book_id: str,
     content_type: str | None = None,
@@ -421,8 +436,10 @@ async def get_parse_stats(
             404, f"No MinerU output found for book: {book_id}"
         )
 
-    content_list_path = auto_dir / f"{book_id}_content_list.json"
-    middle_json_path = auto_dir / f"{book_id}_middle.json"
+    # MinerU uses the stem (last path component) for output filenames
+    stem = Path(book_id).name
+    content_list_path = auto_dir / f"{stem}_content_list.json"
+    middle_json_path = auto_dir / f"{stem}_middle.json"
 
     if not content_list_path.exists():
         raise HTTPException(
