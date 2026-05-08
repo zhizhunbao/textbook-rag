@@ -25,10 +25,18 @@ class MinerUReader(BaseReader):
         - book_id, category, content_type, page_idx
         - bbox (normalised to PDF points)
         - chapter_key, reading_order
+
+    Args:
+        mineru_dir: Root directory of MinerU output.
+        merge_sections: If True, merge consecutive body-text items into
+            section-level chunks via SectionMerger. Default False (disabled).
     """
 
-    def __init__(self, mineru_dir: Path | str) -> None:
+    def __init__(
+        self, mineru_dir: Path | str, *, merge_sections: bool = False,
+    ) -> None:
         self._mineru_dir = Path(mineru_dir)
+        self._merge_sections = merge_sections
 
     # ------------------------------------------------------------------
     # Auto-dir resolution: supports both flattened and legacy layouts
@@ -76,15 +84,11 @@ class MinerUReader(BaseReader):
         category: str = "textbook",
         **kwargs: Any,
     ) -> Iterable[Document]:
-        """Yield one Document per merged section chunk.
+        """Yield one Document per content item (or per merged section if enabled).
 
-        Uses SectionMerger to group consecutive body-text items under the
-        same heading into larger semantic chunks.  This produces richer
-        embeddings and stronger BM25 signal than emitting one Document per
-        raw MinerU content item.
-
-        Multi-page bboxes are preserved in metadata["source_bboxes"] so
-        the frontend can highlight across pages.
+        When merge_sections=False (default), each raw MinerU content item
+        becomes one Document. When True, SectionMerger groups consecutive
+        body-text items into larger semantic chunks.
 
         Args:
             book_dir_name: Directory name of the book under mineru_dir/category/
@@ -110,7 +114,92 @@ class MinerUReader(BaseReader):
         chapters = self._extract_chapters(content_list)
         chapter_ranges = self._build_chapter_ranges(content_list, chapters)
 
-        # ── Section-aware merge ──────────────────────────────
+        if self._merge_sections:
+            yield from self._load_merged(
+                content_list, page_sizes, chapter_ranges,
+                book_dir_name, category,
+            )
+        else:
+            yield from self._load_raw(
+                content_list, page_sizes, chapter_ranges,
+                book_dir_name, category,
+            )
+
+    # ------------------------------------------------------------------
+    # Raw mode: one Document per MinerU content item (no merging)
+    # ------------------------------------------------------------------
+
+    def _load_raw(
+        self,
+        content_list: list[dict],
+        page_sizes: dict[int, tuple[float, float]],
+        chapter_ranges: list[tuple[str, int, int]],
+        book_dir_name: str,
+        category: str,
+    ) -> Iterable[Document]:
+        """Yield one Document per raw content item."""
+        reading_order = 0
+        for item in content_list:
+            item_type = item.get("type", "")
+            text = self._extract_text(item, item_type)
+            if not text or item_type == "discarded":
+                continue
+
+            page_idx = item.get("page_idx", 0)
+            raw_bbox = item.get("bbox", [0, 0, 0, 0])
+            bbox = self._normalise_bbox(raw_bbox, page_idx, page_sizes)
+            chapter_key = self._assign_chapter(page_idx, chapter_ranges)
+            pw, ph = page_sizes.get(page_idx, (0.0, 0.0))
+
+            source_bboxes = [{
+                "page_idx": page_idx,
+                "bbox": bbox,
+                "page_width": pw,
+                "page_height": ph,
+            }]
+
+            doc_id = f"{book_dir_name}_{reading_order:06d}"
+            yield Document(
+                doc_id=doc_id,
+                text=text,
+                metadata={
+                    "book_id": book_dir_name,
+                    "category": category,
+                    "content_type": item_type or "text",
+                    "page_idx": page_idx,
+                    "bbox": bbox,
+                    "page_width": pw,
+                    "page_height": ph,
+                    "chapter_key": chapter_key,
+                    "reading_order": reading_order,
+                    "text_level": item.get("text_level"),
+                    "source_bboxes": source_bboxes,
+                },
+                excluded_llm_metadata_keys=[
+                    "bbox", "reading_order", "page_width", "page_height",
+                    "source_bboxes",
+                ],
+            )
+            reading_order += 1
+
+        logger.info(
+            "MinerUReader: loaded {} documents from {} (raw mode)",
+            reading_order, book_dir_name,
+        )
+
+    # ------------------------------------------------------------------
+    # Merged mode: section-aware chunking via SectionMerger
+    # ------------------------------------------------------------------
+
+    def _load_merged(
+        self,
+        content_list: list[dict],
+        page_sizes: dict[int, tuple[float, float]],
+        chapter_ranges: list[tuple[str, int, int]],
+        book_dir_name: str,
+        category: str,
+    ) -> Iterable[Document]:
+        """Yield one Document per merged section chunk."""
         from engine_v2.chunking.section_merger import merge_content_items
 
         merged_items = merge_content_items(
@@ -129,7 +218,6 @@ class MinerUReader(BaseReader):
             # Primary bbox (union of all sub-items) — normalised to PDF points
             if merged.bboxes:
                 primary_bbox = merged.primary_bbox
-                # Normalise using the first page's dimensions
                 primary_bbox = self._normalise_bbox(
                     primary_bbox, page_idx, page_sizes,
                 )
@@ -137,12 +225,8 @@ class MinerUReader(BaseReader):
                 primary_bbox = [0.0, 0.0, 0.0, 0.0]
 
             chapter_key = self._assign_chapter(page_idx, chapter_ranges)
-
-            # Page dimensions for frontend bbox scaling (PDF points)
             pw, ph = page_sizes.get(page_idx, (0.0, 0.0))
 
-            # Multi-page bboxes for frontend highlighting (JSON-serialised)
-            # Each entry: {page_idx, bbox: [x0,y0,x1,y1], page_width, page_height}
             source_bboxes = []
             for bb in merged.bboxes:
                 norm_bbox = self._normalise_bbox(
@@ -180,7 +264,8 @@ class MinerUReader(BaseReader):
             reading_order += 1
 
         logger.info(
-            "MinerUReader: loaded {} documents from {}", reading_order, book_dir_name
+            "MinerUReader: loaded {} documents from {} (merged mode)",
+            reading_order, book_dir_name,
         )
 
     # ------------------------------------------------------------------
