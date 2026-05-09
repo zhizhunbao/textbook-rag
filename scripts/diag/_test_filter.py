@@ -9,7 +9,7 @@ init_settings()
 from engine_v2.retrievers.hybrid import multi_collection_retrieve
 from engine_v2.retrievers.book_filter import prefilter_book_ids
 from llama_index.core.schema import QueryBundle as QB
-from engine_v2.query_engine.citation import MinContentPostprocessor, RelevanceFilterPostprocessor
+from engine_v2.query_engine.citation import RelevanceFilterPostprocessor
 
 question = "What is a Provincial Attestation Letter (PAL)?"
 book_ids = prefilter_book_ids(question, "ca_federal", max_books=15)
@@ -30,7 +30,6 @@ else:
 
 # Filters
 qb = QB(query_str=question)
-nodes = MinContentPostprocessor(min_chars=50, min_single_line=120).postprocess_nodes(nodes, query_bundle=qb)
 nodes = RelevanceFilterPostprocessor(min_vector_score=0.55, min_bm25_score=1.0).postprocess_nodes(nodes, query_bundle=qb)
 print(f"After filters: {len(nodes)} nodes")
 

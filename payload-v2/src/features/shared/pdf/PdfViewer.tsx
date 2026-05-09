@@ -844,36 +844,55 @@ export default function PdfViewer() {
               className="shrink-0 overflow-y-auto bg-card border-r border-border p-2 text-xs"
               style={{ width: tocWidth }}
             >
-              <div className="mb-2 font-semibold text-foreground">Contents</div>
-              {tocEntries.map((entry) => {
-                const indent = entry.level * 12;
-                const isBold = entry.level <= 1;
-                const isActive = entry.id === activeTocEntryId;
-                const label = entry.number
-                  ? `${entry.number} ${entry.title}`
-                  : entry.title;
-
+              {/* Show page number in header when ALL entries share the same page */}
+              {(() => {
+                const pages = new Set(tocEntries.map((e) => e.pdf_page));
+                const allSamePage = pages.size === 1;
+                const singlePage = allSamePage ? tocEntries[0]?.pdf_page : null;
                 return (
-                  <button
-                    key={entry.id}
-                    className={`block w-full truncate rounded py-0.5 pr-1 text-left hover:bg-accent hover:text-accent-foreground transition-colors ${isActive
-                      ? "bg-accent/80 font-medium text-foreground"
-                      : "text-muted-foreground"
-                      } ${isBold ? "font-semibold" : ""}`}
-                    style={{ paddingLeft: `${indent + 8}px` }}
-                    title={label}
-                    onClick={() => {
-                      setSelectedTocEntryId(entry.id);
-                      goToPage(entry.pdf_page);
-                    }}
-                  >
-                    {label}
-                    <span className="ml-1 font-normal opacity-60">
-                      {entry.pdf_page}
-                    </span>
-                  </button>
+                  <>
+                    <div className="mb-2 font-semibold text-foreground">
+                      Sections
+                      {singlePage != null && (
+                        <span className="ml-1.5 text-[10px] font-normal text-muted-foreground/60">
+                          p.{singlePage}
+                        </span>
+                      )}
+                    </div>
+                    {tocEntries.map((entry) => {
+                      const indent = entry.level * 12;
+                      const isBold = entry.level <= 1;
+                      const isActive = entry.id === activeTocEntryId;
+                      const label = entry.number
+                        ? `${entry.number} ${entry.title}`
+                        : entry.title;
+
+                      return (
+                        <button
+                          key={entry.id}
+                          className={`block w-full truncate rounded py-0.5 pr-1 text-left hover:bg-accent hover:text-accent-foreground transition-colors ${isActive
+                            ? "bg-accent/80 font-medium text-foreground"
+                            : "text-muted-foreground"
+                            } ${isBold ? "font-semibold" : ""}`}
+                          style={{ paddingLeft: `${indent + 8}px` }}
+                          title={label}
+                          onClick={() => {
+                            setSelectedTocEntryId(entry.id);
+                            goToPage(entry.pdf_page);
+                          }}
+                        >
+                          {label}
+                          {!allSamePage && (
+                            <span className="ml-1 font-normal opacity-60">
+                              {entry.pdf_page}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </>
                 );
-              })}
+              })()}
             </div>
             <ResizeHandle
               width={tocWidth}

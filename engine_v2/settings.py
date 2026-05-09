@@ -74,7 +74,7 @@ CORS_ORIGINS: list[str] = os.getenv(
 # ============================================================
 # RAG defaults
 # ============================================================
-TOP_K: int = int(os.getenv("TOP_K", "5"))
+TOP_K: int = int(os.getenv("TOP_K", "10"))
 CHROMA_COLLECTION: str = os.getenv("CHROMA_COLLECTION", "textbook_chunks")
 
 # ============================================================
@@ -88,7 +88,7 @@ RERANKER_ENABLED: bool = os.getenv("RERANKER_ENABLED", "true").lower() in (
 RERANKER_MODEL: str = os.getenv(
     "RERANKER_MODEL", "cross-encoder/ms-marco-MiniLM-L-12-v2"
 )
-RERANKER_TOP_N: int = int(os.getenv("RERANKER_TOP_N", "5"))
+RERANKER_TOP_N: int = int(os.getenv("RERANKER_TOP_N", "10"))
 # Similarity cutoff — drop chunks below this threshold after reranking
 # 0.0 = keep all; increase to filter more aggressively
 # Raised from 0.01 → 0.05 to filter borderline-irrelevant chunks after reranking

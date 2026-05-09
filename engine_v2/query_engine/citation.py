@@ -158,61 +158,6 @@ class RelevanceFilterPostprocessor(BaseNodePostprocessor):
         return filtered
 
 
-class MinContentPostprocessor(BaseNodePostprocessor):
-    """Drop nodes with trivially short content (headings, titles, nav text).
-
-    PDF extraction often produces chunks that are just section titles,
-    e.g. "Chapter 3: Immigration Pathways" or "3.2.1 PGWP Eligibility".
-    These waste context window tokens and confuse the LLM.
-
-    Rules:
-        1. Strip whitespace; if len < min_chars → DROP.
-        2. If single-line (no newline) AND len < min_single_line → DROP.
-           Catches subtitles that are slightly longer but still lack content.
-    """
-
-    min_chars: int = 50
-    min_single_line: int = 120
-
-    def _postprocess_nodes(
-        self,
-        nodes: list[NodeWithScore],
-        query_bundle: QueryBundle | None = None,
-    ) -> list[NodeWithScore]:
-        if not nodes:
-            return nodes
-
-        filtered: list[NodeWithScore] = []
-        dropped = 0
-
-        for nws in nodes:
-            text = nws.node.get_content().strip()
-            text_len = len(text)
-
-            # Rule 1: Too short to be useful content
-            if text_len < self.min_chars:
-                dropped += 1
-                continue
-
-            # Rule 2: Single line (no paragraph structure) and short
-            if "\n" not in text and text_len < self.min_single_line:
-                dropped += 1
-                continue
-
-            filtered.append(nws)
-
-        if dropped:
-            logger.info(
-                "MinContentFilter: dropped {} of {} nodes (headings/titles)",
-                dropped, len(nodes),
-            )
-
-        # Safety: always keep at least 1 node
-        if not filtered and nodes:
-            filtered = [nodes[0]]
-            logger.warning("MinContentFilter: kept 1 fallback node to avoid empty results")
-
-        return filtered
 
 
 # ============================================================
@@ -494,11 +439,6 @@ def get_query_engine(
         postprocessors.append(
             BookFilterPostprocessor(book_id_strings=book_id_strings)
         )
-
-    # Layer 1.5: MinContentPostprocessor — drop headings/titles with no real content
-    postprocessors.append(
-        MinContentPostprocessor(min_chars=50, min_single_line=120)
-    )
 
     # Layer 2.5: RelevanceFilterPostprocessor — drop vector-only noise with K:0.00
     # This catches the "semantic false positive" pattern where vector retrieval

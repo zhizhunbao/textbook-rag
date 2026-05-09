@@ -131,10 +131,10 @@ def merge_content_items(
         nonlocal buf_texts, buf_bboxes, buf_first_page, buf_char_count
         if not buf_texts:
             return
-        merged_text = "\n".join(buf_texts)
+        merged_text = "\n\n".join(buf_texts)
         # Prepend section title for context (helps retrieval)
         if buf_section_title:
-            merged_text = f"{buf_section_title}\n{merged_text}"
+            merged_text = f"{buf_section_title}\n\n{merged_text}"
         result.append(MergedItem(
             text=merged_text,
             content_type="text",

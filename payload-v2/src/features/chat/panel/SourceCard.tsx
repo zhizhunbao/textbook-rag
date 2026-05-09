@@ -12,9 +12,10 @@ import Markdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import rehypeKatex from "rehype-katex";
 import remarkMath from "remark-math";
+import remarkGfm from "remark-gfm";
 import type { SourceInfo } from "@/features/shared/types";
 import { useAppDispatch } from "@/features/shared/AppContext";
-import { prepareForKatex } from "./textUtils";
+import { prepareForKatex, normalizeNewlines } from "./textUtils";
 
 
 
@@ -169,11 +170,32 @@ export default function SourceCard({ source, index, isActive }: Props) {
             {/* ── Snippet with Markdown + KaTeX rendering ── */}
             <div className="source-snippet max-h-96 overflow-y-auto rounded-lg bg-muted/30 px-3 py-2 leading-relaxed text-popover-foreground/90">
               <Markdown
-                remarkPlugins={[remarkMath]}
+                remarkPlugins={[remarkGfm, remarkMath]}
                 rehypePlugins={[rehypeKatex, rehypeRaw]}
                 components={{
+                  h1({ children }) {
+                    return <h1 className="mt-2 mb-1 text-sm font-bold text-foreground">{children}</h1>;
+                  },
+                  h2({ children }) {
+                    return <h2 className="mt-2 mb-1 text-[13px] font-bold text-foreground">{children}</h2>;
+                  },
+                  h3({ children }) {
+                    return <h3 className="mt-1.5 mb-1 text-xs font-semibold text-foreground">{children}</h3>;
+                  },
+                  h4({ children }) {
+                    return <h4 className="mt-1 mb-0.5 text-xs font-semibold text-foreground/90">{children}</h4>;
+                  },
                   p({ children }) {
                     return <p className="my-1 leading-relaxed">{children}</p>;
+                  },
+                  ul({ children }) {
+                    return <ul className="my-1 list-disc space-y-0.5 pl-4">{children}</ul>;
+                  },
+                  ol({ children }) {
+                    return <ol className="my-1 list-decimal space-y-0.5 pl-4">{children}</ol>;
+                  },
+                  li({ children }) {
+                    return <li className="leading-relaxed">{children}</li>;
                   },
                   code({ children, className }) {
                     if (className) {
@@ -205,7 +227,7 @@ export default function SourceCard({ source, index, isActive }: Props) {
                   },
                 }}
               >
-                {prepareForKatex(source.snippet)}
+                {prepareForKatex(normalizeNewlines(source.snippet))}
               </Markdown>
             </div>
           </div>,

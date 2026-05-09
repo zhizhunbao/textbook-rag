@@ -21,7 +21,7 @@ import type { SourceInfo } from "@/features/shared/types";
 import { normalizeMarkdown } from "@/features/shared/markdownNormalizer";
 import { parseAnswerBlocks } from "./answerBlocks";
 import CitationChip from "./CitationChip";
-import { prepareForKatex } from "./textUtils";
+import { prepareForKatex, normalizeNewlines } from "./textUtils";
 import { injectHighlightMarks, injectNumericMarks, buildNumericColorMap, type KeywordEntry, type NumericHighlight, type NumericColorMap } from "./keywordHighlight";
 import TranslateButton from "./TranslateButton";
 
@@ -52,8 +52,10 @@ interface AnswerBlockRendererProps {
 // Inline citation content panel
 // ============================================================
 function InlineCitationPanel({ source, index, onClose, highlightKeywords, answerHighlightKeywords, colorMap }: { source: SourceInfo; index: number; onClose: () => void; highlightKeywords?: KeywordEntry[]; answerHighlightKeywords?: KeywordEntry[]; colorMap?: NumericColorMap }) {
-  const previewContent = source.full_content || source.snippet;
-  if (!previewContent) return null;
+  const rawContent = source.full_content || source.snippet;
+  if (!rawContent) return null;
+
+  const previewContent = normalizeNewlines(rawContent);
 
   // Merge question keywords + answer keywords for comprehensive citation highlighting.
   // Answer keywords catch phrases that appear in both the LLM answer and the citation
@@ -82,11 +84,56 @@ function InlineCitationPanel({ source, index, onClose, highlightKeywords, answer
         ×
       </button>
       <Markdown
-        remarkPlugins={[remarkMath]}
+        remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex, rehypeRaw]}
         components={{
+          h1({ children }) {
+            return (
+              <h1 className="mt-2 mb-1 text-sm font-bold text-foreground">
+                {children}
+              </h1>
+            );
+          },
+          h2({ children }) {
+            return (
+              <h2 className="mt-2 mb-1 text-[13px] font-bold text-foreground">
+                {children}
+              </h2>
+            );
+          },
+          h3({ children }) {
+            return (
+              <h3 className="mt-1.5 mb-1 text-xs font-semibold text-foreground">
+                {children}
+              </h3>
+            );
+          },
+          h4({ children }) {
+            return (
+              <h4 className="mt-1 mb-0.5 text-xs font-semibold text-foreground/90">
+                {children}
+              </h4>
+            );
+          },
           p({ children }) {
             return <p className="my-1 leading-relaxed">{children}</p>;
+          },
+          ul({ children }) {
+            return (
+              <ul className="my-1 list-disc space-y-0.5 pl-4 text-popover-foreground/90">
+                {children}
+              </ul>
+            );
+          },
+          ol({ children }) {
+            return (
+              <ol className="my-1 list-decimal space-y-0.5 pl-4 text-popover-foreground/90">
+                {children}
+              </ol>
+            );
+          },
+          li({ children }) {
+            return <li className="leading-relaxed">{children}</li>;
           },
           code({ children, className }) {
             if (className) {

@@ -29,11 +29,12 @@ class MinerUReader(BaseReader):
     Args:
         mineru_dir: Root directory of MinerU output.
         merge_sections: If True, merge consecutive body-text items into
-            section-level chunks via SectionMerger. Default False (disabled).
+            section-level chunks via SectionMerger. Default False — raw MinerU
+            chunks are kept for granular retrieval + CrossEncoder reranking.
     """
 
     def __init__(
-        self, mineru_dir: Path | str, *, merge_sections: bool = True,
+        self, mineru_dir: Path | str, *, merge_sections: bool = False,
     ) -> None:
         self._mineru_dir = Path(mineru_dir)
         self._merge_sections = merge_sections

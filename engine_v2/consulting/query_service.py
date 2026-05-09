@@ -233,14 +233,8 @@ def execute_consulting_query(
     # All answers in English — use retrieval_question (= English) for everything
     query_bundle = QB(query_str=retrieval_question)
 
-    # Layer 1.5: MinContentFilter — drop headings/titles with no real content
-    from engine_v2.query_engine.citation import MinContentPostprocessor, RelevanceFilterPostprocessor
-    min_content_filter = MinContentPostprocessor(min_chars=50, min_single_line=120)
-    merged_nodes = min_content_filter.postprocess_nodes(
-        merged_nodes, query_bundle=query_bundle,
-    )
-
     # Layer 2.5: RelevanceFilter — drop vector-only noise with K:0.00
+    from engine_v2.query_engine.citation import RelevanceFilterPostprocessor
     relevance_filter = RelevanceFilterPostprocessor(
         min_vector_score=0.55,
         min_bm25_score=1.0,
