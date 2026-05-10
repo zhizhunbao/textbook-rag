@@ -277,3 +277,61 @@
 .dark .feature-lift:hover {
   box-shadow: 0 12px 40px -8px rgba(0, 0, 0, 0.4);
 }
+
+/* ── G7-03: Live broadcast mode (/chat?mode=live) ─────────────────────── */
+.live-mode {
+  --chat-font-size: 20px;
+  --chat-question-size: 20px;
+  --chat-max-width: 900px;
+}
+
+/* AI answers: large readable text */
+.live-mode .chat-thread .msg-assistant {
+  font-size: var(--chat-font-size);
+  line-height: 1.85;
+}
+
+/* User question bubbles: same size, bolder weight */
+.live-mode .chat-thread .msg-user {
+  font-size: var(--chat-question-size);
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+/* Wider content area for broadcast */
+.live-mode .chat-thread .max-w-3xl {
+  max-width: var(--chat-max-width);
+}
+
+/* Message content wrapper: allow wider bubbles */
+.live-mode .chat-thread .max-w-\[86\%\] {
+  max-width: 92%;
+}
+
+/* Hide telemetry & metadata in live mode for cleaner look */
+.live-mode .chat-settings-row {
+  display: none;
+}
+
+/* Hide model badge, telemetry row, timestamp, eval button, retry in live mode */
+.live-mode .chat-thread .msg-meta-header,
+.live-mode .chat-thread .msg-telemetry {
+  display: none !important;
+}
+
+/* Pulse animation for live indicator */
+
+/* G7-05: Brand watermark — bottom-right, semi-transparent */
+.live-watermark {
+  position: absolute;
+  bottom: 12px;
+  right: 16px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  opacity: 0.4;
+  pointer-events: none;
+  user-select: none;
+  letter-spacing: 0.02em;
+  z-index: 10;
+}

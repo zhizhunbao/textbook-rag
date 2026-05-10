@@ -5,7 +5,7 @@
  * Usage: <ChatHeader sessionBooks={books} totalBookCount={67} ... />
  */
 
-import { Lightbulb, X } from "lucide-react";
+import { Lightbulb, Radio, X } from "lucide-react";
 import type { ModelInfo } from "@/features/shared/types";
 import type { BookBase } from "@/features/shared/books";
 import type { PersonaInfo } from "@/features/shared/consultingApi";
@@ -78,6 +78,10 @@ interface ChatHeaderProps {
   onTopKChange: (value: number) => void;
   onRerankerChange: (enabled: boolean) => void;
   onAutoEvaluateChange: (enabled: boolean) => void;
+  /** G7-03: Live broadcast mode state */
+  isLiveMode?: boolean;
+  /** G7-03: Toggle live broadcast mode */
+  onLiveModeToggle?: () => void;
 }
 
 // ============================================================
@@ -104,6 +108,8 @@ export default function ChatHeader({
   onTopKChange,
   onRerankerChange,
   onAutoEvaluateChange,
+  isLiveMode,
+  onLiveModeToggle,
 }: ChatHeaderProps) {
   const selectedPersona = personas.find((p) => p.slug === selectedPersonaSlug)
   const isScoped = sessionBooks.length < totalBookCount && totalBookCount > 0;
@@ -114,10 +120,14 @@ export default function ChatHeader({
         {/* Title + persona indicator */}
         <div className="min-w-0 shrink-0">
           <h2 className="text-sm font-semibold text-foreground">
-            {selectedPersona?.name ?? 'ConsultRAG'}
+            {isLiveMode ? 'AI 移民留学顾问' : (selectedPersona?.name ?? 'ConsultRAG')}
           </h2>
           <div className="flex items-center gap-1.5">
-            {isScoped ? (
+            {isLiveMode ? (
+              <p className="text-[11px] text-muted-foreground">
+                📢 把你关于加拿大移民、留学的任何问题打在公屏上，AI 免费帮你查！
+              </p>
+            ) : isScoped ? (
               <>
                 <span className="text-[11px] text-primary font-medium">
                   {sessionBooks.length === 1
@@ -150,7 +160,8 @@ export default function ChatHeader({
 
         {/* ── All controls in one row ── */}
         <div className="flex shrink-0 items-center gap-2">
-          {/* Persona */}
+          {/* Persona — hidden in live mode */}
+          {!isLiveMode && (
           <PersonaPicker
             personas={personas}
             selectedSlug={selectedPersonaSlug}
@@ -158,8 +169,10 @@ export default function ChatHeader({
             disabledTitle={modeLocked ? "Persona is locked for this conversation" : undefined}
             onSelect={onPersonaChange}
           />
+          )}
 
-          {/* Model — grouped by family (local) + cloud */}
+          {/* Model — hidden in live mode */}
+          {!isLiveMode && (
           <select
             className="h-7 rounded-md border border-border bg-background px-2 text-[11px] font-medium text-foreground outline-none transition focus:border-primary"
             value={selectedModel}
@@ -258,6 +271,7 @@ export default function ChatHeader({
               })()
             )}
           </select>
+          )}
 
           {/* ── DEV-MODE: K / Rerank / Eval hidden ──
           <div className="h-4 w-px bg-border" />
@@ -289,6 +303,26 @@ export default function ChatHeader({
                 title="Show suggested questions"
               >
                 <Lightbulb size={14} />
+              </button>
+            </>
+          )}
+
+          {/* G7-03: Live mode toggle */}
+          {onLiveModeToggle && (
+            <>
+              <div className="h-4 w-px bg-border" />
+              <button
+                type="button"
+                onClick={onLiveModeToggle}
+                className={`flex items-center gap-1.5 h-7 rounded-md border px-2 text-[11px] font-medium transition-colors ${
+                  isLiveMode
+                    ? 'bg-red-500/15 text-red-500 border-red-500/30 hover:bg-red-500/25'
+                    : 'border-border text-muted-foreground hover:bg-accent hover:text-foreground'
+                }`}
+                title={isLiveMode ? 'Exit live mode' : 'Enter live broadcast mode'}
+              >
+                <Radio size={14} className={isLiveMode ? 'animate-pulse' : ''} />
+                <span className={isLiveMode ? '' : 'hidden sm:inline'}>Live</span>
               </button>
             </>
           )}

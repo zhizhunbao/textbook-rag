@@ -252,7 +252,7 @@ export default function MessageBubble({ role, content, sources, model, queryId, 
       <div className="max-w-[86%]">
         {/* Header: timestamp + model badge (no role label — alignment indicates sender) */}
         {(!isUser || timestamp) && (
-          <div className={`mb-1 flex items-center gap-2 text-[11px] ${isUser ? "justify-end" : ""}`}>
+          <div className={`msg-meta-header mb-1 flex items-center gap-2 text-[11px] ${isUser ? "justify-end" : ""}`}>
             {timestamp && (
               <span className="text-[10px] font-normal normal-case tracking-normal text-muted-foreground/50" title={timestamp}>
                 {new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -268,7 +268,7 @@ export default function MessageBubble({ role, content, sources, model, queryId, 
 
         {/* ── LLM telemetry (token usage) ── */}
         {!isUser && telemetry && !isStreaming && (
-          <div className="mb-1 flex items-center gap-2 text-[10px] text-muted-foreground/50">
+          <div className="msg-telemetry mb-1 flex items-center gap-2 text-[10px] text-muted-foreground/50">
             {telemetry.llm_calls > 0 && (
               <span className="inline-flex items-center gap-0.5" title="Number of LLM API calls">
                 <svg className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" /></svg>
@@ -292,8 +292,8 @@ export default function MessageBubble({ role, content, sources, model, queryId, 
         <div
           className={`text-sm ${
             isUser
-              ? "rounded-[22px] rounded-tr-md border border-primary/20 bg-primary/10 px-4 py-3 shadow-sm text-foreground"
-              : "text-card-foreground"
+              ? "msg-user rounded-[22px] rounded-tr-md border border-primary/20 bg-primary/10 px-4 py-3 shadow-sm text-foreground"
+              : "msg-assistant text-card-foreground"
           }`}
         >
           {isUser ? (

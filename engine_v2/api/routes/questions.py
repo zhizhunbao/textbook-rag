@@ -3,6 +3,7 @@
 Endpoints:
     POST   /engine/questions/generate           — generate + auto-score study questions via LLM
     POST   /engine/questions/generate-dataset   — batch generate a QuestionSet (QD-05)
+    POST   /engine/questions/llm                — direct LLM completion (no RAG)
 """
 
 from __future__ import annotations
@@ -46,6 +47,7 @@ class GenerateDatasetRequest(BaseModel):
     book_ids: list[str] | None = None
     k_per_book: int = 10
     strategy: str = "stratified"
+
 
 
 # ============================================================
@@ -332,3 +334,42 @@ async def _save_question_to_payload(
     except Exception as exc:
         logger.warning("Failed to save question: {}", exc)
         return False
+
+
+
+
+# ============================================================
+# POST /questions/llm — direct LLM completion (no RAG)
+# ============================================================
+class LLMPromptRequest(BaseModel):
+    """Request body for direct LLM prompt completion."""
+
+    prompt: str
+    max_tokens: int = 1024
+
+
+@router.post("/questions/llm")
+async def llm_prompt(req: LLMPromptRequest):
+    """Direct LLM completion — pass a prompt, get a response.
+
+    Uses the engine's configured LLM (Azure/Ollama) directly,
+    no RAG retrieval. Useful for question generation, script
+    writing, or any freeform LLM task.
+    """
+    from llama_index.core.settings import Settings
+
+    logger.info("LLM prompt — {} chars", len(req.prompt))
+
+    try:
+        llm = Settings.llm
+        response = llm.complete(req.prompt)
+        text = str(response).strip()
+        logger.debug("LLM response ({} chars)", len(text))
+        return {
+            "text": text,
+            "model": str(getattr(llm, "model", "unknown")),
+        }
+    except Exception as e:
+        logger.error("LLM prompt failed: {}", e)
+        return {"text": "", "error": str(e)}
+

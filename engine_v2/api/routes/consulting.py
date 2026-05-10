@@ -37,8 +37,10 @@ from pydantic import BaseModel
 from engine_v2.consulting.helpers import (
     _append_disclaimer,
     _generate_no_retrieval_reply,
+    _generate_small_talk_reply,
     _normalize_citations,
     _sse,
+    is_small_talk,
 )
 from engine_v2.consulting.prompts import build_system_prompt as _build_system_prompt
 from engine_v2.consulting.query_service import execute_consulting_query
@@ -211,6 +213,25 @@ async def consulting_query(req: PersonaQueryRequest, request: Request):
     collection_name = persona.get("chromaCollection", f"persona_{req.persona_slug}")
     system_prompt = _build_system_prompt(persona, req.response_language)
 
+    # G7-03: Skip RAG for greetings / small-talk
+    if is_small_talk(req.question):
+        reply = await _generate_small_talk_reply(
+            question=req.question,
+            system_prompt=system_prompt,
+            persona_name=persona.get("name", req.persona_slug),
+            model=req.model,
+            provider=req.provider,
+        )
+        return {
+            "persona": {"name": persona.get("name"), "slug": persona.get("slug")},
+            "answer": reply,
+            "sources": [],
+            "stats": {"source_count": 0},
+            "highlight_keywords": [],
+            "numeric_highlights": [],
+            "answer_highlight_keywords": [],
+        }
+
     # GO-MU-06: user_id from JWT auth
     user_data = getattr(request.state, "user", None)
     user_id = user_data.get("id") if user_data else None
@@ -309,6 +330,38 @@ async def _consulting_stream_generator(req: PersonaQueryRequest):
             "chromaCollection", f"persona_{req.persona_slug}"
         )
         system_prompt = _build_system_prompt(persona, req.response_language)
+
+        # G7-03: Skip RAG for greetings / small-talk
+        if is_small_talk(req.question):
+            logger.info("Small-talk detected, skipping RAG: {!r}", req.question)
+            reply = await _generate_small_talk_reply(
+                question=req.question,
+                system_prompt=system_prompt,
+                persona_name=persona.get("name", req.persona_slug),
+                model=req.model,
+                provider=req.provider,
+            )
+            yield _sse("retrieval_done", {
+                "stats": {"source_count": 0},
+                "sources": [],
+                "highlight_keywords": [],
+            })
+            yield _sse("token", {"t": reply})
+            yield _sse("done", {
+                "persona": {"name": persona.get("name"), "slug": persona.get("slug")},
+                "answer": reply,
+                "sources": [],
+                "stats": {"source_count": 0},
+                "highlight_keywords": [],
+                "numeric_highlights": [],
+                "answer_highlight_keywords": [],
+                "telemetry": {
+                    "llm_calls": 1,
+                    "input_tokens": len(req.question.split()) * 2,
+                    "output_tokens": len(reply.split()),
+                },
+            })
+            return
 
         # GO-MU-06: user_id from JWT auth
         user_id = getattr(req, "_auth_user_id", None)

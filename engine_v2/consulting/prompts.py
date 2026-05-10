@@ -58,6 +58,27 @@ def build_no_retrieval_prompt(question: str, persona_name: str) -> str:
 
 
 # ============================================================
+# Small-talk / greeting — respond naturally without RAG
+# ============================================================
+
+SMALL_TALK_TEMPLATE: str = (
+    'The user said: "{question}"\n\n'
+    'You are the "{persona_name}" advisor. '
+    "This is a casual greeting or small-talk message — NOT a domain question. "
+    "Respond warmly and naturally as yourself. "
+    "Briefly introduce what you can help with (studying or immigrating to Canada). "
+    "Do NOT mention knowledge bases, documents, retrieval, or that you couldn't find information. "
+    "Keep your reply short (1-3 sentences). "
+    "Reply in the same language the user used."
+)
+
+
+def build_small_talk_prompt(question: str, persona_name: str) -> str:
+    """Build user-message for small-talk / greeting responses."""
+    return SMALL_TALK_TEMPLATE.format(question=question, persona_name=persona_name)
+
+
+# ============================================================
 # Language utilities
 # ============================================================
 

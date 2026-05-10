@@ -43,7 +43,18 @@ function ChatPageInner() {
   const [pdfTabs, setPdfTabs] = useState<PdfTab[]>([])
   const [activeTabBookId, setActiveTabBookId] = useState<number | null>(null)
   const [pdfWidth, setPdfWidth] = useState(600)
-  const initialMode = searchParams.get('mode') === 'consulting' ? 'consulting' : 'rag'
+  // G7-03: Live broadcast mode — toggleable state, initialized from URL
+  const [isLiveMode, setIsLiveMode] = useState(() => searchParams.get('mode') === 'live')
+
+  // G7-03: Update browser tab title for live mode
+  useEffect(() => {
+    if (isLiveMode) {
+      document.title = 'AI 移民留学顾问 — 直播问答'
+    } else {
+      document.title = 'ConsultRAG — AI Consulting & RAG Assistant'
+    }
+  }, [isLiveMode])
+
   // C4-06: Track consulting persona for sidebar (only set when mode=consulting)
   const [consultingPersonaSlug, setConsultingPersonaSlug] = useState<string | null>(null)
   const [consultingPersonaName, setConsultingPersonaName] = useState<string | null>(null)
@@ -302,7 +313,16 @@ function ChatPageInner() {
               submitRef={submitRef}
               showQuestions={showQuestions}
               onToggleQuestions={() => setShowQuestions((v) => !v)}
-              initialMode={initialMode}
+              isLiveMode={isLiveMode}
+              onLiveModeToggle={() => {
+                const next = !isLiveMode
+                setIsLiveMode(next)
+                // Sync URL without full navigation (outside setState to avoid render-cycle error)
+                const url = new URL(window.location.href)
+                if (next) url.searchParams.set('mode', 'live')
+                else url.searchParams.delete('mode')
+                window.history.replaceState({}, '', url.toString())
+              }}
               onConsultingPersonaChange={(slug, name) => {
                 setConsultingPersonaSlug(slug)
                 setConsultingPersonaName(name ?? null)
@@ -310,7 +330,7 @@ function ChatPageInner() {
             />
           </div>
 
-          {/* ── Questions Sidebar (right, resizable) — shown in RAG mode ── */}
+          {/* ── Questions Sidebar (right, resizable) ── */}
           {showQuestions && (
             <>
               <ResizeHandle width={sidebarWidth} onResize={setSidebarWidth} min={220} max={480} invert />

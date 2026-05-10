@@ -20,8 +20,10 @@ import {
   Search,
   UserCircle,
   Briefcase,
+  ChevronDown,
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useI18n } from '@/features/shared/i18n'
 import { cn } from '@/features/shared/utils'
 import {
@@ -93,9 +95,13 @@ export default function AppSidebar() {
   const { sessions, activeSessionId, deleteSession, clearHistory } = useChatHistoryContext()
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const [confirmClear, setConfirmClear] = useState(false)
+  // G7-12: Admin section default collapsed
+  const [adminExpanded, setAdminExpanded] = useState(false)
 
   const { user } = useAuth()
   const isAdmin = user?.role === 'admin'
+  const searchParams = useSearchParams()
+  const isLiveMode = searchParams.get('mode') === 'live'
   const groups = groupByDay(sessions)
 
   // ── Admin nav: single flat list ordered by RAG pipeline execution flow ──
@@ -184,8 +190,8 @@ export default function AppSidebar() {
 
           {/* Title — fades/collapses via CSS */}
           <span className={cn('font-bold text-sm tracking-tight text-sidebar-foreground truncate min-w-0 transition-all', DURATION, collapsed ? 'w-0 opacity-0' : 'flex-1 opacity-100')}>
-            {t.appName}
-            <span className="text-[10px] font-mono ml-1 text-muted-foreground">{t.appVersion}</span>
+            {isLiveMode ? 'AI 移民留学顾问' : t.appName}
+            {!isLiveMode && <span className="text-[10px] font-mono ml-1 text-muted-foreground">{t.appVersion}</span>}
           </span>
 
           {/* Collapse button — right side, fades out when collapsed */}
@@ -375,7 +381,8 @@ export default function AppSidebar() {
           <UsagePanel />
         )}
 
-        {/* ── Resources (all users) ── */}
+        {/* ── Resources (all users — hidden in live mode) ── */}
+        {!isLiveMode && (
         <div className={cn('shrink-0 border-t border-sidebar-border py-2', collapsed ? 'px-1' : 'px-2')}>
           <p className={cn('px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground transition-all', DURATION, collapsed ? 'h-0 opacity-0 overflow-hidden py-0' : 'opacity-100')}>
             {t.navGroupResources}
@@ -386,17 +393,38 @@ export default function AppSidebar() {
             {navLink('/settings', Settings, String(t.settings))}
           </nav>
         </div>
+        )}
 
-        {/* ── Admin (role-gated, single flat list by pipeline execution order) ── */}
-        {isAdmin && (
+        {/* ── Admin (role-gated, hidden in live mode — G7-12) ── */}
+        {isAdmin && !isLiveMode && (
           <div className={cn('shrink-0 border-t border-sidebar-border py-2', collapsed ? 'px-1' : 'px-2')}>
-            <p className={cn('px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground transition-all', DURATION, collapsed ? 'h-0 opacity-0 overflow-hidden py-0' : 'opacity-100')}>
-              {t.navGroupAdmin}
-            </p>
+            {/* Collapsed sidebar: just show a divider */}
             {collapsed && <div className="mx-auto my-1 h-px w-8 bg-sidebar-border" />}
-            <nav className="flex flex-col gap-0.5">
-              {adminLinks.map((item) => navLink(item.href, item.icon, String(t[item.titleKey])))}
-            </nav>
+            {/* Expanded sidebar: clickable header to toggle admin links */}
+            {!collapsed && (
+              <button
+                type="button"
+                onClick={() => setAdminExpanded((v) => !v)}
+                className="w-full flex items-center justify-between px-3 py-1 group"
+              >
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  {t.navGroupAdmin}
+                </span>
+                <ChevronDown
+                  size={12}
+                  className={cn(
+                    'text-muted-foreground transition-transform duration-200',
+                    adminExpanded && 'rotate-180',
+                  )}
+                />
+              </button>
+            )}
+            {/* Admin nav links — always visible in collapsed (icon) mode, toggle-gated in expanded mode */}
+            {(collapsed || adminExpanded) && (
+              <nav className="flex flex-col gap-0.5 mt-1">
+                {adminLinks.map((item) => navLink(item.href, item.icon, String(t[item.titleKey])))}
+              </nav>
+            )}
           </div>
         )}
       </aside>

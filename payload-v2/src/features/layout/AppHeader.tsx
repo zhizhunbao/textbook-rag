@@ -1,5 +1,6 @@
 'use client'
 
+import { useSearchParams } from 'next/navigation'
 import CountrySelector from '@/features/shared/components/CountrySelector'
 import LanguageToggle from '@/features/shared/components/LanguageToggle'
 import ThemeToggle from '@/features/shared/components/ThemeToggle'
@@ -7,8 +8,14 @@ import UserMenu from './UserMenu'
 
 /**
  * AppHeader — 顶部栏：国家 + 语言 + 主题 + 用户下拉菜单
+ * Hidden in live broadcast mode to maximize screen real estate.
  */
 export default function AppHeader() {
+  const searchParams = useSearchParams()
+  const isLiveMode = searchParams.get('mode') === 'live'
+
+  if (isLiveMode) return null
+
   return (
     <header className="flex items-center justify-end gap-2 px-4 h-12 shrink-0 bg-card border-b border-border transition-colors">
       {/* Country selector */}

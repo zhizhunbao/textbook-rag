@@ -21,7 +21,34 @@ from loguru import logger
 from engine_v2.consulting.prompts import (
     append_disclaimer as _append_disclaimer,        # noqa: F401 — re-exported
     build_no_retrieval_prompt as _build_no_retrieval_prompt,
+    build_small_talk_prompt as _build_small_talk_prompt,
 )
+
+
+# ── Small-talk / greeting patterns (skip RAG retrieval) ─────────────
+_GREETING_EXACT: set[str] = {
+    # Chinese
+    "你好", "您好", "嗨", "哈喽", "早上好", "下午好", "晚上好",
+    "你好呀", "在吗", "在不在", "你在吗", "早", "晚安",
+    "谢谢", "谢谢你", "多谢", "感谢", "辛苦了", "好的",
+    # English
+    "hi", "hello", "hey", "yo", "sup", "hiya",
+    "good morning", "good afternoon", "good evening", "good night",
+    "thanks", "thank you", "thx", "ok", "okay", "bye", "goodbye",
+    "how are you", "whats up", "what's up",
+}
+
+
+def is_small_talk(question: str) -> bool:
+    """Return True if the question is a greeting / small-talk that should skip RAG.
+
+    Only matches short, exact phrases — anything longer than 20 chars or
+    containing question marks is assumed to be a real query.
+    """
+    q = question.strip().rstrip("!?！？。.~～").strip().lower()
+    if len(q) > 30:
+        return False
+    return q in _GREETING_EXACT
 
 
 def _normalize_citations(text: str) -> str:
@@ -85,7 +112,7 @@ async def _generate_no_retrieval_reply(
             messages.append(ChatMessage(role=MessageRole.SYSTEM, content=system_prompt))
         messages.append(ChatMessage(role=MessageRole.USER, content=no_retrieval_prompt))
         resp = llm.chat(messages)
-        return str(resp).strip()
+        return _strip_role_prefix(str(resp))
     except Exception as e:
         logger.warning("Failed to generate dynamic no-retrieval reply: {}", e)
         return (
@@ -93,6 +120,39 @@ async def _generate_no_retrieval_reply(
             "knowledge base for your question. "
             "Please try rephrasing or check if the relevant documents have been ingested."
         )
+
+
+def _strip_role_prefix(text: str) -> str:
+    """Strip 'assistant:' / 'Assistant:' prefix that some LLMs leak."""
+    t = text.strip()
+    if t.lower().startswith("assistant:"):
+        t = t[len("assistant:"):].strip()
+    return t
+
+
+async def _generate_small_talk_reply(
+    question: str,
+    system_prompt: str,
+    persona_name: str,
+    model: str | None = None,
+    provider: str | None = None,
+) -> str:
+    """Generate a natural greeting/small-talk response without RAG retrieval."""
+    from engine_v2.llms import resolve_llm
+
+    prompt = _build_small_talk_prompt(question, persona_name)
+    try:
+        llm = resolve_llm(model=model, provider=provider, streaming=False)
+        from llama_index.core.llms import ChatMessage, MessageRole
+        messages = []
+        if system_prompt:
+            messages.append(ChatMessage(role=MessageRole.SYSTEM, content=system_prompt))
+        messages.append(ChatMessage(role=MessageRole.USER, content=prompt))
+        resp = llm.chat(messages)
+        return _strip_role_prefix(str(resp))
+    except Exception as e:
+        logger.warning("Failed to generate small-talk reply: {}", e)
+        return "Hello! How can I help you today with questions about studying or immigrating to Canada?"
 
 
 def _sse(event: str, data: dict[str, Any]) -> str:

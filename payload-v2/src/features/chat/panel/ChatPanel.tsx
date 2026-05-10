@@ -37,7 +37,8 @@ export default function ChatPanel({
   submitRef,
   showQuestions,
   onToggleQuestions,
-  initialMode,  // G8-04: deprecated, kept for backward compat (ignored)
+  isLiveMode = false,  // G7-03: live broadcast mode
+  onLiveModeToggle,    // G7-03: toggle callback
   onConsultingPersonaChange,
 }: {
   activeSessionId: string | null;
@@ -47,7 +48,10 @@ export default function ChatPanel({
   /** Questions sidebar state */
   showQuestions?: boolean;
   onToggleQuestions?: () => void;
-  initialMode?: string;
+  /** G7-03: Live broadcast mode — large fonts, minimal chrome */
+  isLiveMode?: boolean;
+  /** G7-03: Toggle live broadcast mode */
+  onLiveModeToggle?: () => void;
   /** C4-06: Notify parent when consulting persona changes (for sidebar) */
   onConsultingPersonaChange?: (slug: string, name: string | null) => void;
 }) {
@@ -125,21 +129,20 @@ export default function ChatPanel({
     sessionIdRef.current = activeSessionId;
   }, [activeSessionId]);
 
-  // G8-04: chatMode removed — always consulting
-
   useEffect(() => {
     fetchConsultingPersonas()
       .then((items) => {
         setPersonas(items);
         setSelectedPersonaSlug((current) => {
           if (current) return current;
-          // Always default to live-study-immigration for new windows
-          const defaultPersona = items.find((p) => p.slug === "live-study-immigration");
+          // G7-03: In live mode, always default to live-study-immigration
+          const defaultSlug = isLiveMode ? 'live-study-immigration' : 'live-study-immigration';
+          const defaultPersona = items.find((p) => p.slug === defaultSlug);
           return defaultPersona?.slug ?? items[0]?.slug ?? null;
         });
       })
       .catch(() => setPersonas([]));
-  }, [currentUser?.selectedPersona]);
+  }, [currentUser?.selectedPersona, isLiveMode]);
 
   // C4-06: Propagate persona selection to parent for sidebar integration
   // Use selectedPersonaSlug (user's current selection) instead of effectivePersonaSlug
@@ -538,7 +541,7 @@ export default function ChatPanel({
 
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-background">
+    <div className={`relative flex h-full min-h-0 flex-col overflow-hidden bg-background${isLiveMode ? ' live-mode' : ''}`}>
       {/* ── Header ── */}
       <ChatHeader
         sessionBooks={sessionBooks}
@@ -563,6 +566,8 @@ export default function ChatPanel({
         onTopKChange={setTopK}
         onRerankerChange={setRerankerEnabled}
         onAutoEvaluateChange={setAutoEvaluate}
+        isLiveMode={isLiveMode}
+        onLiveModeToggle={onLiveModeToggle}
       />
 
       {/* ── Message thread ── */}
@@ -581,7 +586,9 @@ export default function ChatPanel({
           setIsNearBottom(false);
         }}
       >
-        {!hasMessages && !loading ? (
+
+
+        {!hasMessages && !loading && !isLiveMode ? (
           <WelcomeScreen
             sessionBooks={sessionBooks}
             loading={loading}
@@ -673,6 +680,13 @@ export default function ChatPanel({
         onInputChange={setInput}
         onSubmit={(q) => void submitQuestion(q)}
       />
+
+      {/* G7-05: Brand watermark — live mode only */}
+      {isLiveMode && (
+        <div className="live-watermark">
+          Powered by ConsultRAG
+        </div>
+      )}
     </div>
   );
 }
