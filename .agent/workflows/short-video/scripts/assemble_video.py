@@ -21,7 +21,7 @@ import shutil
 
 RESOLUTION = (1920, 1080)
 SUBTITLE_BAR_H = 200      # 字幕条高度（像素），与幻灯片内容解耦
-SUBTITLE_BG = "0x12121e"  # 字幕条背景色
+SUBTITLE_BG = "0xf0f2f7"  # 字幕条背景色（与 slides.md section background 一致）
 
 
 def main():
@@ -47,6 +47,7 @@ def main():
         return
 
     # 剥离视觉提示后缀读取文本，跳过章节标头和空行
+    # 支持多行对应一张幻灯片：有 | 的行开新 slide，没有 | 的行延续上一张
     raw_lines = script_path.read_text(encoding="utf-8").splitlines()
     lines = []
     visual_hints = []
@@ -56,15 +57,22 @@ def main():
             continue
         parts = stripped.split('|', 1)
         lines.append(parts[0].strip())
+        # 没有 | 分隔符的行 → 延续上一张 slide（hint 为空字符串标记）
         visual_hints.append(parts[1].strip() if len(parts) > 1 else '')
     n = len(lines)
     print(f"Narrations: {n} segments")
 
-    # 构建 slide 索引映射：支持 [同上] 复用上一页 slide
+    # 构建 slide 索引映射：
+    #   - 有 | 且不含 [同上] → 新 slide
+    #   - 有 | 且含 [同上]   → 复用上一页 slide
+    #   - 没有 |（hint 为空）→ 延续上一页 slide（多行对应一张）
     slide_indices = []
     current_slide = 0
     for i, hint in enumerate(visual_hints):
-        if '同上' in hint:
+        if not hint:
+            # 没有 | 分隔符的行，延续上一张 slide
+            slide_indices.append(max(current_slide, 1))
+        elif '同上' in hint:
             slide_indices.append(current_slide)
         else:
             current_slide += 1
@@ -145,7 +153,6 @@ def main():
         "-vf", f"scale={w}:{h}:force_original_aspect_ratio=decrease:flags=lanczos,"
                f"pad={w}:{h}:-1:-1:color=black,"
                f"pad={w}:{total_h}:0:0:color={SUBTITLE_BG},"
-               f"drawbox=x=0:y={h}:w={w}:h=2:color=0x89b4fa@0.3:t=fill,"
                f"fps=30",
         "-c:v", "libx264", "-preset", "fast", "-pix_fmt", "yuv420p", "-an",
         str(slideshow_path)
@@ -185,8 +192,8 @@ def main():
                  "ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, "
                  "Alignment, MarginL, MarginR, MarginV, Encoding\n")
         af.write(f"Style: Default,Microsoft YaHei UI,64,"
-                 f"&H00FFFFFF,&H000000FF,&H20000000,&H00000000,"
-                 f"-1,0,0,0,100,100,0,0,1,2,0,"
+                 f"&H003b2a1e,&H000000FF,&H40f7f2f0,&H00000000,"
+                 f"-1,0,0,0,100,100,0,0,1,3,0,"
                  f"2,80,80,{margin_v},1\n\n")
         af.write("[Events]\n")
         af.write("Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n")
@@ -369,50 +376,68 @@ def split_long(text, max_chars):
     return chunks
 
 
-def generate_srt(segments, output_path, max_chars=80):
+def generate_srt(segments, output_path, max_chars=40):
+    """生成 SRT 字幕。字幕持续显示直到下一条替换（无空白间隙）。"""
     sentence_punct = set("。！？；!?;")
 
-    srt_idx = 0
+    # 第一步：收集所有字幕条目（start, end, text）
+    entries = []
+    for seg in segments:
+        text = seg.get("text", "")
+        if "|" in text:
+            text = text.split("|")[0].strip()
+        seg_start = seg["start"]
+        seg_end = seg["end"]
+        seg_dur = seg_end - seg_start
+
+        # 先按标点分句（保留标点用于分句定位）
+        sentences = split_by_punct(text, sentence_punct)
+        merged = merge_short(sentences, 12)
+        if not merged:
+            continue
+
+        final_chunks = []
+        for s in merged:
+            if len(s) <= max_chars:
+                final_chunks.append(s)
+            else:
+                final_chunks.extend(split_long(s, max_chars))
+
+        # 分句完成后，去掉标点让字幕更干净
+        import re as _re
+        cleaned = []
+        for c in final_chunks:
+            c = _re.sub(r'[。，、；：！？\u201c\u201d\u2018\u2019（）《》【】]', '', c).strip()
+            if c:
+                cleaned.append(c)
+        final_chunks = cleaned
+
+        total_chars = sum(len(c) for c in final_chunks)
+        if total_chars == 0:
+            continue
+
+        t = seg_start
+        for chunk in final_chunks:
+            chunk_dur = (len(chunk) / total_chars) * seg_dur
+            end_t = min(t + chunk_dur, seg_end)
+            entries.append((t, end_t, chunk))
+            t = end_t
+
+    # 第二步：字幕持续显示 — 每条字幕的结束时间 = 下一条的开始时间
+    for i in range(len(entries) - 1):
+        start_i, end_i, text_i = entries[i]
+        start_next = entries[i + 1][0]
+        # 延长到下一条字幕开始（字幕无间隙切换）
+        entries[i] = (start_i, start_next, text_i)
+
+    # 第三步：写入 SRT
     with open(output_path, "w", encoding="utf-8-sig") as f:
-        for seg in segments:
-            text = seg.get("text", "")
-            if "|" in text:
-                text = text.split("|")[0].strip()
-            seg_start = seg["start"]
-            seg_end = seg["end"]
-            seg_dur = seg_end - seg_start
+        for idx, (start, end, text) in enumerate(entries, 1):
+            f.write(f"{idx}\n")
+            f.write(f"{fmt_time(start)} --> {fmt_time(end)}\n")
+            f.write(f"{text}\n\n")
 
-            sentences = split_by_punct(text, sentence_punct)
-            merged = merge_short(sentences, 12)
-            if not merged:
-                continue
-
-            final_chunks = []
-            for s in merged:
-                if len(s) <= max_chars:
-                    final_chunks.append(s)
-                else:
-                    final_chunks.extend(split_long(s, max_chars))
-
-            final_chunks = [c.strip() for c in final_chunks if c.strip()]
-
-            total_chars = sum(len(c) for c in final_chunks)
-            if total_chars == 0:
-                continue
-
-            t = seg_start
-            gap = 0.2
-            for chunk in final_chunks:
-                chunk_dur = (len(chunk) / total_chars) * seg_dur
-                end_t = min(t + chunk_dur, seg_end)
-                display_end = max(t + 0.5, end_t - gap)
-                srt_idx += 1
-                f.write(f"{srt_idx}\n")
-                f.write(f"{fmt_time(t)} --> {fmt_time(display_end)}\n")
-                f.write(f"{chunk}\n\n")
-                t = end_t
-
-    print(f"  SRT: {srt_idx} lines")
+    print(f"  SRT: {len(entries)} lines")
 
 
 def fmt_time(sec):

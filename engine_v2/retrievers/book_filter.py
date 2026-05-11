@@ -80,6 +80,8 @@ def _get_all_book_ids(collection_name: str) -> list[str]:
         if not results["ids"]:
             break
         for meta in results["metadatas"]:
+            if meta is None:
+                continue
             bid = meta.get("book_id", "")
             if bid:
                 all_book_ids.add(bid)
@@ -141,7 +143,63 @@ def _extract_keywords(query: str) -> list[str]:
 
 
 # ============================================================
-# Main: pre-filter book_ids by query
+# Vector probe: lightweight semantic book discovery
+# ============================================================
+def _vector_probe_book_ids(
+    query: str,
+    collection_name: str,
+    *,
+    probe_k: int = 30,
+    max_books: int = 10,
+) -> list[str]:
+    """Find relevant book_ids via a single vector similarity query.
+
+    Does one ChromaDB query to get the top-K semantically similar chunks,
+    then extracts unique book_ids from the results. This covers cases where
+    the book_id path doesn't contain query keywords but the content does.
+
+    Args:
+        query: User query string.
+        collection_name: ChromaDB collection to search.
+        probe_k: Number of chunks to retrieve for book discovery.
+        max_books: Maximum unique book_ids to return.
+
+    Returns:
+        List of unique book_id strings (ordered by first appearance rank).
+    """
+    try:
+        client = chromadb.PersistentClient(
+            path=str(CHROMA_PERSIST_DIR),
+            settings=chromadb.Settings(anonymized_telemetry=False),
+        )
+        coll = client.get_collection(collection_name)
+        results = coll.query(
+            query_texts=[query],
+            n_results=probe_k,
+            include=["metadatas"],
+        )
+    except Exception as e:
+        logger.debug("book_filter: vector probe failed for '{}': {}", collection_name, e)
+        return []
+
+    # Extract unique book_ids in rank order
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for meta in results["metadatas"][0]:
+        if meta is None:
+            continue
+        bid = meta.get("book_id", "")
+        if bid and bid not in seen:
+            seen.add(bid)
+            ordered.append(bid)
+            if len(ordered) >= max_books:
+                break
+
+    return ordered
+
+
+# ============================================================
+# Main: pre-filter book_ids by query (hybrid: keyword + vector)
 # ============================================================
 def prefilter_book_ids(
     query: str,
@@ -150,10 +208,16 @@ def prefilter_book_ids(
     max_books: int = 15,
     min_score: int = 1,
 ) -> list[str] | None:
-    """Match query keywords against book_id paths to find relevant documents.
+    """Hybrid pre-filter: keyword path matching + vector probe.
 
-    Each book_id is scored by how many query keywords appear in its path
-    (after normalizing hyphens/slashes to spaces).
+    Combines two strategies to avoid over-filtering:
+      1. Keyword matching: score book_id paths by query keyword overlap
+      2. Vector probe: single ChromaDB query to find semantically similar
+         chunks, then extract their book_ids
+
+    The final result merges both sets (keyword-matched first, then vector
+    discoveries), ensuring that semantically relevant documents are never
+    excluded even when their paths don't contain query keywords.
 
     Args:
         query: User query string.
@@ -173,7 +237,7 @@ def prefilter_book_ids(
     if not keywords:
         return None
 
-    # Score each book_id by keyword overlap
+    # ── Strategy 1: Keyword path matching ──
     scored: list[tuple[int, str]] = []
     for bid in all_book_ids:
         # Normalize path separators to spaces for matching
@@ -182,21 +246,52 @@ def prefilter_book_ids(
         if score >= min_score:
             scored.append((score, bid))
 
-    if not scored:
+    scored.sort(key=lambda x: x[0], reverse=True)
+    keyword_books = [bid for _, bid in scored[:max_books]]
+
+    # ── Strategy 2: Vector probe (primary) ──
+    # Give vector probe the full budget — it's our primary strategy.
+    # Keyword matches only fill remaining slots after vector results.
+    vector_books = _vector_probe_book_ids(
+        query, collection_name, max_books=max_books,
+    )
+
+    # ── Merge: vector-first, keyword as supplement ──
+    # Vector probe is semantically accurate; keyword matching provides
+    # supplementary coverage for path-obvious matches.
+    seen: set[str] = set()
+    merged: list[str] = []
+
+    # Add vector probe results first (semantic relevance — primary)
+    for bid in vector_books:
+        if bid not in seen:
+            seen.add(bid)
+            merged.append(bid)
+
+    # Fill remaining slots with keyword matches (path relevance — supplement)
+    for bid in keyword_books:
+        if len(merged) >= max_books:
+            break
+        if bid not in seen:
+            seen.add(bid)
+            merged.append(bid)
+
+    if not merged:
         logger.debug(
-            "book_filter: no book_ids matched keywords {} in '{}'",
+            "book_filter: no book_ids matched keywords {} or vector probe in '{}'",
             keywords, collection_name,
         )
         return None
 
-    # Sort by score descending, take top N
-    scored.sort(key=lambda x: x[0], reverse=True)
-    selected = [bid for _, bid in scored[:max_books]]
-
+    # Log details
+    kw_only = set(keyword_books) - set(vector_books)
+    vec_only = set(vector_books) - set(keyword_books)
+    overlap = set(keyword_books) & set(vector_books)
     logger.info(
-        "book_filter: query='{}' → {} keywords → {} / {} books matched (top score={})",
-        query[:60], len(keywords), len(selected), len(all_book_ids),
-        scored[0][0] if scored else 0,
+        "book_filter: query='{}' → {} keywords → {} books "
+        "(kw_only={}, vec_only={}, overlap={})",
+        query[:60], len(keywords), len(merged),
+        len(kw_only), len(vec_only), len(overlap),
     )
 
-    return selected
+    return merged

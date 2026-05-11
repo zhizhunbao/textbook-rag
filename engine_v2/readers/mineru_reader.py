@@ -184,7 +184,7 @@ class MinerUReader(BaseReader):
             reading_order += 1
 
         logger.info(
-            "MinerUReader: loaded {} documents from {} (raw mode)",
+            "MinerUReader: loaded {} documents from {} (raw mode, with context prefix)",
             reading_order, book_dir_name,
         )
 
@@ -356,7 +356,9 @@ class MinerUReader(BaseReader):
         """Extract text content from a MinerU content item."""
         text = item.get("text", "").strip()
         if not text and item_type == "table":
-            text = item.get("table_body", "")
+            table_body = item.get("table_body", "")
+            if table_body:
+                text = MinerUReader._html_table_to_text(table_body)
         if not text and item_type == "image":
             captions = item.get("image_caption", [])
             text = " ".join(captions) if captions else ""
@@ -364,6 +366,31 @@ class MinerUReader(BaseReader):
         # Clean LaTeX artifacts from MinerU output
         if text:
             text = MinerUReader._clean_latex_artifacts(text)
+        return text
+
+    @staticmethod
+    def _html_table_to_text(html: str) -> str:
+        """Convert HTML table to readable plain text.
+
+        Transforms <table><tr><td>...</td></tr></table> into a readable
+        format where each row is on a new line and cells are separated
+        by ' | '. This makes table content comprehensible for both
+        embedding models and LLM synthesizers.
+
+        Example:
+            <table><tr><td>CRS score</td><td>400</td></tr></table>
+            → "CRS score | 400"
+        """
+        import re
+        # Replace row boundaries
+        text = re.sub(r'</tr>\s*<tr[^>]*>', '\n', html, flags=re.IGNORECASE)
+        # Replace cell boundaries
+        text = re.sub(r'</t[dh]>\s*<t[dh][^>]*>', ' | ', text, flags=re.IGNORECASE)
+        # Remove all remaining HTML tags
+        text = re.sub(r'<[^>]+>', '', text)
+        # Clean up whitespace
+        text = re.sub(r' +', ' ', text)
+        text = '\n'.join(line.strip() for line in text.split('\n') if line.strip())
         return text
 
     @staticmethod

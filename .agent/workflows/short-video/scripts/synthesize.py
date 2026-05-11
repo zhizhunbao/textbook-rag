@@ -7,6 +7,8 @@
 #   "soundfile",
 #   "torch",
 #   "torchaudio",
+#   "tencentcloud-sdk-python",
+#   "python-dotenv",
 # ]
 #
 # [tool.uv.sources]
@@ -64,6 +66,7 @@ def parse_script(path: Path) -> list[dict]:
         if raw.startswith("# "):
             chapter = raw[2:].strip()
             continue
+        has_pipe = "|" in raw
         parts = raw.rsplit("|", 1)
         narration = parts[0].strip()
         hint = ""
@@ -76,8 +79,25 @@ def parse_script(path: Path) -> list[dict]:
             "narration": narration,
             "visual_hint": hint,
             "line_idx": len(parsed),
+            "is_slide_start": has_pipe,  # 有 | = 新幻灯片开始
         })
     return parsed
+
+
+# ── TTS Text Preprocessing ─────────────────────────────────
+
+def _clean_for_tts(text: str) -> str:
+    """清洗文本以减少 TTS 不自然停顿。
+
+    - 中文标点（。，、；：！？）→ 空格
+    - 连续多个空格 → 单个空格
+    - 首尾空格去掉
+    """
+    # 中文标点 → 空格
+    text = re.sub(r'[。，、；：！？""''（）《》【】]', ' ', text)
+    # 连续空格 → 单个
+    text = re.sub(r'\s+', ' ', text)
+    return text.strip()
 
 
 # ── TTS Backends ───────────────────────────────────────────
@@ -149,6 +169,45 @@ def _synth_hf(text: str, out: Path) -> str:
     return "ok"
 
 
+# ── Tencent Cloud TTS Backend ──────────────────────────────
+
+def _init_tencent_client():
+    """初始化腾讯云 TTS 客户端（仅调用一次）。"""
+    from dotenv import load_dotenv
+    env_path = Path(__file__).resolve().parents[4] / ".env"
+    load_dotenv(env_path)
+
+    secret_id = os.environ.get("SecretId", "")
+    secret_key = os.environ.get("SecretKey", "")
+    if not secret_id or not secret_key:
+        raise RuntimeError(f"SecretId/SecretKey not found in {env_path}")
+
+    from tencentcloud.common import credential
+    from tencentcloud.tts.v20190823 import tts_client
+    cred = credential.Credential(secret_id, secret_key)
+    return tts_client.TtsClient(cred, "ap-shanghai")
+
+
+def _synth_tencent(client, text: str, out: Path, voice_type: int = 101007):
+    """腾讯云 TTS 单句合成 → mp3。"""
+    import base64
+    from tencentcloud.tts.v20190823 import models
+
+    req = models.TextToVoiceRequest()
+    req.Text = text
+    req.SessionId = f"synth_{hash(text) & 0xFFFFFF:06x}"
+    req.VoiceType = voice_type
+    req.Volume = 5
+    req.Speed = 0
+    req.Codec = "mp3"
+
+    resp = client.TextToVoice(req)
+    audio = base64.b64decode(resp.Audio)
+
+    with open(out, "wb") as f:
+        f.write(audio)
+
+
 # ── Qwen3-TTS Backend ──────────────────────────────────────
 
 def _load_qwen_model(voice_sample: Path | None = None):
@@ -158,14 +217,31 @@ def _load_qwen_model(voice_sample: Path | None = None):
     if voice_sample and voice_sample.exists():
         logger.info(f"[Qwen] Loading Base model for voice cloning...")
         model = Qwen3TTSModel.from_pretrained(
-            "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+            "Qwen/Qwen3-TTS-12Hz-1.7B-Base",
             device_map="cuda:0",
             dtype="auto",
         )
+
+        # 读取参考音频文字转录（ICL 模式需要）
+        ref_text_file = voice_sample.with_suffix(".txt")
+        ref_text = ""
+        if ref_text_file.exists():
+            ref_text = ref_text_file.read_text(encoding="utf-8").strip()
+            logger.info(f"[Qwen] Reference transcript loaded from {ref_text_file.name}")
+
+        # ICL 模式：同时学习音色 + 韵律 + 说话风格（需要 ref_text）
+        # x_vector_only 模式：仅提取音色向量（不需要 ref_text，质量较低）
+        use_icl = bool(ref_text)
+        if use_icl:
+            logger.info("[Qwen] ICL mode: timbre + prosody + style (高质量)")
+        else:
+            logger.warning("[Qwen] x_vector_only mode (低质量). 建议创建 voice-sample.txt 启用 ICL")
+
         logger.info(f"[Qwen] Extracting voice features from {voice_sample.name}...")
         voice_prompt = model.create_voice_clone_prompt(
             ref_audio=str(voice_sample),
-            x_vector_only_mode=True,
+            ref_text=ref_text if use_icl else None,
+            x_vector_only_mode=not use_icl,
         )
         return model, "clone", voice_prompt
     else:
@@ -173,7 +249,7 @@ def _load_qwen_model(voice_sample: Path | None = None):
         model = Qwen3TTSModel.from_pretrained(
             "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice",
             device_map="cuda:0",
-            torch_dtype="auto",
+            dtype="auto",
         )
         return model, "preset", None
 
@@ -212,6 +288,7 @@ async def synthesize(
     voice: str = "zh-CN-YunxiNeural",
     rate: str = "-10%",
     gap_ms: int = 300,
+    slide_gap_ms: int = 800,
     voice_sample: Path | None = None,
 ) -> Path:
     """逐句 TTS → 拼接 → 输出 narration.mp3 + timestamps.json。"""
@@ -227,15 +304,23 @@ async def synthesize(
     if backend == "qwen":
         qwen_model, qwen_mode, qwen_prompt = _load_qwen_model(voice_sample)
 
+    # Tencent: 客户端只初始化一次
+    tencent_client = None
+    if backend == "tencent":
+        tencent_client = _init_tencent_client()
+
     timestamps = []
     t = 0.0
     gap = gap_ms / 1000.0
+    slide_gap = slide_gap_ms / 1000.0
 
     for i, line in enumerate(lines):
         logger.info(f"  [{i+1}/{len(lines)}] {line[:35]}...")
         seg = tmp / f"seg_{i:03d}.mp3"
 
-        if backend == "qwen":
+        if backend == "tencent":
+            _synth_tencent(tencent_client, line, seg, voice_type=int(voice))
+        elif backend == "qwen":
             _synth_qwen(qwen_model, qwen_mode, qwen_prompt, line, seg)
         elif backend == "moss":
             _synth_moss(line, seg, voice_sample)
@@ -257,40 +342,96 @@ async def synthesize(
             "index": i + 1,
             "start": round(t + 0.15, 3),  # +0.15s 前置静音偏移
             "end": round(t + dur + 0.15, 3),
-            "text": line,
+            "text": _clean_for_tts(line),  # 字幕去标点，更干净
         })
-        t += dur + gap
+        # 下一行是新幻灯片 → 长停顿；否则 → 短停顿
+        next_is_slide = (i + 1 < len(parsed) and parsed[i + 1].get("is_slide_start", False))
+        current_gap = slide_gap if next_is_slide else gap
+        t += dur + current_gap
 
-    # Merge segments with silence gaps (no re-encoding)
-    silence = tmp / "silence.mp3"
+    # ── 统一采样率 → WAV 拼接 → 一次性编码 MP3 ──
+    # Edge TTS 输出 24kHz MP3, 静音文件 44100Hz → -c copy 拼接会导致时间戳混乱
+    # 解决方案：全部转成 44100Hz WAV，无损拼接后统一编码
+
+    target_sr = 44100
+
+    # 生成短停顿静音 WAV（句间）
+    silence_short = tmp / "silence_short.wav"
     subprocess.run(
         ["ffmpeg", "-y", "-f", "lavfi", "-i",
-         "anullsrc=r=44100:cl=mono", "-t", f"{gap:.3f}", str(silence)],
+         f"anullsrc=r={target_sr}:cl=mono", "-t", f"{gap:.3f}",
+         "-c:a", "pcm_s16le", str(silence_short)],
+        capture_output=True,
+    )
+
+    # 生成长停顿静音 WAV（换页）
+    silence_slide = tmp / "silence_slide.wav"
+    subprocess.run(
+        ["ffmpeg", "-y", "-f", "lavfi", "-i",
+         f"anullsrc=r={target_sr}:cl=mono", "-t", f"{slide_gap:.3f}",
+         "-c:a", "pcm_s16le", str(silence_slide)],
         capture_output=True,
     )
 
     # 前置静音，防止 MP3 编码器延迟截掉开头
-    lead_silence = tmp / "lead_silence.mp3"
+    lead_silence = tmp / "lead_silence.wav"
     subprocess.run(
         ["ffmpeg", "-y", "-f", "lavfi", "-i",
-         "anullsrc=r=44100:cl=mono", "-t", "0.15", str(lead_silence)],
+         f"anullsrc=r={target_sr}:cl=mono", "-t", "0.15",
+         "-c:a", "pcm_s16le", str(lead_silence)],
         capture_output=True,
     )
 
+    # 将所有 MP3 段转为统一采样率 WAV
+    logger.info(f"[Concat] Normalizing {len(lines)} segments to {target_sr}Hz WAV...")
+    for i in range(len(lines)):
+        seg_mp3 = tmp / f"seg_{i:03d}.mp3"
+        seg_wav = tmp / f"seg_{i:03d}.wav"
+        subprocess.run(
+            ["ffmpeg", "-y", "-i", str(seg_mp3),
+             "-ar", str(target_sr), "-ac", "1",
+             "-c:a", "pcm_s16le", str(seg_wav)],
+            capture_output=True,
+        )
+
+    # 拼接 WAV 文件（无损，无帧对齐问题）
     concat_list = tmp / "concat.txt"
     with open(concat_list, "w", encoding="utf-8") as f:
-        f.write("file 'lead_silence.mp3'\n")  # 开头保护
+        f.write("file 'lead_silence.wav'\n")  # 开头保护
         for i in range(len(lines)):
-            f.write(f"file 'seg_{i:03d}.mp3'\n")
+            f.write(f"file 'seg_{i:03d}.wav'\n")
             if i < len(lines) - 1:
-                f.write("file 'silence.mp3'\n")
+                # 下一行是新幻灯片 → 长停顿；否则 → 短停顿
+                next_is_slide = parsed[i + 1].get("is_slide_start", False)
+                sil_name = "silence_slide.wav" if next_is_slide else "silence_short.wav"
+                f.write(f"file '{sil_name}'\n")
 
-    out_audio = out_dir / "narration.mp3"
+    # WAV 拼接（-c copy 对 WAV 是安全的，因为 PCM 无帧对齐问题）
+    merged_wav = tmp / "merged.wav"
     subprocess.run(
         ["ffmpeg", "-y", "-f", "concat", "-safe", "0",
-         "-i", str(concat_list), "-c", "copy", str(out_audio)],
+         "-i", str(concat_list), "-c", "copy", str(merged_wav)],
         capture_output=True,
     )
+
+    # 一次性编码为 MP3
+    out_audio = out_dir / "narration.mp3"
+    subprocess.run(
+        ["ffmpeg", "-y", "-i", str(merged_wav),
+         "-c:a", "libmp3lame", "-b:a", "192k", str(out_audio)],
+        capture_output=True,
+    )
+
+    # ── 验证时间戳 vs 实际音频时长 ──
+    actual_total = _get_duration(out_audio)
+    ts_total = timestamps[-1]["end"] if timestamps else 0
+    drift = abs(actual_total - ts_total) if (actual_total > 0 and ts_total > 0) else 0
+    if drift > 1.0:
+        logger.warning(
+            f"[Verify] drift={drift:.1f}s (timestamp={ts_total:.1f}s, actual={actual_total:.1f}s)"
+        )
+    else:
+        logger.info(f"[Verify] OK: timestamp={ts_total:.1f}s ≈ actual={actual_total:.1f}s (Δ={drift:.2f}s)")
 
     (out_dir / "timestamps.json").write_text(
         json.dumps(timestamps, ensure_ascii=False, indent=2),
@@ -309,11 +450,12 @@ def main():
     p = argparse.ArgumentParser(description="TTS 语音合成工具")
     p.add_argument("--script", type=Path, required=True, help="script.txt 路径")
     p.add_argument("--output", type=Path, required=True, help="输出目录")
-    p.add_argument("--backend", choices=["moss", "edge", "hf", "qwen"], default="qwen")
-    p.add_argument("--voice", default="zh-CN-YunxiNeural")
+    p.add_argument("--backend", choices=["moss", "edge", "hf", "qwen", "tencent"], default="tencent")
+    p.add_argument("--voice", default="101007", help="Edge: voice name; Tencent: VoiceType ID")
     p.add_argument("--voice-sample", type=Path, default=None)
     p.add_argument("--rate", default="-10%")
-    p.add_argument("--gap", type=int, default=1000, help="句间停顿 ms")
+    p.add_argument("--gap", type=int, default=300, help="句间停顿 ms（同一张幻灯片内）")
+    p.add_argument("--slide-gap", type=int, default=800, help="换页停顿 ms（切换幻灯片时）")
     args = p.parse_args()
 
     if not args.script.exists():
@@ -332,6 +474,7 @@ def main():
         voice=args.voice,
         rate=args.rate,
         gap_ms=args.gap,
+        slide_gap_ms=args.slide_gap,
         voice_sample=args.voice_sample,
     ))
 
