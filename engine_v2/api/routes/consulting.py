@@ -6,6 +6,8 @@ Endpoints (C2 — Persona Knowledge Base):
     POST   /engine/consulting/ingest        — ingest PDF into persona collection
     POST   /engine/consulting/query         — RAG query against persona collection
     POST   /engine/consulting/query/stream  — SSE streaming query against persona
+    POST   /engine/consulting/retrieve      — lightweight BM25+Vector retrieval only
+                                              (no rerank, no synthesis — for cite_rag.py)
 
 Endpoints delegated to sub-routers:
     GET    /engine/consulting/personas      — (consulting.personas)
@@ -94,6 +96,19 @@ class PersonaQueryRequest(BaseModel):
     # Chat history for follow-up question contextualization
     chat_history: list[dict[str, str]] | None = None
     # GO-MU-06: user_id removed from body — now extracted from JWT auth
+
+
+class PersonaRetrieveRequest(BaseModel):
+    """Retrieve raw chunks from a persona's knowledge base.
+
+    Lightweight retrieval-only endpoint — no reranker, no LLM synthesis.
+    Returns raw BM25+Vector hybrid results for external tools (cite_rag.py)
+    where the Agent handles quality judgment instead of CrossEncoder.
+    """
+
+    persona_slug: str
+    question: str
+    top_k: int = 10
 
 
 # ============================================================
@@ -293,6 +308,83 @@ async def consulting_query(req: PersonaQueryRequest, request: Request):
         "highlight_keywords": highlight_keywords,
         "numeric_highlights": numeric_highlights,
         "answer_highlight_keywords": answer_keywords,
+    }
+
+
+# ============================================================
+# POST /engine/consulting/retrieve — lightweight chunk retrieval
+# ============================================================
+# No reranker, no LLM synthesis. Returns raw BM25+Vector chunks.
+# Designed for external tools (cite_rag.py) where the Agent does
+# quality judgment instead of CrossEncoder + GPT.
+
+
+@router.post("/retrieve")
+async def consulting_retrieve(req: PersonaRetrieveRequest):
+    """Retrieve raw chunks from a persona's knowledge base.
+
+    Lightweight endpoint that only runs BM25+Vector hybrid retrieval
+    (no CrossEncoder rerank, no LLM synthesis). Returns raw chunks with
+    metadata for external tools where the calling Agent handles judgment.
+
+    Cost: ~50ms (vs ~3s for /query with rerank + synthesis).
+    """
+    from engine_v2.retrievers.hybrid import multi_collection_retrieve
+    from engine_v2.schema import build_source
+
+    persona = _fetch_persona(req.persona_slug)
+    if not persona:
+        return {"status": "error", "message": f"Persona not found: {req.persona_slug}"}
+
+    # Build collection list (same logic as query, but no user_id needed)
+    multi_collections = persona.get("multiCollections") or []
+    if multi_collections:
+        collection_names = list(multi_collections)
+    else:
+        collection_name = persona.get("chromaCollection", f"persona_{req.persona_slug}")
+        collection_names = [collection_name]
+
+    # Pure BM25+Vector retrieval — no rerank, no synthesis
+    merged_nodes = multi_collection_retrieve(
+        question=req.question,
+        collection_names=collection_names,
+        top_k=req.top_k,
+    )
+
+    # Convert to source dicts (minimal fields for cite_rag.py)
+    chunks = []
+    for i, nws in enumerate(merged_nodes, start=1):
+        node = nws.node
+        meta = node.metadata
+        page_idx = meta.get("page_idx", 0)
+
+        # Strip "Source N:" prefix if present
+        import re
+        content = node.get_content()
+        content = re.sub(r"^Source \d+:\n", "", content)
+
+        chunks.append({
+            "rank": i,
+            "book_id": meta.get("book_id", ""),
+            "category": meta.get("category", ""),
+            "page_number": page_idx + 1,
+            "snippet": content[:300],
+            "full_content": content[:2000],
+            "score": round(float(nws.score), 6) if nws.score is not None else 0.0,
+            "vector_score": round(float(meta.get("vector_score", 0)), 4),
+            "bm25_score": round(float(meta.get("bm25_score", 0)), 4),
+            "retrieval_source": meta.get("retrieval_source", "vector"),
+        })
+
+    logger.info(
+        "[Retrieve] Q: {}... → {} chunks from {}",
+        req.question[:60], len(chunks), collection_names,
+    )
+
+    return {
+        "question": req.question,
+        "total": len(chunks),
+        "chunks": chunks,
     }
 
 

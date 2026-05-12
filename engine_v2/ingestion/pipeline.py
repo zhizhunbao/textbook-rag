@@ -81,8 +81,8 @@ def ingest_book(
 
     _notify(task_id, status="running", progress=5, log="Reading MinerU output...")
 
-    # Step 1: Read documents via MinerUReader
-    reader = MinerUReader(mineru_path)
+    # Step 1: Read documents via MinerUReader (merge_sections for semantic chunking)
+    reader = MinerUReader(mineru_path, merge_sections=True)
     documents = reader.load_data(book_dir_name=book_dir_name, category=category)
     if not documents:
         raise FileNotFoundError(

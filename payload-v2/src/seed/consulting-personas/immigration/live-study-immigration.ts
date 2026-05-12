@@ -10,7 +10,7 @@ export const liveStudyImmigration: PersonaSeed = {
   description: "Live broadcast expert for Canadian immigration and study planning.",
   chromaCollection: "ca_federal",
   multiCollections: [
-    "ca_federal", "ca_federal_data", "ca_edu_algonquin",
+    "ca_federal", "ca_edu_algonquin",
     "ca_prov_ontario", "ca_prov_bc", "ca_prov_alberta",
     "ca_prov_manitoba", "ca_prov_saskatchewan",
     "ca_prov_nova_scotia", "ca_prov_new_brunswick",

@@ -6,17 +6,25 @@
 # ]
 # ///
 """
-cite_rag.py — 从 storyline.md 的引用标记查找 RAG 来源 URL
-============================================================
-提取 [需要引用: ...] 标记 → 精确查 RAG → 返回 sources.json
+cite_rag.py — RAG 数据探索与引用检索
+====================================
+支持两种模式:
+  1. 探索模式 (--queries): 从 queries.md 提取英文查询 → 检索 RAG → sources.json
+  2. 引用模式 (--storyline): 从 storyline.md 的 [需要引用] 标记检索 (legacy)
 
 用法:
-  uv run cite_rag.py --storyline data/short-videos/crs/storyline.md \
+  # 探索模式 (推荐, workflow Step 1)
+  uv run cite_rag.py --queries data/short-videos/pnp/queries.md \
     --persona live-study-immigration \
-    --output data/short-videos/crs/sources.json
+    --output data/short-videos/pnp/sources.json
+
+  # 引用模式 (legacy, 兼容旧 workflow)
+  uv run cite_rag.py --storyline data/short-videos/pnp/storyline.md \
+    --persona live-study-immigration \
+    --output data/short-videos/pnp/sources.json
 
 产出:
-  sources.json — 引用需求 → 来源 URL 映射
+  sources.json — 去重后的 raw chunk 列表 (纯指针, 供 Agent 判断)
 """
 
 from __future__ import annotations
@@ -31,7 +39,7 @@ import requests
 from loguru import logger
 
 
-# ── 引用标记提取 ───────────────────────────────────────────
+# ── 查询提取 ───────────────────────────────────────────────
 
 CITATION_PATTERN = re.compile(r"\[需要引用[:：]\s*(.+?)\]")
 
@@ -44,93 +52,119 @@ CATEGORY_URL_MAP = {
 }
 
 
-def extract_citations(storyline_path: Path) -> list[dict]:
-    """从 storyline.md 提取所有 [需要引用: ...] 标记。
+def extract_queries(queries_path: Path) -> list[dict]:
+    """从 queries.md / research.md 提取探索查询（Step 1 数据探索模式）。
 
-    优先使用引用需求清单表格中的英文 RAG 查询建议作为 query,
-    因为 ChromaDB 中的数据全部是英文, 中文查询会导致向量命中率极低。
+    只解析 "## RAG 查询表" section 内的表格，忽略文件中其他表格
+    （如"子弹提取"表），避免中文标题/层级引用被当作 RAG 查询。
+
+    支持的表格格式:
+      三列: | # | 主题 | RAG 查询 (英文) |
+      两列: | # | RAG 查询 (英文) |
+    """
+    text = queries_path.read_text(encoding="utf-8")
+    citations = []
+    seen_queries = set()
+
+    # ── 定位 "RAG 查询表" section ──
+    # 匹配 ## RAG 查询表 / ## RAG查询表 / ## RAG Queries 等
+    section_start = re.search(
+        r"^##\s+RAG\s*查询表?",
+        text,
+        re.MULTILINE | re.IGNORECASE,
+    )
+    if section_start:
+        section_text = text[section_start.end():]
+        # section 到下一个 ## 或 --- 结束
+        section_end = re.search(r"^(?:##\s|---)", section_text, re.MULTILINE)
+        if section_end:
+            section_text = section_text[:section_end.start()]
+        logger.info(f"[Extract] Found 'RAG 查询表' section ({len(section_text)} chars)")
+    else:
+        # 向后兼容: 没有明确 section 标题时扫描全文
+        section_text = text
+        logger.warning("[Extract] No 'RAG 查询表' section found, scanning entire file")
+
+    # ── 解析表格行 ──
+    # 三列格式: | # | 主题/痛点 | RAG 查询 |
+    table_3col = re.compile(r"\|\s*\d+\s*\|(.+?)\|(.+?)\|")
+    for m in table_3col.finditer(section_text):
+        col1 = m.group(1).strip()
+        col2 = m.group(2).strip().strip('"')
+        # 跳过表头
+        if col1 in ("痛点问题", "断言", "主题", "...") or col2 in (
+            "RAG 查询 (英文)", "RAG 查询建议 (必须英文)",
+            "RAG 查询 (英文)", "...",
+        ):
+            continue
+        # col2 是英文 query, col1 是中文描述
+        query = col2 if col2 else col1
+        if query and query not in seen_queries:
+            seen_queries.add(query)
+            citations.append({"claim": col1, "query": query})
+            logger.info(f"  [Explore] {col1[:30]} → EN: {query[:60]}")
+
+    if not citations:
+        logger.warning(f"No queries found in {queries_path.name}")
+
+    logger.info(f"[Extract] {len(citations)} exploration queries from {queries_path.name}")
+    return citations
+
+
+def extract_citations(storyline_path: Path) -> list[dict]:
+    """从 storyline.md 提取引用需求（legacy 引用模式）。
+
+    两个来源（优先级从高到低）:
+      1. 引用需求清单表格 — 有英文 RAG 查询建议，最可靠
+      2. [需要引用: ...] 内联标记 — 作为表格的补充
     """
     text = storyline_path.read_text(encoding="utf-8")
+    citations = []
+    seen_queries = set()
 
-    # ── Step 1: 先解析引用需求清单表格, 建立 claim → English query 映射 ──
+    # ── 来源 1: 解析引用需求清单表格 (权威来源) ──
     table_pattern = re.compile(
         r"\|\s*\d+\s*\|(.+?)\|(.+?)\|(.+?)\|"
     )
-    claim_to_query: dict[str, str] = {}
     for m in table_pattern.finditer(text):
         claim = m.group(1).strip()
-        query_suggestion = m.group(3).strip().strip('"')
-        if claim and claim not in ("断言", "...") and query_suggestion and query_suggestion != "...":
-            claim_to_query[claim] = query_suggestion
-
-    if claim_to_query:
-        logger.info(f"[Table] Found {len(claim_to_query)} English query mappings")
-
-    # ── Step 2: 提取 [需要引用: ...] 内联标记 ──
-    matches = CITATION_PATTERN.findall(text)
-
-    citations = []
-    seen = set()
-    def _is_english(s: str) -> bool:
-        """判断字符串是否主要是英文 (ASCII 占比 > 80%)。"""
-        if not s:
-            return False
-        ascii_count = sum(1 for c in s if ord(c) < 128)
-        return ascii_count / len(s) > 0.8
-
-    for desc in matches:
-        desc = desc.strip()
-        if desc not in seen:
-            seen.add(desc)
-            # 优先用表格中的英文 query, 否则用 claim 本身
-            english_query = claim_to_query.get(desc, "")
-            if not english_query:
-                if _is_english(desc):
-                    # 内联标记本身就是英文，直接用
-                    logger.info(f"  [EN] Using inline English query: {desc[:60]}")
-                else:
-                    logger.warning(f"  [WARN] No English query for: {desc} — using Chinese (低命中率)")
-            citations.append({
-                "claim": desc,
-                "query": english_query or desc,
-            })
-
-    # ── Step 3: 补充表格中有但内联标记没覆盖的 claim ──
-    for claim, query in claim_to_query.items():
-        if claim not in seen:
-            seen.add(claim)
+        query = m.group(3).strip().strip('"')
+        if not claim or claim in ("断言", "..."):
+            continue
+        if not query or query in ("...", "RAG 查询建议 (必须英文)"):
+            continue
+        if query not in seen_queries:
+            seen_queries.add(query)
             citations.append({"claim": claim, "query": query})
+            logger.info(f"  [Table] {claim[:30]} → EN: {query[:60]}")
+
+    if citations:
+        logger.info(f"[Table] Found {len(citations)} English queries from citation table")
+
+    # ── 来源 2: 补充 [需要引用: ...] 内联标记 (仅当表格不存在时) ──
+    if not citations:
+        matches = CITATION_PATTERN.findall(text)
+        for desc in matches:
+            desc = desc.strip()
+            if desc not in seen_queries:
+                seen_queries.add(desc)
+                logger.warning(f"  [Inline] No table found, using inline: {desc[:60]}")
+                citations.append({"claim": desc, "query": desc})
+
+    if not citations:
+        logger.warning("No citations found in storyline (no table, no inline markers)")
 
     logger.info(f"[Extract] {len(citations)} citation needs from {storyline_path.name}")
     return citations
 
 
-# ── RAG 查询 ──────────────────────────────────────────────
+# ── URL 构建 ──────────────────────────────────────────────
 
-def query_rag(api_url: str, persona: str, question: str, top_k: int = 5) -> dict:
-    """调用 consulting /query API 获取来源。"""
-    url = f"{api_url}/engine/consulting/query"
-    payload = {"persona_slug": persona, "question": question, "top_k": top_k}
-    logger.info(f"[RAG] Q: {question[:60]}...")
-    resp = requests.post(url, json=payload, timeout=120)
-    resp.raise_for_status()
-    return resp.json()
-
-
-def build_source_url(source: dict) -> str:
-    """从 RAG source 元数据构建完整 URL。"""
-    book_id = source.get("book_id", "")
-    category = source.get("category", "")
-
-    # 从 category 获取基础 URL
+def build_source_url(book_id: str, category: str) -> str:
+    """从 book_id + category 构建完整 URL。"""
     base_url = CATEGORY_URL_MAP.get(category, "")
     if not base_url or not book_id:
-        # 尝试从 book_title 推断
-        title = source.get("book_title", "")
-        if "canada.ca" in title.lower():
-            base_url = "https://www.canada.ca"
-        else:
-            return ""
+        return ""
 
     # book_id 格式: "en/.../page-name/page-name"
     # 去掉末尾重复段: en/.../works/works → en/.../works
@@ -143,174 +177,76 @@ def build_source_url(source: dict) -> str:
     return f"{base_url}/{path}"
 
 
-def build_md_path(source: dict) -> str:
-    """从 RAG source 元数据推算 MinerU 抽取的 .md 文件路径。
+def build_md_path(book_id: str, category: str) -> str:
+    """从 book_id + category 推算 MinerU 抽取的 .md 文件路径。
 
     MinerU 输出目录结构 (实际):
         data/mineru_output/{category}/{book_id}/auto/{last_segment}.md
-
-    book_id 是完整路径 (如 "en/immigration-refugees-citizenship/.../crs-criteria/crs-criteria")，
-    保留完整路径作为目录，取最后一段作为文件名。
     """
-    book_id = source.get("book_id", "")
-    category = source.get("category", "")
     if not book_id or not category:
         return ""
 
-    # book_id 包含完整目录结构，最后一段是文件名
     dir_name = book_id.rstrip("/").rsplit("/", 1)[-1]
     return f"data/mineru_output/{category}/{book_id}/auto/{dir_name}.md"
 
 
-def extract_md_context(
-    md_path: str,
-    snippet: str,
-    context_chars: int = 1500,
-) -> str:
-    """从 MinerU .md 文件中提取 snippet 周围的完整段落上下文。
+# ── 纯检索 (无 rerank / 无 synthesis) ─────────────────────
 
-    策略:
-      1. 在 .md 文件中搜索 snippet 的前 40 个字符
-      2. 找到后向两侧扩展到段落边界 (空行)
-      3. 返回最多 context_chars 字符的上下文
-      4. 找不到则返回空字符串
+def retrieve_chunks(api_url: str, persona: str, question: str, top_k: int = 10) -> list[dict]:
+    """调用 /engine/consulting/retrieve 获取 raw BM25+Vector chunks。
+
+    不经过 CrossEncoder rerank, 不经过 GPT 合成。
+    返回 top_k 个 raw chunks, 每个包含:
+      - book_id, category, page_number, snippet, score
+      - vector_score, bm25_score, retrieval_source
     """
-    from pathlib import Path
-
-    # 解析为绝对路径 (相对于 cwd, 即项目根目录)
-    abs_path = Path.cwd() / md_path
-    if not abs_path.exists():
-        return ""
-
-    try:
-        text = abs_path.read_text(encoding="utf-8")
-    except Exception:
-        return ""
-
-    # 多策略搜索 snippet 在 .md 文件中的位置
-    snippet_clean = snippet.strip()
-    if not snippet_clean:
-        return ""
-
-    pos = -1
-
-    # 策略 1: 前 40 字符精确匹配
-    pos = text.find(snippet_clean[:40])
-
-    # 策略 2: 前 20 字符
-    if pos == -1:
-        pos = text.find(snippet_clean[:20])
-
-    # 策略 3: 去掉表格管道符，提取关键短语搜索
-    if pos == -1:
-        # "| one or more under CLB 9 |" → "one or more under CLB 9"
-        cleaned = snippet_clean.replace("|", " ").strip()
-        # 取第一个有意义的短语 (>10 字符)
-        for phrase in cleaned.split("  "):
-            phrase = phrase.strip()
-            if len(phrase) > 10:
-                pos = text.find(phrase[:30])
-                if pos != -1:
-                    break
-
-    # 策略 4: 用 snippet 中最长的连续英文词组搜索
-    if pos == -1:
-        import re as _re
-        words = _re.findall(r'[A-Za-z][A-Za-z\s]{8,30}', snippet_clean)
-        for w in sorted(words, key=len, reverse=True):
-            pos = text.find(w.strip())
-            if pos != -1:
-                break
-
-    if pos == -1:
-        return ""
-
-    # 向两侧扩展到段落边界 (连续两个换行符)
-    half = context_chars // 2
-    start = max(0, pos - half)
-    end = min(len(text), pos + half)
-
-    # 向前找段落开头 (空行 or 文档开头)
-    para_start = text.rfind("\n\n", 0, start)
-    if para_start != -1:
-        start = para_start + 2  # 跳过空行本身
-
-    # 向后找段落结尾
-    para_end = text.find("\n\n", end)
-    if para_end != -1:
-        end = para_end
-
-    context = text[start:end].strip()
-    if len(context) > context_chars:
-        context = context[:context_chars] + "..."
-
-    return context
+    url = f"{api_url}/engine/consulting/retrieve"
+    payload = {"persona_slug": persona, "question": question, "top_k": top_k}
+    logger.info(f"[Retrieve] Q: {question[:60]}...")
+    resp = requests.post(url, json=payload, timeout=120)
+    resp.raise_for_status()
+    data = resp.json()
+    return data.get("chunks", [])
 
 
-# ── 质量验证 ───────────────────────────────────────────────
+# ── 全局去重 + 聚合 ──────────────────────────────────────
 
-def validate_source(source: dict, url: str, answer: str) -> tuple[bool, list[str]]:
-    """验证 RAG 返回的 source 质量，返回 (is_ok, warnings)。
+def deduplicate_chunks(all_chunks: list[dict]) -> list[dict]:
+    """按 (book_id, page_number) 全局去重, 保留最高分。
 
-    检查:
-      1. URL 完整性 — book_id 必须包含 / 才能拼出有效 URL
-      2. 数据时效 — snippet/answer 中的年份不能比当前年份早 >1 年
-      3. 内容相关性 — answer 不能包含"does not contain"等无数据短语
-      4. 空白内容 — snippet 不能是空模板（如 "Date and time: ."）
+    多个 query 可能命中同一 chunk, 去重后:
+      - 保留最高 score 的那条
+      - 合并所有命中该 chunk 的 query 列表
+      - 避免 sources.json 中大量重复条目
     """
-    warnings = []
-    book_id = source.get("book_id", "")
+    groups: dict[tuple[str, int], dict] = {}
 
-    # Check 1: URL 完整性
-    if "/" not in book_id:
-        warnings.append(f"book_id 无完整路径 ('{book_id}')，URL 可能无效")
+    for chunk in all_chunks:
+        key = (chunk["book_id"], chunk["page_number"])
+        if key not in groups:
+            groups[key] = {
+                **chunk,
+                "queries": list(chunk.get("queries", [])),
+            }
+        else:
+            existing = groups[key]
+            # 保留更高分的 snippet/full_content
+            if chunk["score"] > existing["score"]:
+                existing["snippet"] = chunk["snippet"]
+                existing["full_content"] = chunk.get("full_content", "")
+                existing["score"] = chunk["score"]
+                existing["vector_score"] = chunk.get("vector_score", 0)
+                existing["bm25_score"] = chunk.get("bm25_score", 0)
+                existing["retrieval_source"] = chunk.get("retrieval_source", "")
+            # 合并 queries
+            for q in chunk.get("queries", []):
+                if q not in existing["queries"]:
+                    existing["queries"].append(q)
 
-    if not url or url.count("/") < 4:
-        warnings.append(f"URL 不完整: {url}")
+    deduped = sorted(groups.values(), key=lambda c: c["score"], reverse=True)
+    logger.info(f"[Dedup] {len(all_chunks)} raw chunks → {len(deduped)} unique (book_id, page)")
+    return deduped
 
-    # Check 2: 数据时效
-    from datetime import datetime
-    current_year = datetime.now().year
-    snippet = source.get("snippet", "")
-    combined_text = f"{snippet} {answer}"
-    year_pattern = re.compile(r"\b(20\d{2})\b")
-    years_found = [int(y) for y in year_pattern.findall(combined_text)]
-    if years_found:
-        max_year = max(years_found)
-        if current_year - max_year > 1:
-            warnings.append(
-                f"数据可能过时: 最新年份 {max_year}，当前 {current_year}"
-            )
-
-    # Check 3: 内容相关性
-    no_data_phrases = [
-        "does not contain",
-        "do not contain",
-        "no information",
-        "not found in",
-        "not available",
-        "unable to find",
-        "no relevant",
-    ]
-    answer_lower = answer.lower()
-    for phrase in no_data_phrases:
-        if phrase in answer_lower:
-            warnings.append(f"RAG 回答暗示数据缺失: '{phrase}'")
-            break
-
-    # Check 4: 空白内容检测
-    # 动态加载页面截取后常见: "Date and time: . CRS score: ."
-    blank_indicators = [
-        ":      ",   # 大量空白 = 动态加载未渲染
-        ":   \n",
-    ]
-    for indicator in blank_indicators:
-        if indicator in snippet:
-            warnings.append("snippet 包含空白字段，可能是动态页面未渲染")
-            break
-
-    is_ok = len(warnings) == 0
-    return is_ok, warnings
 
 # ── 主流程 ────────────────────────────────────────────────
 
@@ -320,146 +256,133 @@ def find_citations(
     persona: str,
     top_k: int = 10,
 ) -> list[dict]:
-    """为每个引用需求查找 RAG 来源。"""
-    results = []
+    """为每个引用需求检索 raw chunks, 全局去重后返回。"""
+    all_chunks: list[dict] = []
 
     for cit in citations:
-        claim = cit["claim"]
         query = cit["query"]
 
         try:
-            rag_result = query_rag(api_url, persona, query, top_k)
-            sources = rag_result.get("sources", [])
-            answer = rag_result.get("answer", "")
+            chunks = retrieve_chunks(api_url, persona, query, top_k)
 
-            if sources:
-                best = sources[0]  # Engine API 排序最高的
-                url = build_source_url(best)
-                md_path = build_md_path(best)
-                snippet = best.get("snippet", "")
-
-                # ── 从 .md 文件提取完整上下文 ──
-                source_context = extract_md_context(md_path, snippet)
-
-                # ── 质量验证 ──
-                is_ok, warnings = validate_source(best, url, answer)
-
-                entry = {
-                    "claim": claim,
-                    "query": query,
-                    "source_url": url,
-                    "source_title": best.get("book_title", ""),
-                    "source_text": snippet[:300],
-                    "source_context": source_context or "",
-                    "page": best.get("page_number", 0),
-                    "category": best.get("category", ""),
-                    "book_id": best.get("book_id", ""),
-                    "md_path": md_path,
-                    "score": round(best.get("score", 0), 4),
-                    "answer_excerpt": answer[:200],
-                }
-
-                if is_ok:
-                    entry["status"] = "found"
-                    results.append(entry)
-                    logger.success(f"  ✅ {claim[:30]} → {url[:60]}")
-                else:
-                    # low_quality 仍视为可用引用 (数据已入库, Engine API 有回答)
-                    # 只附加警告信息, 不阻断 pipeline
-                    entry["status"] = "found"
-                    entry["warnings"] = warnings
-                    results.append(entry)
-                    logger.warning(f"  ⚠️ {claim[:30]} → {url[:60]} (有警告)")
-                    for w in warnings:
-                        logger.warning(f"     - {w}")
+            if chunks:
+                logger.success(f"  ✅ {query[:50]} → {len(chunks)} chunks")
+                for chunk in chunks:
+                    # 附加来源信息
+                    chunk["queries"] = [query]
+                    chunk["source_url"] = build_source_url(
+                        chunk.get("book_id", ""), chunk.get("category", ""),
+                    )
+                    chunk["md_path"] = build_md_path(
+                        chunk.get("book_id", ""), chunk.get("category", ""),
+                    )
+                    all_chunks.append(chunk)
             else:
-                results.append({
-                    "claim": claim,
-                    "query": query,
-                    "source_url": "",
-                    "source_title": "",
-                    "source_text": "",
-                    "status": "not_found",
-                })
-                logger.warning(f"  ❌ {claim[:30]} → no sources")
+                logger.warning(f"  ❌ {query[:50]} → no chunks")
 
         except Exception as e:
-            logger.error(f"  ⚠️ {claim[:30]} → error: {e}")
-            results.append({
-                "claim": claim,
-                "query": query,
-                "source_url": "",
-                "status": "error",
-                "error": str(e),
-            })
+            logger.error(f"  ⚠️ {query[:50]} → error: {e}")
 
-    found = sum(1 for r in results if r["status"] == "found")
-    with_warnings = sum(1 for r in results if r["status"] == "found" and r.get("warnings"))
-    not_found = sum(1 for r in results if r["status"] in ("not_found", "error"))
+    # 全局去重
+    deduped = deduplicate_chunks(all_chunks)
 
-    if with_warnings:
-        logger.info(f"[Citations] {found} ✅ found ({with_warnings} with warnings), {not_found} ❌ missing")
-    else:
-        logger.info(f"[Citations] {found} ✅ found, {not_found} ❌ missing")
+    found_queries = set()
+    for chunk in deduped:
+        for q in chunk.get("queries", []):
+            found_queries.add(q)
 
-    # ── 真正缺数据才告警 (only not_found / error) ──
-    missing = [r for r in results if r["status"] in ("not_found", "error")]
+    all_queries = {c["query"] for c in citations}
+    missing = all_queries - found_queries
     if missing:
         logger.warning("=" * 60)
-        logger.warning("❌ 以下论点无法找到 RAG 数据，建议先入库再继续：")
-        for r in missing:
-            logger.warning(f"  ❌ {r['claim']}")
-        logger.warning("")
-        logger.warning("👉 用 ingest_urls.py 入库缺失页面：")
-        logger.warning('   uv run python scripts/ingest/ingest_urls.py \\')
-        logger.warning('     --category federal-ircc --collection ca_federal --force \\')
-        logger.warning('     "https://www.canada.ca/en/..."')
+        logger.warning("❌ 以下查询无法找到 RAG 数据，建议先入库再继续：")
+        for q in missing:
+            logger.warning(f"  ❌ {q}")
         logger.warning("=" * 60)
-    return results
+
+    logger.info(f"[Citations] {len(deduped)} unique chunks from {len(citations)} queries")
+    return deduped
 
 
 # ── CLI ────────────────────────────────────────────────────
 
 def main():
-    p = argparse.ArgumentParser(description="从 storyline 引用标记查找 RAG 来源 URL")
-    p.add_argument("--storyline", type=Path, required=True, help="storyline.md 路径")
+    p = argparse.ArgumentParser(description="RAG 数据探索与引用检索")
+    # 两种输入模式（二选一）
+    group = p.add_mutually_exclusive_group(required=True)
+    group.add_argument("--queries", type=Path, help="探索模式: queries.md 路径 (推荐)")
+    group.add_argument("--storyline", type=Path, help="引用模式: storyline.md 路径 (legacy)")
     p.add_argument("--persona", default="live-study-immigration")
     p.add_argument("--output", type=Path, required=True, help="输出 sources.json")
     p.add_argument("--api-url", default="http://localhost:8001")
-    p.add_argument("--top-k", type=int, default=5)
+    p.add_argument("--top-k", type=int, default=10, help="每个 query 检索的 chunk 数 (默认 10)")
     args = p.parse_args()
 
-    if not args.storyline.exists():
-        logger.error(f"{args.storyline} not found")
+    # 确定输入文件和模式
+    if args.queries:
+        input_path = args.queries
+        mode = "探索"
+    else:
+        input_path = args.storyline
+        mode = "引用"
+
+    if not input_path.exists():
+        logger.error(f"{input_path} not found")
         sys.exit(1)
 
     logger.info("=" * 50)
-    logger.info("RAG 引用查找器 (cite_rag.py)")
-    logger.info(f"Storyline: {args.storyline}")
+    logger.info(f"RAG 检索器 v3 (cite_rag.py) — {mode}模式")
+    logger.info(f"模式: BM25+Vector 纯检索 (无 rerank, 无 synthesis)")
+    logger.info(f"输入: {input_path}")
+    logger.info(f"Top-K per query: {args.top_k}")
     logger.info("=" * 50)
 
-    # 1. 提取引用需求
-    citations = extract_citations(args.storyline)
+    # 1. 提取查询
+    if args.queries:
+        citations = extract_queries(args.queries)
+    else:
+        citations = extract_citations(args.storyline)
+
     if not citations:
-        logger.warning("No [需要引用] markers found in storyline")
-        args.output.write_text(json.dumps({"citations": []}, ensure_ascii=False, indent=2))
+        logger.warning("No queries found in input file")
+        args.output.write_text(json.dumps({"chunks": []}, ensure_ascii=False, indent=2))
         return
 
-    # 2. 查找来源
-    results = find_citations(citations, args.api_url, args.persona, args.top_k)
+    # 2. 检索 + 去重
+    chunks = find_citations(citations, args.api_url, args.persona, args.top_k)
 
-    # 3. 输出
+    # 3. 输出 — 只保留有用字段 (纯指针, 供 Agent 判断)
+    output_chunks = []
+    for chunk in chunks:
+        output_chunks.append({
+            "book_id": chunk.get("book_id", ""),
+            "category": chunk.get("category", ""),
+            "page": chunk.get("page_number", 0),
+            "source_url": chunk.get("source_url", ""),
+            "md_path": chunk.get("md_path", ""),
+            "snippet": chunk.get("snippet", ""),
+            "score": chunk.get("score", 0),
+            "vector_score": chunk.get("vector_score", 0),
+            "bm25_score": chunk.get("bm25_score", 0),
+            "retrieval_source": chunk.get("retrieval_source", ""),
+            "queries": chunk.get("queries", []),
+        })
+
     output = {
-        "storyline": str(args.storyline),
-        "total": len(results),
-        "found": sum(1 for r in results if r["status"] == "found"),
-        "citations": results,
+        "mode": mode,
+        "input": str(input_path),
+        "query_count": len(citations),
+        "top_k_per_query": args.top_k,
+        "unique_chunks": len(output_chunks),
+        "chunks": output_chunks,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(
         json.dumps(output, ensure_ascii=False, indent=2), encoding="utf-8"
     )
-    logger.success(f"Done! {args.output} ({output['found']}/{output['total']} found)")
+    logger.success(
+        f"Done! {args.output} ({len(output_chunks)} unique chunks from {len(citations)} queries)"
+    )
 
 
 if __name__ == "__main__":

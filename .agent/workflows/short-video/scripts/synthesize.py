@@ -8,6 +8,7 @@
 #   "torch",
 #   "torchaudio",
 #   "tencentcloud-sdk-python",
+#   "requests",
 #   "python-dotenv",
 # ]
 #
@@ -23,7 +24,7 @@
 """
 synthesize.py — TTS 语音合成工具
 ================================
-独立工具脚本：script.txt → narration.mp3 + timestamps.json
+独立工具脚本：script.txt → narration.wav + timestamps.json
 
 用法:
   uv run synthesize.py --script ./script.txt --output ./narration/
@@ -35,11 +36,13 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import base64
 import json
 import os
 import re
 import shutil
 import subprocess
+import uuid
 from pathlib import Path
 
 from loguru import logger
@@ -208,6 +211,122 @@ def _synth_tencent(client, text: str, out: Path, voice_type: int = 101007):
         f.write(audio)
 
 
+# ── Volcano Engine TTS V3 Backend ──────────────────────────
+
+VOLC_V3_URL = "https://openspeech.bytedance.com/api/v3/tts/unidirectional"
+
+
+def _init_volcano_creds() -> dict:
+    """加载火山引擎 TTS 凭证（仅调用一次）。"""
+    from dotenv import load_dotenv
+    env_path = Path(__file__).resolve().parents[4] / ".env"
+    load_dotenv(env_path)
+
+    api_key = os.environ.get("VOLC_TTS_API_KEY", "")
+    appid = os.environ.get("VOLC_TTS_APPID", "")
+    token = os.environ.get("VOLC_TTS_TOKEN", "")
+    if not api_key and (not appid or not token):
+        raise RuntimeError(
+            f"Volcano TTS 凭证未设置。请在 {env_path} 中设置:\n"
+            "  VOLC_TTS_API_KEY=你的APIKey  (推荐)\n"
+            "  或 VOLC_TTS_APPID + VOLC_TTS_TOKEN (旧版)"
+        )
+    return {"api_key": api_key, "appid": appid, "token": token}
+
+
+def _synth_volcano(
+    creds: dict,
+    text: str,
+    out: Path,
+    voice_type: str = "zh_female_mizai_uranus_bigtts",
+    enable_subtitle: bool = False,
+) -> list[dict]:
+    """火山引擎 TTS V3 HTTP Chunked 单向流式合成 → mp3。
+
+    Returns:
+        subtitles — 字幕列表（enable_subtitle=True 时有值）
+    """
+    import requests
+
+    # 判断模型版本: _uranus_ → 2.0, 其他 → 1.0
+    resource_id = "seed-tts-2.0" if "_uranus_" in voice_type else "seed-tts-1.0"
+
+    # 构建 Headers
+    if creds["api_key"]:
+        headers = {
+            "X-Api-Key": creds["api_key"],
+            "X-Api-Resource-Id": resource_id,
+            "X-Api-Request-Id": str(uuid.uuid4()),
+        }
+    else:
+        headers = {
+            "X-Api-App-Id": creds["appid"],
+            "X-Api-Access-Key": creds["token"],
+            "X-Api-Resource-Id": resource_id,
+            "X-Api-Request-Id": str(uuid.uuid4()),
+        }
+
+    # 构建 Body
+    payload = {
+        "user": {"uid": "synth_pipeline"},
+        "req_params": {
+            "text": text,
+            "speaker": voice_type,
+            "audio_params": {
+                "format": "wav",
+                "sample_rate": 24000,
+            },
+        },
+    }
+    if enable_subtitle and resource_id == "seed-tts-2.0":
+        payload["req_params"]["audio_params"]["enable_subtitle"] = True
+
+    # 流式请求
+    resp = requests.post(VOLC_V3_URL, headers=headers, json=payload, stream=True, timeout=60)
+    if resp.status_code != 200:
+        try:
+            body = resp.json()
+        except Exception:
+            body = resp.text[:300]
+        raise RuntimeError(f"Volcano TTS HTTP {resp.status_code}: {body}")
+
+    # 解析流式 chunked 响应
+    audio_chunks: list[bytes] = []
+    subtitles: list[dict] = []
+
+    for line in resp.iter_lines():
+        if not line:
+            continue
+        try:
+            chunk = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+
+        code = chunk.get("code", 0)
+        if code == 20000000:  # 合成结束 OK
+            break
+        if code != 0:
+            msg = chunk.get("message", str(chunk))
+            raise RuntimeError(f"Volcano TTS API error {code}: {msg}")
+
+        data = chunk.get("data")
+        if data:
+            audio_chunks.append(base64.b64decode(data))
+
+        sentence = chunk.get("sentence")
+        if sentence:
+            subtitles.append(sentence)
+
+    audio = b"".join(audio_chunks)
+    if not audio:
+        raise RuntimeError("Volcano TTS returned no audio data")
+
+    with open(out, "wb") as f:
+        f.write(audio)
+
+    return subtitles
+
+
 # ── Qwen3-TTS Backend ──────────────────────────────────────
 
 def _load_qwen_model(voice_sample: Path | None = None):
@@ -284,14 +403,14 @@ def _synth_qwen(model, mode: str, voice_prompt, text: str, out: Path, speaker: s
 async def synthesize(
     parsed: list[dict],
     out_dir: Path,
-    backend: str = "qwen",
-    voice: str = "zh-CN-YunxiNeural",
+    backend: str = "volcano",
+    voice: str = "zh_female_mizai_uranus_bigtts",
     rate: str = "-10%",
     gap_ms: int = 300,
     slide_gap_ms: int = 800,
     voice_sample: Path | None = None,
 ) -> Path:
-    """逐句 TTS → 拼接 → 输出 narration.mp3 + timestamps.json。"""
+    """逐句 TTS → 拼接 → 输出 narration.wav + timestamps.json。"""
     out_dir.mkdir(parents=True, exist_ok=True)
     tmp = out_dir / "temp_audio"
     tmp.mkdir(exist_ok=True)
@@ -309,16 +428,25 @@ async def synthesize(
     if backend == "tencent":
         tencent_client = _init_tencent_client()
 
+    # Volcano: 凭证只加载一次
+    volcano_creds = None
+    if backend == "volcano":
+        volcano_creds = _init_volcano_creds()
+
     timestamps = []
     t = 0.0
     gap = gap_ms / 1000.0
     slide_gap = slide_gap_ms / 1000.0
+    # Volcano 直出 WAV 避免 MP3 编解码 padding 导致拼接卡顿
+    raw_ext = ".wav" if backend == "volcano" else ".mp3"
 
     for i, line in enumerate(lines):
         logger.info(f"  [{i+1}/{len(lines)}] {line[:35]}...")
-        seg = tmp / f"seg_{i:03d}.mp3"
+        seg = tmp / f"raw_{i:03d}{raw_ext}"
 
-        if backend == "tencent":
+        if backend == "volcano":
+            _synth_volcano(volcano_creds, line, seg, voice_type=voice)
+        elif backend == "tencent":
             _synth_tencent(tencent_client, line, seg, voice_type=int(voice))
         elif backend == "qwen":
             _synth_qwen(qwen_model, qwen_mode, qwen_prompt, line, seg)
@@ -385,10 +513,10 @@ async def synthesize(
     # 将所有 MP3 段转为统一采样率 WAV
     logger.info(f"[Concat] Normalizing {len(lines)} segments to {target_sr}Hz WAV...")
     for i in range(len(lines)):
-        seg_mp3 = tmp / f"seg_{i:03d}.mp3"
+        seg_raw = tmp / f"raw_{i:03d}{raw_ext}"
         seg_wav = tmp / f"seg_{i:03d}.wav"
         subprocess.run(
-            ["ffmpeg", "-y", "-i", str(seg_mp3),
+            ["ffmpeg", "-y", "-i", str(seg_raw),
              "-ar", str(target_sr), "-ac", "1",
              "-c:a", "pcm_s16le", str(seg_wav)],
             capture_output=True,
@@ -414,13 +542,9 @@ async def synthesize(
         capture_output=True,
     )
 
-    # 一次性编码为 MP3
-    out_audio = out_dir / "narration.mp3"
-    subprocess.run(
-        ["ffmpeg", "-y", "-i", str(merged_wav),
-         "-c:a", "libmp3lame", "-b:a", "192k", str(out_audio)],
-        capture_output=True,
-    )
+    # 直接输出 WAV（避免 MP3 encoder delay 导致拼接断裂）
+    out_audio = out_dir / "narration.wav"
+    shutil.copy2(str(merged_wav), str(out_audio))
 
     # ── 验证时间戳 vs 实际音频时长 ──
     actual_total = _get_duration(out_audio)
@@ -450,8 +574,9 @@ def main():
     p = argparse.ArgumentParser(description="TTS 语音合成工具")
     p.add_argument("--script", type=Path, required=True, help="script.txt 路径")
     p.add_argument("--output", type=Path, required=True, help="输出目录")
-    p.add_argument("--backend", choices=["moss", "edge", "hf", "qwen", "tencent"], default="tencent")
-    p.add_argument("--voice", default="101007", help="Edge: voice name; Tencent: VoiceType ID")
+    p.add_argument("--backend", choices=["volcano", "tencent", "edge", "qwen", "moss", "hf"], default="volcano")
+    p.add_argument("--voice", default="zh_female_mizai_uranus_bigtts",
+                   help="Volcano: voice_type; Tencent: VoiceType ID; Edge: voice name")
     p.add_argument("--voice-sample", type=Path, default=None)
     p.add_argument("--rate", default="-10%")
     p.add_argument("--gap", type=int, default=300, help="句间停顿 ms（同一张幻灯片内）")
