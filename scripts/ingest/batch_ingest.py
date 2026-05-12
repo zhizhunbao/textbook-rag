@@ -147,7 +147,7 @@ def ingest_one(category: str, short_name: str, collection_name: str) -> int:
 
     Returns the number of nodes ingested.
     """
-    reader = MinerUReader(MINERU_DIR)
+    reader = MinerUReader(MINERU_DIR, merge_sections=True)
     documents = reader.load_data(book_dir_name=short_name, category=category)
     if not documents:
         raise FileNotFoundError(f"No content: {category}/{short_name}")

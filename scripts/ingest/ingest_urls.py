@@ -253,8 +253,8 @@ def ingest_to_chroma(
         from llama_index.core.ingestion import IngestionPipeline
         from llama_index.core.settings import Settings
 
-        # 1. 读取 MinerU 输出
-        reader = MinerUReader(MINERU_DIR)
+        # 1. 读取 MinerU 输出 (merge_sections=True: 按 heading 层级合并语义 chunk)
+        reader = MinerUReader(MINERU_DIR, merge_sections=True)
         documents = reader.load_data(book_dir_name=book_id, category=category)
         if not documents:
             logger.error("  [FAIL] No documents found for {}/{}", category, book_id)

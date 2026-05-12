@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Short Video Template Gallery — 模板画廊</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- ── 控制面板 ── -->
+  <div id="controls">
+    <h2>🎬 模板画廊</h2>
+
+    <div class="ctrl-group">
+      <label>配色方案</label>
+      <select id="paletteSelect">
+        <option value="neon-pulse">霓虹脉冲 Neon Pulse</option>
+        <option value="frost-glass">霜冻玻璃 Frost Glass</option>
+        <option value="ember-glow">烬火流光 Ember Glow</option>
+        <option value="ocean-depth">深海蔚蓝 Ocean Depth</option>
+        <option value="minimal-ink">极简水墨 Minimal Ink</option>
+      </select>
+    </div>
+
+    <div class="ctrl-group">
+      <label>布局风格</label>
+      <select id="layoutSelect">
+        <option value="neon">居中堆叠 + 角标 (Neon)</option>
+        <option value="frost">毛玻璃卡片 (Frost)</option>
+        <option value="ember">左对齐社论风 (Ember)</option>
+        <option value="ocean">顶栏分离式 (Ocean)</option>
+        <option value="minimal">竖线左排版 (Minimal)</option>
+      </select>
+    </div>
+
+    <div class="ctrl-group">
+      <label>当前页</label>
+      <select id="slideSelect"></select>
+    </div>
+    <div class="ctrl-group">
+      <label><input type="checkbox" id="showGuides" checked> 辅助线</label>
+      <label><input type="checkbox" id="showSizes" checked> 尺寸标注</label>
+    </div>
+    <div class="ctrl-group">
+      <button id="prevBtn">← 上一页</button>
+      <button id="nextBtn">下一页 →</button>
+    </div>
+    <div id="tplDesc" style="margin-top:8px;padding:10px;background:rgba(255,255,255,0.04);border-radius:8px;font-size:12px;color:#9ca3af;line-height:1.6"></div>
+    <div id="specBox"></div>
+  </div>
+
+  <!-- ── 视频画布 (1920×1080 缩放) ── -->
+  <div id="canvasWrap">
+    <div id="canvas">
+      <!-- 幻灯片区 880px -->
+      <div id="slideArea"></div>
+      <!-- 字幕区 200px -->
+      <div id="subtitleArea">
+        <div id="subtitleText"></div>
+      </div>
+      <!-- 辅助线覆盖层 -->
+      <div id="guides">
+        <div class="guide-h" style="top:0" data-label="0"></div>
+        <div class="guide-h" style="top:880px" data-label="880 (slide/subtitle分界)"></div>
+        <div class="guide-h" style="top:1080px" data-label="1080"></div>
+        <div class="guide-v" style="left:80px" data-label="80 padding-L"></div>
+        <div class="guide-v" style="left:1840px" data-label="1840 padding-R"></div>
+        <div class="guide-safe" data-label="安全区 (60px顶 80px侧)"></div>
+      </div>
+      <!-- 尺寸标注层 -->
+      <div id="sizeAnnotations"></div>
+    </div>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="themes.js"></script>
+  <script src="templates.js"></script>
+  <script src="template-renders.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

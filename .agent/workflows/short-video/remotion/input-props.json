@@ -1,0 +1,387 @@
+{
+  "slides": [
+    {
+      "type": "cover",
+      "title": "省提名PNP（Provincial Nominee Program）",
+      "subtitle": "CRS不够？加600分直接碾压邀请线",
+      "source": "https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/provincial-nominees.html"
+    },
+    {
+      "type": "evidence",
+      "title": "省提名直接加600分",
+      "table": {
+        "headers": [
+          "对比项",
+          "通用轮次",
+          "省提名轮次"
+        ],
+        "rows": [
+          [
+            "邀请线",
+            "**508**",
+            "**742**（含+600）"
+          ],
+          [
+            "你需要的裸分",
+            "**508**",
+            "**110-189**"
+          ],
+          [
+            "竞争人数",
+            "23.4万人池",
+            "264-423人"
+          ]
+        ]
+      },
+      "citation": "Provincial or territorial nomination: 600 additional points.",
+      "source": "https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/express-entry/check-score/crs-criteria.html"
+    },
+    {
+      "type": "argument",
+      "title": "600分什么概念？",
+      "table": {
+        "headers": [
+          "CRS项目",
+          "最高分"
+        ],
+        "rows": [
+          [
+            "核心分（年龄+学历+语言+工作）",
+            "500"
+          ],
+          [
+            "技能转化分",
+            "100"
+          ],
+          [
+            "附加分 — **省提名**",
+            "**600**"
+          ]
+        ]
+      },
+      "citation": "Provincial or territorial nomination: 600",
+      "source": "https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/express-entry/check-score/crs-criteria.html"
+    },
+    {
+      "type": "evidence",
+      "title": "真的有这么大差距吗？",
+      "table": {
+        "headers": [
+          "轮次",
+          "日期",
+          "类型",
+          "邀请人数",
+          "最低CRS"
+        ],
+        "rows": [
+          [
+            "#403",
+            "2026-03-16",
+            "PNP专属",
+            "362",
+            "**742**"
+          ],
+          [
+            "#399",
+            "2026-03-02",
+            "PNP专属",
+            "264",
+            "**710**"
+          ],
+          [
+            "#400",
+            "2026-03-03",
+            "CEC通用",
+            "4,000",
+            "**508**"
+          ]
+        ]
+      },
+      "citation": "We'll continue to invite candidates with a provincial or territorial nomination through general and Provincial Nominee Program-specific rounds.",
+      "source": "https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/express-entry/rounds-invitations.html"
+    },
+    {
+      "type": "argument",
+      "title": "省提名到底是什么？",
+      "table": {
+        "headers": [
+          "要点",
+          "说明"
+        ],
+        "rows": [
+          [
+            "本质",
+            "省里挑需要的人才，走联邦通道拿永居"
+          ],
+          [
+            "注意",
+            "**Quebec和Nunavut没有PNP**"
+          ]
+        ]
+      },
+      "citation": "The Provincial Nominee Program (PNP) lets provinces and territories nominate people who have the skills, education and work experience to help their economy.",
+      "source": "https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/provincial-nominees.html"
+    },
+    {
+      "type": "evidence",
+      "title": "742分听着也很高？",
+      "table": {
+        "headers": [
+          "路径",
+          "你需要的裸分",
+          "竞争人数"
+        ],
+        "rows": [
+          [
+            "PNP轮次（自带+600）",
+            "**110-189**",
+            "264-423人"
+          ],
+          [
+            "CEC通用轮次",
+            "**508**",
+            "23.4万人池子"
+          ]
+        ]
+      },
+      "citation": "CRS score distribution: 601-1200 range has only 472 candidates out of 234,452 total in the pool.",
+      "source": "https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/express-entry/rounds-invitations.html"
+    },
+    {
+      "type": "argument",
+      "title": "那怎么申请？两条路",
+      "table": {
+        "headers": [
+          "你的情况",
+          "走哪条路",
+          "处理时间",
+          "费用"
+        ],
+        "rows": [
+          [
+            "符合EE（快速通道）",
+            "EE关联类",
+            "**约7个月**",
+            "**$1,590起**"
+          ],
+          [
+            "不符合EE",
+            "纸质申请",
+            "**约13个月**",
+            "另行查询"
+          ]
+        ]
+      },
+      "citation": "Processing time About 7 months. Starting from: $1,590 increased April 30, 2026.",
+      "source": "https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/provincial-nominees/express-entry.html"
+    },
+    {
+      "type": "evidence",
+      "title": "费用刚涨：2026年4月30日起$1,590",
+      "table": {
+        "headers": [
+          "路径",
+          "处理时间",
+          "费用"
+        ],
+        "rows": [
+          [
+            "EE关联类",
+            "约7个月",
+            "$1,590起（2026/4/30涨价）"
+          ],
+          [
+            "非EE类",
+            "约13个月",
+            "另行查询"
+          ]
+        ]
+      },
+      "citation": "Starting from: $1,590 increased April 30, 2026.",
+      "source": "https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/provincial-nominees/express-entry.html"
+    },
+    {
+      "type": "cta",
+      "title": "你在哪个省？",
+      "content": "你的职业在不在那个省的提名清单上？评论区告诉我。",
+      "source": "https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/provincial-nominees.html"
+    },
+    {
+      "type": "preview",
+      "title": "下期预告",
+      "content": "哪些省的提名不需要Job Offer",
+      "source": "https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/provincial-nominees.html"
+    }
+  ],
+  "timestamps": [
+    {
+      "index": 1,
+      "start": 0.15,
+      "end": 2.31,
+      "text": "CRS不够怎么办",
+      "slide_index": 0
+    },
+    {
+      "index": 2,
+      "start": 2.61,
+      "end": 10.026,
+      "text": "省提名直接加600分 通用邀请线508过不去 加完742照样被邀",
+      "slide_index": 1
+    },
+    {
+      "index": 3,
+      "start": 10.826,
+      "end": 12.662,
+      "text": "600分什么概念",
+      "slide_index": 2
+    },
+    {
+      "index": 4,
+      "start": 12.962,
+      "end": 16.958,
+      "text": "CRS满分500 省提名额外加600",
+      "slide_index": 2
+    },
+    {
+      "index": 5,
+      "start": 17.258,
+      "end": 21.47,
+      "text": "你裸分哪怕只有110 加完也能上710",
+      "slide_index": 2
+    },
+    {
+      "index": 6,
+      "start": 22.27,
+      "end": 24.214,
+      "text": "真有这么大差距吗",
+      "slide_index": 3
+    },
+    {
+      "index": 7,
+      "start": 24.514,
+      "end": 31.822,
+      "text": "今年3月16号PNP专属轮次 362人获邀 最低CRS742",
+      "slide_index": 3
+    },
+    {
+      "index": 8,
+      "start": 32.122,
+      "end": 37.99,
+      "text": "同一天CEC通用轮次 邀请线508 4000人抢",
+      "slide_index": 3
+    },
+    {
+      "index": 9,
+      "start": 38.29,
+      "end": 40.09,
+      "text": "差距一目了然",
+      "slide_index": 3
+    },
+    {
+      "index": 10,
+      "start": 40.89,
+      "end": 42.942,
+      "text": "省提名到底是什么",
+      "slide_index": 4
+    },
+    {
+      "index": 11,
+      "start": 43.242,
+      "end": 47.958,
+      "text": "省里面挑他们需要的人才 帮你走联邦通道拿永居",
+      "slide_index": 4
+    },
+    {
+      "index": 12,
+      "start": 48.258,
+      "end": 54.63,
+      "text": "但是注意 Quebec和Nunavut没有省提名 想去这两个地方得走别的路",
+      "slide_index": 4
+    },
+    {
+      "index": 13,
+      "start": 55.43,
+      "end": 58.13,
+      "text": "742分听着也很高啊",
+      "slide_index": 5
+    },
+    {
+      "index": 14,
+      "start": 58.43,
+      "end": 59.834,
+      "text": "其实不高",
+      "slide_index": 5
+    },
+    {
+      "index": 15,
+      "start": 60.134,
+      "end": 66.11,
+      "text": "省提名自带600分 你基础分只需要110到189就够了",
+      "slide_index": 5
+    },
+    {
+      "index": 16,
+      "start": 66.41,
+      "end": 73.754,
+      "text": "而通用轮次你得裸考508 23.4万人池子 难度完全不在一个级别",
+      "slide_index": 5
+    },
+    {
+      "index": 17,
+      "start": 74.554,
+      "end": 76.066,
+      "text": "那怎么申请",
+      "slide_index": 6
+    },
+    {
+      "index": 18,
+      "start": 76.366,
+      "end": 77.734,
+      "text": "两条路",
+      "slide_index": 6
+    },
+    {
+      "index": 19,
+      "start": 78.034,
+      "end": 85.738,
+      "text": "符合快速通道的走EE关联类 大概7个月 1590刀起 4月30号刚涨的价",
+      "slide_index": 6
+    },
+    {
+      "index": 20,
+      "start": 86.538,
+      "end": 92.694,
+      "text": "不符合快速通道的走纸质申请 时间长一些 大概要等13个月",
+      "slide_index": 7
+    },
+    {
+      "index": 21,
+      "start": 93.494,
+      "end": 95.042,
+      "text": "你在哪个省",
+      "slide_index": 8
+    },
+    {
+      "index": 22,
+      "start": 95.342,
+      "end": 98.798,
+      "text": "你的职业在不在那个省的提名清单上",
+      "slide_index": 8
+    },
+    {
+      "index": 23,
+      "start": 99.098,
+      "end": 100.97,
+      "text": "评论区告诉我",
+      "slide_index": 8
+    },
+    {
+      "index": 24,
+      "start": 101.77,
+      "end": 106.522,
+      "text": "下期聊一个更实际的问题 哪些省的提名不需要Job Offer",
+      "slide_index": 9
+    }
+  ],
+  "audioUrl": "/public/audio.wav"
+}

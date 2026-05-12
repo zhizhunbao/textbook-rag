@@ -1,0 +1,468 @@
+/* ── 全局 ── */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #0a0a0f;
+  color: #e5e7eb;
+  font-family: 'Inter', 'Noto Sans SC', system-ui, sans-serif;
+  display: flex;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── 控制面板 ── */
+#controls {
+  width: 280px;
+  min-height: 100vh;
+  background: #111827;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: fixed;
+  left: 0;
+  top: 0;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+#controls h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #60a5fa;
+  margin-bottom: 8px;
+}
+
+.ctrl-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ctrl-group label {
+  font-size: 13px;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.ctrl-group select,
+.ctrl-group button {
+  background: #1f2937;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e5e7eb;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.ctrl-group button:hover {
+  background: #374151;
+}
+
+#specBox {
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(59, 130, 246, 0.08);
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.8;
+  color: #9ca3af;
+  white-space: pre-wrap;
+}
+
+/* ── 画布容器 ── */
+#canvasWrap {
+  margin-left: 280px;
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 24px;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+#canvas {
+  width: 1920px;
+  height: 1080px;
+  position: relative;
+  transform-origin: 0 0;
+  border: 2px solid rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  flex-shrink: 0;
+}
+
+/* ── 幻灯片区 ── */
+#slideArea {
+  width: 1920px;
+  height: 880px;
+  position: relative;
+  overflow: hidden;
+  padding: 60px 80px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  /* 不设 align-items / text-align，由各模板内联样式自行控制 */
+  font-family: 'Inter', 'Noto Sans SC', system-ui, sans-serif;
+}
+
+#slideArea>* {
+  max-width: 1760px;
+  /* 1920 - 2×80 safe area */
+}
+
+/* ── 字幕区 ── */
+#subtitleArea {
+  width: 1920px;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#subtitleText {
+  font-size: 52px;
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: center;
+  padding: 0 80px;
+}
+
+/* ── slide 内部元素 ── */
+.slide-title {
+  font-size: 52px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.5px;
+  margin-bottom: 32px;
+  width: 100%;
+  overflow-wrap: break-word;
+  word-break: keep-all;
+}
+
+.cover-title {
+  font-size: 72px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 1px;
+  overflow-wrap: break-word;
+  word-break: keep-all;
+}
+
+.cover-subtitle {
+  font-size: 30px;
+  font-weight: 400;
+  letter-spacing: 1px;
+  margin-top: 24px;
+}
+
+/* ── 封面风格 A: Cinematic Title ── */
+.cover-cinematic .cover-title {
+  font-size: 68px;
+  letter-spacing: 0.05em;
+}
+
+.cover-cinematic .cover-underline {
+  height: 4px;
+  max-width: 320px;
+  border-radius: 2px;
+  margin-top: 20px;
+}
+
+.cover-cinematic .cover-subtitle {
+  font-size: 28px;
+  font-weight: 300;
+  letter-spacing: 0.1em;
+  margin-top: 28px;
+}
+
+/* ── 封面风格 B: Chapter Title ── */
+.cover-chapter .cover-label {
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.cover-chapter .cover-number {
+  font-size: 84px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.cover-chapter .cover-divider-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin: 28px 0 20px;
+}
+
+.cover-chapter .cover-divider-line {
+  height: 1px;
+  width: 120px;
+}
+
+.cover-chapter .cover-divider-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.cover-chapter .cover-subtitle {
+  font-size: 28px;
+  font-weight: 300;
+  letter-spacing: 0.1em;
+  margin-top: 0;
+}
+
+/* ── 封面风格 C: Spotlight ── */
+.cover-spotlight .cover-bar {
+  width: 80px;
+  height: 4px;
+  border-radius: 2px;
+}
+
+.cover-spotlight .cover-bar-top {
+  margin-bottom: 32px;
+}
+
+.cover-spotlight .cover-title {
+  font-size: 64px;
+  letter-spacing: 0.1em;
+}
+
+.cover-spotlight .cover-subtitle {
+  font-size: 22px;
+  margin-top: 16px;
+}
+
+.cover-spotlight .cover-bar-bottom {
+  margin-top: 32px;
+}
+
+/* ── 封面风格 D: Title Split ── */
+.cover-split .cover-title-stroke {
+  font-size: 72px;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  color: transparent;
+  -webkit-text-stroke: 2px white;
+  line-height: 1.1;
+}
+
+.cover-split .cover-title-solid {
+  font-size: 72px;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  line-height: 1.1;
+  margin-top: 4px;
+}
+
+.source-url {
+  font-size: 18px;
+  margin-top: 12px;
+  word-break: break-all;
+  max-width: 100%;
+  line-height: 1.4;
+  font-family: 'Inter', monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.citation-block {
+  border-left: 4px solid;
+  padding: 14px 24px;
+  border-radius: 0 8px 8px 0;
+  font-size: 24px;
+  line-height: 1.6;
+  font-style: italic;
+  margin-top: 16px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.content-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+/* ── 表格 ── */
+.data-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 6px;
+  table-layout: fixed;
+}
+
+.data-table th {
+  padding: 16px 28px;
+  font-size: 26px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.data-table th:first-child {
+  border-radius: 8px 0 0 8px;
+}
+
+.data-table th:last-child {
+  border-radius: 0 8px 8px 0;
+}
+
+.data-table td {
+  padding: 16px 28px;
+  font-size: 30px;
+  text-align: center;
+}
+
+.data-table td:first-child {
+  border-radius: 6px 0 0 6px;
+}
+
+.data-table td:last-child {
+  border-radius: 0 6px 6px 0;
+}
+
+.data-table.dense th {
+  padding: 12px 20px;
+  font-size: 22px;
+}
+
+.data-table.dense td {
+  padding: 12px 20px;
+  font-size: 26px;
+}
+
+/* CTA / Preview 正文 */
+.cta-text {
+  font-size: 42px;
+  line-height: 1.7;
+  font-weight: 700;
+}
+
+.preview-text {
+  font-size: 36px;
+  line-height: 1.7;
+  font-weight: 400;
+}
+
+/* 列表 */
+.point-list {
+  font-size: 32px;
+  line-height: 2;
+  list-style: none;
+  padding: 0;
+}
+
+/* ── 辅助线 ── */
+#guides {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.guide-h {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 0;
+  border-top: 1px dashed rgba(255, 50, 50, 0.5);
+}
+
+.guide-h::after {
+  content: attr(data-label);
+  position: absolute;
+  right: 8px;
+  top: 2px;
+  font-size: 11px;
+  color: rgba(255, 50, 50, 0.7);
+  font-family: monospace;
+}
+
+.guide-v {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 0;
+  border-left: 1px dashed rgba(50, 255, 50, 0.4);
+}
+
+.guide-v::after {
+  content: attr(data-label);
+  position: absolute;
+  top: 8px;
+  left: 4px;
+  font-size: 11px;
+  color: rgba(50, 255, 50, 0.6);
+  font-family: monospace;
+  white-space: nowrap;
+}
+
+.guide-safe {
+  position: absolute;
+  top: 60px;
+  left: 80px;
+  width: calc(1920px - 160px);
+  height: calc(880px - 84px);
+  border: 1px dashed rgba(255, 200, 50, 0.3);
+}
+
+.guide-safe::after {
+  content: attr(data-label);
+  position: absolute;
+  top: -16px;
+  left: 0;
+  font-size: 11px;
+  color: rgba(255, 200, 50, 0.5);
+  font-family: monospace;
+}
+
+#guides.hidden {
+  display: none;
+}
+
+/* ── 尺寸标注 ── */
+#sizeAnnotations {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 51;
+}
+
+.size-tag {
+  position: absolute;
+  background: rgba(59, 130, 246, 0.85);
+  color: #fff;
+  font-size: 11px;
+  font-family: monospace;
+  padding: 2px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+#sizeAnnotations.hidden {
+  display: none;
+}
