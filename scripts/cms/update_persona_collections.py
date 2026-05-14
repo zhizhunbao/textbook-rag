@@ -1,9 +1,9 @@
 """Update persona multiCollections via Payload CMS REST API.
 
 Usage:
-  uv run python scripts/cms/update_persona_collections.py --add ca_federal_data
-  uv run python scripts/cms/update_persona_collections.py --slug live-study-immigration --add ca_federal_data
-  uv run python scripts/cms/update_persona_collections.py --slug live-study-immigration --set ca_federal,ca_federal_data,ca_edu_algonquin
+  uv run python scripts/cms/update_persona_collections.py --add ca_edu_algonquin
+  uv run python scripts/cms/update_persona_collections.py --slug live-study-immigration --add ca_edu_algonquin
+  uv run python scripts/cms/update_persona_collections.py --slug live-study-immigration --set ca_federal,ca_edu_algonquin
 """
 from __future__ import annotations
 

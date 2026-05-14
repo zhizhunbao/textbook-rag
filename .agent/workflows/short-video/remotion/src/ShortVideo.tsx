@@ -44,7 +44,13 @@ export const ShortVideo: React.FC<VideoProps> = ({ slides, timestamps, audioUrl 
 /* ── 根据 slide type 渲染对应组件 ── */
 function renderSlide(slide: SlideData): React.ReactNode {
   if (slide.type === 'cover') {
-    return <CoverSlide title={slide.title} subtitle={slide.subtitle} source={slide.source} />;
+    return <CoverSlide
+      title={slide.title}
+      subtitle={slide.subtitle}
+      hookNumber={slide.hookNumber}
+      hookUnit={slide.hookUnit}
+      source={slide.source}
+    />;
   }
   return <ContentSlide slide={slide} />;
 }

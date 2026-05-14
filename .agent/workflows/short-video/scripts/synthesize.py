@@ -87,20 +87,153 @@ def parse_script(path: Path) -> list[dict]:
     return parsed
 
 
+def parse_storyline(path: Path) -> list[dict]:
+    """解析 storyline.md 为结构化列表。
+
+    从 **台词**: 块中提取逐行台词，用 ## [type] 标题识别 slide 分界。
+    跳过 📋 引用来源汇总 section。
+    """
+    text = path.read_text(encoding="utf-8")
+    parsed = []
+    current_slide = ""
+    in_narration = False
+    is_first_line_of_slide = True  # 当前 slide 的第一句台词
+
+    # 截断：遇到引用来源汇总就停止
+    summary_match = re.search(r"^## 📋", text, re.MULTILINE)
+    if summary_match:
+        text = text[:summary_match.start()]
+
+    for raw_line in text.splitlines():
+        stripped = raw_line.strip()
+
+        # 检测 slide 标题: ## [type] 显示标题
+        slide_match = re.match(r"^##\s+\[(.+?)\]\s*(.*)", stripped)
+        if slide_match:
+            current_slide = slide_match.group(2).strip() or slide_match.group(1)
+            in_narration = False
+            is_first_line_of_slide = True
+            continue
+
+        # 检测台词开始标记
+        if stripped.startswith("**台词**:") or stripped.startswith("**台词：**"):
+            in_narration = True
+            # 检查同行是否有内容 (如 "**台词**: 第一句话")
+            after = re.sub(r"^\*\*台词\*\*[：:]", "", stripped).strip()
+            if after:
+                parsed.append({
+                    "chapter": current_slide,
+                    "narration": after,
+                    "visual_hint": "",
+                    "line_idx": len(parsed),
+                    "is_slide_start": is_first_line_of_slide,
+                })
+                is_first_line_of_slide = False
+            continue
+
+        # 台词区结束条件: 空行 / 新的 ** 字段 / --- 分隔
+        if in_narration:
+            if not stripped or stripped.startswith("---") or (
+                stripped.startswith("**") and not stripped.startswith("**台词")
+            ):
+                in_narration = False
+                continue
+            # 跳过 markdown 格式行
+            if stripped.startswith("|") or stripped.startswith("#"):
+                in_narration = False
+                continue
+            # 有效台词行
+            parsed.append({
+                "chapter": current_slide,
+                "narration": stripped,
+                "visual_hint": "",
+                "line_idx": len(parsed),
+                "is_slide_start": is_first_line_of_slide,
+            })
+            is_first_line_of_slide = False
+
+    logger.info(f"[Storyline] Parsed {len(parsed)} narration lines from {path.name}")
+    return parsed
+
+
 # ── TTS Text Preprocessing ─────────────────────────────────
 
-def _clean_for_tts(text: str) -> str:
-    """清洗文本以减少 TTS 不自然停顿。
+# 中文标点集合
+_CN_PUNCT_SENTENCE = '。？！；：'
+_CN_PUNCT_CLAUSE = '，、'
+_CN_PUNCT_PAIR = '""''（）《》【】'
+_DASH_PATTERNS = ['——', '—', '──', '--']
+_MAX_SEGMENT_CHARS = 18  # ai-video-director R1 规则: 标点间最大中文字数
 
-    - 中文标点（。，、；：！？）→ 空格
-    - 连续多个空格 → 单个空格
-    - 首尾空格去掉
+
+def _clean_for_subtitle(text: str) -> str:
+    """清洗文本用于字幕显示（非 TTS 输入）。
+
+    - 句末标点（。？！；：）→ 去掉
+    - 配对标点（引号/括号）→ 去掉
+    - 保留逗号和顿号 → 保持字幕可读性
+    - 连续空格 → 单个空格
     """
-    # 中文标点 → 空格
-    text = re.sub(r'[。，、；：！？""''（）《》【】]', ' ', text)
+    # 句末标点 → 去掉
+    text = re.sub(f'[{_CN_PUNCT_SENTENCE}]', '', text)
+    # 配对标点 → 去掉
+    text = re.sub(f'[{_CN_PUNCT_PAIR}]', '', text)
     # 连续空格 → 单个
     text = re.sub(r'\s+', ' ', text)
     return text.strip()
+
+
+def _count_cn_chars(text: str) -> int:
+    """统计纯中文字符数。"""
+    return sum(1 for c in text if '\u4e00' <= c <= '\u9fff')
+
+
+def _precheck_text(lines: list[str]) -> None:
+    """合成前文本质检（参考 ai-video-director check_script.py）。
+
+    检查维度:
+    - R1: 标点间中文字符 ≤ 18（防止一口气念完）
+    - R2: 禁止破折号（TTS 停顿不稳定）
+    - 句长: 超过 50 字符警告（TTS 韵律崩坏风险）
+    - 标点密度: 无标点的长句警告
+    """
+    issues = 0
+    for i, line in enumerate(lines, 1):
+        # R2: 破折号检查
+        for dash in _DASH_PATTERNS:
+            if dash in line:
+                logger.warning(f"  [PreCheck L{i}] 含破折号「{dash}」，TTS 停顿不稳定: {line[:40]}...")
+                issues += 1
+
+        # 句长检查
+        if len(line) > 50:
+            logger.warning(f"  [PreCheck L{i}] 句长 {len(line)} 字符(>50)，TTS 韵律可能崩坏: {line[:40]}...")
+            issues += 1
+
+        # R1: 标点间字数检查
+        segments = re.split(f'[{_CN_PUNCT_SENTENCE}{_CN_PUNCT_CLAUSE}]', line)
+        for seg in segments:
+            seg = seg.strip()
+            cn_count = _count_cn_chars(seg)
+            if cn_count < 3:  # 纯英文段落豁免
+                continue
+            if cn_count > _MAX_SEGMENT_CHARS:
+                logger.warning(
+                    f"  [PreCheck L{i}] 标点间 {cn_count} 中文字(>{_MAX_SEGMENT_CHARS})，"
+                    f"需加逗号: 「{seg[:30]}...」"
+                )
+                issues += 1
+
+        # 无标点检查: 长句无任何中文标点
+        has_punct = bool(re.search(f'[{_CN_PUNCT_SENTENCE}{_CN_PUNCT_CLAUSE}]', line))
+        if not has_punct and _count_cn_chars(line) > 12:
+            logger.warning(f"  [PreCheck L{i}] 无标点的长中文句，TTS 无换气点: {line[:40]}...")
+            issues += 1
+
+    if issues:
+        logger.warning(f"[PreCheck] 发现 {issues} 个 TTS 质量风险，建议修改台词后重新合成")
+    else:
+        logger.info(f"[PreCheck] {len(lines)} 行台词质检通过 ✓")
 
 
 # ── TTS Backends ───────────────────────────────────────────
@@ -211,6 +344,31 @@ def _synth_tencent(client, text: str, out: Path, voice_type: int = 101007):
         f.write(audio)
 
 
+def _synth_tencent_clone(client, text: str, out: Path, fast_voice_type: str):
+    """腾讯云 TTS 声音复刻合成 → mp3。
+
+    使用 VoiceType=200000000 + FastVoiceType 调用复刻音色。
+    FastVoiceType 由 register_voice.py 注册后获得。
+    """
+    import base64
+    from tencentcloud.tts.v20190823 import models
+
+    req = models.TextToVoiceRequest()
+    req.Text = text
+    req.SessionId = f"clone_{hash(text) & 0xFFFFFF:06x}"
+    req.VoiceType = 200000000       # 固定值：声音复刻模式
+    req.FastVoiceType = fast_voice_type  # register_voice.py 返回的音色 ID
+    req.Volume = 5
+    req.Speed = 0
+    req.Codec = "mp3"
+
+    resp = client.TextToVoice(req)
+    audio = base64.b64decode(resp.Audio)
+
+    with open(out, "wb") as f:
+        f.write(audio)
+
+
 # ── Volcano Engine TTS V3 Backend ──────────────────────────
 
 VOLC_V3_URL = "https://openspeech.bytedance.com/api/v3/tts/unidirectional"
@@ -240,6 +398,7 @@ def _synth_volcano(
     out: Path,
     voice_type: str = "zh_female_mizai_uranus_bigtts",
     enable_subtitle: bool = False,
+    speech_rate: int = 0,
 ) -> list[dict]:
     """火山引擎 TTS V3 HTTP Chunked 单向流式合成 → mp3。
 
@@ -275,6 +434,7 @@ def _synth_volcano(
             "audio_params": {
                 "format": "wav",
                 "sample_rate": 24000,
+                "speech_rate": speech_rate,
             },
         },
     }
@@ -321,8 +481,21 @@ def _synth_volcano(
     if not audio:
         raise RuntimeError("Volcano TTS returned no audio data")
 
-    with open(out, "wb") as f:
-        f.write(audio)
+    # 自动检测: 如果前 4 字节是 RIFF 则已有 WAV header，否则是 raw PCM
+    if audio[:4] == b"RIFF":
+        # 已含 WAV header，直接写入
+        with open(out, "wb") as f:
+            f.write(audio)
+    else:
+        # Raw PCM (signed 16-bit LE, mono, 24kHz)，手动加 WAV header
+        import wave
+        with wave.open(str(out), "wb") as wf:
+            wf.setnchannels(1)
+            wf.setsampwidth(2)
+            wf.setframerate(24000)
+            wf.writeframes(audio)
+    logger.debug(f"[Volcano] {out.name}: {len(audio)} bytes, "
+                 f"{'WAV' if audio[:4] == b'RIFF' else 'raw PCM'}")
 
     return subtitles
 
@@ -398,6 +571,74 @@ def _synth_qwen(model, mode: str, voice_prompt, text: str, out: Path, speaker: s
         wav_tmp.unlink(missing_ok=True)
 
 
+# ── Timestamp Post-processing ─────────────────────────────
+
+def _split_multi_clause_timestamps(timestamps: list[dict]) -> list[dict]:
+    """拆分多句 timestamp 条目为单句。
+
+    规则: 在「中文/数字 + 空格 + 中文」处拆分（TTS 用空格替代标点）。
+    英文词间空格保留不拆。时间按字数比例分配。
+    """
+    result = []
+    idx = 1
+    for ts in timestamps:
+        clauses = _split_clauses(ts["text"])
+        if len(clauses) <= 1:
+            result.append({**ts, "index": idx})
+            idx += 1
+            continue
+        # 按字数比例分配时间
+        total_chars = sum(len(c) for c in clauses)
+        duration = ts["end"] - ts["start"]
+        t = ts["start"]
+        for clause in clauses:
+            ratio = len(clause) / total_chars
+            clause_dur = ratio * duration
+            result.append({
+                "index": idx,
+                "start": round(t, 3),
+                "end": round(t + clause_dur, 3),
+                "text": clause,
+            })
+            t += clause_dur
+            idx += 1
+    logger.info(f"[Split] {len(timestamps)} → {len(result)} subtitle entries")
+    return result
+
+
+def _split_clauses(text: str) -> list[str]:
+    """在「中文/数字 + 空格 + 中文」处拆分。"""
+    import re as _re
+    marked = _re.sub(
+        r'([\u4e00-\u9fff0-9])\s+([\u4e00-\u9fff])',
+        '\\1\u2502\\2',
+        text,
+    )
+    parts = [s.strip() for s in marked.split('\u2502') if s.strip()]
+    # 合并过短的片段 (< 4 字) 到下一个
+    merged = []
+    for p in parts:
+        if merged and len(merged[-1]) < 4:
+            merged[-1] += p
+        else:
+            merged.append(p)
+    return merged if merged else [text]
+
+
+def _group_by_slide(parsed: list[dict]) -> list[list[dict]]:
+    """将逐行台词按 slide 分组（用 is_slide_start 标志识别边界）。"""
+    slides: list[list[dict]] = []
+    current: list[dict] = []
+    for item in parsed:
+        if item.get("is_slide_start", False) and current:
+            slides.append(current)
+            current = []
+        current.append(item)
+    if current:
+        slides.append(current)
+    return slides
+
+
 # ── Main Synthesis Pipeline ───────────────────────────────
 
 async def synthesize(
@@ -406,11 +647,19 @@ async def synthesize(
     backend: str = "volcano",
     voice: str = "zh_female_mizai_uranus_bigtts",
     rate: str = "-10%",
+    speech_rate: int = 0,
     gap_ms: int = 300,
     slide_gap_ms: int = 800,
+    fade_ms: int = 80,
     voice_sample: Path | None = None,
 ) -> Path:
-    """逐句 TTS → 拼接 → 输出 narration.wav + timestamps.json。"""
+    """逐句 TTS 合成 → 加呼吸间隔 → 淡入淡出过渡 → narration.wav + timestamps.json。
+
+    v2 改进：
+    - 所有后端统一逐句合成，句间插入 gap_ms 静音（"呼吸感"）
+    - slide 切换处插入 slide_gap_ms 静音 + 前后 fade_ms 淡入淡出（消除"断档"）
+    - 每段音频末尾截除 TTS 生成的尾部噪声/喘息（atrim + silenceremove）
+    """
     out_dir.mkdir(parents=True, exist_ok=True)
     tmp = out_dir / "temp_audio"
     tmp.mkdir(exist_ok=True)
@@ -425,7 +674,7 @@ async def synthesize(
 
     # Tencent: 客户端只初始化一次
     tencent_client = None
-    if backend == "tencent":
+    if backend in ("tencent", "tencent-clone"):
         tencent_client = _init_tencent_client()
 
     # Volcano: 凭证只加载一次
@@ -433,19 +682,27 @@ async def synthesize(
     if backend == "volcano":
         volcano_creds = _init_volcano_creds()
 
-    timestamps = []
-    t = 0.0
     gap = gap_ms / 1000.0
     slide_gap = slide_gap_ms / 1000.0
-    # Volcano 直出 WAV 避免 MP3 编解码 padding 导致拼接卡顿
+    fade = fade_ms / 1000.0
     raw_ext = ".wav" if backend == "volcano" else ".mp3"
 
+    # ── 文本预检: 在花钱调 API 之前检查文本质量 ──
+    _precheck_text(lines)
+
+    # ── v2: 统一逐句合成（所有后端），句间呼吸，slide 间淡入淡出 ──
+    slide_groups = _group_by_slide(parsed)
+    logger.info(f"[TTS] Per-sentence synthesis: {len(lines)} lines in {len(slide_groups)} slides")
+
     for i, line in enumerate(lines):
-        logger.info(f"  [{i+1}/{len(lines)}] {line[:35]}...")
+        logger.info(f"  [{i+1}/{len(lines)}] {line[:50]}...")
         seg = tmp / f"raw_{i:03d}{raw_ext}"
 
         if backend == "volcano":
-            _synth_volcano(volcano_creds, line, seg, voice_type=voice)
+            _synth_volcano(volcano_creds, line, seg, voice_type=voice,
+                           speech_rate=speech_rate)
+        elif backend == "tencent-clone":
+            _synth_tencent_clone(tencent_client, line, seg, fast_voice_type=voice)
         elif backend == "tencent":
             _synth_tencent(tencent_client, line, seg, voice_type=int(voice))
         elif backend == "qwen":
@@ -465,34 +722,11 @@ async def synthesize(
         else:
             await _synth_edge(line, voice, seg, rate)
 
-        dur = _get_duration(seg)
-        timestamps.append({
-            "index": i + 1,
-            "start": round(t + 0.15, 3),  # +0.15s 前置静音偏移
-            "end": round(t + dur + 0.15, 3),
-            "text": _clean_for_tts(line),  # 字幕去标点，更干净
-        })
-        # 下一行是新幻灯片 → 长停顿；否则 → 短停顿
-        next_is_slide = (i + 1 < len(parsed) and parsed[i + 1].get("is_slide_start", False))
-        current_gap = slide_gap if next_is_slide else gap
-        t += dur + current_gap
+    # ── 统一采样率 + 去尾部噪声/喘息 ──
+    target_sr = 48000  # 24kHz × 2 = 整数倍重采样，无高频失真
+    n_segments = len(lines)
 
-    # ── 统一采样率 → WAV 拼接 → 一次性编码 MP3 ──
-    # Edge TTS 输出 24kHz MP3, 静音文件 44100Hz → -c copy 拼接会导致时间戳混乱
-    # 解决方案：全部转成 44100Hz WAV，无损拼接后统一编码
-
-    target_sr = 44100
-
-    # 生成短停顿静音 WAV（句间）
-    silence_short = tmp / "silence_short.wav"
-    subprocess.run(
-        ["ffmpeg", "-y", "-f", "lavfi", "-i",
-         f"anullsrc=r={target_sr}:cl=mono", "-t", f"{gap:.3f}",
-         "-c:a", "pcm_s16le", str(silence_short)],
-        capture_output=True,
-    )
-
-    # 生成长停顿静音 WAV（换页）
+    # 生成各类静音 WAV
     silence_slide = tmp / "silence_slide.wav"
     subprocess.run(
         ["ffmpeg", "-y", "-f", "lavfi", "-i",
@@ -500,8 +734,13 @@ async def synthesize(
          "-c:a", "pcm_s16le", str(silence_slide)],
         capture_output=True,
     )
-
-    # 前置静音，防止 MP3 编码器延迟截掉开头
+    silence_short = tmp / "silence_short.wav"
+    subprocess.run(
+        ["ffmpeg", "-y", "-f", "lavfi", "-i",
+         f"anullsrc=r={target_sr}:cl=mono", "-t", f"{gap:.3f}",
+         "-c:a", "pcm_s16le", str(silence_short)],
+        capture_output=True,
+    )
     lead_silence = tmp / "lead_silence.wav"
     subprocess.run(
         ["ffmpeg", "-y", "-f", "lavfi", "-i",
@@ -509,32 +748,91 @@ async def synthesize(
          "-c:a", "pcm_s16le", str(lead_silence)],
         capture_output=True,
     )
+    trail_silence = tmp / "trail_silence.wav"
+    subprocess.run(
+        ["ffmpeg", "-y", "-f", "lavfi", "-i",
+         f"anullsrc=r={target_sr}:cl=mono", "-t", "0.30",
+         "-c:a", "pcm_s16le", str(trail_silence)],
+        capture_output=True,
+    )
 
-    # 将所有 MP3 段转为统一采样率 WAV
-    logger.info(f"[Concat] Normalizing {len(lines)} segments to {target_sr}Hz WAV...")
-    for i in range(len(lines)):
+    # 归一化每段音频: 重采样 + 去头部呼吸声 + 去尾部喘息
+    # 注意: 不在逐句阶段做音量归一化（loudnorm 会填充静音，dynaudnorm 会吞开头字）
+    # 音量统一全交给合并后的全局 loudnorm
+    HEAD_TRIM = 0.08  # 截掉开头 80ms（TTS 呼吸声区域，中文音节 ≥150ms 不受影响）
+    MICRO_FADE = 0.03  # 30ms 微淡入，平滑截断边缘
+    logger.info(f"[Concat] Processing {n_segments} segments: {target_sr}Hz + head trim {HEAD_TRIM*1000:.0f}ms...")
+    for i in range(n_segments):
         seg_raw = tmp / f"raw_{i:03d}{raw_ext}"
-        seg_wav = tmp / f"seg_{i:03d}.wav"
+        seg_norm = tmp / f"norm_{i:03d}.wav"
+        # 重采样 + 截掉开头80ms呼吸声 + 去尾部喘息噪声
         subprocess.run(
             ["ffmpeg", "-y", "-i", str(seg_raw),
-             "-ar", str(target_sr), "-ac", "1",
+             "-af", (
+                 f"aresample={target_sr},"
+                 # 固定截掉开头 80ms（呼吸声所在区域）
+                 f"atrim=start={HEAD_TRIM},"
+                 # 重置时间戳（atrim 后必须加，否则拼接时间错乱）
+                 "asetpts=N/SR/TB,"
+                 # areverse → silenceremove → areverse = 从尾部截静音
+                 "areverse,silenceremove=1:0:-40dB,areverse"
+             ),
+             "-ac", "1", "-c:a", "pcm_s16le", str(seg_norm)],
+            capture_output=True,
+        )
+        # 第二步: fade 处理
+        # - 所有段: 30ms 微淡入（平滑截断边缘）
+        # - slide 边界: 额外的长淡入/淡出
+        is_slide_end = (i + 1 < len(parsed)
+                        and parsed[i + 1].get("is_slide_start", False))
+        is_slide_begin = parsed[i].get("is_slide_start", False) and i > 0
+        fade_filters = []
+        seg_dur = _get_duration(seg_norm)
+        # 所有段都加微淡入
+        fade_filters.append(f"afade=t=in:st=0:d={MICRO_FADE:.3f}")
+        # slide 边界加长淡出/淡入
+        if is_slide_end and seg_dur > fade:
+            fade_filters.append(f"afade=t=out:st={max(0, seg_dur - fade):.3f}:d={fade:.3f}")
+        if is_slide_begin and seg_dur > fade:
+            fade_filters[0] = f"afade=t=in:st=0:d={fade:.3f}"
+        seg_wav = tmp / f"seg_{i:03d}.wav"
+        subprocess.run(
+            ["ffmpeg", "-y", "-i", str(seg_norm),
+             "-af", ",".join(fade_filters),
              "-c:a", "pcm_s16le", str(seg_wav)],
             capture_output=True,
         )
 
-    # 拼接 WAV 文件（无损，无帧对齐问题）
+    # ── 计算时间戳（基于归一化后的实际时长） ──
+    timestamps = []
+    t = 0.15  # lead silence offset
+
+    for i in range(len(lines)):
+        seg_wav = tmp / f"seg_{i:03d}.wav"
+        dur = _get_duration(seg_wav)
+        timestamps.append({
+            "index": i + 1,
+            "start": round(t, 3),
+            "end": round(t + dur, 3),
+            "text": _clean_for_subtitle(lines[i]),
+        })
+        next_is_slide = (i + 1 < len(parsed)
+                         and parsed[i + 1].get("is_slide_start", False))
+        t += dur + (slide_gap if next_is_slide else gap)
+
+    # ── 拼接 WAV ──
     concat_list = tmp / "concat.txt"
     with open(concat_list, "w", encoding="utf-8") as f:
-        f.write("file 'lead_silence.wav'\n")  # 开头保护
-        for i in range(len(lines)):
+        f.write("file 'lead_silence.wav'\n")
+        for i in range(n_segments):
             f.write(f"file 'seg_{i:03d}.wav'\n")
-            if i < len(lines) - 1:
-                # 下一行是新幻灯片 → 长停顿；否则 → 短停顿
+            if i < n_segments - 1:
                 next_is_slide = parsed[i + 1].get("is_slide_start", False)
-                sil_name = "silence_slide.wav" if next_is_slide else "silence_short.wav"
-                f.write(f"file '{sil_name}'\n")
+                sil = "silence_slide.wav" if next_is_slide else "silence_short.wav"
+                f.write(f"file '{sil}'\n")
+        # 结尾加 trail silence，避免最后一个字被截断
+        f.write("file 'trail_silence.wav'\n")
 
-    # WAV 拼接（-c copy 对 WAV 是安全的，因为 PCM 无帧对齐问题）
     merged_wav = tmp / "merged.wav"
     subprocess.run(
         ["ffmpeg", "-y", "-f", "concat", "-safe", "0",
@@ -542,9 +840,18 @@ async def synthesize(
         capture_output=True,
     )
 
-    # 直接输出 WAV（避免 MP3 encoder delay 导致拼接断裂）
+    # 全局 EBU R128 响度归一化（在完整音频上做，不会有短片段填充问题）
     out_audio = out_dir / "narration.wav"
-    shutil.copy2(str(merged_wav), str(out_audio))
+    logger.info("[Concat] Applying global loudnorm (EBU R128 -16 LUFS) on merged audio...")
+    result = subprocess.run(
+        ["ffmpeg", "-y", "-i", str(merged_wav),
+         "-af", "loudnorm=I=-16:TP=-1.5:LRA=11",
+         "-c:a", "pcm_s16le", str(out_audio)],
+        capture_output=True,
+    )
+    if result.returncode != 0 or not out_audio.exists():
+        logger.warning("[Concat] Global loudnorm failed, using raw merge")
+        shutil.copy2(str(merged_wav), str(out_audio))
 
     # ── 验证时间戳 vs 实际音频时长 ──
     actual_total = _get_duration(out_audio)
@@ -556,6 +863,9 @@ async def synthesize(
         )
     else:
         logger.info(f"[Verify] OK: timestamp={ts_total:.1f}s ≈ actual={actual_total:.1f}s (Δ={drift:.2f}s)")
+
+    # ── 拆分多句 timestamps 为单句条目 ──
+    timestamps = _split_multi_clause_timestamps(timestamps)
 
     (out_dir / "timestamps.json").write_text(
         json.dumps(timestamps, ensure_ascii=False, indent=2),
@@ -572,34 +882,45 @@ async def synthesize(
 
 def main():
     p = argparse.ArgumentParser(description="TTS 语音合成工具")
-    p.add_argument("--script", type=Path, required=True, help="script.txt 路径")
+    group = p.add_mutually_exclusive_group(required=True)
+    group.add_argument("--script", type=Path, help="script.txt 路径 (旧格式)")
+    group.add_argument("--storyline", type=Path, help="storyline.md 路径 (v16 格式)")
     p.add_argument("--output", type=Path, required=True, help="输出目录")
-    p.add_argument("--backend", choices=["volcano", "tencent", "edge", "qwen", "moss", "hf"], default="volcano")
+    p.add_argument("--backend", choices=["volcano", "tencent", "tencent-clone", "edge", "qwen", "moss", "hf"], default="volcano")
     p.add_argument("--voice", default="zh_female_mizai_uranus_bigtts",
                    help="Volcano: voice_type; Tencent: VoiceType ID; Edge: voice name")
     p.add_argument("--voice-sample", type=Path, default=None)
-    p.add_argument("--rate", default="-10%")
-    p.add_argument("--gap", type=int, default=300, help="句间停顿 ms（同一张幻灯片内）")
+    p.add_argument("--rate", default="-10%", help="Edge TTS rate (e.g. '-10%%')")
+    p.add_argument("--speech-rate", type=int, default=0,
+                   help="Volcano TTS speech rate: -15=slightly slower, 0=normal, -50=half speed, 100=2x")
+    p.add_argument("--gap", type=int, default=300, help="句间停顿 ms（同一张幻灯片内，制造呼吸感）")
     p.add_argument("--slide-gap", type=int, default=800, help="换页停顿 ms（切换幻灯片时）")
+    p.add_argument("--fade", type=int, default=80, help="slide 边界淡入淡出 ms（消除断档感）")
     args = p.parse_args()
 
-    if not args.script.exists():
-        logger.error(f"{args.script} not found")
+    input_path = args.storyline or args.script
+    if not input_path.exists():
+        logger.error(f"{input_path} not found")
         return
 
-    parsed = parse_script(args.script)
+    if args.storyline:
+        parsed = parse_storyline(args.storyline)
+    else:
+        parsed = parse_script(args.script)
     if not parsed:
         logger.error("No lines parsed")
         return
 
-    logger.info(f"Parsed {len(parsed)} lines from {args.script.name}")
+    logger.info(f"Parsed {len(parsed)} lines from {input_path.name}")
     asyncio.run(synthesize(
         parsed, args.output,
         backend=args.backend,
         voice=args.voice,
         rate=args.rate,
+        speech_rate=args.speech_rate,
         gap_ms=args.gap,
         slide_gap_ms=args.slide_gap,
+        fade_ms=args.fade,
         voice_sample=args.voice_sample,
     ))
 

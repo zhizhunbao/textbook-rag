@@ -1,0 +1,67 @@
+/* ═══════════════════════════════════════════════════════════════
+ * controls.css — 左侧控制面板样式
+ * ═══════════════════════════════════════════════════════════════ */
+
+#controls {
+  width: 280px;
+  min-height: 100vh;
+  background: #111827;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: fixed;
+  left: 0;
+  top: 0;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+#controls h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #60a5fa;
+  margin-bottom: 8px;
+}
+
+.ctrl-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ctrl-group label {
+  font-size: 13px;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.ctrl-group select,
+.ctrl-group button {
+  background: #1f2937;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e5e7eb;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.ctrl-group button:hover {
+  background: #374151;
+}
+
+#specBox {
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(59, 130, 246, 0.08);
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.8;
+  color: #9ca3af;
+  white-space: pre-wrap;
+}

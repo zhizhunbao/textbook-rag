@@ -5,6 +5,10 @@ export interface SlideData {
   type: 'cover' | 'argument' | 'evidence' | 'summary' | 'cta' | 'preview';
   title: string;
   subtitle?: string;
+  /** 封面钩子大数字 (cover only) */
+  hookNumber?: string;
+  /** 封面钩子单位 (cover only) */
+  hookUnit?: string;
   /** 表格数据（argument / evidence 页） */
   table?: {
     headers: string[];

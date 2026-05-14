@@ -128,13 +128,10 @@ async def run_ee_rounds_pipeline(category: str, collection: str, force: bool = F
 
         print(f"\n  Step 2: MinerU → Markdown ({book_id.rsplit('/', 1)[-1]})")
         md_path = book_id_to_md_path(category, book_id)
-        if force or not md_path.exists() or md_path.stat().st_size < 50:
-            ok, md_path = run_mineru(pdf_path, category, book_id)
-            if not ok:
-                results.append({"book_id": book_id, "status": "mineru_failed"})
-                continue
-        else:
-            logger.info("  [SKIP] MinerU output exists")
+        ok, md_path = run_mineru(pdf_path, category, book_id, force=force)
+        if not ok:
+            results.append({"book_id": book_id, "status": "mineru_failed"})
+            continue
 
         print(f"\n  Step 3: Ingest → ChromaDB ({book_id.rsplit('/', 1)[-1]})")
         ok, nodes = ingest_to_chroma(category, book_id, collection)
@@ -190,16 +187,19 @@ async def crawl_url(url: str, category: str, *, force: bool = False, wait_for_js
 #  Step 2: MinerU → Markdown
 # ═══════════════════════════════════════════════════════════════════
 
-def run_mineru(pdf_path: Path, category: str, book_id: str) -> tuple[bool, Path | None]:
+def run_mineru(pdf_path: Path, category: str, book_id: str, *, force: bool = False) -> tuple[bool, Path | None]:
     """对单个 PDF 执行 MinerU 解析。"""
     out_dir = MINERU_DIR / category / book_id
     md_path = book_id_to_md_path(category, book_id)
 
-    # 已解析就跳过
-    if md_path.exists() and md_path.stat().st_size > 50:
+    # 已解析就跳过 (force=True 时强制重新解析)
+    if not force and md_path.exists() and md_path.stat().st_size > 50:
         logger.info("  [SKIP] MinerU output exists: {} ({:.1f} KB)",
                      md_path.name, md_path.stat().st_size / 1024)
         return True, md_path
+
+    if force and md_path.exists():
+        logger.warning("  [FORCE] Overwriting existing MinerU output: {}", md_path.name)
 
     out_dir.parent.mkdir(parents=True, exist_ok=True)
     logger.info("  [MINERU] {} → {}", pdf_path.name, out_dir)
@@ -416,7 +416,7 @@ async def run_pipeline(args):
 
             # Step 2: MinerU
             print(f"\n  Step 2: MinerU → Markdown")
-            ok, md_path = run_mineru(pdf_path, category, book_id)
+            ok, md_path = run_mineru(pdf_path, category, book_id, force=force)
             if not ok:
                 results.append({"url": url, "book_id": book_id, "status": "mineru_failed"})
                 continue

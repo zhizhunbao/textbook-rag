@@ -37,6 +37,9 @@ dev = [
     "pytest-cov>=6.0.0",
     "ruff>=0.8.0",
 ]
+competitor = [
+    "yt-dlp>=2024.0",
+]
 
 [tool.pytest.ini_options]
 addopts = "--basetemp=.pytest-tmp -p no:cacheprovider"

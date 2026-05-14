@@ -1,0 +1,99 @@
+/* ═══════════════════════════════════════════════════════════════
+ * guides.css — 辅助线 + 尺寸标注
+ * ═══════════════════════════════════════════════════════════════ */
+
+#guides {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.guide-h {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 0;
+  border-top: 1px dashed rgba(255, 50, 50, 0.5);
+}
+
+.guide-h::after {
+  content: attr(data-label);
+  position: absolute;
+  right: 8px;
+  top: 2px;
+  font-size: 11px;
+  color: rgba(255, 50, 50, 0.7);
+  font-family: monospace;
+}
+
+.guide-v {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 0;
+  border-left: 1px dashed rgba(50, 255, 50, 0.4);
+}
+
+.guide-v::after {
+  content: attr(data-label);
+  position: absolute;
+  top: 8px;
+  left: 4px;
+  font-size: 11px;
+  color: rgba(50, 255, 50, 0.6);
+  font-family: monospace;
+  white-space: nowrap;
+}
+
+.guide-safe {
+  position: absolute;
+  top: 60px;
+  left: 80px;
+  width: calc(1920px - 160px);
+  height: calc(880px - 84px);
+  border: 1px dashed rgba(255, 200, 50, 0.3);
+}
+
+.guide-safe::after {
+  content: attr(data-label);
+  position: absolute;
+  top: -16px;
+  left: 0;
+  font-size: 11px;
+  color: rgba(255, 200, 50, 0.5);
+  font-family: monospace;
+}
+
+#guides.hidden {
+  display: none;
+}
+
+/* ── 尺寸标注 ── */
+#sizeAnnotations {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 51;
+}
+
+.size-tag {
+  position: absolute;
+  background: rgba(59, 130, 246, 0.85);
+  color: #fff;
+  font-size: 11px;
+  font-family: monospace;
+  padding: 2px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+#sizeAnnotations.hidden {
+  display: none;
+}

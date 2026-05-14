@@ -1,38 +1,42 @@
-/* ── 短视频深色主题 (参考 remotion-templates 标准配色) ── */
+/* ── 短视频主题 — competitor-gold (深靛蓝底+金色强调) ── */
 
 export const theme = {
-  /* ── 背景 (模板标准: #111827 → #1f2937) ── */
-  bgPrimary:   '#111827',
-  bgSecondary: '#1f2937',
-  bgGradient:  'linear-gradient(180deg, #111827 0%, #1f2937 100%)',
-  bgCover:     'linear-gradient(135deg, #111827 0%, #1a2744 50%, #111827 100%)',
+  /* ── 背景 ── */
+  bgPrimary:   '#1a1a35',
+  bgSecondary: '#24243e',
+  bgGradient:  '#1a1a35',
+  bgCover:     '#1a1a35',
 
-  /* ── 蓝色主色 (模板标准: #3b82f6) ── */
-  blue:        '#3b82f6',
-  blueLight:   '#60a5fa',
-  blueMuted:   '#9ca3af',
+  /* ── 金色主色 ── */
+  accent:        '#FFD700',
+  accentLight:   '#FFE44D',
+  accentSecondary: '#00D2FF',
+  accentMuted:   '#a0a0b0',
 
   /* ── 文字 ── */
   textPrimary:   '#ffffff',
-  textSecondary: 'rgba(255, 255, 255, 0.8)',
+  textSecondary: 'rgba(255, 255, 255, 0.85)',
   textMuted:     'rgba(255, 255, 255, 0.25)',
 
   /* ── 表格 ── */
-  tableHeaderBg:   'rgba(59, 130, 246, 0.2)',
-  tableHeaderText: '#60a5fa',
-  tableRowOdd:     'rgba(255, 255, 255, 0.04)',
-  tableRowEven:    'rgba(255, 255, 255, 0.02)',
-  tableBorder:     'rgba(255, 255, 255, 0.06)',
+  tableHeaderBg:   'rgba(255, 215, 0, 0.12)',
+  tableHeaderText: '#FFE44D',
+  tableRowOdd:     'transparent',
+  tableRowEven:    'transparent',
+  tableBorder:     'rgba(255, 255, 255, 0.15)',
 
   /* ── 引用块 ── */
-  citationBg:     'rgba(255, 255, 255, 0.05)',
-  citationBorder: 'rgba(59, 130, 246, 0.5)',
-  citationText:   'rgba(255, 255, 255, 0.65)',
+  citationBg:     'rgba(255, 215, 0, 0.06)',
+  citationBorder: 'rgba(255, 215, 0, 0.5)',
+  citationText:   'rgba(255, 255, 255, 0.7)',
 
   /* ── 字幕条 ── */
-  subtitleBg:        'rgba(0, 0, 0, 0.6)',
+  subtitleBg:        '#1a1a35',
   subtitleText:      'rgba(255, 255, 255, 0.3)',
-  subtitleHighlight: '#ffffff',
+  subtitleHighlight: '#FFD700',
+
+  /* ── 来源水印 ── */
+  sourceText: 'rgba(255, 215, 0, 0.4)',
 
   /* ── 字体 ── */
   fontFamily: "'Inter', 'Noto Sans SC', system-ui, sans-serif",
@@ -46,7 +50,7 @@ export const theme = {
 
 /* ── 可复用的样式片段 ── */
 export const baseStyles = {
-  /** 幻灯片区域 — 全部居中，上下摞起来 */
+  /** 幻灯片区域 */
   slideArea: {
     width: theme.width,
     height: theme.slideHeight,
@@ -62,7 +66,7 @@ export const baseStyles = {
     textAlign: 'center' as const,
   },
 
-  /** 字幕条 — 半透明黑底 */
+  /** 字幕条 — 深色底 */
   subtitleArea: {
     width: theme.width,
     height: theme.subtitleHeight,
@@ -75,11 +79,11 @@ export const baseStyles = {
 
   /** 标题 — 居中大字 */
   heading: {
-    fontSize: 52,
+    fontSize: 48,
     fontWeight: 800 as const,
     color: theme.textPrimary,
     margin: 0,
-    marginBottom: 32,
+    marginBottom: 28,
     lineHeight: 1.2,
     textAlign: 'center' as const,
     letterSpacing: 0.5,

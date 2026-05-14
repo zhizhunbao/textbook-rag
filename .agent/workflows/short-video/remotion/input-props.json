@@ -2,385 +2,324 @@
   "slides": [
     {
       "type": "cover",
-      "title": "省提名PNP（Provincial Nominee Program）",
-      "subtitle": "CRS不够？加600分直接碾压邀请线",
-      "source": "https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/provincial-nominees.html"
-    },
-    {
-      "type": "evidence",
-      "title": "省提名直接加600分",
-      "table": {
-        "headers": [
-          "对比项",
-          "通用轮次",
-          "省提名轮次"
-        ],
-        "rows": [
-          [
-            "邀请线",
-            "**508**",
-            "**742**（含+600）"
-          ],
-          [
-            "你需要的裸分",
-            "**508**",
-            "**110-189**"
-          ],
-          [
-            "竞争人数",
-            "23.4万人池",
-            "264-423人"
-          ]
-        ]
-      },
-      "citation": "Provincial or territorial nomination: 600 additional points.",
-      "source": "https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/express-entry/check-score/crs-criteria.html"
+      "title": "没有SIN号寸步难行",
+      "source": "",
+      "subtitle": "到了加拿大第一件事",
+      "hookNumber": "9",
+      "hookUnit": "位数字决定一切"
     },
     {
       "type": "argument",
-      "title": "600分什么概念？",
+      "title": "SIN是什么",
+      "source": "https://www.canada.ca/en/employment-social-development/services/sin/apply.html",
       "table": {
         "headers": [
-          "CRS项目",
-          "最高分"
-        ],
-        "rows": [
-          [
-            "核心分（年龄+学历+语言+工作）",
-            "500"
-          ],
-          [
-            "技能转化分",
-            "100"
-          ],
-          [
-            "附加分 — **省提名**",
-            "**600**"
-          ]
-        ]
-      },
-      "citation": "Provincial or territorial nomination: 600",
-      "source": "https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/express-entry/check-score/crs-criteria.html"
-    },
-    {
-      "type": "evidence",
-      "title": "真的有这么大差距吗？",
-      "table": {
-        "headers": [
-          "轮次",
-          "日期",
-          "类型",
-          "邀请人数",
-          "最低CRS"
-        ],
-        "rows": [
-          [
-            "#403",
-            "2026-03-16",
-            "PNP专属",
-            "362",
-            "**742**"
-          ],
-          [
-            "#399",
-            "2026-03-02",
-            "PNP专属",
-            "264",
-            "**710**"
-          ],
-          [
-            "#400",
-            "2026-03-03",
-            "CEC通用",
-            "4,000",
-            "**508**"
-          ]
-        ]
-      },
-      "citation": "We'll continue to invite candidates with a provincial or territorial nomination through general and Provincial Nominee Program-specific rounds.",
-      "source": "https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/express-entry/rounds-invitations.html"
-    },
-    {
-      "type": "argument",
-      "title": "省提名到底是什么？",
-      "table": {
-        "headers": [
-          "要点",
+          "要素",
           "说明"
         ],
         "rows": [
           [
-            "本质",
-            "省里挑需要的人才，走联邦通道拿永居"
+            "全称",
+            "Social Insurance Number"
           ],
           [
-            "注意",
-            "**Quebec和Nunavut没有PNP**"
+            "位数",
+            "9位数字"
+          ],
+          [
+            "签发方",
+            "Service Canada"
+          ],
+          [
+            "本质",
+            "加拿大的税务身份证"
           ]
         ]
-      },
-      "citation": "The Provincial Nominee Program (PNP) lets provinces and territories nominate people who have the skills, education and work experience to help their economy.",
-      "source": "https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/provincial-nominees.html"
+      }
     },
     {
       "type": "evidence",
-      "title": "742分听着也很高？",
+      "title": "没有SIN你做不了这三件事",
+      "source": "https://www.canada.ca/content/dam/ircc/migration/ircc/english/pdf/pub/workbook-national-pdf",
       "table": {
         "headers": [
-          "路径",
-          "你需要的裸分",
-          "竞争人数"
+          "场景",
+          "没有SIN的后果"
         ],
         "rows": [
           [
-            "PNP轮次（自带+600）",
-            "**110-189**",
-            "264-423人"
+            "找工作",
+            "雇主无法合法雇你"
           ],
           [
-            "CEC通用轮次",
-            "**508**",
-            "23.4万人池子"
+            "报税",
+            "无法申报，损失退税"
+          ],
+          [
+            "领福利",
+            "EI失业保险、学生贷款全拿不到"
           ]
         ]
-      },
-      "citation": "CRS score distribution: 601-1200 range has only 472 candidates out of 234,452 total in the pool.",
-      "source": "https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/express-entry/rounds-invitations.html"
+      }
     },
     {
       "type": "argument",
-      "title": "那怎么申请？两条路",
+      "title": "怎么办SIN",
+      "source": "https://www.canada.ca/en/employment-social-development/services/sin/apply.html",
       "table": {
         "headers": [
-          "你的情况",
-          "走哪条路",
-          "处理时间",
-          "费用"
+          "方式",
+          "速度",
+          "注意"
         ],
         "rows": [
           [
-            "符合EE（快速通道）",
-            "EE关联类",
-            "**约7个月**",
-            "**$1,590起**"
+            "**在线申请**",
+            "最快",
+            "sin-nas.canada.ca"
           ],
           [
-            "不符合EE",
-            "纸质申请",
-            "**约13个月**",
-            "另行查询"
+            "现场办理",
+            "当场出号",
+            "去Service Canada Centre"
+          ],
+          [
+            "📌 开学周校内",
+            "当场出号",
+            "学校设专门办理点"
+          ],
+          [
+            "邮寄",
+            "最慢",
+            "需寄原件"
           ]
         ]
-      },
-      "citation": "Processing time About 7 months. Starting from: $1,590 increased April 30, 2026.",
-      "source": "https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/provincial-nominees/express-entry.html"
+      }
     },
     {
-      "type": "evidence",
-      "title": "费用刚涨：2026年4月30日起$1,590",
+      "type": "argument",
+      "title": "留学生必须知道的两个坑",
+      "source": "https://www.canada.ca/en/employment-social-development/services/sin/protection.html",
       "table": {
         "headers": [
-          "路径",
-          "处理时间",
-          "费用"
+          "坑",
+          "说明"
         ],
         "rows": [
           [
-            "EE关联类",
-            "约7个月",
-            "$1,590起（2026/4/30涨价）"
+            "9开头有效期",
+            "SIN跟学签同步过期，续了学签必须续SIN"
           ],
           [
-            "非EE类",
-            "约13个月",
-            "另行查询"
+            "SIN不是身份证",
+            "不能随便给别人，房东要SIN可以拒绝"
           ]
         ]
-      },
-      "citation": "Starting from: $1,590 increased April 30, 2026.",
-      "source": "https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/provincial-nominees/express-entry.html"
+      }
     },
     {
       "type": "cta",
-      "title": "你在哪个省？",
-      "content": "你的职业在不在那个省的提名清单上？评论区告诉我。",
-      "source": "https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/provincial-nominees.html"
-    },
-    {
-      "type": "preview",
-      "title": "下期预告",
-      "content": "哪些省的提名不需要Job Offer",
-      "source": "https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/provincial-nominees.html"
+      "title": "你的SIN办了吗",
+      "source": "",
+      "content": "评论区告诉我你到加拿大多久了，SIN办了没"
     }
   ],
   "timestamps": [
     {
       "index": 1,
       "start": 0.15,
-      "end": 2.31,
-      "text": "CRS不够怎么办",
+      "end": 3.759,
+      "text": "到了加拿大，安顿好住处之后，有一件事必须尽快办",
       "slide_index": 0
     },
     {
       "index": 2,
-      "start": 2.61,
-      "end": 10.026,
-      "text": "省提名直接加600分 通用邀请线508过不去 加完742照样被邀",
-      "slide_index": 1
+      "start": 4.059,
+      "end": 7.38,
+      "text": "一个9位数字的号码，没有它你连工作都找不到",
+      "slide_index": 0
     },
     {
       "index": 3,
-      "start": 10.826,
-      "end": 12.662,
-      "text": "600分什么概念",
-      "slide_index": 2
+      "start": 7.68,
+      "end": 10.857,
+      "text": "这个号叫SIN，今天讲清楚怎么办、有什么坑",
+      "slide_index": 0
     },
     {
       "index": 4,
-      "start": 12.962,
-      "end": 16.958,
-      "text": "CRS满分500 省提名额外加600",
-      "slide_index": 2
+      "start": 11.657,
+      "end": 15.362,
+      "text": "SIN全称Social Insurance Number，社会保险号",
+      "slide_index": 1
     },
     {
       "index": 5,
-      "start": 17.258,
-      "end": 21.47,
-      "text": "你裸分哪怕只有110 加完也能上710",
-      "slide_index": 2
+      "start": 15.662,
+      "end": 17.773,
+      "text": "你可以理解为加拿大的税务身份证",
+      "slide_index": 1
     },
     {
       "index": 6,
-      "start": 22.27,
-      "end": 24.214,
-      "text": "真有这么大差距吗",
-      "slide_index": 3
+      "start": 18.073,
+      "end": 20.91,
+      "text": "没有它，雇主没法给你发工资，你也没法报税",
+      "slide_index": 1
     },
     {
       "index": 7,
-      "start": 24.514,
-      "end": 31.822,
-      "text": "今年3月16号PNP专属轮次 362人获邀 最低CRS742",
-      "slide_index": 3
+      "start": 21.21,
+      "end": 24.535,
+      "text": "翻译一下，没有SIN等于在加拿大没有经济身份",
+      "slide_index": 1
     },
     {
       "index": 8,
-      "start": 32.122,
-      "end": 37.99,
-      "text": "同一天CEC通用轮次 邀请线508 4000人抢",
-      "slide_index": 3
+      "start": 25.335,
+      "end": 28.22,
+      "text": "具体来说，没有SIN你做不了三件事",
+      "slide_index": 2
     },
     {
       "index": 9,
-      "start": 38.29,
-      "end": 40.09,
-      "text": "差距一目了然",
-      "slide_index": 3
+      "start": 28.52,
+      "end": 32.389,
+      "text": "第一，找工作，雇主没有你的SIN就没法给你发工资",
+      "slide_index": 2
     },
     {
       "index": 10,
-      "start": 40.89,
-      "end": 42.942,
-      "text": "省提名到底是什么",
-      "slide_index": 4
+      "start": 32.689,
+      "end": 38.086,
+      "text": "第二，报税，留学生报税每年能退几百刀，没SIN一分拿不到",
+      "slide_index": 2
     },
     {
       "index": 11,
-      "start": 43.242,
-      "end": 47.958,
-      "text": "省里面挑他们需要的人才 帮你走联邦通道拿永居",
-      "slide_index": 4
+      "start": 38.386,
+      "end": 43.879,
+      "text": "第三，所有政府福利，失业保险、学生贷款，全都绑定SIN",
+      "slide_index": 2
     },
     {
       "index": 12,
-      "start": 48.258,
-      "end": 54.63,
-      "text": "但是注意 Quebec和Nunavut没有省提名 想去这两个地方得走别的路",
-      "slide_index": 4
+      "start": 44.679,
+      "end": 47.235,
+      "text": "办SIN很简单，三种方式",
+      "slide_index": 3
     },
     {
       "index": 13,
-      "start": 55.43,
-      "end": 58.13,
-      "text": "742分听着也很高啊",
-      "slide_index": 5
+      "start": 47.535,
+      "end": 49.917,
+      "text": "推荐在线申请，最快",
+      "slide_index": 3
     },
     {
       "index": 14,
-      "start": 58.43,
-      "end": 59.834,
-      "text": "其实不高",
-      "slide_index": 5
+      "start": 50.217,
+      "end": 53.463,
+      "text": "也可以直接去Service Canada现场办，当场拿号",
+      "slide_index": 3
     },
     {
       "index": 15,
-      "start": 60.134,
-      "end": 66.11,
-      "text": "省提名自带600分 你基础分只需要110到189就够了",
-      "slide_index": 5
+      "start": 53.763,
+      "end": 60.461,
+      "text": "还有一个很多人不知道的，开学第一周学校通常会在校园里设专门的SIN办理点",
+      "slide_index": 3
     },
     {
       "index": 16,
-      "start": 66.41,
-      "end": 73.754,
-      "text": "而通用轮次你得裸考508 23.4万人池子 难度完全不在一个级别",
-      "slide_index": 5
+      "start": 60.761,
+      "end": 64.157,
+      "text": "不用跑Service Canada，校内直接办，非常方便",
+      "slide_index": 3
     },
     {
       "index": 17,
-      "start": 74.554,
-      "end": 76.066,
-      "text": "那怎么申请",
-      "slide_index": 6
+      "start": 64.457,
+      "end": 67.785,
+      "text": "但要注意，留学生的学签上必须有may work字样",
+      "slide_index": 3
     },
     {
       "index": 18,
-      "start": 76.366,
-      "end": 77.734,
-      "text": "两条路",
-      "slide_index": 6
+      "start": 68.085,
+      "end": 72.751,
+      "text": "如果没有这几个字，你得先联系IRCC改学签，否则SIN办不下来",
+      "slide_index": 3
     },
     {
       "index": 19,
-      "start": 78.034,
-      "end": 85.738,
-      "text": "符合快速通道的走EE关联类 大概7个月 1590刀起 4月30号刚涨的价",
-      "slide_index": 6
+      "start": 73.551,
+      "end": 75.238,
+      "text": "留学生有两个坑必须知道",
+      "slide_index": 4
     },
     {
       "index": 20,
-      "start": 86.538,
-      "end": 92.694,
-      "text": "不符合快速通道的走纸质申请 时间长一些 大概要等13个月",
-      "slide_index": 7
+      "start": 75.538,
+      "end": 80.978,
+      "text": "第一，你的SIN以9开头，意味着它有有效期，跟学签同步",
+      "slide_index": 4
     },
     {
       "index": 21,
-      "start": 93.494,
-      "end": 95.042,
-      "text": "你在哪个省",
-      "slide_index": 8
+      "start": 81.278,
+      "end": 85.412,
+      "text": "学签续了，SIN也必须去续，否则雇主无法继续雇你",
+      "slide_index": 4
     },
     {
       "index": 22,
-      "start": 95.342,
-      "end": 98.798,
-      "text": "你的职业在不在那个省的提名清单上",
-      "slide_index": 8
+      "start": 85.712,
+      "end": 89.435,
+      "text": "第二，SIN不是身份证，不能随便给别人",
+      "slide_index": 4
     },
     {
       "index": 23,
-      "start": 99.098,
-      "end": 100.97,
-      "text": "评论区告诉我",
-      "slide_index": 8
+      "start": 89.735,
+      "end": 92.923,
+      "text": "房东要你的SIN，可以拒绝，这是你的合法权利",
+      "slide_index": 4
     },
     {
       "index": 24,
-      "start": 101.77,
-      "end": 106.522,
-      "text": "下期聊一个更实际的问题 哪些省的提名不需要Job Offer",
-      "slide_index": 9
+      "start": 93.223,
+      "end": 97.661,
+      "text": "只有三种情况必须给，入职后给雇主，银行开户，还有报税",
+      "slide_index": 4
+    },
+    {
+      "index": 25,
+      "start": 98.461,
+      "end": 101.322,
+      "text": "到了加拿大，第一周就把SIN办了",
+      "slide_index": 5
+    },
+    {
+      "index": 26,
+      "start": 101.622,
+      "end": 104.717,
+      "text": "在线申请最快，现场去Service Canada也行",
+      "slide_index": 5
+    },
+    {
+      "index": 27,
+      "start": 105.017,
+      "end": 107.649,
+      "text": "评论区告诉我你的情况，帮你判断还需要准备什么",
+      "slide_index": 5
+    },
+    {
+      "index": 28,
+      "start": 107.949,
+      "end": 111.558,
+      "text": "关注我，下期讲加拿大银行开户怎么选最省钱",
+      "slide_index": 5
     }
   ],
   "audioUrl": "/public/audio.wav"

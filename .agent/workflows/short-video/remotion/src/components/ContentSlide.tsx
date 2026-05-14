@@ -37,7 +37,7 @@ export const ContentSlide: React.FC<{ slide: SlideData }> = ({ slide }) => {
           }}>
             {slide.points.map((p, i) => (
               <li key={i} style={{ marginBottom: 4 }}>
-                <span dangerouslySetInnerHTML={{ __html: boldToBlue(p) }} />
+                <span dangerouslySetInnerHTML={{ __html: boldToAccent(p) }} />
               </li>
             ))}
           </ul>
@@ -48,12 +48,12 @@ export const ContentSlide: React.FC<{ slide: SlideData }> = ({ slide }) => {
           <p style={{
             fontSize: isCta ? 42 : 36,
             lineHeight: 1.7,
-            color: isCta ? theme.blueLight : theme.textSecondary,
+            color: isCta ? theme.accentLight : theme.textSecondary,
             fontWeight: isCta ? 700 : 400,
             margin: 0,
             textAlign: 'center',
           }}>
-            <span dangerouslySetInnerHTML={{ __html: boldToBlue(slide.content) }} />
+            <span dangerouslySetInnerHTML={{ __html: boldToAccent(slide.content) }} />
           </p>
         )}
       </div>
@@ -76,16 +76,12 @@ export const ContentSlide: React.FC<{ slide: SlideData }> = ({ slide }) => {
         </div>
       )}
 
-      {/* 来源 URL — 显示完整，放在最底部 */}
+      {/* 来源 URL — 右上角水印 */}
       {slide.source && (
         <div style={{
-          fontSize: 18,
-          color: 'rgba(255, 255, 255, 0.35)',
-          marginTop: 12,
-          textAlign: 'center',
-          wordBreak: 'break-all' as const,
-          maxWidth: '90%',
-          lineHeight: 1.4,
+          position: 'absolute', top: 20, right: 30,
+          fontSize: 22,
+          color: theme.sourceText,
           fontFamily: "'Inter', monospace",
         }}>
           {slide.source}
@@ -104,8 +100,7 @@ const DataTable: React.FC<{ headers: string[]; rows: string[][] }> = ({ headers,
   return (
     <table style={{
       width: '100%',
-      borderCollapse: 'separate',
-      borderSpacing: '0 6px',
+      borderCollapse: 'collapse',
     }}>
       <thead>
         <tr>
@@ -115,10 +110,9 @@ const DataTable: React.FC<{ headers: string[]; rows: string[][] }> = ({ headers,
               color: theme.tableHeaderText,
               padding: pad, fontSize: dense ? 22 : 26,
               fontWeight: 700, textAlign: 'center',
-              ...(i === 0 ? { borderRadius: '8px 0 0 8px' } : {}),
-              ...(i === headers.length - 1 ? { borderRadius: '0 8px 8px 0' } : {}),
+              borderBottom: `2px solid ${theme.tableBorder}`,
             }}>
-              {h}
+              <span dangerouslySetInnerHTML={{ __html: boldToAccent(h) }} />
             </th>
           ))}
         </tr>
@@ -128,14 +122,14 @@ const DataTable: React.FC<{ headers: string[]; rows: string[][] }> = ({ headers,
           <tr key={ri}>
             {row.map((cell, ci) => (
               <td key={ci} style={{
-                background: ri % 2 === 0 ? theme.tableRowOdd : theme.tableRowEven,
                 color: theme.textSecondary,
                 padding: pad, fontSize: fs,
                 textAlign: 'center',
-                ...(ci === 0 ? { borderRadius: '6px 0 0 6px' } : {}),
-                ...(ci === row.length - 1 ? { borderRadius: '0 6px 6px 0' } : {}),
+                borderBottom: ri < rows.length - 1
+                  ? `1px solid ${theme.tableBorder}`
+                  : 'none',
               }}>
-                <span dangerouslySetInnerHTML={{ __html: boldToBlue(cell) }} />
+                <span dangerouslySetInnerHTML={{ __html: boldToAccent(cell) }} />
               </td>
             ))}
           </tr>
@@ -145,10 +139,10 @@ const DataTable: React.FC<{ headers: string[]; rows: string[][] }> = ({ headers,
   );
 };
 
-/** **text** → 蓝色加粗 */
-function boldToBlue(text: string): string {
+/** **text** → 金色加粗 */
+function boldToAccent(text: string): string {
   return text.replace(
     /\*\*(.+?)\*\*/g,
-    `<strong style="color:${theme.blueLight};font-weight:800">$1</strong>`,
+    `<strong style="color:${theme.accentLight};font-weight:800">$1</strong>`,
   );
 }

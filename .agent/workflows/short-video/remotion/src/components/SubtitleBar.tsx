@@ -4,16 +4,8 @@ import { theme, baseStyles } from '../theme';
 import type { TimestampEntry } from '../types';
 
 /**
- * EE 风格字幕条 — 整句显示
- *
- * - 底部 200px 独立区域
- * - 显示当前完整句子，白色大字居中
- * - 长字幕自动换行
- * - 显示时自动去除中文标点
+ * 字幕条 — 每条 timestamp 直接显示，自适应字号
  */
-
-const MAX_CHARS_PER_LINE = 16; // 每行最多字符数
-
 export const SubtitleBar: React.FC<{
   timestamps: TimestampEntry[];
 }> = ({ timestamps }) => {
@@ -21,79 +13,45 @@ export const SubtitleBar: React.FC<{
   const { fps } = useVideoConfig();
   const currentTimeMs = (frame / fps) * 1000;
 
-  // 找到当前应显示的句子
   const segment = getCurrentSegment(timestamps, currentTimeMs);
   if (!segment) return <div style={baseStyles.subtitleArea} />;
 
-  // 去标点
-  const cleanText = removePunctuation(segment.text);
-
-  // 将文本按字符数分行
-  const lines = splitTextIntoLines(cleanText, MAX_CHARS_PER_LINE);
+  const displayText = formatSubtitle(segment.text);
+  const fontSize = 38; // 固定字号，避免字幕忽大忽小
 
   return (
     <div style={baseStyles.subtitleArea}>
       <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 8,
-        padding: '0 80px',
+        fontSize,
+        fontWeight: 700,
+        fontFamily: theme.fontFamily,
+        color: theme.subtitleHighlight,
+        lineHeight: 1.4,
+        textAlign: 'center',
+        padding: '0 60px',
+        maxWidth: '100%',
       }}>
-        {lines.map((line, i) => (
-          <div
-            key={`${segment.index}-${i}`}
-            style={{
-              fontSize: 52,
-              fontWeight: 700,
-              fontFamily: theme.fontFamily,
-              color: theme.subtitleHighlight,
-              lineHeight: 1.3,
-              textAlign: 'center',
-            }}
-          >
-            {line}
-          </div>
-        ))}
+        {displayText}
       </div>
     </div>
   );
 };
 
-/**
- * 将文本按字符数拆分成多行
- */
-function splitTextIntoLines(text: string, maxChars: number): string[] {
-  const lines: string[] = [];
-  let remaining = text;
-
-  while (remaining.length > 0) {
-    if (remaining.length <= maxChars) {
-      lines.push(remaining);
-      break;
-    }
-    // 在 maxChars 处截断
-    lines.push(remaining.slice(0, maxChars));
-    remaining = remaining.slice(maxChars);
-  }
-  return lines;
+/** 数字/英文与中文之间加空格 */
+function formatSubtitle(text: string): string {
+  let s = text.replace(/\*\*(.+?)\*\*/g, '$1');
+  s = s.replace(/[，。！？、；：""''（）《》【】…—·\u3000]/g, '');
+  s = s.replace(/([\u4e00-\u9fff])([A-Za-z0-9$])/g, '$1 $2');
+  s = s.replace(/([A-Za-z0-9%])(?=[\u4e00-\u9fff])/g, '$1 ');
+  return s;
 }
 
-/**
- * 根据当前时间找到应显示的字幕段
- * 字幕持续到下一条出现（无空白间隙）
- */
 function getCurrentSegment(
   timestamps: TimestampEntry[],
   currentTimeMs: number,
 ): TimestampEntry | null {
   if (timestamps.length === 0) return null;
-
-  // 还没开始
   if (currentTimeMs < timestamps[0].start * 1000) return null;
-
-  // 找最后一个 start <= currentTime 的段
   let result: TimestampEntry | null = null;
   for (const ts of timestamps) {
     if (ts.start * 1000 <= currentTimeMs) {
@@ -103,12 +61,4 @@ function getCurrentSegment(
     }
   }
   return result;
-}
-
-/**
- * 去除中文标点（保留英文和数字）
- * 语音保留标点控制语调，字幕显示更干净
- */
-function removePunctuation(text: string): string {
-  return text.replace(/[，。！？、；：""''（）《》【】…—·\u3000]/g, '');
 }

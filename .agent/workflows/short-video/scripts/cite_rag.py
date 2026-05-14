@@ -360,7 +360,7 @@ def main():
             "page": chunk.get("page_number", 0),
             "source_url": chunk.get("source_url", ""),
             "md_path": chunk.get("md_path", ""),
-            "snippet": chunk.get("snippet", ""),
+            "content": chunk.get("full_content", "") or chunk.get("snippet", ""),
             "score": chunk.get("score", 0),
             "vector_score": chunk.get("vector_score", 0),
             "bm25_score": chunk.get("bm25_score", 0),

@@ -1,15 +1,17 @@
 #!/usr/bin/env node
 /**
- * render.mjs — 短视频渲染入口
+ * render.mjs — 短视频渲染入口 (v2 — storyline.md 唯一数据源)
  *
  * 用法:
  *   node render.mjs --data ../../../../data/short-videos/{slug}
  *
  * 功能:
- *   1. 从 data 目录读取 slides.json / timestamps.json / script.txt
- *   2. 复制 narration.wav 到 public/audio.wav
- *   3. 构建 props 并写入临时文件
+ *   1. 从 storyline.md 自动解析 slides + narration 台词
+ *   2. 匹配 timestamps.json 的 slide_index
+ *   3. 复制 narration.wav 到 public/audio.wav
  *   4. 调用 npx remotion render 输出 final.mp4
+ *
+ * 兼容: 如无 storyline.md 则回退到 slides.json + script.txt (旧流程)
  */
 
 import { readFileSync, copyFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
@@ -24,7 +26,7 @@ const args = process.argv.slice(2);
 const dataIdx = args.indexOf('--data');
 if (dataIdx === -1 || !args[dataIdx + 1]) {
   console.error('用法: node render.mjs --data <data-dir>');
-  console.error('示例: node render.mjs --data ../../../../data/short-videos/pnp');
+  console.error('示例: node render.mjs --data ../../../../data/short-videos/sp-cost-quick');
   process.exit(1);
 }
 
@@ -34,116 +36,195 @@ const outputDir = resolve(dataDir, 'output');
 
 console.log(`📂 数据目录: ${dataDir}`);
 
-// ── 验证必要文件 ──
-const slidesPath = join(dataDir, 'slides.json');
+// ── 解析 storyline.md ──────────────────────────────────────
+
+function parseStoryline(mdText) {
+  const slides = [];
+  const narrationLines = [];  // 每行台词 + slide_index
+  let text = mdText.replace(/\r\n/g, '\n').trim();
+
+  // 截断引用汇总
+  const summaryIdx = text.search(/^## 📋/m);
+  if (summaryIdx > -1) text = text.slice(0, summaryIdx);
+
+  // 按 --- 分页
+  const pages = text.split(/^---$/m).map(p => p.trim()).filter(Boolean);
+
+  let slideIndex = -1;  // 第一页会变成 0
+
+  for (const page of pages) {
+    // 检测 ## [type] 标题
+    const typeMatch = page.match(/^## \[(\w+)\]\s*(.*)/m);
+    if (!typeMatch) {
+      // 可能是元数据区 (# H1 + > metadata)，跳过
+      continue;
+    }
+
+    slideIndex++;
+    const type = typeMatch[1];    // cover, argument, evidence, cta, preview
+    const title = typeMatch[2].trim();
+
+    const slide = { type, title, source: '' };
+
+    // 提取 **副标题**
+    const subMatch = page.match(/\*\*副标题\*\*:\s*(.+)/);
+    if (subMatch) slide.subtitle = subMatch[1].trim();
+
+    // 提取 **钩子数字** / **钩子单位**
+    const hookNumMatch = page.match(/\*\*钩子数字\*\*:\s*(.+)/);
+    if (hookNumMatch) slide.hookNumber = hookNumMatch[1].trim();
+    const hookUnitMatch = page.match(/\*\*钩子单位\*\*:\s*(.+)/);
+    if (hookUnitMatch) slide.hookUnit = hookUnitMatch[1].trim();
+
+    // 提取 **内容**
+    const contentMatch = page.match(/\*\*内容\*\*:\s*(.+)/);
+    if (contentMatch) slide.content = contentMatch[1].trim();
+
+    // **引用** 是作者参考文本，不显示在视频中，跳过
+
+    // 提取 **来源** URL
+    const srcMatch = page.match(/\*\*来源\*\*:\s*(https?:\/\/\S+)/);
+    if (srcMatch) slide.source = srcMatch[1].trim();
+
+    // 提取表格
+    const tableLines = page.split('\n').filter(l => l.trim().startsWith('|'));
+    if (tableLines.length >= 3) {
+      const parseRow = (line) => line.split('|').filter(s => s.trim()).map(s => s.trim());
+      const headers = parseRow(tableLines[0]);
+      const rows = tableLines.slice(2).map(parseRow).filter(r => r.length > 0); // skip separator
+      if (rows.length > 0) slide.table = { headers, rows };
+    }
+
+    // 提取 **台词**: 块
+    const narrationMatch = page.match(/\*\*台词\*\*:\s*\n([\s\S]*?)(?=\n\*\*|\n---|\n##|$)/);
+    if (narrationMatch) {
+      const lines = narrationMatch[1].split('\n').map(l => l.trim()).filter(Boolean);
+      let isFirst = true;
+      for (const line of lines) {
+        narrationLines.push({ text: line, slide_index: slideIndex, is_first: isFirst });
+        isFirst = false;
+      }
+    }
+
+    slides.push(slide);
+  }
+
+  return { slides, narrationLines };
+}
+
+// ── 主流程 ──────────────────────────────────────────────────
+
+const storylinePath = join(dataDir, 'storyline.md');
+const slidesJsonPath = join(dataDir, 'slides.json');
 const tsPath = join(dataDir, 'narration', 'timestamps.json');
 const audioPath = join(dataDir, 'narration', 'narration.wav');
 
-for (const [name, path] of [['slides.json', slidesPath], ['timestamps.json', tsPath], ['narration.wav', audioPath]]) {
+// 验证音频和时间戳
+for (const [name, path] of [['timestamps.json', tsPath], ['narration.wav', audioPath]]) {
   if (!existsSync(path)) {
     console.error(`❌ 缺少文件: ${name} (${path})`);
     process.exit(1);
   }
 }
 
-// ── 读取数据 ──
-const slides = JSON.parse(readFileSync(slidesPath, 'utf-8'));
+let slides;
+let narrationLines = null;
+
+if (existsSync(storylinePath)) {
+  // ── v2: 从 storyline.md 解析 ──
+  console.log('📖 使用 storyline.md (v2 模式)');
+  const md = readFileSync(storylinePath, 'utf-8');
+  const parsed = parseStoryline(md);
+  slides = parsed.slides;
+  narrationLines = parsed.narrationLines;
+  console.log(`   ${slides.length} slides, ${narrationLines.length} narration lines`);
+} else if (existsSync(slidesJsonPath)) {
+  // ── v1: 从 slides.json 解析 (回退) ──
+  console.log('⚠️  storyline.md 不存在，回退到 slides.json (v1 模式)');
+  const raw = JSON.parse(readFileSync(slidesJsonPath, 'utf-8'));
+  slides = raw.slides || raw;
+} else {
+  console.error('❌ 缺少 storyline.md 或 slides.json');
+  process.exit(1);
+}
+
+// ── 读取 timestamps 并匹配 slide_index ──
 const timestamps = JSON.parse(readFileSync(tsPath, 'utf-8'));
 
-// ── 读取 script.txt 并计算 slide_index 映射 ──
-const scriptPath = join(dataDir, 'script.txt');
-if (existsSync(scriptPath)) {
-  const scriptLines = readFileSync(scriptPath, 'utf-8')
-    .split(/\r?\n/)
-    .filter(l => l.trim() && !l.startsWith('#'));  // 忽略空行和标题
+if (narrationLines) {
+  // storyline 模式: 直接从台词行匹配 slide_index
+  const cleanForMatch = (s) => s.replace(/[，。！？、；：""''（）《》【】…—·\u3000\s]/g, '');
 
-  // 解析 script.txt: 带 | 的行标记新幻灯片开始
-  // 构建 lineIndex → slideIndex 映射
-  let slideIdx = 0;
-  const lineSlideMap = []; // lineSlideMap[i] = 该行对应的 slide index
-  for (const line of scriptLines) {
-    if (line.includes('|')) {
-      slideIdx = lineSlideMap.length === 0 ? 0 : slideIdx + 1;
-    }
-    lineSlideMap.push(slideIdx);
-  }
-
-  // 提取每行的纯文本 (去除 | 后面的标记)
-  const lineTexts = scriptLines.map(l => {
-    let text = l.split('|')[0].trim();
-    // 去掉标点以便模糊匹配
-    return text.replace(/[，。！？、；：""''（）《》【】…—·\u3000]/g, '');
-  });
-
-  // 无空格版本用于更可靠的匹配 (TTS 会把标点变成空格)
-  const lineTextsNoSpace = lineTexts.map(t => t.replace(/\s+/g, ''));
-
-  // 给每个 timestamp 匹配 slide_index
   for (const ts of timestamps) {
-    if (ts.slide_index !== undefined) continue; // 已有则跳过
-    const cleanTs = ts.text.replace(/[，。！？、；：""''（）《》【】…—·\u3000]/g, '');
-    const cleanTsNoSpace = cleanTs.replace(/\s+/g, '');
-    // 尝试精确匹配 (含空格)
+    const cleanTs = cleanForMatch(ts.text);
     let matched = false;
-    for (let i = 0; i < lineTexts.length; i++) {
-      if (lineTexts[i] === cleanTs) {
-        ts.slide_index = lineSlideMap[i];
+
+    for (const nl of narrationLines) {
+      const cleanNl = cleanForMatch(nl.text);
+      if (cleanNl === cleanTs || cleanNl.includes(cleanTs) || cleanTs.includes(cleanNl)) {
+        ts.slide_index = nl.slide_index;
         matched = true;
         break;
       }
     }
-    // 无空格精确匹配
-    if (!matched) {
-      for (let i = 0; i < lineTextsNoSpace.length; i++) {
-        if (lineTextsNoSpace[i] === cleanTsNoSpace) {
-          ts.slide_index = lineSlideMap[i];
-          matched = true;
-          break;
-        }
-      }
-    }
-    // 模糊匹配: 无空格 includes
-    if (!matched) {
-      for (let i = 0; i < lineTextsNoSpace.length; i++) {
-        if (lineTextsNoSpace[i].includes(cleanTsNoSpace) || cleanTsNoSpace.includes(lineTextsNoSpace[i])) {
-          ts.slide_index = lineSlideMap[i];
-          matched = true;
-          break;
-        }
-      }
-    }
+
     if (!matched) {
       // 回退: 使用上一个 timestamp 的 slide_index
-      const prevTs = timestamps[timestamps.indexOf(ts) - 1];
-      ts.slide_index = prevTs?.slide_index ?? 0;
+      const idx = timestamps.indexOf(ts);
+      ts.slide_index = idx > 0 ? timestamps[idx - 1].slide_index : 0;
     }
   }
-  console.log('🗂️  slide_index 映射完成:');
-  const slideMap = {};
-  for (const ts of timestamps) {
-    if (!slideMap[ts.slide_index]) slideMap[ts.slide_index] = [];
-    slideMap[ts.slide_index].push(ts.text.substring(0, 15) + '...');
-  }
-  for (const [idx, texts] of Object.entries(slideMap)) {
-    console.log(`   Slide ${idx}: ${texts.join(' | ')}`);
-  }
 } else {
-  console.warn('⚠️  未找到 script.txt，无法计算 slide_index，幻灯片将不会切换');
+  // v1 回退: 从 script.txt 匹配 (旧逻辑)
+  const scriptPath = join(dataDir, 'script.txt');
+  if (existsSync(scriptPath)) {
+    const scriptLines = readFileSync(scriptPath, 'utf-8')
+      .split(/\r?\n/)
+      .filter(l => l.trim() && !l.startsWith('#'));
+    let slideIdx = 0;
+    const lineSlideMap = [];
+    for (const line of scriptLines) {
+      if (line.includes('|')) slideIdx = lineSlideMap.length === 0 ? 0 : slideIdx + 1;
+      lineSlideMap.push(slideIdx);
+    }
+    const lineTexts = scriptLines.map(l => l.split('|')[0].trim().replace(/[，。！？、；：""''（）《》【】…—·\u3000]/g, ''));
+    for (const ts of timestamps) {
+      const cleanTs = ts.text.replace(/[，。！？、；：""''（）《》【】…—·\u3000\s]/g, '');
+      for (let i = 0; i < lineTexts.length; i++) {
+        if (lineTexts[i].replace(/\s/g, '') === cleanTs) {
+          ts.slide_index = lineSlideMap[i];
+          break;
+        }
+      }
+    }
+  }
+}
+
+// 日志: slide_index 映射
+console.log('🗂️  slide_index 映射:');
+const slideMap = {};
+for (const ts of timestamps) {
+  const si = ts.slide_index ?? 0;
+  if (!slideMap[si]) slideMap[si] = [];
+  slideMap[si].push(ts.text.substring(0, 15) + '...');
+}
+for (const [idx, texts] of Object.entries(slideMap)) {
+  const slideTitle = slides[idx]?.title || '???';
+  console.log(`   Slide ${idx} [${slideTitle.substring(0, 12)}]: ${texts.length} lines`);
 }
 
 // ── 准备 public/ ──
 mkdirSync(publicDir, { recursive: true });
 mkdirSync(outputDir, { recursive: true });
 
-// 复制音频到 public/ (Remotion staticFile 需要)
 copyFileSync(audioPath, join(publicDir, 'audio.wav'));
 console.log('🔊 音频已复制到 public/audio.wav');
 
 // ── 构建 props ──
 const props = {
-  slides: slides.slides || slides,
+  slides,
   timestamps,
-  audioUrl: '/public/audio.wav',  // staticFile('audio.wav') 在渲染时会解析
+  audioUrl: '/public/audio.wav',
 };
 
 const propsPath = join(__dirname, 'input-props.json');

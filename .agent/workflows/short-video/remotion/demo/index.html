@@ -3,15 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Short Video Template Gallery — 模板画廊</title>
+  <title>Layout Lab — 模板画廊</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <!-- ── 模块化 CSS ── -->
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/controls.css">
+  <link rel="stylesheet" href="css/canvas.css">
+  <link rel="stylesheet" href="css/slides.css">
+  <link rel="stylesheet" href="css/guides.css">
 </head>
 <body>
   <!-- ── 控制面板 ── -->
   <div id="controls">
-    <h2>🎬 模板画廊</h2>
+    <h2>🎬 Layout Lab</h2>
+
+    <!-- 预设数据集 -->
+    <div class="ctrl-group">
+      <label>📦 预设数据集</label>
+      <div id="presetBtns" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+    </div>
+
+    <div id="mdStatus" style="font-size:11px;color:#6b7280;margin-top:2px;padding:0 2px"></div>
 
     <div class="ctrl-group">
       <label>配色方案</label>
@@ -20,6 +33,7 @@
         <option value="frost-glass">霜冻玻璃 Frost Glass</option>
         <option value="ember-glow">烬火流光 Ember Glow</option>
         <option value="ocean-depth">深海蔚蓝 Ocean Depth</option>
+        <option value="competitor-gold" selected>⭐ 竞品金 Competitor Gold</option>
         <option value="minimal-ink">极简水墨 Minimal Ink</option>
       </select>
     </div>
@@ -32,6 +46,7 @@
         <option value="ember">左对齐社论风 (Ember)</option>
         <option value="ocean">顶栏分离式 (Ocean)</option>
         <option value="minimal">竖线左排版 (Minimal)</option>
+        <option value="competitor" selected>⭐ 数据优先 (Competitor)</option>
       </select>
     </div>
 
@@ -49,18 +64,22 @@
     </div>
     <div id="tplDesc" style="margin-top:8px;padding:10px;background:rgba(255,255,255,0.04);border-radius:8px;font-size:12px;color:#9ca3af;line-height:1.6"></div>
     <div id="specBox"></div>
+
+    <!-- 粘贴区 (折叠) -->
+    <details style="margin-top:12px">
+      <summary style="font-size:12px;color:#6b7280;cursor:pointer">📋 粘贴 .md 内容</summary>
+      <textarea id="mdPasteArea" rows="6" style="width:100%;margin-top:8px;background:#1f2937;border:1px solid rgba(255,255,255,0.1);color:#e5e7eb;padding:8px;border-radius:6px;font-size:11px;font-family:monospace;resize:vertical" placeholder="粘贴 slides.md 内容..."></textarea>
+      <button id="mdPasteBtn" style="margin-top:4px;width:100%;background:#374151;border:1px solid rgba(255,255,255,0.1);color:#e5e7eb;padding:6px;border-radius:6px;font-size:12px;cursor:pointer">加载粘贴内容</button>
+    </details>
   </div>
 
   <!-- ── 视频画布 (1920×1080 缩放) ── -->
   <div id="canvasWrap">
     <div id="canvas">
-      <!-- 幻灯片区 880px -->
       <div id="slideArea"></div>
-      <!-- 字幕区 200px -->
       <div id="subtitleArea">
         <div id="subtitleText"></div>
       </div>
-      <!-- 辅助线覆盖层 -->
       <div id="guides">
         <div class="guide-h" style="top:0" data-label="0"></div>
         <div class="guide-h" style="top:880px" data-label="880 (slide/subtitle分界)"></div>
@@ -69,15 +88,37 @@
         <div class="guide-v" style="left:1840px" data-label="1840 padding-R"></div>
         <div class="guide-safe" data-label="安全区 (60px顶 80px侧)"></div>
       </div>
-      <!-- 尺寸标注层 -->
       <div id="sizeAnnotations"></div>
     </div>
   </div>
 
-  <script src="data.js"></script>
-  <script src="themes.js"></script>
-  <script src="templates.js"></script>
-  <script src="template-renders.js"></script>
-  <script src="app.js"></script>
+  <!-- ═══ 模块化脚本加载顺序 ═══ -->
+
+  <!-- 1. 解析器 (无依赖) -->
+  <script src="js/md-parser.js"></script>
+
+  <!-- 2. 主题配色 (纯数据，每个主题独立文件) -->
+  <script src="js/palettes/registry.js"></script>
+  <script src="js/palettes/neon-pulse.js"></script>
+  <script src="js/palettes/frost-glass.js"></script>
+  <script src="js/palettes/ember-glow.js"></script>
+  <script src="js/palettes/ocean-depth.js"></script>
+  <script src="js/palettes/competitor-gold.js"></script>
+  <script src="js/palettes/minimal-ink.js"></script>
+
+  <!-- 3. 渲染工具 (无依赖) -->
+  <script src="js/render-utils.js"></script>
+
+  <!-- 4. 布局渲染器 (每个布局独立文件，依赖 render-utils) -->
+  <script src="js/layouts/neon.js"></script>
+  <script src="js/layouts/frost.js"></script>
+  <script src="js/layouts/ember.js"></script>
+  <script src="js/layouts/ocean.js"></script>
+  <script src="js/layouts/minimal.js"></script>
+  <script src="js/layouts/competitor.js"></script>
+  <script src="js/layouts/dispatcher.js"></script>
+
+  <!-- 5. 主编排层 (依赖以上所有) -->
+  <script src="js/app.js"></script>
 </body>
 </html>

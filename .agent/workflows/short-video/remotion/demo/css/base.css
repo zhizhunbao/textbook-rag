@@ -1,0 +1,18 @@
+/* ═══════════════════════════════════════════════════════════════
+ * base.css — 全局重置与基础样式
+ * ═══════════════════════════════════════════════════════════════ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #0a0a0f;
+  color: #e5e7eb;
+  font-family: 'Inter', 'Noto Sans SC', system-ui, sans-serif;
+  display: flex;
+  min-height: 100vh;
+  overflow-x: hidden;
+}

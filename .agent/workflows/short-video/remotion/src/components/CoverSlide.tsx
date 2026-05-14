@@ -2,46 +2,81 @@ import React from 'react';
 import { theme, baseStyles } from '../theme';
 
 /**
- * 封面页 — 居中大标题
+ * 封面页 — competitor-gold 风格
+ *
+ * 布局:
+ *   钩子大数字 (120px 金色)
+ *   钩子单位 (28px)
+ *   主标题 (72px 白色)
+ *   副标题 (28px 金色淡)
  */
-export const CoverSlide: React.FC<{ title: string; subtitle?: string; source: string }> = ({
-  title, subtitle, source,
-}) => (
+export const CoverSlide: React.FC<{
+  title: string;
+  subtitle?: string;
+  hookNumber?: string;
+  hookUnit?: string;
+  source?: string;
+}> = ({ title, subtitle, hookNumber, hookUnit, source }) => (
   <div style={{
     ...baseStyles.slideArea,
+    background: theme.bgCover,
     justifyContent: 'center',
     alignItems: 'center',
     textAlign: 'center',
   }}>
-    <h1 style={{
-      fontSize: 72, fontWeight: 800, lineHeight: 1.2,
-      color: theme.textPrimary,
-      letterSpacing: 1, margin: 0,
-      textAlign: 'center',
+    <div style={{
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center', width: '100%',
     }}>
-      {title}
-    </h1>
+      {/* 钩子大数字 */}
+      {hookNumber && (
+        <div style={{
+          fontSize: 180, fontWeight: 900,
+          color: theme.accent,
+          lineHeight: 1, marginBottom: 8,
+          textShadow: `0 0 60px ${theme.accent}40`,
+        }}>
+          {hookNumber}
+        </div>
+      )}
 
-    {subtitle && (
-      <p style={{
-        fontSize: 30, color: theme.blueMuted,
-        marginTop: 24, fontWeight: 400, letterSpacing: 1,
+      {/* 钩子单位 */}
+      {hookUnit && (
+        <div style={{
+          fontSize: 28, color: theme.accentLight,
+          fontWeight: 600, letterSpacing: 3, marginBottom: 16,
+        }}>
+          {hookUnit}
+        </div>
+      )}
+
+      {/* 主标题 */}
+      <h1 style={{
+        fontSize: 72, fontWeight: 800, lineHeight: 1.15,
+        color: theme.textPrimary,
+        letterSpacing: 1, margin: 0,
         textAlign: 'center',
       }}>
-        {subtitle}
-      </p>
-    )}
+        {title}
+      </h1>
 
-    {/* 来源 URL — 底部居中显示完整 */}
+      {/* 副标题 */}
+      {subtitle && (
+        <p style={{
+          fontSize: 28, color: theme.accentLight,
+          marginTop: 20, fontWeight: 400, letterSpacing: 1,
+          textAlign: 'center',
+        }}>
+          {subtitle}
+        </p>
+      )}
+    </div>
+
+    {/* 来源 URL 水印 */}
     {source && (
       <div style={{
-        fontSize: 18,
-        color: 'rgba(255, 255, 255, 0.35)',
-        marginTop: 32,
-        textAlign: 'center',
-        wordBreak: 'break-all' as const,
-        maxWidth: '90%',
-        lineHeight: 1.4,
+        position: 'absolute', top: 20, right: 30,
+        fontSize: 22, color: theme.sourceText,
         fontFamily: "'Inter', monospace",
       }}>
         {source}

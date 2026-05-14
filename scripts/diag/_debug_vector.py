@@ -10,7 +10,7 @@ client = chromadb.PersistentClient(
 miss_queries = [
     ("ca_federal", "CRS score breakdown maximum points each category", "check-score/crs-criteria"),
     ("ca_federal", "Comprehensive Ranking System core human capital factors", "check-score/crs-criteria"),
-    ("ca_federal_data", "Express Entry round invitations CRS lowest score date", "ee_rounds_123_en"),
+    ("ca_federal", "Express Entry round invitations CRS lowest score date", "ee_rounds_123_en"),
     ("ca_federal", "Express Entry rounds of invitations", "express-entry-rounds"),
 ]
 

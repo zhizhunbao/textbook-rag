@@ -1,0 +1,237 @@
+/* ═══════════════════════════════════════════════════════════════
+ * slides.css — 幻灯片内部元素样式 (标题/封面/表格/列表/引用)
+ * ═══════════════════════════════════════════════════════════════ */
+
+/* ── 标题通用 ── */
+.slide-title {
+  font-size: 52px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.5px;
+  margin-bottom: 32px;
+  width: 100%;
+  overflow-wrap: break-word;
+  word-break: keep-all;
+}
+
+.cover-title {
+  font-size: 72px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 1px;
+  overflow-wrap: break-word;
+  word-break: keep-all;
+}
+
+.cover-subtitle {
+  font-size: 30px;
+  font-weight: 400;
+  letter-spacing: 1px;
+  margin-top: 24px;
+}
+
+/* ── 封面风格 A: Cinematic Title ── */
+.cover-cinematic .cover-title {
+  font-size: 68px;
+  letter-spacing: 0.05em;
+}
+
+.cover-cinematic .cover-underline {
+  height: 4px;
+  max-width: 320px;
+  border-radius: 2px;
+  margin-top: 20px;
+}
+
+.cover-cinematic .cover-subtitle {
+  font-size: 28px;
+  font-weight: 300;
+  letter-spacing: 0.1em;
+  margin-top: 28px;
+}
+
+/* ── 封面风格 B: Chapter Title ── */
+.cover-chapter .cover-label {
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.cover-chapter .cover-number {
+  font-size: 84px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.cover-chapter .cover-divider-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin: 28px 0 20px;
+}
+
+.cover-chapter .cover-divider-line {
+  height: 1px;
+  width: 120px;
+}
+
+.cover-chapter .cover-divider-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.cover-chapter .cover-subtitle {
+  font-size: 28px;
+  font-weight: 300;
+  letter-spacing: 0.1em;
+  margin-top: 0;
+}
+
+/* ── 封面风格 C: Spotlight ── */
+.cover-spotlight .cover-bar {
+  width: 80px;
+  height: 4px;
+  border-radius: 2px;
+}
+
+.cover-spotlight .cover-bar-top {
+  margin-bottom: 32px;
+}
+
+.cover-spotlight .cover-title {
+  font-size: 64px;
+  letter-spacing: 0.1em;
+}
+
+.cover-spotlight .cover-subtitle {
+  font-size: 22px;
+  margin-top: 16px;
+}
+
+.cover-spotlight .cover-bar-bottom {
+  margin-top: 32px;
+}
+
+/* ── 封面风格 D: Title Split ── */
+.cover-split .cover-title-stroke {
+  font-size: 72px;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  color: transparent;
+  -webkit-text-stroke: 2px white;
+  line-height: 1.1;
+}
+
+.cover-split .cover-title-solid {
+  font-size: 72px;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  line-height: 1.1;
+  margin-top: 4px;
+}
+
+/* ── 来源 URL ── */
+.source-url {
+  font-size: 18px;
+  margin-top: 12px;
+  word-break: break-all;
+  max-width: 100%;
+  line-height: 1.4;
+  font-family: 'Inter', monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── 引用块 ── */
+.citation-block {
+  border-left: 4px solid;
+  padding: 14px 24px;
+  border-radius: 0 8px 8px 0;
+  font-size: 24px;
+  line-height: 1.6;
+  font-style: italic;
+  margin-top: 16px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── 内容体 ── */
+.content-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+/* ── 表格 ── */
+.data-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 6px;
+  table-layout: fixed;
+}
+
+.data-table th {
+  padding: 16px 28px;
+  font-size: 26px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.data-table th:first-child {
+  border-radius: 8px 0 0 8px;
+}
+
+.data-table th:last-child {
+  border-radius: 0 8px 8px 0;
+}
+
+.data-table td {
+  padding: 16px 28px;
+  font-size: 30px;
+  text-align: center;
+}
+
+.data-table td:first-child {
+  border-radius: 6px 0 0 6px;
+}
+
+.data-table td:last-child {
+  border-radius: 0 6px 6px 0;
+}
+
+.data-table.dense th {
+  padding: 12px 20px;
+  font-size: 22px;
+}
+
+.data-table.dense td {
+  padding: 12px 20px;
+  font-size: 26px;
+}
+
+/* ── CTA / Preview 正文 ── */
+.cta-text {
+  font-size: 42px;
+  line-height: 1.7;
+  font-weight: 700;
+}
+
+.preview-text {
+  font-size: 36px;
+  line-height: 1.7;
+  font-weight: 400;
+}
+
+/* ── 列表 ── */
+.point-list {
+  font-size: 32px;
+  line-height: 2;
+  list-style: none;
+  padding: 0;
+}
