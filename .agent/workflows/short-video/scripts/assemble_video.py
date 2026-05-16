@@ -180,7 +180,7 @@ def main():
     ass_path = tmp_dir / "subtitles.ass"
     play_res_y = h + SUBTITLE_BAR_H  # 1280
     # MarginV: 从底部算起，将字幕居中于字幕条
-    margin_v = (SUBTITLE_BAR_H - 80) // 2  # 80≈字号对应行高，居中
+    margin_v = (SUBTITLE_BAR_H - 90) // 2  # 90≈字号对应行高，居中
     with open(ass_path, "w", encoding="utf-8") as af:
         af.write("[Script Info]\n")
         af.write(f"PlayResX: {w}\n")
@@ -191,7 +191,7 @@ def main():
                  "OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, "
                  "ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, "
                  "Alignment, MarginL, MarginR, MarginV, Encoding\n")
-        af.write(f"Style: Default,Microsoft YaHei UI,64,"
+        af.write(f"Style: Default,Microsoft YaHei UI,72,"
                  f"&H003b2a1e,&H000000FF,&H40f7f2f0,&H00000000,"
                  f"-1,0,0,0,100,100,0,0,1,3,0,"
                  f"2,80,80,{margin_v},1\n\n")
@@ -407,7 +407,11 @@ def generate_srt(segments, output_path, max_chars=40):
         import re as _re
         cleaned = []
         for c in final_chunks:
-            c = _re.sub(r'[。，、；：！？\u201c\u201d\u2018\u2019（）《》【】]', '', c).strip()
+            # 列举标点 → 空格（防止名词合并）
+            c = _re.sub(r'[、，,]', ' ', c)
+            # 句末/装饰标点 → 删除
+            c = _re.sub(r'[。；：！？\u201c\u201d\u2018\u2019（）《》【】]', '', c)
+            c = _re.sub(r'\s{2,}', ' ', c).strip()
             if c:
                 cleaned.append(c)
         final_chunks = cleaned

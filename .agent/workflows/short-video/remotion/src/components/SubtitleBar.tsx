@@ -17,7 +17,7 @@ export const SubtitleBar: React.FC<{
   if (!segment) return <div style={baseStyles.subtitleArea} />;
 
   const displayText = formatSubtitle(segment.text);
-  const fontSize = 38; // 固定字号，避免字幕忽大忽小
+  const fontSize = 44; // 固定字号，避免字幕忽大忽小
 
   return (
     <div style={baseStyles.subtitleArea}>
@@ -37,12 +37,18 @@ export const SubtitleBar: React.FC<{
   );
 };
 
-/** 数字/英文与中文之间加空格 */
+/** 列举标点→空格，句末/装饰标点→删除，中英文间加空格 */
 function formatSubtitle(text: string): string {
   let s = text.replace(/\*\*(.+?)\*\*/g, '$1');
-  s = s.replace(/[，。！？、；：""''（）《》【】…—·\u3000]/g, '');
+  // 列举类标点 → 空格（防止 BMO、CIBC 合并）
+  s = s.replace(/[、，,]/g, ' ');
+  // 句末 / 装饰类标点 → 删除
+  s = s.replace(/[。！？；：""''（）《》【】…—·\u3000]/g, '');
+  // 中英文之间加空格
   s = s.replace(/([\u4e00-\u9fff])([A-Za-z0-9$])/g, '$1 $2');
   s = s.replace(/([A-Za-z0-9%])(?=[\u4e00-\u9fff])/g, '$1 ');
+  // 连续空格合并
+  s = s.replace(/\s{2,}/g, ' ').trim();
   return s;
 }
 

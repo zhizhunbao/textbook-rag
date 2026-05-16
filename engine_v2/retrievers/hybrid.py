@@ -563,15 +563,9 @@ def _merge_n_with_rrf(
 
 
 # ── Default collection boost weights ──
-# Federal material is the primary authority for immigration/study questions.
-# Provincial material is supplementary (relevant mainly for PNP).
-# Education material is narrowest scope (school-specific info).
-DEFAULT_COLLECTION_BOOSTS: dict[str, float] = {
-    "ca_federal": 1.5,
-    # All ca_prov_* default to 1.0 (no entry needed)
-    # All ca_edu_* get a slight penalty
-    "ca_edu_algonquin": 0.8,
-}
+# Empty = pure RRF, no collection bias. All collections ranked equally.
+# Override per-call via boost_map parameter if needed.
+DEFAULT_COLLECTION_BOOSTS: dict[str, float] = {}
 
 
 def multi_collection_retrieve(

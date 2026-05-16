@@ -162,15 +162,18 @@ async def run_discover(args):
 
 
 async def run_batch(args):
+    headless = not args.visible
+    delay = args.delay
     print("=" * 60)
     print(f"Phase 2: Batch PDF Capture from Manifest")
     print(f"  Manifest: {args.manifest}")
+    print(f"  Headless: {headless}, Delay: {delay}s")
     print("=" * 60)
 
     results = await save_pdfs_from_manifest(
         manifest_path=args.manifest,
-        headless=True,
-        delay_between=2.0
+        headless=headless,
+        delay_between=delay,
     )
 
     saved = [r for r in results if r.success]
@@ -197,7 +200,7 @@ async def run_single(args):
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
-    result = await _save_single_pdf(args.url, out_path, headless=True)
+    result = await _save_single_pdf(args.url, out_path, headless=not getattr(args, 'visible', False))
 
     if result.success:
         print(f"\n[OK] Saved: {result.file_size / 1024:.1f} KB to {out_path}")
@@ -258,11 +261,14 @@ Examples:
     # ── batch: Phase 2 only ──────────────────────────────────────────────
     parser_batch = subparsers.add_parser("batch", help="Phase 2: Save PDFs from a manifest file")
     parser_batch.add_argument("manifest", help="Path to manifest.json")
+    parser_batch.add_argument("--delay", type=float, default=5.0, help="Delay between pages (default: 5s)")
+    parser_batch.add_argument("--visible", action="store_true", help="Show browser window")
 
     # ── single: One page ─────────────────────────────────────────────────
     parser_single = subparsers.add_parser("single", help="Capture a single URL to PDF")
     parser_single.add_argument("url", help="Target URL")
     parser_single.add_argument("out", help="Output PDF file path")
+    parser_single.add_argument("--visible", action="store_true", help="Show browser window")
 
     args = parser.parse_args()
 

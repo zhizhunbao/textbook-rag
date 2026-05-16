@@ -75,3 +75,7 @@ payload/.next/
 .github/
 # Next.js build output
 .next/
+# Browser automation data
+.agent/workflows/short-video/browser-data/weixin-channels/
+.agent/workflows/short-video/browser-data/screenshots/
+.agent/workflows/short-video/remotion/public/audio.wav

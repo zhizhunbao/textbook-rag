@@ -15,12 +15,17 @@ cite_rag.py — RAG 数据探索与引用检索
 用法:
   # 探索模式 (推荐, workflow Step 1)
   uv run cite_rag.py --queries data/short-videos/pnp/queries.md \
-    --persona live-study-immigration \
+    --collection ca_federal \
     --output data/short-videos/pnp/sources.json
+
+  # 多 collection 检索
+  uv run cite_rag.py --queries data/short-videos/life-bank-quick/life-bank-quick-research.md \
+    --collection ca_federal ca_fcac \
+    --output data/short-videos/life-bank-quick/sources.json
 
   # 引用模式 (legacy, 兼容旧 workflow)
   uv run cite_rag.py --storyline data/short-videos/pnp/storyline.md \
-    --persona live-study-immigration \
+    --collection ca_federal \
     --output data/short-videos/pnp/sources.json
 
 产出:
@@ -192,7 +197,7 @@ def build_md_path(book_id: str, category: str) -> str:
 
 # ── 纯检索 (无 rerank / 无 synthesis) ─────────────────────
 
-def retrieve_chunks(api_url: str, persona: str, question: str, top_k: int = 10) -> list[dict]:
+def retrieve_chunks(api_url: str, collections: list[str], question: str, top_k: int = 10) -> list[dict]:
     """调用 /engine/consulting/retrieve 获取 raw BM25+Vector chunks。
 
     不经过 CrossEncoder rerank, 不经过 GPT 合成。
@@ -201,7 +206,7 @@ def retrieve_chunks(api_url: str, persona: str, question: str, top_k: int = 10) 
       - vector_score, bm25_score, retrieval_source
     """
     url = f"{api_url}/engine/consulting/retrieve"
-    payload = {"persona_slug": persona, "question": question, "top_k": top_k}
+    payload = {"collection_names": collections, "question": question, "top_k": top_k}
     logger.info(f"[Retrieve] Q: {question[:60]}...")
     resp = requests.post(url, json=payload, timeout=120)
     resp.raise_for_status()
@@ -253,7 +258,7 @@ def deduplicate_chunks(all_chunks: list[dict]) -> list[dict]:
 def find_citations(
     citations: list[dict],
     api_url: str,
-    persona: str,
+    collections: list[str],
     top_k: int = 10,
 ) -> list[dict]:
     """为每个引用需求检索 raw chunks, 全局去重后返回。"""
@@ -263,7 +268,7 @@ def find_citations(
         query = cit["query"]
 
         try:
-            chunks = retrieve_chunks(api_url, persona, query, top_k)
+            chunks = retrieve_chunks(api_url, collections, query, top_k)
 
             if chunks:
                 logger.success(f"  ✅ {query[:50]} → {len(chunks)} chunks")
@@ -312,7 +317,7 @@ def main():
     group = p.add_mutually_exclusive_group(required=True)
     group.add_argument("--queries", type=Path, help="探索模式: queries.md 路径 (推荐)")
     group.add_argument("--storyline", type=Path, help="引用模式: storyline.md 路径 (legacy)")
-    p.add_argument("--persona", default="live-study-immigration")
+    p.add_argument("--collection", nargs="+", default=["ca_federal"], help="ChromaDB collection(s) to search, e.g. ca_federal ca_fcac")
     p.add_argument("--output", type=Path, required=True, help="输出 sources.json")
     p.add_argument("--api-url", default="http://localhost:8001")
     p.add_argument("--top-k", type=int, default=10, help="每个 query 检索的 chunk 数 (默认 10)")
@@ -333,6 +338,7 @@ def main():
     logger.info("=" * 50)
     logger.info(f"RAG 检索器 v3 (cite_rag.py) — {mode}模式")
     logger.info(f"模式: BM25+Vector 纯检索 (无 rerank, 无 synthesis)")
+    logger.info(f"Collections: {args.collection}")
     logger.info(f"输入: {input_path}")
     logger.info(f"Top-K per query: {args.top_k}")
     logger.info("=" * 50)
@@ -349,7 +355,7 @@ def main():
         return
 
     # 2. 检索 + 去重
-    chunks = find_citations(citations, args.api_url, args.persona, args.top_k)
+    chunks = find_citations(citations, args.api_url, args.collection, args.top_k)
 
     # 3. 输出 — 只保留有用字段 (纯指针, 供 Agent 判断)
     output_chunks = []

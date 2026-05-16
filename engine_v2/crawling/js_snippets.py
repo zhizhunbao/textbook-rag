@@ -142,22 +142,26 @@ EXPAND_GENERIC_TABS = """() => {
 EXPAND_BOOTSTRAP_COLLAPSE = """() => {
     const main = document.querySelector('main') || document.body;
 
-    // A. Bootstrap collapse triggers
-    main.querySelectorAll(
-        '[data-toggle="collapse"], [data-bs-toggle="collapse"]'
-    ).forEach(trigger => {
-        try {
-            if (trigger.getAttribute('aria-expanded') !== 'true') {
-                trigger.click();
-            }
-        } catch(e) {}
+    // A. Bootstrap collapse — disable JS handlers, then force-show via CSS
+    //    Removing data-toggle prevents Bootstrap from re-collapsing panels
+    main.querySelectorAll('[data-parent], [data-bs-parent]').forEach(el => {
+        el.removeAttribute('data-parent');
+        el.removeAttribute('data-bs-parent');
     });
-    main.querySelectorAll('.collapse, .panel-collapse').forEach(panel => {
+    main.querySelectorAll('[data-toggle="collapse"], [data-bs-toggle="collapse"]').forEach(el => {
+        el.removeAttribute('data-toggle');
+        el.removeAttribute('data-bs-toggle');
+        el.setAttribute('aria-expanded', 'true');
+        el.classList.remove('collapsed');
+    });
+    main.querySelectorAll('.collapse, .panel-collapse, .collapse-content').forEach(panel => {
         try {
             panel.classList.add('show', 'in');
+            panel.classList.remove('collapse');
             panel.style.display = 'block';
             panel.style.height = 'auto';
             panel.style.overflow = 'visible';
+            panel.style.visibility = 'visible';
         } catch(e) {}
     });
 

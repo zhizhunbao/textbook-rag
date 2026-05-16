@@ -98,13 +98,21 @@ def parse_storyline_metadata(storyline_path: Path) -> dict:
     if author_match:
         meta["author"] = author_match.group(1).strip()
 
-    # 从 CTA slide 提取互动描述
-    cta_match = re.search(r"\*\*内容\*\*:\s*(.+)", text)
+    # 从 CTA slide 提取互动描述（排除 [preview] 的内容）
+    # 只匹配 [cta] slide 的 **内容**
+    # [preview] slide 的内容是下期预告，不应放进本期视频描述
+    cta_match = re.search(r'## \[cta\].*?\*\*内容\*\*:\s*(.+)', text, re.DOTALL)
     if cta_match:
-        meta["cta"] = cta_match.group(1).strip()
+        meta["cta"] = cta_match.group(1).strip().split('\n')[0]
 
-    # 收集所有台词作为完整描述（取前 3 行）
-    narration_lines = re.findall(r"^\*\*台词\*\*:\s*\n((?:(?!---).+\n)*)", text, re.MULTILINE)
+    # 收集台词作为描述（排除 [preview] 和 [cta] slide 的台词）
+    # 先截断到 [preview] slide 之前
+    preview_idx = re.search(r'^## \[preview\]', text, re.MULTILINE)
+    text_for_narration = text[:preview_idx.start()] if preview_idx else text
+    cta_idx = re.search(r'^## \[cta\]', text_for_narration, re.MULTILINE)
+    text_for_narration = text_for_narration[:cta_idx.start()] if cta_idx else text_for_narration
+
+    narration_lines = re.findall(r"^\*\*台词\*\*:\s*\n((?:(?!---).+\n)*)", text_for_narration, re.MULTILINE)
     all_lines = []
     for block in narration_lines:
         for line in block.strip().split("\n"):
@@ -112,14 +120,10 @@ def parse_storyline_metadata(storyline_path: Path) -> dict:
             if line:
                 all_lines.append(line)
 
-    # 视频描述 = 标题 + 前3行台词 + CTA
+    # 视频描述 = 前3行台词（排除了preview/cta）
     desc_parts = []
-    if meta.get("title"):
-        desc_parts.append(meta["title"])
     if all_lines:
         desc_parts.extend(all_lines[:3])
-    if meta.get("cta"):
-        desc_parts.append(meta["cta"])
     meta["description"] = "\n".join(desc_parts)
 
     return meta

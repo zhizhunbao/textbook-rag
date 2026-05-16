@@ -79,7 +79,7 @@ export const baseStyles = {
 
   /** 标题 — 居中大字 */
   heading: {
-    fontSize: 48,
+    fontSize: 56,
     fontWeight: 800 as const,
     color: theme.textPrimary,
     margin: 0,

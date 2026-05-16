@@ -2,324 +2,1361 @@
   "slides": [
     {
       "type": "cover",
-      "title": "没有SIN号寸步难行",
-      "source": "",
-      "subtitle": "到了加拿大第一件事",
-      "hookNumber": "9",
-      "hookUnit": "位数字决定一切"
+      "title": "五大银行都说免费",
+      "source": "@AI全球留学移民顾问",
+      "subtitle": "但差了整整一年",
+      "hookNumber": "1年",
+      "hookUnit": "差距"
     },
     {
       "type": "argument",
-      "title": "SIN是什么",
-      "source": "https://www.canada.ca/en/employment-social-development/services/sin/apply.html",
+      "title": "第一年免费是法律要求",
+      "source": "@AI全球留学移民顾问",
       "table": {
         "headers": [
-          "要素",
-          "说明"
+          "资格人群",
+          "免费期",
+          "依据"
         ],
         "rows": [
           [
-            "全称",
-            "Social Insurance Number"
+            "新移民",
+            "第1年",
+            "FCAC联邦监管"
           ],
           [
-            "位数",
-            "9位数字"
+            "全日制学生",
+            "在读期间",
+            "FCAC联邦监管"
           ],
           [
-            "签发方",
-            "Service Canada"
-          ],
-          [
-            "本质",
-            "加拿大的税务身份证"
-          ]
-        ]
-      }
-    },
-    {
-      "type": "evidence",
-      "title": "没有SIN你做不了这三件事",
-      "source": "https://www.canada.ca/content/dam/ircc/migration/ircc/english/pdf/pub/workbook-national-pdf",
-      "table": {
-        "headers": [
-          "场景",
-          "没有SIN的后果"
-        ],
-        "rows": [
-          [
-            "找工作",
-            "雇主无法合法雇你"
-          ],
-          [
-            "报税",
-            "无法申报，损失退税"
-          ],
-          [
-            "领福利",
-            "EI失业保险、学生贷款全拿不到"
+            "18岁以下",
+            "永久",
+            "FCAC联邦监管"
           ]
         ]
       }
     },
     {
       "type": "argument",
-      "title": "怎么办SIN",
-      "source": "https://www.canada.ca/en/employment-social-development/services/sin/apply.html",
+      "title": "核心差距：2年 vs 1年",
+      "source": "@AI全球留学移民顾问",
       "table": {
         "headers": [
-          "方式",
-          "速度",
-          "注意"
+          "银行",
+          "账户名",
+          "免费期",
+          "恢复月费",
+          "免月费余额",
+          "资格窗口",
+          "年成本"
         ],
         "rows": [
           [
-            "**在线申请**",
-            "最快",
-            "sin-nas.canada.ca"
+            "BMO",
+            "NewStart Performance",
+            "2年",
+            "$17.95",
+            "$4,000",
+            "落地5年内",
+            "$215"
           ],
           [
-            "现场办理",
-            "当场出号",
-            "去Service Canada Centre"
+            "CIBC",
+            "Smart Account",
+            "2年",
+            "$16.95",
+            "$4,000",
+            "未设明确期限",
+            "$203"
           ],
           [
-            "📌 开学周校内",
-            "当场出号",
-            "学校设专门办理点"
+            "RBC",
+            "Advantage Banking",
+            "1年",
+            "$12.95",
+            "多产品组合减免",
+            "PR/留学生1年内，工签4年内",
+            "$155"
           ],
           [
-            "邮寄",
-            "最慢",
-            "需寄原件"
+            "TD",
+            "Every Day Chequing",
+            "1年",
+            "$11.95",
+            "$3,000",
+            "未设明确期限",
+            "$143"
+          ],
+          [
+            "Scotiabank",
+            "Preferred Package",
+            "1年",
+            "$16.95",
+            "$4,000",
+            "落地5年内",
+            "$203"
           ]
         ]
       }
     },
     {
       "type": "argument",
-      "title": "留学生必须知道的两个坑",
-      "source": "https://www.canada.ca/en/employment-social-development/services/sin/protection.html",
+      "title": "免费期过了还能免月费吗",
+      "source": "@AI全球留学移民顾问",
       "table": {
         "headers": [
-          "坑",
-          "说明"
+          "银行",
+          "恢复月费",
+          "免月费条件",
+          "最低余额",
+          "其他免费方式"
         ],
         "rows": [
           [
-            "9开头有效期",
-            "SIN跟学签同步过期，续了学签必须续SIN"
+            "BMO",
+            "$17.95",
+            "维持最低日终余额",
+            "$4,000",
+            "学生身份免费"
           ],
           [
-            "SIN不是身份证",
-            "不能随便给别人，房东要SIN可以拒绝"
+            "CIBC",
+            "$16.95",
+            "维持最低日终余额",
+            "$4,000",
+            "25岁以下或学生免费"
+          ],
+          [
+            "RBC",
+            "$12.95",
+            "多产品组合折扣",
+            "无固定余额",
+            "全日制学生免费"
+          ],
+          [
+            "TD",
+            "$11.95",
+            "维持最低日终余额",
+            "$3,000",
+            "23岁以下免费"
+          ],
+          [
+            "Scotiabank",
+            "$16.95",
+            "维持最低日终余额",
+            "$4,000",
+            "在读学生免费"
           ]
         ]
       }
     },
     {
-      "type": "cta",
-      "title": "你的SIN办了吗",
-      "source": "",
-      "content": "评论区告诉我你到加拿大多久了，SIN办了没"
+      "type": "argument",
+      "title": "五大行新移民账户叫什么",
+      "source": "@AI全球留学移民顾问",
+      "table": {
+        "headers": [
+          "银行",
+          "新移民项目名",
+          "对应账户名",
+          "申请方式",
+          "需带证件"
+        ],
+        "rows": [
+          [
+            "BMO",
+            "NewStart Program",
+            "Performance Plan",
+            "官网线上或到Branch",
+            "护照+PR卡或工签IMM1442"
+          ],
+          [
+            "CIBC",
+            "New to Canada Banking",
+            "Smart Account",
+            "官网线上或到Branch",
+            "护照+PR卡或COPR"
+          ],
+          [
+            "RBC",
+            "Newcomer Advantage",
+            "Advantage Banking",
+            "官网Pre-Arrival或到Branch",
+            "护照+PR确认信"
+          ],
+          [
+            "TD",
+            "New to Canada",
+            "Every Day Chequing",
+            "必须到Branch预约",
+            "护照+移民文件"
+          ],
+          [
+            "Scotiabank",
+            "StartRight Program",
+            "Preferred Package",
+            "官网线上、电话或到Branch",
+            "护照+PR卡或工签"
+          ]
+        ]
+      }
+    },
+    {
+      "type": "argument",
+      "title": "留学生别用新移民账户",
+      "source": "@AI全球留学移民顾问",
+      "table": {
+        "headers": [
+          "银行",
+          "学生账户名",
+          "免费条件",
+          "毕业后费用"
+        ],
+        "rows": [
+          [
+            "BMO",
+            "Performance Plan(学生)",
+            "在读期间免费",
+            "毕业后12个月仍免费"
+          ],
+          [
+            "CIBC",
+            "Smart Start",
+            "25岁以下免费",
+            "25岁前持续免费"
+          ],
+          [
+            "TD",
+            "Student Chequing",
+            "23岁以下免费",
+            "毕业后自动转为普通账户收费"
+          ],
+          [
+            "RBC",
+            "Advantage Banking(学生)",
+            "全日制在读免费",
+            "不再全日制即开始收费"
+          ],
+          [
+            "Scotiabank",
+            "Preferred Package(学生)",
+            "在读期间免费",
+            "不再在读即开始收费"
+          ]
+        ]
+      }
+    },
+    {
+      "type": "argument",
+      "title": "按身份选银行",
+      "source": "@AI全球留学移民顾问",
+      "table": {
+        "headers": [
+          "身份",
+          "首选银行",
+          "账户类型",
+          "免费期",
+          "年省多少",
+          "需带材料"
+        ],
+        "rows": [
+          [
+            "新移民PR",
+            "BMO",
+            "NewStart Performance",
+            "2年",
+            "$215",
+            "护照+PR卡"
+          ],
+          [
+            "新移民PR",
+            "CIBC",
+            "Smart Account",
+            "2年",
+            "$203",
+            "护照+COPR"
+          ],
+          [
+            "工签持有者",
+            "BMO",
+            "NewStart Performance",
+            "2年",
+            "$215",
+            "护照+工签IMM1442"
+          ],
+          [
+            "留学生",
+            "CIBC",
+            "Smart Start",
+            "25岁以下永久",
+            "$203",
+            "护照+学签"
+          ],
+          [
+            "留学生",
+            "BMO",
+            "Performance Plan学生",
+            "在读+毕业后1年",
+            "$215",
+            "护照+录取信"
+          ]
+        ]
+      }
+    },
+    {
+      "type": "argument",
+      "title": "长期视角：TD反而最便宜",
+      "source": "@AI全球留学移民顾问",
+      "table": {
+        "headers": [
+          "维度",
+          "TD",
+          "BMO",
+          "CIBC",
+          "RBC",
+          "Scotiabank"
+        ],
+        "rows": [
+          [
+            "恢复月费",
+            "**$11.95**",
+            "$17.95",
+            "$16.95",
+            "$12.95",
+            "$16.95"
+          ],
+          [
+            "免月费余额门槛",
+            "**$3,000**",
+            "$4,000",
+            "$4,000",
+            "多产品组合",
+            "$4,000"
+          ],
+          [
+            "年成本（交月费）",
+            "**$143**",
+            "$215",
+            "$203",
+            "$155",
+            "$203"
+          ]
+        ]
+      }
+    },
+    {
+      "type": "argument",
+      "title": "引用来源 (1/2)",
+      "source": "@AI全球留学移民顾问",
+      "table": {
+        "headers": [
+          "中文名",
+          "英文名",
+          "说明",
+          "链接"
+        ],
+        "rows": [
+          [
+            "金融消费者保护局",
+            "FCAC",
+            "低费/免费账户法规",
+            "https://www.canada.ca/en/financial-consumer-agency/services/banking/bank-accounts/low-cost-no-cost.html"
+          ],
+          [
+            "蒙特利尔银行",
+            "BMO",
+            "新移民账户优惠",
+            "https://www.bmo.com/main/personal/newcomers-to-canada/newcomer-bank-account-offers/"
+          ],
+          [
+            "",
+            "",
+            "费用与协议",
+            "https://www.bmo.com/main/personal/bank-accounts/banking-agreements-and-fees/"
+          ],
+          [
+            "",
+            "",
+            "外籍工人/PR",
+            "https://www.bmo.com/main/personal/newcomers-to-canada/foreign-worker-permanent-resident/"
+          ],
+          [
+            "",
+            "",
+            "学生账户",
+            "https://www.bmo.com/main/personal/students/"
+          ],
+          [
+            "帝国商业银行",
+            "CIBC",
+            "省月费指南",
+            "https://www.cibc.com/en/personal-banking/smart-advice/managing-your-cash/save-on-bank-account-fees.html"
+          ],
+          [
+            "",
+            "",
+            "日常支票账户",
+            "https://www.cibc.com/en/personal-banking/bank-accounts/chequing-accounts/everyday-chequing-account.html"
+          ],
+          [
+            "",
+            "",
+            "Smart Start计划",
+            "https://www.cibc.com/en/special-offers/smart-start.html"
+          ]
+        ]
+      }
+    },
+    {
+      "type": "argument",
+      "title": "引用来源 (2/2)",
+      "source": "@AI全球留学移民顾问",
+      "table": {
+        "headers": [
+          "中文名",
+          "英文名",
+          "说明",
+          "链接"
+        ],
+        "rows": [
+          [
+            "皇家银行",
+            "RBC",
+            "新移民落地指南",
+            "https://www.rbc.com/new-to-canada/settled-in/"
+          ],
+          [
+            "",
+            "",
+            "多产品组合减免",
+            "https://www.rbc.com/products/deposits/multiproduct-rebate/"
+          ],
+          [
+            "",
+            "",
+            "PR/工签优惠",
+            "https://www.rbc.com/new-to-canada/bank-offers-for-permanent-resident-and-foreign-worker-newcomers/"
+          ],
+          [
+            "",
+            "",
+            "学生账户对比",
+            "https://www.rbc.com/accounts/compare-youth-student-accounts/"
+          ],
+          [
+            "道明银行",
+            "TD",
+            "基础支票账户",
+            "https://www.td.com/ca/en/personal-banking/products/bank-accounts/chequing-accounts/minimum-chequing-account/"
+          ],
+          [
+            "",
+            "",
+            "支票账户总览",
+            "https://www.td.com/ca/en/personal-banking/products/bank-accounts/chequing-accounts/"
+          ],
+          [
+            "",
+            "",
+            "新移民银行账户",
+            "https://www.td.com/ca/en/personal-banking/solutions/new-to-canada/bank-accounts-for-newcomers/"
+          ],
+          [
+            "",
+            "",
+            "国际学生套餐",
+            "https://www.td.com/ca/en/personal-banking/special-offers/international-students-banking-package/"
+          ],
+          [
+            "丰业银行",
+            "Scotiabank",
+            "支票账户对比",
+            "https://www.scotiabank.com/ca/en/personal/bank-accounts/chequing-accounts/chequing-accounts-and-packages-comparison.html"
+          ],
+          [
+            "",
+            "",
+            "StartRight计划",
+            "https://startright.scotiabank.com/ca/en.html"
+          ],
+          [
+            "",
+            "",
+            "学生账户",
+            "https://www.scotiabank.com/ca/en/personal/students/"
+          ]
+        ]
+      }
+    },
+    {
+      "type": "preview",
+      "title": "下期预告",
+      "source": "@AI全球留学移民顾问",
+      "content": "下期讲新移民怎么从零建信用分"
     }
   ],
   "timestamps": [
     {
       "index": 1,
       "start": 0.15,
-      "end": 3.759,
-      "text": "到了加拿大，安顿好住处之后，有一件事必须尽快办",
+      "end": 1.812,
+      "text": "五大银行都跟你说，",
       "slide_index": 0
     },
     {
       "index": 2,
-      "start": 4.059,
-      "end": 7.38,
-      "text": "一个9位数字的号码，没有它你连工作都找不到",
+      "start": 2.112,
+      "end": 3.799,
+      "text": "新移民开户免费",
       "slide_index": 0
     },
     {
       "index": 3,
-      "start": 7.68,
-      "end": 10.857,
-      "text": "这个号叫SIN，今天讲清楚怎么办、有什么坑",
+      "start": 4.099,
+      "end": 6.181,
+      "text": "但我翻完五家条款发现，",
       "slide_index": 0
     },
     {
       "index": 4,
-      "start": 11.657,
-      "end": 15.362,
-      "text": "SIN全称Social Insurance Number，社会保险号",
-      "slide_index": 1
+      "start": 6.481,
+      "end": 8.633,
+      "text": "免费期差了整整一年",
+      "slide_index": 0
     },
     {
       "index": 5,
-      "start": 15.662,
-      "end": 17.773,
-      "text": "你可以理解为加拿大的税务身份证",
-      "slide_index": 1
+      "start": 8.933,
+      "end": 9.701,
+      "text": "选错了，",
+      "slide_index": 0
     },
     {
       "index": 6,
-      "start": 18.073,
-      "end": 20.91,
-      "text": "没有它，雇主没法给你发工资，你也没法报税",
-      "slide_index": 1
+      "start": 10.001,
+      "end": 11.464,
+      "text": "一年白交两百块",
+      "slide_index": 0
     },
     {
       "index": 7,
-      "start": 21.21,
-      "end": 24.535,
-      "text": "翻译一下，没有SIN等于在加拿大没有经济身份",
+      "start": 12.264,
+      "end": 14.517,
+      "text": "先说一个很多人不知道的事",
       "slide_index": 1
     },
     {
       "index": 8,
-      "start": 25.335,
-      "end": 28.22,
-      "text": "具体来说，没有SIN你做不了三件事",
-      "slide_index": 2
+      "start": 14.817,
+      "end": 18.934,
+      "text": "加拿大金融监管局FCAC有明确规定，",
+      "slide_index": 1
     },
     {
       "index": 9,
-      "start": 28.52,
-      "end": 32.389,
-      "text": "第一，找工作，雇主没有你的SIN就没法给你发工资",
-      "slide_index": 2
+      "start": 19.234,
+      "end": 20.796,
+      "text": "新移民第一年，",
+      "slide_index": 1
     },
     {
       "index": 10,
-      "start": 32.689,
-      "end": 38.086,
-      "text": "第二，报税，留学生报税每年能退几百刀，没SIN一分拿不到",
-      "slide_index": 2
+      "start": 21.096,
+      "end": 23.262,
+      "text": "银行必须给你免费账户",
+      "slide_index": 1
     },
     {
       "index": 11,
-      "start": 38.386,
-      "end": 43.879,
-      "text": "第三，所有政府福利，失业保险、学生贷款，全都绑定SIN",
-      "slide_index": 2
+      "start": 23.562,
+      "end": 24.119,
+      "text": "注意，",
+      "slide_index": 1
     },
     {
       "index": 12,
-      "start": 44.679,
-      "end": 47.235,
-      "text": "办SIN很简单，三种方式",
-      "slide_index": 3
+      "start": 24.419,
+      "end": 25.965,
+      "text": "这不是银行的优惠，",
+      "slide_index": 1
     },
     {
       "index": 13,
-      "start": 47.535,
-      "end": 49.917,
-      "text": "推荐在线申请，最快",
-      "slide_index": 3
+      "start": 26.265,
+      "end": 27.458,
+      "text": "这是法律要求",
+      "slide_index": 1
     },
     {
       "index": 14,
-      "start": 50.217,
-      "end": 53.463,
-      "text": "也可以直接去Service Canada现场办，当场拿号",
-      "slide_index": 3
+      "start": 27.758,
+      "end": 30.734,
+      "text": "所以任何银行说第一年免费，",
+      "slide_index": 1
     },
     {
       "index": 15,
-      "start": 53.763,
-      "end": 60.461,
-      "text": "还有一个很多人不知道的，开学第一周学校通常会在校园里设专门的SIN办理点",
-      "slide_index": 3
+      "start": 31.034,
+      "end": 32.187,
+      "text": "都不是在让利，",
+      "slide_index": 1
     },
     {
       "index": 16,
-      "start": 60.761,
-      "end": 64.157,
-      "text": "不用跑Service Canada，校内直接办，非常方便",
-      "slide_index": 3
+      "start": 32.487,
+      "end": 33.457,
+      "text": "是在守法",
+      "slide_index": 1
     },
     {
       "index": 17,
-      "start": 64.457,
-      "end": 67.785,
-      "text": "但要注意，留学生的学签上必须有may work字样",
-      "slide_index": 3
+      "start": 33.757,
+      "end": 34.892,
+      "text": "真正的差距，",
+      "slide_index": 1
     },
     {
       "index": 18,
-      "start": 68.085,
-      "end": 72.751,
-      "text": "如果没有这几个字，你得先联系IRCC改学签，否则SIN办不下来",
-      "slide_index": 3
+      "start": 35.192,
+      "end": 37.497,
+      "text": "是谁愿意超出这个最低要求",
+      "slide_index": 1
     },
     {
       "index": 19,
-      "start": 73.551,
-      "end": 75.238,
-      "text": "留学生有两个坑必须知道",
-      "slide_index": 4
+      "start": 38.297,
+      "end": 42.161,
+      "text": "我把五大银行的新移民条款全部翻了一遍",
+      "slide_index": 2
     },
     {
       "index": 20,
-      "start": 75.538,
-      "end": 80.978,
-      "text": "第一，你的SIN以9开头，意味着它有有效期，跟学签同步",
-      "slide_index": 4
+      "start": 42.461,
+      "end": 46.085,
+      "text": "BMO和CIBC给的是两年免费，",
+      "slide_index": 2
     },
     {
       "index": 21,
-      "start": 81.278,
-      "end": 85.412,
-      "text": "学签续了，SIN也必须去续，否则雇主无法继续雇你",
-      "slide_index": 4
+      "start": 46.385,
+      "end": 48.368,
+      "text": "比法规多了整整一年",
+      "slide_index": 2
     },
     {
       "index": 22,
-      "start": 85.712,
-      "end": 89.435,
-      "text": "第二，SIN不是身份证，不能随便给别人",
-      "slide_index": 4
+      "start": 48.668,
+      "end": 50.761,
+      "text": "其他三家都只给一年，",
+      "slide_index": 2
     },
     {
       "index": 23,
-      "start": 89.735,
-      "end": 92.923,
-      "text": "房东要你的SIN，可以拒绝，这是你的合法权利",
-      "slide_index": 4
+      "start": 51.061,
+      "end": 53.131,
+      "text": "刚好卡在法规最低线",
+      "slide_index": 2
     },
     {
       "index": 24,
-      "start": 93.223,
-      "end": 97.661,
-      "text": "只有三种情况必须给，入职后给雇主，银行开户，还有报税",
-      "slide_index": 4
+      "start": 53.431,
+      "end": 55.476,
+      "text": "多一年免费意味着什么",
+      "slide_index": 2
     },
     {
       "index": 25,
-      "start": 98.461,
-      "end": 101.322,
-      "text": "到了加拿大，第一周就把SIN办了",
-      "slide_index": 5
+      "start": 55.776,
+      "end": 58.463,
+      "text": "BMO恢复月费17.95，",
+      "slide_index": 2
     },
     {
       "index": 26,
-      "start": 101.622,
-      "end": 104.717,
-      "text": "在线申请最快，现场去Service Canada也行",
-      "slide_index": 5
+      "start": 58.763,
+      "end": 60.736,
+      "text": "一年就是215刀",
+      "slide_index": 2
     },
     {
       "index": 27,
-      "start": 105.017,
-      "end": 107.649,
-      "text": "评论区告诉我你的情况，帮你判断还需要准备什么",
-      "slide_index": 5
+      "start": 61.036,
+      "end": 63.762,
+      "text": "TD最便宜也要11.95，",
+      "slide_index": 2
     },
     {
       "index": 28,
-      "start": 107.949,
-      "end": 111.558,
-      "text": "关注我，下期讲加拿大银行开户怎么选最省钱",
+      "start": 64.062,
+      "end": 65.732,
+      "text": "一年143刀",
+      "slide_index": 2
+    },
+    {
+      "index": 29,
+      "start": 66.032,
+      "end": 67.18,
+      "text": "选错银行，",
+      "slide_index": 2
+    },
+    {
+      "index": 30,
+      "start": 67.48,
+      "end": 68.951,
+      "text": "这笔钱就白交了",
+      "slide_index": 2
+    },
+    {
+      "index": 31,
+      "start": 69.751,
+      "end": 72.447,
+      "text": "免费期过了就一定要交月费吗",
+      "slide_index": 3
+    },
+    {
+      "index": 32,
+      "start": 72.747,
+      "end": 73.296,
+      "text": "不一定",
+      "slide_index": 3
+    },
+    {
+      "index": 33,
+      "start": 73.596,
+      "end": 75.457,
+      "text": "五大行都有一个规则，",
+      "slide_index": 3
+    },
+    {
+      "index": 34,
+      "start": 75.757,
+      "end": 77.733,
+      "text": "账户里保持一定余额，",
+      "slide_index": 3
+    },
+    {
+      "index": 35,
+      "start": 78.033,
+      "end": 79.061,
+      "text": "月费就免了",
+      "slide_index": 3
+    },
+    {
+      "index": 36,
+      "start": 79.361,
+      "end": 84.104,
+      "text": "BMO、CIBC、Scotiabank都是4000刀，",
+      "slide_index": 3
+    },
+    {
+      "index": 37,
+      "start": 84.404,
+      "end": 86.401,
+      "text": "TD最低只要3000",
+      "slide_index": 3
+    },
+    {
+      "index": 38,
+      "start": 86.701,
+      "end": 88.015,
+      "text": "RBC不一样，",
+      "slide_index": 3
+    },
+    {
+      "index": 39,
+      "start": 88.315,
+      "end": 90.38,
+      "text": "它用多产品组合折扣，",
+      "slide_index": 3
+    },
+    {
+      "index": 40,
+      "start": 90.68,
+      "end": 93.251,
+      "text": "你同时开信用卡和投资账户，",
+      "slide_index": 3
+    },
+    {
+      "index": 41,
+      "start": 93.551,
+      "end": 94.809,
+      "text": "月费也能减免",
+      "slide_index": 3
+    },
+    {
+      "index": 42,
+      "start": 95.109,
+      "end": 97.125,
+      "text": "所以免费期结束后，",
+      "slide_index": 3
+    },
+    {
+      "index": 43,
+      "start": 97.425,
+      "end": 98.795,
+      "text": "别急着换银行，",
+      "slide_index": 3
+    },
+    {
+      "index": 44,
+      "start": 99.095,
+      "end": 100.732,
+      "text": "先看看余额够不够",
+      "slide_index": 3
+    },
+    {
+      "index": 45,
+      "start": 101.032,
+      "end": 103.107,
+      "text": "账户里留够最低余额，",
+      "slide_index": 3
+    },
+    {
+      "index": 46,
+      "start": 103.407,
+      "end": 104.767,
+      "text": "月费照样是零",
+      "slide_index": 3
+    },
+    {
+      "index": 47,
+      "start": 105.567,
+      "end": 107.587,
+      "text": "很多人搜新移民开户，",
+      "slide_index": 4
+    },
+    {
+      "index": 48,
+      "start": 107.887,
+      "end": 109.563,
+      "text": "搜到的全是广告，",
+      "slide_index": 4
+    },
+    {
+      "index": 49,
+      "start": 109.863,
+      "end": 112.141,
+      "text": "不知道到底该跟银行说什么",
+      "slide_index": 4
+    },
+    {
+      "index": 50,
+      "start": 112.441,
+      "end": 113.958,
+      "text": "记住一个词就够了，",
+      "slide_index": 4
+    },
+    {
+      "index": 51,
+      "start": 114.258,
+      "end": 117.647,
+      "text": "每家银行都有一个新移民专属项目名，",
+      "slide_index": 4
+    },
+    {
+      "index": 52,
+      "start": 117.947,
+      "end": 119.185,
+      "text": "表格里列好了",
+      "slide_index": 4
+    },
+    {
+      "index": 53,
+      "start": 119.485,
+      "end": 120.528,
+      "text": "好消息是，",
+      "slide_index": 4
+    },
+    {
+      "index": 54,
+      "start": 120.828,
+      "end": 123.58,
+      "text": "大部分银行都支持线上开户",
+      "slide_index": 4
+    },
+    {
+      "index": 55,
+      "start": 123.88,
+      "end": 129.102,
+      "text": "BMO、CIBC、Scotiabank都能在官网直接申请",
+      "slide_index": 4
+    },
+    {
+      "index": 56,
+      "start": 129.402,
+      "end": 130.953,
+      "text": "RBC更早一步，",
+      "slide_index": 4
+    },
+    {
+      "index": 57,
+      "start": 131.253,
+      "end": 133.584,
+      "text": "落地前就能在官网预开户，",
+      "slide_index": 4
+    },
+    {
+      "index": 58,
+      "start": 133.884,
+      "end": 135.277,
+      "text": "飞机上就能搞定",
+      "slide_index": 4
+    },
+    {
+      "index": 59,
+      "start": 135.577,
+      "end": 137.352,
+      "text": "只有TD的新移民包，",
+      "slide_index": 4
+    },
+    {
+      "index": 60,
+      "start": 137.652,
+      "end": 140.25,
+      "text": "必须到Branch当面预约才能开",
+      "slide_index": 4
+    },
+    {
+      "index": 61,
+      "start": 140.55,
+      "end": 142.68,
+      "text": "所以如果你还没登陆，",
+      "slide_index": 4
+    },
+    {
+      "index": 62,
+      "start": 142.98,
+      "end": 145.053,
+      "text": "先在线上把账户开好，",
+      "slide_index": 4
+    },
+    {
+      "index": 63,
+      "start": 145.353,
+      "end": 146.571,
+      "text": "落地后直接用",
+      "slide_index": 4
+    },
+    {
+      "index": 64,
+      "start": 147.371,
+      "end": 148.966,
+      "text": "如果你是留学生，",
       "slide_index": 5
+    },
+    {
+      "index": 65,
+      "start": 149.266,
+      "end": 151.416,
+      "text": "这里有一个很多人踩过的坑",
+      "slide_index": 5
+    },
+    {
+      "index": 66,
+      "start": 151.716,
+      "end": 153.901,
+      "text": "学校orientation的时候，",
+      "slide_index": 5
+    },
+    {
+      "index": 67,
+      "start": 154.201,
+      "end": 155.436,
+      "text": "银行来摆摊，",
+      "slide_index": 5
+    },
+    {
+      "index": 68,
+      "start": 155.736,
+      "end": 158.215,
+      "text": "跟你说新移民免费开户",
+      "slide_index": 5
+    },
+    {
+      "index": 69,
+      "start": 158.515,
+      "end": 160.182,
+      "text": "你觉得挺好就开了，",
+      "slide_index": 5
+    },
+    {
+      "index": 70,
+      "start": 160.482,
+      "end": 163.043,
+      "text": "但新移民账户最多免两年",
+      "slide_index": 5
+    },
+    {
+      "index": 71,
+      "start": 163.343,
+      "end": 164.45,
+      "text": "你读三年书，",
+      "slide_index": 5
+    },
+    {
+      "index": 72,
+      "start": 164.75,
+      "end": 166.608,
+      "text": "第三年就要交月费了",
+      "slide_index": 5
+    },
+    {
+      "index": 73,
+      "start": 166.908,
+      "end": 169.431,
+      "text": "其实五大行都有学生账户，",
+      "slide_index": 5
+    },
+    {
+      "index": 74,
+      "start": 169.731,
+      "end": 171.188,
+      "text": "在读期间全免，",
+      "slide_index": 5
+    },
+    {
+      "index": 75,
+      "start": 171.488,
+      "end": 173.394,
+      "text": "不管读两年还是五年",
+      "slide_index": 5
+    },
+    {
+      "index": 76,
+      "start": 173.694,
+      "end": 175.434,
+      "text": "CIBC最厉害，",
+      "slide_index": 5
+    },
+    {
+      "index": 77,
+      "start": 175.734,
+      "end": 177.987,
+      "text": "25岁以下直接免费，",
+      "slide_index": 5
+    },
+    {
+      "index": 78,
+      "start": 178.287,
+      "end": 180.14,
+      "text": "连学生证明都不需要",
+      "slide_index": 5
+    },
+    {
+      "index": 79,
+      "start": 180.44,
+      "end": 181.78,
+      "text": "BMO也不错，",
+      "slide_index": 5
+    },
+    {
+      "index": 80,
+      "start": 182.08,
+      "end": 184.814,
+      "text": "毕业后还给你12个月缓冲期",
+      "slide_index": 5
+    },
+    {
+      "index": 81,
+      "start": 185.114,
+      "end": 186.962,
+      "text": "所以留学生记住，",
+      "slide_index": 5
+    },
+    {
+      "index": 82,
+      "start": 187.262,
+      "end": 188.455,
+      "text": "开学生账户，",
+      "slide_index": 5
+    },
+    {
+      "index": 83,
+      "start": 188.755,
+      "end": 190.43,
+      "text": "不要开新移民账户",
+      "slide_index": 5
+    },
+    {
+      "index": 84,
+      "start": 191.23,
+      "end": 193.353,
+      "text": "所以你到底该选哪家",
+      "slide_index": 6
+    },
+    {
+      "index": 85,
+      "start": 193.653,
+      "end": 196.616,
+      "text": "别纠结，按身份直接对号入座",
+      "slide_index": 6
+    },
+    {
+      "index": 86,
+      "start": 196.916,
+      "end": 199.336,
+      "text": "如果你是PR或工签，",
+      "slide_index": 6
+    },
+    {
+      "index": 87,
+      "start": 199.636,
+      "end": 202.637,
+      "text": "BMO和CIBC都给两年，",
+      "slide_index": 6
+    },
+    {
+      "index": 88,
+      "start": 202.937,
+      "end": 206.418,
+      "text": "但BMO的申请窗口是落地五年内，",
+      "slide_index": 6
+    },
+    {
+      "index": 89,
+      "start": 206.718,
+      "end": 207.514,
+      "text": "最宽裕",
+      "slide_index": 6
+    },
+    {
+      "index": 90,
+      "start": 207.814,
+      "end": 209.44,
+      "text": "工签持有者别慌，",
+      "slide_index": 6
+    },
+    {
+      "index": 91,
+      "start": 209.74,
+      "end": 212.962,
+      "text": "你和PR享受完全相同的待遇",
+      "slide_index": 6
+    },
+    {
+      "index": 92,
+      "start": 213.262,
+      "end": 214.856,
+      "text": "如果你是留学生，",
+      "slide_index": 6
+    },
+    {
+      "index": 93,
+      "start": 215.156,
+      "end": 217.42,
+      "text": "CIBC靠年龄判定，",
+      "slide_index": 6
+    },
+    {
+      "index": 94,
+      "start": 217.72,
+      "end": 219.444,
+      "text": "连在读证明都省了",
+      "slide_index": 6
+    },
+    {
+      "index": 95,
+      "start": 219.744,
+      "end": 221.533,
+      "text": "BMO靠学籍判定，",
+      "slide_index": 6
+    },
+    {
+      "index": 96,
+      "start": 221.833,
+      "end": 223.932,
+      "text": "毕业之后还多一年过渡",
+      "slide_index": 6
+    },
+    {
+      "index": 97,
+      "start": 224.232,
+      "end": 227.274,
+      "text": "选哪家取决于你的身份和年龄，",
+      "slide_index": 6
+    },
+    {
+      "index": 98,
+      "start": 227.574,
+      "end": 228.384,
+      "text": "不是广告",
+      "slide_index": 6
+    },
+    {
+      "index": 99,
+      "start": 229.184,
+      "end": 232.44,
+      "text": "但如果你打算长期只用一家银行，",
+      "slide_index": 7
+    },
+    {
+      "index": 100,
+      "start": 232.74,
+      "end": 233.921,
+      "text": "角度要反过来",
+      "slide_index": 7
+    },
+    {
+      "index": 101,
+      "start": 234.221,
+      "end": 235.877,
+      "text": "免费期最多两年，",
+      "slide_index": 7
+    },
+    {
+      "index": 102,
+      "start": 236.177,
+      "end": 238.064,
+      "text": "之后的费用才是大头",
+      "slide_index": 7
+    },
+    {
+      "index": 103,
+      "start": 238.364,
+      "end": 240.605,
+      "text": "TD月费只要11.95，",
+      "slide_index": 7
+    },
+    {
+      "index": 104,
+      "start": 240.905,
+      "end": 242.432,
+      "text": "一年143，",
+      "slide_index": 7
+    },
+    {
+      "index": 105,
+      "start": 242.732,
+      "end": 244.581,
+      "text": "是五大行里最便宜的",
+      "slide_index": 7
+    },
+    {
+      "index": 106,
+      "start": 244.881,
+      "end": 247.466,
+      "text": "而且免月费只要存3000，",
+      "slide_index": 7
+    },
+    {
+      "index": 107,
+      "start": 247.766,
+      "end": 249.166,
+      "text": "别家都要4000",
+      "slide_index": 7
+    },
+    {
+      "index": 108,
+      "start": 249.466,
+      "end": 253.222,
+      "text": "所以短期看BMO和CIBC占优，",
+      "slide_index": 7
+    },
+    {
+      "index": 109,
+      "start": 253.522,
+      "end": 255.926,
+      "text": "长期看TD反而最划算",
+      "slide_index": 7
+    },
+    {
+      "index": 110,
+      "start": 256.226,
+      "end": 257.294,
+      "text": "你是哪种人，",
+      "slide_index": 7
+    },
+    {
+      "index": 111,
+      "start": 257.594,
+      "end": 259.566,
+      "text": "选银行的逻辑就不一样",
+      "slide_index": 7
+    },
+    {
+      "index": 112,
+      "start": 260.366,
+      "end": 265.696,
+      "text": "本期所有数据均来自银行官网和加拿大联邦监管机构，",
+      "slide_index": 8
+    },
+    {
+      "index": 113,
+      "start": 265.996,
+      "end": 267.837,
+      "text": "完整链接在屏幕上，",
+      "slide_index": 8
+    },
+    {
+      "index": 114,
+      "start": 268.137,
+      "end": 270.305,
+      "text": "每一条都可以自己去核实",
+      "slide_index": 8
+    },
+    {
+      "index": 115,
+      "start": 271.105,
+      "end": 272.746,
+      "text": "以上是剩余来源，",
+      "slide_index": 9
+    },
+    {
+      "index": 116,
+      "start": 273.046,
+      "end": 274.759,
+      "text": "截图保存随时查",
+      "slide_index": 9
+    },
+    {
+      "index": 117,
+      "start": 275.559,
+      "end": 277.391,
+      "text": "你落地选了哪家银行",
+      "slide_index": 10
+    },
+    {
+      "index": 118,
+      "start": 277.691,
+      "end": 278.914,
+      "text": "评论区告诉我",
+      "slide_index": 10
+    },
+    {
+      "index": 119,
+      "start": 279.214,
+      "end": 280.442,
+      "text": "下期我会讲，",
+      "slide_index": 10
+    },
+    {
+      "index": 120,
+      "start": 280.742,
+      "end": 283.86,
+      "text": "新移民怎么从零开始建信用分，",
+      "slide_index": 10
+    },
+    {
+      "index": 121,
+      "start": 284.16,
+      "end": 286.066,
+      "text": "信用卡到底该怎么选",
+      "slide_index": 10
+    },
+    {
+      "index": 122,
+      "start": 286.366,
+      "end": 288.474,
+      "text": "觉得有用就点赞收藏，",
+      "slide_index": 10
+    },
+    {
+      "index": 123,
+      "start": 288.774,
+      "end": 289.554,
+      "text": "下期见",
+      "slide_index": 10
     }
   ],
   "audioUrl": "/public/audio.wav"

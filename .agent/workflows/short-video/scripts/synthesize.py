@@ -50,9 +50,14 @@ from loguru import logger
 
 # ── Config ──────────────────────────────────────────────────
 
+import sys
+
 SCRIPTS_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = SCRIPTS_DIR.parents[3]  # textbook-rag/
 DEFAULT_VOICE_SAMPLE = SCRIPTS_DIR.parent / "voice" / "voice-sample.wav"
-MOSS_REPO = Path(__file__).resolve().parents[4] / ".github" / "references" / "MOSS-TTS-Nano"
+DEFAULT_PROMPT_TEXT = "而在天气仍有些微热的夏末，这种深色系新装并不为消费者买账。"
+MOSS_REPO = PROJECT_ROOT / ".github" / "references" / "MOSS-TTS-Nano"
+COSYVOICE_DIR = PROJECT_ROOT / ".github" / "CosyVoice"
 
 
 # ── Script Parser ──────────────────────────────────────────
@@ -500,6 +505,34 @@ def _synth_volcano(
     return subtitles
 
 
+# ── CosyVoice Local Backend ─────────────────────────────────
+
+COSYVOICE_URL = "http://127.0.0.1:9880"
+
+def _synth_cosyvoice(text: str, out: Path) -> None:
+    """CosyVoice 本地 TTS 合成 → wav。
+
+    需要先启动 cosyvoice_server.py 服务。
+    """
+    import requests
+
+    try:
+        resp = requests.post(
+            f"{COSYVOICE_URL}/tts",
+            json={"text": text, "use_cached_spk": True},
+            timeout=120,
+        )
+        resp.raise_for_status()
+    except requests.ConnectionError:
+        raise RuntimeError(
+            "CosyVoice 服务未启动。请先运行:\n"
+            "  uv run .agent/workflows/short-video/scripts/cosyvoice_server.py"
+        )
+
+    with open(out, "wb") as f:
+        f.write(resp.content)
+
+
 # ── Qwen3-TTS Backend ──────────────────────────────────────
 
 def _load_qwen_model(voice_sample: Path | None = None):
@@ -667,6 +700,13 @@ async def synthesize(
     lines = [it["narration"] for it in parsed]
     logger.info(f"[TTS] {len(lines)} segments · {backend}")
 
+    # CosyVoice: 模型只加载一次（直接推理，无需 FastAPI 服务）
+    cosyvoice_model, cosyvoice_cached = None, False
+    if backend == "cosyvoice":
+        cosyvoice_model, cosyvoice_cached = _load_cosyvoice_model(
+            prompt_wav=voice_sample,
+        )
+
     # Qwen: 模型只加载一次
     qwen_model, qwen_mode, qwen_prompt = None, None, None
     if backend == "qwen":
@@ -685,7 +725,7 @@ async def synthesize(
     gap = gap_ms / 1000.0
     slide_gap = slide_gap_ms / 1000.0
     fade = fade_ms / 1000.0
-    raw_ext = ".wav" if backend == "volcano" else ".mp3"
+    raw_ext = ".wav" if backend in ("volcano", "cosyvoice") else ".mp3"
 
     # ── 文本预检: 在花钱调 API 之前检查文本质量 ──
     _precheck_text(lines)
@@ -698,7 +738,9 @@ async def synthesize(
         logger.info(f"  [{i+1}/{len(lines)}] {line[:50]}...")
         seg = tmp / f"raw_{i:03d}{raw_ext}"
 
-        if backend == "volcano":
+        if backend == "cosyvoice":
+            _synth_cosyvoice(cosyvoice_model, cosyvoice_cached, line, seg)
+        elif backend == "volcano":
             _synth_volcano(volcano_creds, line, seg, voice_type=voice,
                            speech_rate=speech_rate)
         elif backend == "tencent-clone":
@@ -886,9 +928,9 @@ def main():
     group.add_argument("--script", type=Path, help="script.txt 路径 (旧格式)")
     group.add_argument("--storyline", type=Path, help="storyline.md 路径 (v16 格式)")
     p.add_argument("--output", type=Path, required=True, help="输出目录")
-    p.add_argument("--backend", choices=["volcano", "tencent", "tencent-clone", "edge", "qwen", "moss", "hf"], default="volcano")
+    p.add_argument("--backend", choices=["cosyvoice", "volcano", "tencent", "tencent-clone", "edge", "qwen", "moss", "hf"], default="cosyvoice")
     p.add_argument("--voice", default="zh_female_mizai_uranus_bigtts",
-                   help="Volcano: voice_type; Tencent: VoiceType ID; Edge: voice name")
+                   help="Volcano: voice_type; Tencent: VoiceType ID; Edge: voice name; CosyVoice: ignored")
     p.add_argument("--voice-sample", type=Path, default=None)
     p.add_argument("--rate", default="-10%", help="Edge TTS rate (e.g. '-10%%')")
     p.add_argument("--speech-rate", type=int, default=0,

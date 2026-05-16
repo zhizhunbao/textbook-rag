@@ -57,6 +57,7 @@ COLLECTION_MAP: dict[str, str] = {
     "real_estate":        "ca_real_estate",
     # ── Source-based: federal + provincial ──
     "federal-ircc":       "ca_federal",
+    "federal-fcac":       "ca_fcac",
     "prov-ontario":       "ca_prov_ontario",
     "prov-bc":            "ca_prov_bc",
     "prov-alberta":       "ca_prov_alberta",
@@ -68,6 +69,12 @@ COLLECTION_MAP: dict[str, str] = {
     "prov-quebec":        "ca_prov_quebec",
     # ── Education: Algonquin College ──
     "algonquin-programs": "ca_edu_algonquin",
+    # ── Banking: Big 5 ──
+    "bank-bmo":           "ca_bank_bmo",
+    "bank-cibc":          "ca_bank_cibc",
+    "bank-rbc":           "ca_bank_rbc",
+    "bank-scotiabank":    "ca_bank_scotiabank",
+    "bank-td":            "ca_bank_td",
 }
 
 

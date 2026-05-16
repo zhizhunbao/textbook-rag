@@ -62,7 +62,44 @@ def _init_vrs_client():
     return vrs_client.VrsClient(cred, "ap-guangzhou", client_profile)
 
 
-def detect_audio_quality(client, audio_path: Path) -> str:
+def get_training_text(client) -> tuple[str, str]:
+    """Step 0: 获取训练文本 → 返回 (TextId, Text)。
+
+    TextId 有效期 7 天，且只能用一次。必须每次注册前重新获取。
+    """
+    from tencentcloud.vrs.v20200824 import models
+
+    logger.info("[Step 0] 获取训练文本...")
+
+    req = models.GetTrainingTextRequest()
+    params = {"TaskType": 5}  # 5 = 一句话声音复刻
+    req.from_json_string(json.dumps(params))
+
+    resp = client.GetTrainingText(req)
+    resp_dict = json.loads(resp.to_json_string())
+    logger.info(f"[Step 0] Response: {json.dumps(resp_dict, ensure_ascii=False, indent=2)}")
+
+    data = resp_dict.get("Data", resp_dict)
+    text_list = data.get("TrainingTextList", [])
+    if not text_list:
+        logger.error("[Step 0] 未返回训练文本列表")
+        sys.exit(1)
+
+    text_id = text_list[0].get("TextId", "")
+    training_text = text_list[0].get("Text", "")
+
+    if not text_id:
+        logger.error("[Step 0] 未返回 TextId")
+        sys.exit(1)
+
+    logger.success(f"[Step 0] TextId = {text_id}")
+    logger.info(f"[Step 0] 训练文本: {training_text}")
+    logger.warning("[Step 0] ⚠️ 请确保 voice-sample.wav 朗读的就是这段文本！")
+    logger.warning("[Step 0]    如果不是，需要重新录制后再注册。")
+    return text_id, training_text
+
+
+def detect_audio_quality(client, audio_path: Path, text_id: str) -> str:
     """Step 1: 音质检测 → 返回 AudioId。
 
     一句话复刻要求：
@@ -89,7 +126,7 @@ def detect_audio_quality(client, audio_path: Path) -> str:
 
     req = models.DetectEnvAndSoundQualityRequest()
     params = {
-        "TextId": "voice_clone_reg",
+        "TextId": text_id,
         "AudioData": audio_b64,
         "TypeId": 2,        # 2 = 音质检测
         "Codec": "wav",
@@ -213,6 +250,10 @@ def main():
                    help="性别: 1=男, 2=女")
     p.add_argument("--status", metavar="TASK_ID",
                    help="查询已有任务状态（跳过检测和创建）")
+    p.add_argument("--text-only", action="store_true",
+                   help="只获取训练文本并保存TextId，不进行注册。录音后用 --text-id 继续。")
+    p.add_argument("--text-id", metavar="TEXT_ID",
+                   help="使用之前获取的TextId（跳过GetTrainingText）")
     p.add_argument("--max-wait", type=int, default=120,
                    help="最长等待时间(秒)")
     args = p.parse_args()
@@ -224,8 +265,32 @@ def main():
         poll_task_status(client, args.status, args.max_wait)
         return
 
+    # Step 1: 获取训练文本
+    if args.text_only:
+        text_id, training_text = get_training_text(client)
+        # 保存 TextId 到文件，方便下次使用
+        text_id_file = args.sample.parent / "text-id.txt"
+        with open(text_id_file, "w", encoding="utf-8") as f:
+            f.write(f"{text_id}\n{training_text}\n")
+        logger.success(f"TextId 已保存到: {text_id_file}")
+        logger.success(f"")
+        logger.success(f"📋 请朗读以下文本并录音:")
+        logger.success(f"   「{training_text}」")
+        logger.success(f"")
+        logger.success(f"录好后保存为 WAV (16kHz单声道) 到: {args.sample}")
+        logger.success(f"然后运行: uv run register_voice.py --text-id {text_id}")
+        return
+
+    # Step 2: 确定 TextId
+    if args.text_id:
+        text_id = args.text_id
+        logger.info(f"使用指定的 TextId: {text_id}")
+    else:
+        # 自动获取新的（用户必须提前录好匹配音频）
+        text_id, training_text = get_training_text(client)
+
     # 完整流程: 检测 → 创建 → 轮询
-    audio_id = detect_audio_quality(client, args.sample)
+    audio_id = detect_audio_quality(client, args.sample, text_id)
     task_id = create_vrs_task(client, audio_id, args.name, args.gender)
     result = poll_task_status(client, task_id, args.max_wait)
 

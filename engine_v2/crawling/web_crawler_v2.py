@@ -127,54 +127,134 @@ async def _discover_urls_impl(
 
     profile = get_profile(seed_url)
     logger.info("=" * 60)
-    logger.info("PHASE 1: URL Discovery [profile={}]", profile.name)
+    logger.info("PHASE 1: URL Discovery [profile={}, mode={}]",
+                profile.name, "serial" if profile.serial_discovery else "concurrent-BFS")
     logger.info("  seed: {}", seed_url)
     logger.info("  depth={}, max_pages={}", max_depth, max_pages)
     logger.info("=" * 60)
 
     browser_config = BrowserConfig(headless=headless, extra_args=["--disable-gpu", "--no-sandbox"])
 
-    from crawl4ai.deep_crawling.filters import FilterChain, URLFilter
-    bfs_filters = []
-    if url_filter:
-        class _PathScopeFilter(URLFilter):
-            def __init__(self, fn):
-                super().__init__(name="PathScope")
-                self._fn = fn
-            def apply(self, url: str) -> bool:
-                return self._fn(url)
-        bfs_filters.append(_PathScopeFilter(url_filter))
-
-    deep_strategy = BFSDeepCrawlStrategy(
-        max_depth=max_depth, max_pages=max_pages, include_external=False,
-        filter_chain=FilterChain(bfs_filters) if bfs_filters else FilterChain())
-
-    # Use profile's min_delay as BFS mean_delay (e.g. Ontario.ca Radware WAF = 15s)
-    bfs_mean_delay = max(8.0, profile.min_delay_between)
-
-    run_config = CrawlerRunConfig(
-        cache_mode=CacheMode.BYPASS, page_timeout=30_000,
-        deep_crawl_strategy=deep_strategy, delay_before_return_html=2.0,
-        mean_delay=bfs_mean_delay, max_range=3.0, stream=True,
-        excluded_tags=["nav", "header", "footer", "aside"],
-        exclude_external_links=True)
-
     discovered: list[str] = []
-    try:
-        async with AsyncWebCrawler(config=browser_config) as crawler:
-            logger.info("Browser launched, starting BFS (stream mode)...")
-            results = await crawler.arun(url=seed_url, config=run_config)
-            async for result in results:
-                if result.success and result.url:
-                    discovered.append(result.url)
-                elif not result.success and result.url:
-                    url_lower = result.url.lower()
-                    is_download = "Download is starting" in (result.error_message or "")
-                    if is_download or url_lower.endswith(".pdf"):
+
+    if profile.serial_discovery:
+        # ── Serial BFS — one page at a time, explicit delay ──────────────
+        # Avoids MemoryAdaptiveDispatcher's 20-concurrent-tab storm that
+        # triggers WAF on bank/SPA sites.
+        from collections import deque
+
+        delay = profile.min_delay_between  # e.g. 15s for banks
+        bfs_timeout = max_pages * (delay + 10)
+        bfs_timeout = max(300, min(bfs_timeout, 1800))
+
+        single_config = CrawlerRunConfig(
+            cache_mode=CacheMode.BYPASS, page_timeout=30_000,
+            delay_before_return_html=2.0, stream=False,
+            excluded_tags=["nav", "header", "footer", "aside"],
+            exclude_external_links=True)
+
+        async def _run_serial_bfs():
+            async with AsyncWebCrawler(config=browser_config) as crawler:
+                logger.info("Browser launched, starting SERIAL BFS (delay={}s, timeout={}s)...",
+                            delay, bfs_timeout)
+
+                visited: set[str] = set()
+                # queue items: (url, depth)
+                queue: deque[tuple[str, int]] = deque([(seed_url, 0)])
+                visited.add(seed_url)
+
+                while queue and len(discovered) < max_pages:
+                    url, depth = queue.popleft()
+                    logger.info("  [{}/{}] depth={} → {}", len(discovered) + 1, max_pages, depth, url)
+
+                    try:
+                        result = await crawler.arun(url=url, config=single_config)
+                        if result.success and result.url:
+                            discovered.append(result.url)
+                        elif not result.success and result.url:
+                            url_lower = result.url.lower()
+                            is_download = "Download is starting" in (result.error_message or "")
+                            if is_download or url_lower.endswith(".pdf"):
+                                discovered.append(result.url)
+                                logger.info("    [download-link] {}", result.url)
+
+                        # Extract links for next BFS level
+                        if result.success and depth < max_depth:
+                            for link in (result.links or {}).get("internal", []):
+                                href = link.get("href", "")
+                                if not href or href in visited:
+                                    continue
+                                # Apply url_filter if provided
+                                if url_filter and not url_filter(href):
+                                    continue
+                                visited.add(href)
+                                queue.append((href, depth + 1))
+
+                    except Exception as e:
+                        logger.warning("    [error] {} — {}", url, e)
+
+                    # Polite delay between pages
+                    if queue:
+                        await asyncio.sleep(delay)
+
+        try:
+            await asyncio.wait_for(_run_serial_bfs(), timeout=bfs_timeout)
+        except asyncio.TimeoutError:
+            logger.warning("Serial BFS timeout ({}s) — collected {} URLs", bfs_timeout, len(discovered))
+        except Exception as e:
+            logger.error("URL discovery error: {}", e)
+
+    else:
+        # ── Concurrent BFS via crawl4ai (original path) ──────────────────
+        from crawl4ai.deep_crawling import BFSDeepCrawlStrategy
+        from crawl4ai.deep_crawling.filters import FilterChain, URLFilter
+
+        bfs_filters = []
+        if url_filter:
+            class _PathScopeFilter(URLFilter):
+                def __init__(self, fn):
+                    super().__init__(name="PathScope")
+                    self._fn = fn
+                def apply(self, url: str) -> bool:
+                    return self._fn(url)
+            bfs_filters.append(_PathScopeFilter(url_filter))
+
+        deep_strategy = BFSDeepCrawlStrategy(
+            max_depth=max_depth, max_pages=max_pages, include_external=False,
+            filter_chain=FilterChain(bfs_filters) if bfs_filters else FilterChain())
+
+        bfs_mean_delay = max(8.0, profile.min_delay_between)
+
+        run_config = CrawlerRunConfig(
+            cache_mode=CacheMode.BYPASS, page_timeout=30_000,
+            deep_crawl_strategy=deep_strategy, delay_before_return_html=2.0,
+            mean_delay=bfs_mean_delay, max_range=3.0, stream=True,
+            excluded_tags=["nav", "header", "footer", "aside"],
+            exclude_external_links=True)
+
+        bfs_timeout = max_pages * 15
+        bfs_timeout = max(180, min(bfs_timeout, 600))
+
+        async def _run_bfs():
+            async with AsyncWebCrawler(config=browser_config) as crawler:
+                logger.info("Browser launched, starting BFS (stream mode, timeout={}s)...", bfs_timeout)
+                results = await crawler.arun(url=seed_url, config=run_config)
+                async for result in results:
+                    if result.success and result.url:
                         discovered.append(result.url)
-                        logger.info("  [download-link] {}", result.url)
-    except Exception as e:
-        logger.error("URL discovery error: {}", e)
+                    elif not result.success and result.url:
+                        url_lower = result.url.lower()
+                        is_download = "Download is starting" in (result.error_message or "")
+                        if is_download or url_lower.endswith(".pdf"):
+                            discovered.append(result.url)
+                            logger.info("  [download-link] {}", result.url)
+
+        try:
+            await asyncio.wait_for(_run_bfs(), timeout=bfs_timeout)
+        except asyncio.TimeoutError:
+            logger.warning("BFS hard timeout ({}s) — collected {} URLs so far", bfs_timeout, len(discovered))
+        except Exception as e:
+            logger.error("URL discovery error: {}", e)
 
     if not discovered:
         discovered = [seed_url]

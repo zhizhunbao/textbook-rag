@@ -40,6 +40,7 @@ SOURCE_DIRS: dict[str, Path] = {
     "real_estate": RAW_PDFS_DIR / "real_estate",
     # ── Source-based: federal + provincial ──
     "federal-ircc":       CRAWLED_WEB_DIR / "federal-ircc",
+    "federal-fcac":       CRAWLED_WEB_DIR / "federal-fcac",
     "prov-ontario":       CRAWLED_WEB_DIR / "prov-ontario",
     "prov-bc":            CRAWLED_WEB_DIR / "prov-bc",
     "prov-alberta":       CRAWLED_WEB_DIR / "prov-alberta",
@@ -52,6 +53,12 @@ SOURCE_DIRS: dict[str, Path] = {
     "prov-yukon":         CRAWLED_WEB_DIR / "prov-yukon",
     # ── Education: Algonquin College ──
     "algonquin-programs": CRAWLED_WEB_DIR / "algonquin-programs",
+    # ── Banking: Big-5 Canadian banks ──
+    "bank-bmo":        CRAWLED_WEB_DIR / "bank-bmo",
+    "bank-rbc":        CRAWLED_WEB_DIR / "bank-rbc",
+    "bank-td":         CRAWLED_WEB_DIR / "bank-td",
+    "bank-cibc":       CRAWLED_WEB_DIR / "bank-cibc",
+    "bank-scotiabank": CRAWLED_WEB_DIR / "bank-scotiabank",
 }
 
 # Minimum output size thresholds for completeness validation

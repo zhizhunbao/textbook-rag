@@ -9,4 +9,5 @@ from engine_v2.crawling.sites import (  # noqa: F401
     canada_gov,
     algonquin,
     provincial,
+    banks,
 )

@@ -104,9 +104,14 @@ class PersonaRetrieveRequest(BaseModel):
     Lightweight retrieval-only endpoint — no reranker, no LLM synthesis.
     Returns raw BM25+Vector hybrid results for external tools (cite_rag.py)
     where the Agent handles quality judgment instead of CrossEncoder.
+
+    Two modes (mutually exclusive):
+      1. persona_slug — resolve collections via Payload CMS persona config
+      2. collection_names — direct collection access (bypasses persona lookup)
     """
 
-    persona_slug: str
+    persona_slug: str | None = None
+    collection_names: list[str] | None = None
     question: str
     top_k: int = 10
 
@@ -327,22 +332,32 @@ async def consulting_retrieve(req: PersonaRetrieveRequest):
     (no CrossEncoder rerank, no LLM synthesis). Returns raw chunks with
     metadata for external tools where the calling Agent handles judgment.
 
+    Two modes:
+      1. collection_names — direct collection access (preferred for cite_rag.py)
+      2. persona_slug — resolve collections via Payload CMS persona config
+
     Cost: ~50ms (vs ~3s for /query with rerank + synthesis).
     """
     from engine_v2.retrievers.hybrid import multi_collection_retrieve
     from engine_v2.schema import build_source
 
-    persona = _fetch_persona(req.persona_slug)
-    if not persona:
-        return {"status": "error", "message": f"Persona not found: {req.persona_slug}"}
-
-    # Build collection list (same logic as query, but no user_id needed)
-    multi_collections = persona.get("multiCollections") or []
-    if multi_collections:
-        collection_names = list(multi_collections)
+    # ── Resolve collection names ──
+    if req.collection_names:
+        # Direct mode: use provided collection names as-is
+        collection_names = list(req.collection_names)
+    elif req.persona_slug:
+        # Persona mode: resolve via Payload CMS
+        persona = _fetch_persona(req.persona_slug)
+        if not persona:
+            return {"status": "error", "message": f"Persona not found: {req.persona_slug}"}
+        multi_collections = persona.get("multiCollections") or []
+        if multi_collections:
+            collection_names = list(multi_collections)
+        else:
+            collection_name = persona.get("chromaCollection", f"persona_{req.persona_slug}")
+            collection_names = [collection_name]
     else:
-        collection_name = persona.get("chromaCollection", f"persona_{req.persona_slug}")
-        collection_names = [collection_name]
+        return {"status": "error", "message": "Must provide either collection_names or persona_slug"}
 
     # Pure BM25+Vector retrieval — no rerank, no synthesis
     merged_nodes = multi_collection_retrieve(

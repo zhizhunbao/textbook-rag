@@ -36,8 +36,8 @@ from loguru import logger
 
 
 # ── Tunables ──────────────────────────────────────────────────
-MIN_CHUNK_CHARS = 300   # Keep accumulating until buffer reaches this
-MAX_CHUNK_CHARS = 500   # Don't let buffer exceed this
+MIN_CHUNK_CHARS = 800   # Keep accumulating until buffer reaches this
+MAX_CHUNK_CHARS = 1500  # Don't let buffer exceed this
 # Items of these types are never merged (kept standalone).
 # Tables are intentionally NOT in this set — they merge into sections
 # for context (e.g., NOC occupation table belongs with its heading).

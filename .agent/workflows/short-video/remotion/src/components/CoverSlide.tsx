@@ -5,10 +5,10 @@ import { theme, baseStyles } from '../theme';
  * 封面页 — competitor-gold 风格
  *
  * 布局:
- *   钩子大数字 (120px 金色)
- *   钩子单位 (28px)
- *   主标题 (72px 白色)
- *   副标题 (28px 金色淡)
+ *   钩子大数字 (200px 金色)
+ *   钩子单位 (32px)
+ *   主标题 (80px 白色)
+ *   副标题 (32px 金色淡)
  */
 export const CoverSlide: React.FC<{
   title: string;
@@ -31,7 +31,7 @@ export const CoverSlide: React.FC<{
       {/* 钩子大数字 */}
       {hookNumber && (
         <div style={{
-          fontSize: 180, fontWeight: 900,
+          fontSize: 200, fontWeight: 900,
           color: theme.accent,
           lineHeight: 1, marginBottom: 8,
           textShadow: `0 0 60px ${theme.accent}40`,
@@ -43,7 +43,7 @@ export const CoverSlide: React.FC<{
       {/* 钩子单位 */}
       {hookUnit && (
         <div style={{
-          fontSize: 28, color: theme.accentLight,
+          fontSize: 32, color: theme.accentLight,
           fontWeight: 600, letterSpacing: 3, marginBottom: 16,
         }}>
           {hookUnit}
@@ -52,7 +52,7 @@ export const CoverSlide: React.FC<{
 
       {/* 主标题 */}
       <h1 style={{
-        fontSize: 72, fontWeight: 800, lineHeight: 1.15,
+        fontSize: 80, fontWeight: 800, lineHeight: 1.15,
         color: theme.textPrimary,
         letterSpacing: 1, margin: 0,
         textAlign: 'center',
@@ -63,7 +63,7 @@ export const CoverSlide: React.FC<{
       {/* 副标题 */}
       {subtitle && (
         <p style={{
-          fontSize: 28, color: theme.accentLight,
+          fontSize: 32, color: theme.accentLight,
           marginTop: 20, fontWeight: 400, letterSpacing: 1,
           textAlign: 'center',
         }}>
@@ -76,7 +76,7 @@ export const CoverSlide: React.FC<{
     {source && (
       <div style={{
         position: 'absolute', top: 20, right: 30,
-        fontSize: 22, color: theme.sourceText,
+        fontSize: 24, color: theme.sourceText,
         fontFamily: "'Inter', monospace",
       }}>
         {source}

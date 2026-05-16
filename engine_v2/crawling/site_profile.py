@@ -81,6 +81,11 @@ class SiteProfile:
     min_delay_between: float = 5.0       # Minimum seconds between pages
     retry_backoff_sec: float = 15.0      # Seconds to wait before retry on error
 
+    # ── Discovery Mode ──
+    # True → serial BFS (one page at a time), avoids WAF on bank/SPA sites.
+    # False → crawl4ai's built-in concurrent BFS (default, fast for gov sites).
+    serial_discovery: bool = False
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 #  Profile Registry

@@ -43,6 +43,10 @@ function parseStoryline(mdText) {
   const narrationLines = [];  // 每行台词 + slide_index
   let text = mdText.replace(/\r\n/g, '\n').trim();
 
+  // 解析作者水印
+  const authorMatch = text.match(/\*\*作者\*\*:\s*(.+)/m);
+  const watermark = authorMatch ? '@' + authorMatch[1].trim() : '';
+
   // 截断引用汇总
   const summaryIdx = text.search(/^## 📋/m);
   if (summaryIdx > -1) text = text.slice(0, summaryIdx);
@@ -82,14 +86,19 @@ function parseStoryline(mdText) {
 
     // **引用** 是作者参考文本，不显示在视频中，跳过
 
-    // 提取 **来源** URL
-    const srcMatch = page.match(/\*\*来源\*\*:\s*(https?:\/\/\S+)/);
-    if (srcMatch) slide.source = srcMatch[1].trim();
+    // 右上角水印: 固定显示作者频道名
+    slide.source = watermark;
 
     // 提取表格
     const tableLines = page.split('\n').filter(l => l.trim().startsWith('|'));
     if (tableLines.length >= 3) {
-      const parseRow = (line) => line.split('|').filter(s => s.trim()).map(s => s.trim());
+      const parseRow = (line) => {
+        const parts = line.split('|').map(s => s.trim().replace(/\\(.)/g, '$1'));
+        // strip leading/trailing empty strings from | ... | syntax, but keep interior empties
+        if (parts.length > 0 && parts[0] === '') parts.shift();
+        if (parts.length > 0 && parts[parts.length - 1] === '') parts.pop();
+        return parts;
+      };
       const headers = parseRow(tableLines[0]);
       const rows = tableLines.slice(2).map(parseRow).filter(r => r.length > 0); // skip separator
       if (rows.length > 0) slide.table = { headers, rows };
@@ -152,26 +161,36 @@ if (existsSync(storylinePath)) {
 const timestamps = JSON.parse(readFileSync(tsPath, 'utf-8'));
 
 if (narrationLines) {
-  // storyline 模式: 直接从台词行匹配 slide_index
-  const cleanForMatch = (s) => s.replace(/[，。！？、；：""''（）《》【】…—·\u3000\s]/g, '');
-
-  for (const ts of timestamps) {
-    const cleanTs = cleanForMatch(ts.text);
-    let matched = false;
-
-    for (const nl of narrationLines) {
-      const cleanNl = cleanForMatch(nl.text);
-      if (cleanNl === cleanTs || cleanNl.includes(cleanTs) || cleanTs.includes(cleanNl)) {
-        ts.slide_index = nl.slide_index;
-        matched = true;
-        break;
-      }
+  // storyline 模式: 台词行与 timestamps 1:1 顺序对应，直接按索引映射
+  if (timestamps.length === narrationLines.length) {
+    // 完全对齐 — 直接赋值
+    for (let i = 0; i < timestamps.length; i++) {
+      timestamps[i].slide_index = narrationLines[i].slide_index;
     }
+  } else {
+    // 长度不一致 — 按顺序贪心匹配，保证 slide_index 单调不减
+    const cleanForMatch = (s) => s.replace(/[，。！？、；：""''（）《》【】…—·\u3000\s]/g, '');
+    let nlIdx = 0;
+    for (const ts of timestamps) {
+      const cleanTs = cleanForMatch(ts.text);
+      let matched = false;
 
-    if (!matched) {
-      // 回退: 使用上一个 timestamp 的 slide_index
-      const idx = timestamps.indexOf(ts);
-      ts.slide_index = idx > 0 ? timestamps[idx - 1].slide_index : 0;
+      // 从当前位置向前搜索（不回头）
+      for (let j = nlIdx; j < narrationLines.length; j++) {
+        const cleanNl = cleanForMatch(narrationLines[j].text);
+        if (cleanNl === cleanTs || cleanNl.includes(cleanTs) || cleanTs.includes(cleanNl)) {
+          ts.slide_index = narrationLines[j].slide_index;
+          nlIdx = j;  // 下次从这里继续，不会回头
+          matched = true;
+          break;
+        }
+      }
+
+      if (!matched) {
+        // 回退: 使用上一个 timestamp 的 slide_index（单调不减）
+        const idx = timestamps.indexOf(ts);
+        ts.slide_index = idx > 0 ? timestamps[idx - 1].slide_index : 0;
+      }
     }
   }
 } else {

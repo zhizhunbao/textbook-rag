@@ -29,6 +29,18 @@ dependencies = [
     "xhtml2pdf>=0.2.17",
     "markdown>=3.10.2",
     "crawl4ai>=0.8.5",
+    "conformer==0.3.2",
+    "diffusers==0.29.0",
+    "gdown==5.1.0",
+    "hydra-core==1.3.2",
+    "hyperpyyaml==1.2.3",
+    "inflect==7.3.1",
+    "lightning==2.2.4",
+    "pyworld==0.3.4",
+    "wetext==0.0.4",
+    "x-transformers==2.11.24",
+    "onnxruntime-gpu>=1.24.3",
+    "edge-tts>=7.2.8",
 ]
 
 [project.optional-dependencies]
