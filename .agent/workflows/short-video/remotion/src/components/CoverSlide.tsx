@@ -71,16 +71,5 @@ export const CoverSlide: React.FC<{
         </p>
       )}
     </div>
-
-    {/* 来源 URL 水印 */}
-    {source && (
-      <div style={{
-        position: 'absolute', top: 20, right: 30,
-        fontSize: 24, color: theme.sourceText,
-        fontFamily: "'Inter', monospace",
-      }}>
-        {source}
-      </div>
-    )}
   </div>
 );

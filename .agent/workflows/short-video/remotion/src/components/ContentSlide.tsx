@@ -18,8 +18,14 @@ import type { SlideData } from '../types';
 export const ContentSlide: React.FC<{ slide: SlideData }> = ({ slide }) => {
   const isCta = slide.type === 'cta' || slide.type === 'preview';
 
+  // 估算表格是否高到需要顶部对齐（占用 >50% 可用空间）
+  const isLargeTable = slide.table && slide.table.rows.length >= 5;
+
   return (
-    <div style={baseStyles.slideArea}>
+    <div style={{
+      ...baseStyles.slideArea,
+      justifyContent: isLargeTable ? 'flex-start' : 'center',
+    }}>
       {/* 标题 */}
       <h2 style={baseStyles.heading}>{slide.title}</h2>
 
@@ -75,18 +81,6 @@ export const ContentSlide: React.FC<{ slide: SlideData }> = ({ slide }) => {
           {slide.citation}
         </div>
       )}
-
-      {/* 来源 URL — 右上角水印 */}
-      {slide.source && (
-        <div style={{
-          position: 'absolute', top: 20, right: 30,
-          fontSize: 24,
-          color: theme.sourceText,
-          fontFamily: "'Inter', monospace",
-        }}>
-          {slide.source}
-        </div>
-      )}
     </div>
   );
 };
@@ -96,15 +90,55 @@ const DataTable: React.FC<{ headers: string[]; rows: string[][] }> = ({ headers,
   const colCount = headers.length;
   const rowCount = rows.length;
 
-  // 密度等级: 列×行越多，字越小、间距越紧
-  // slide 区域 880px，标题占 ~84px，可用 ~712px
-  const isXXDense = rowCount >= 8;  // 8+ 行：超密集，防溢出
-  const isXDense = colCount >= 6 || (colCount >= 5 && rowCount >= 5);
-  const isDense  = colCount >= 4 || rowCount > 4;
+  // ── 自适应密度：从最大字号开始试，放不下就降级 ──
+  // slide 832px - padding 60+24 - title ~95px = ~650px 可用
+  const AVAILABLE_H = 650;
+  const TABLE_W = 1760; // 1920 - 80*2 padding
 
-  const pad = isXXDense ? '4px 10px' : isXDense ? '8px 14px' : isDense ? '10px 18px' : '16px 28px';
-  const fsBody = isXXDense ? 24 : isXDense ? 30 : isDense ? 34 : 36;
-  const fsHead = isXXDense ? 22 : isXDense ? 26 : isDense ? 30 : 32;
+  const densityLevels = [
+    { padV: 16, padH: 28, fsBody: 36, fsHead: 32, name: 'normal' },
+    { padV: 10, padH: 18, fsBody: 34, fsHead: 30, name: 'dense' },
+    { padV: 6,  padH: 12, fsBody: 30, fsHead: 26, name: 'xDense' },
+    { padV: 4,  padH: 10, fsBody: 26, fsHead: 22, name: 'xxDense' },
+    { padV: 2,  padH: 8,  fsBody: 22, fsHead: 20, name: 'xxxDense' },
+  ];
+
+  /** 估算一个单元格在给定字号下占几行 */
+  const estimateCellLines = (text: string, fs: number, cw: number): number => {
+    if (!text) return 1;
+    const cjk = (text.match(/[\u4e00-\u9fff\uff00-\uffef]/g) || []).length;
+    const other = text.length - cjk;
+    // CJK 字宽 ≈ 字号，Latin/数字 ≈ 0.55 × 字号
+    const textWidth = cjk * fs + other * fs * 0.55;
+    const usable = cw - 20; // 留 padding
+    return Math.max(1, Math.ceil(textWidth / Math.max(usable, 60)));
+  };
+
+  /** 估算整个表格在给定密度下的总高度 */
+  const estimateHeight = (level: typeof densityLevels[0]): number => {
+    const cw = TABLE_W / colCount;
+    // header 行
+    let h = level.fsHead * 1.5 + level.padV * 2 + 2; // +2 border
+    // data 行
+    for (const row of rows) {
+      const maxLines = Math.max(...row.map(cell => estimateCellLines(cell, level.fsBody, cw)));
+      h += level.fsBody * 1.5 * maxLines + level.padV * 2 + 1; // +1 border
+    }
+    return h;
+  };
+
+  // 选最大的能放下的等级
+  let chosen = densityLevels[densityLevels.length - 1]; // 兜底 xxDense
+  for (const level of densityLevels) {
+    if (estimateHeight(level) <= AVAILABLE_H) {
+      chosen = level;
+      break;
+    }
+  }
+
+  const pad = `${chosen.padV}px ${chosen.padH}px`;
+  const fsBody = chosen.fsBody;
+  const fsHead = chosen.fsHead;
 
   // 自动检测哪些列包含 URL（用于特殊样式）
   const isUrlCol: boolean[] = headers.map((h, ci) => {

@@ -44,7 +44,8 @@ export const theme = {
   /* ── 尺寸（px） ── */
   width:          1920,
   totalHeight:    1080,
-  slideHeight:    880,
+  chapterHeight:  48,     // 章节时间轴
+  slideHeight:    832,    // 1080 - 48 (chapter) - 200 (subtitle)
   subtitleHeight: 200,
 } as const;
 
@@ -61,9 +62,10 @@ export const baseStyles = {
     fontFamily: theme.fontFamily,
     display: 'flex',
     flexDirection: 'column' as const,
-    justifyContent: 'center' as const,
+    justifyContent: 'flex-start' as const,
     alignItems: 'center' as const,
     textAlign: 'center' as const,
+    overflow: 'hidden' as const,
   },
 
   /** 字幕条 — 深色底 */

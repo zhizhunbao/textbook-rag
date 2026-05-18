@@ -49,11 +49,23 @@ export interface TimestampEntry {
   has_pipe?: boolean;
 }
 
+/** 章节时间轴数据 — 由 render.mjs 从 storyline slides 计算 */
+export interface ChapterInfo {
+  /** 章节标题（来自 slide.title） */
+  title: string;
+  /** 章节开始时间（秒） */
+  startSec: number;
+  /** 对应 slide 索引 */
+  slideIndex: number;
+}
+
 /** 传递给 Video 组件的 props */
 export interface VideoProps {
   slides: SlideData[];
   timestamps: TimestampEntry[];
   audioUrl: string;
+  /** 章节时间轴数据 */
+  chapters?: ChapterInfo[];
 }
 
 /** 分词后的单个 token（用于 TikTok 字幕高亮） */

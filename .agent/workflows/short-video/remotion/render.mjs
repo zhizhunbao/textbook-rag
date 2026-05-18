@@ -45,7 +45,7 @@ function parseStoryline(mdText) {
 
   // 解析作者水印
   const authorMatch = text.match(/\*\*作者\*\*:\s*(.+)/m);
-  const watermark = authorMatch ? '@' + authorMatch[1].trim() : '';
+  const watermark = authorMatch ? authorMatch[1].trim() : '';
 
   // 截断引用汇总
   const summaryIdx = text.search(/^## 📋/m);
@@ -68,7 +68,7 @@ function parseStoryline(mdText) {
     const type = typeMatch[1];    // cover, argument, evidence, cta, preview
     const title = typeMatch[2].trim();
 
-    const slide = { type, title, source: '' };
+    const slide = { type, title, source: '', chapter: undefined };
 
     // 提取 **副标题**
     const subMatch = page.match(/\*\*副标题\*\*:\s*(.+)/);
@@ -83,6 +83,10 @@ function parseStoryline(mdText) {
     // 提取 **内容**
     const contentMatch = page.match(/\*\*内容\*\*:\s*(.+)/);
     if (contentMatch) slide.content = contentMatch[1].trim();
+
+    // 提取 **章节** (用于章节时间轴的短标签)
+    const chapterMatch = page.match(/\*\*章节\*\*:\s*(.+)/);
+    if (chapterMatch) slide.chapter = chapterMatch[1].trim();
 
     // **引用** 是作者参考文本，不显示在视频中，跳过
 
@@ -239,11 +243,75 @@ mkdirSync(outputDir, { recursive: true });
 copyFileSync(audioPath, join(publicDir, 'audio.wav'));
 console.log('🔊 音频已复制到 public/audio.wav');
 
+// ── 计算章节时间轴数据 ──
+// 优先读取 storyline 中 **章节**: 字段 (作者手动定义)
+// 如果没有任何 **章节** 字段，则自动计算 (跳过引用/预告, 合并同前缀)
+
+const hasExplicitChapters = slides.some(s => s.chapter);
+let chapters = [];
+
+if (hasExplicitChapters) {
+  // ── 模式A: 作者在 storyline 中用 **章节**: 标签 手动定义 ──
+  console.log('📖 使用 storyline 中的 **章节** 字段');
+  for (let si = 0; si < slides.length; si++) {
+    if (!slides[si].chapter) continue;
+    const firstTs = timestamps.find(ts => ts.slide_index === si);
+    if (!firstTs) continue;
+    chapters.push({
+      title: slides[si].chapter,
+      startSec: firstTs.start,
+      slideIndex: si,
+    });
+  }
+} else {
+  // ── 模式B: 自动计算 (通用回退) ──
+  console.log('🤖 自动计算章节 (无 **章节** 字段)');
+  const rawChapters = [];
+  for (let si = 0; si < slides.length; si++) {
+    const slide = slides[si];
+    const title = slide.title || '';
+
+    // 跳过引用来源页
+    if (/引用来源|引用|参考/.test(title)) continue;
+    // 跳过 preview 页
+    if (slide.type === 'preview') continue;
+
+    const firstTs = timestamps.find(ts => ts.slide_index === si);
+    if (!firstTs) continue;
+
+    // 提取合并用的前缀 (去掉序号后缀)
+    const prefix = title
+      .replace(/[（(][一二三四五六七八九十\d]+[）)]/g, '')
+      .split(/[：:]/)[0]
+      .trim();
+
+    rawChapters.push({
+      title: slide.type === 'cover' ? '开场' : title,
+      prefix: slide.type === 'cover' ? '__cover__' : prefix,
+      startSec: firstTs.start,
+      slideIndex: si,
+    });
+  }
+
+  // 合并同前缀的连续章节
+  for (const ch of rawChapters) {
+    const prev = chapters[chapters.length - 1];
+    if (prev && prev.prefix === ch.prefix) continue;
+    chapters.push({ ...ch });
+  }
+}
+
+console.log(`📊 章节时间轴: ${chapters.length} 个章节`);
+for (const ch of chapters) {
+  console.log(`   ${ch.startSec.toFixed(1)}s → ${ch.title}`);
+}
+
 // ── 构建 props ──
 const props = {
   slides,
   timestamps,
   audioUrl: '/public/audio.wav',
+  chapters,
 };
 
 const propsPath = join(__dirname, 'input-props.json');

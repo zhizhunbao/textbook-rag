@@ -30,6 +30,13 @@ export const SubtitleBar: React.FC<{
         textAlign: 'center',
         padding: '0 60px',
         maxWidth: '100%',
+        whiteSpace: 'normal',
+        wordBreak: 'keep-all',      // 中文按词组断行，不劈字
+        overflowWrap: 'break-word', // 超长英文单词兜底换行
+        display: '-webkit-box',
+        WebkitLineClamp: 2,         // 最多两行
+        WebkitBoxOrient: 'vertical' as const,
+        overflow: 'hidden',
       }}>
         {displayText}
       </div>
