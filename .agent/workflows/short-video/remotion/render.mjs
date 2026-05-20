@@ -44,7 +44,7 @@ function parseStoryline(mdText) {
   let text = mdText.replace(/\r\n/g, '\n').trim();
 
   // 解析作者水印
-  const authorMatch = text.match(/\*\*作者\*\*:\s*(.+)/m);
+  const authorMatch = text.match(/\*\*(?:作者|Author)\*\*:\s*(.+)/m);
   const watermark = authorMatch ? authorMatch[1].trim() : '';
 
   // 截断引用汇总
@@ -71,21 +71,21 @@ function parseStoryline(mdText) {
     const slide = { type, title, source: '', chapter: undefined };
 
     // 提取 **副标题**
-    const subMatch = page.match(/\*\*副标题\*\*:\s*(.+)/);
+    const subMatch = page.match(/\*\*(?:副标题|Subtitle)\*\*:\s*(.+)/);
     if (subMatch) slide.subtitle = subMatch[1].trim();
 
     // 提取 **钩子数字** / **钩子单位**
-    const hookNumMatch = page.match(/\*\*钩子数字\*\*:\s*(.+)/);
+    const hookNumMatch = page.match(/\*\*(?:钩子数字|Hook Number)\*\*:\s*(.+)/);
     if (hookNumMatch) slide.hookNumber = hookNumMatch[1].trim();
-    const hookUnitMatch = page.match(/\*\*钩子单位\*\*:\s*(.+)/);
+    const hookUnitMatch = page.match(/\*\*(?:钩子单位|Hook Unit)\*\*:\s*(.+)/);
     if (hookUnitMatch) slide.hookUnit = hookUnitMatch[1].trim();
 
     // 提取 **内容**
-    const contentMatch = page.match(/\*\*内容\*\*:\s*(.+)/);
+    const contentMatch = page.match(/\*\*(?:内容|Content)\*\*:\s*(.+)/);
     if (contentMatch) slide.content = contentMatch[1].trim();
 
     // 提取 **章节** (用于章节时间轴的短标签)
-    const chapterMatch = page.match(/\*\*章节\*\*:\s*(.+)/);
+    const chapterMatch = page.match(/\*\*(?:章节|Chapter)\*\*:\s*(.+)/);
     if (chapterMatch) slide.chapter = chapterMatch[1].trim();
 
     // **引用** 是作者参考文本，不显示在视频中，跳过
@@ -109,7 +109,7 @@ function parseStoryline(mdText) {
     }
 
     // 提取 **台词**: 块
-    const narrationMatch = page.match(/\*\*台词\*\*:\s*\n([\s\S]*?)(?=\n\*\*|\n---|\n##|$)/);
+    const narrationMatch = page.match(/\*\*(?:台词|Narration)\*\*:\s*\n([\s\S]*?)(?=\n\*\*|\n---|\n##|$)/);
     if (narrationMatch) {
       const lines = narrationMatch[1].split('\n').map(l => l.trim()).filter(Boolean);
       let isFirst = true;
@@ -272,7 +272,7 @@ if (hasExplicitChapters) {
     const title = slide.title || '';
 
     // 跳过引用来源页
-    if (/引用来源|引用|参考/.test(title)) continue;
+    if (/引用来源|引用|参考|Sources|References|Citations/.test(title)) continue;
     // 跳过 disclaimer / preview / citation 页
     if (['preview', 'disclaimer', 'citation'].includes(slide.type)) continue;
 

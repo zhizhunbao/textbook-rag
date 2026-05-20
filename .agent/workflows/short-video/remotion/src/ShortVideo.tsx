@@ -28,6 +28,14 @@ export const ShortVideo: React.FC<VideoProps> = ({ slides, timestamps, audioUrl,
   const slideIndex = getCurrentSlideIndex(timestamps, currentTimeMs);
   const slideData: SlideData | undefined = slides[slideIndex];
 
+  // ── 自动检测语言（中/英）──
+  const allText = timestamps.map(t => t.text).join('');
+  const cnChars = allText.replace(/[^\u4e00-\u9fff]/g, '').length;
+  const isEnglish = cnChars / Math.max(allText.length, 1) < 0.1;
+  const disclaimer = isEnglish
+    ? 'For reference only. Not financial or legal advice.'
+    : '仅供参考 不构成投资或法律建议';
+
   return (
     <AbsoluteFill style={{ backgroundColor: theme.bgPrimary }}>
       {/* ── 章节时间轴 (顶部 48px) ── 绝对定位，互不覆盖 */}
@@ -75,7 +83,7 @@ export const ShortVideo: React.FC<VideoProps> = ({ slides, timestamps, audioUrl,
           color: 'rgba(255, 255, 255, 0.2)',
           fontFamily: "'Inter', 'Noto Sans SC', sans-serif",
         }}>
-          仅供参考 不构成投资或法律建议
+          {disclaimer}
         </div>
       </div>
 

@@ -24,7 +24,7 @@ for (let i = 0; i < lines.length; i++) {
   const line = lines[i];
 
   // 检测 **台词**: 块的开始
-  if (/^\*\*台词\*\*:/.test(line.trim())) {
+  if (/^\*\*(?:台词|Narration)\*\*:/.test(line.trim())) {
     inNarration = true;
     result.push(line);
     continue;

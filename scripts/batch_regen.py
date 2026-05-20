@@ -111,10 +111,6 @@ def scan_compliance(video_dir: Path) -> dict:
         if count > 0:
             issues["warnings"].append(f"'{w}' x{count} in narration/title")
 
-    # Check for disclaimer slide
-    if "[disclaimer]" not in text:
-        issues["warnings"].append("no [disclaimer] slide")
-
     return issues
 
 

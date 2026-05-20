@@ -70,9 +70,17 @@ platforms:
     category_id: "22"               # 22 = People & Blogs
     default_tags: "Canada,newcomer,immigration,overseas life,life guide"
 
+  linkedin:
+    name: LinkedIn
+    emoji: "💼"
+    enabled: true
+    engine: playwright
+    default_tags: "CanadaNewcomer,ImmigrationTips,OverseasLife,CanadaLife,NewToCanada"
+
 # Cookie / 凭证路径映射
 credentials:
   sau_cookies_dir: "{project_root}/.github/social-auto-upload/cookies"
   weixin_browser_data: "{publish_dir}/credentials/weixin/browser-data"
   tiktok_browser_data: "{publish_dir}/credentials/tiktok/browser-data"
   youtube_token: "{publish_dir}/credentials/youtube/youtube_token.json"
+  linkedin_browser_data: "{publish_dir}/credentials/linkedin/browser-data"

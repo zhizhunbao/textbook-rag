@@ -121,10 +121,10 @@ def parse_storyline(path: Path) -> list[dict]:
             continue
 
         # 检测台词开始标记
-        if stripped.startswith("**台词**:") or stripped.startswith("**台词：**"):
+        if stripped.startswith("**台词**:") or stripped.startswith("**台词：**") or stripped.startswith("**Narration**:"):
             in_narration = True
-            # 检查同行是否有内容 (如 "**台词**: 第一句话")
-            after = re.sub(r"^\*\*台词\*\*[：:]", "", stripped).strip()
+            # 检查同行是否有内容 (如 "**台词**: 第一句话" or "**Narration**: First line")
+            after = re.sub(r"^\*\*(?:台词|Narration)\*\*[：:]", "", stripped).strip()
             if after:
                 parsed.append({
                     "chapter": current_slide,
@@ -139,7 +139,7 @@ def parse_storyline(path: Path) -> list[dict]:
         # 台词区结束条件: 空行 / 新的 ** 字段 / --- 分隔
         if in_narration:
             if not stripped or stripped.startswith("---") or (
-                stripped.startswith("**") and not stripped.startswith("**台词")
+                stripped.startswith("**") and not stripped.startswith("**台词") and not stripped.startswith("**Narration")
             ):
                 in_narration = False
                 continue

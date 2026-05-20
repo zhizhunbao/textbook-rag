@@ -2,154 +2,154 @@
   "slides": [
     {
       "type": "cover",
-      "title": "没有SIN号寸步难行",
-      "source": "海外生活指南",
-      "chapter": "开场",
-      "subtitle": "到了加拿大第一件事",
+      "title": "You Need This Number First",
+      "source": "Overseas Life Guide",
+      "chapter": "Hook",
+      "subtitle": "Before you do anything else",
       "hookNumber": "9",
-      "hookUnit": "位数字决定一切"
+      "hookUnit": "digits that control everything"
     },
     {
       "type": "argument",
-      "title": "SIN是什么",
-      "source": "海外生活指南",
-      "chapter": "SIN是什么",
+      "title": "What Is a SIN",
+      "source": "Overseas Life Guide",
+      "chapter": "What Is SIN",
       "table": {
         "headers": [
-          "要素",
-          "说明"
+          "Item",
+          "Details"
         ],
         "rows": [
           [
-            "全称",
+            "Full Name",
             "Social Insurance Number"
           ],
           [
-            "位数",
-            "9位数字"
+            "Digits",
+            "9-digit number"
           ],
           [
-            "签发方",
+            "Issued By",
             "Service Canada"
           ],
           [
-            "本质",
-            "加拿大的税务身份证"
+            "Purpose",
+            "Your tax and benefits identity in Canada"
           ]
         ]
       }
     },
     {
       "type": "argument",
-      "title": "没有SIN你做不了这三件事",
-      "source": "海外生活指南",
-      "chapter": "没有SIN你做不了这三件事",
+      "title": "3 Things You Can't Do Without a SIN",
+      "source": "Overseas Life Guide",
+      "chapter": "Why You Need It",
       "table": {
         "headers": [
-          "场景",
-          "没有SIN的后果"
+          "Situation",
+          "What Happens Without SIN"
         ],
         "rows": [
           [
-            "找工作",
-            "雇主无法合法雇你"
+            "Get a job",
+            "Employers can't legally hire you"
           ],
           [
-            "报税",
-            "无法申报，损失退税"
+            "File taxes",
+            "You can't file a return or get refunds"
           ],
           [
-            "领福利",
-            "EI失业保险、学生贷款全拿不到"
+            "Get benefits",
+            "No employment insurance, no student loans, no pension"
           ]
         ]
       }
     },
     {
       "type": "argument",
-      "title": "怎么办SIN",
-      "source": "海外生活指南",
-      "chapter": "怎么办SIN",
+      "title": "How to Apply for Your SIN",
+      "source": "Overseas Life Guide",
+      "chapter": "How to Apply",
       "table": {
         "headers": [
-          "方式",
-          "速度",
-          "注意"
+          "Method",
+          "Speed",
+          "Notes"
         ],
         "rows": [
           [
-            "**现场办理**",
-            "当场出号",
-            "去Service Canada Centre"
+            "**In person**",
+            "Same day",
+            "Walk into any Service Canada Centre"
           ],
           [
-            "📌 开学周校内",
-            "当场出号",
-            "部分学校设办理点（详见学校orientation）"
+            "On campus",
+            "Same day",
+            "Many schools host Service Canada during orientation week"
           ],
           [
-            "在线申请",
-            "数个工作日",
-            "sin-nas.canada.ca"
+            "Online",
+            "A few business days",
+            "Apply at sin-nas.canada.ca"
           ],
           [
-            "邮寄",
-            "最慢",
-            "需寄原件"
+            "By mail",
+            "Slowest",
+            "Must send original documents"
           ]
         ]
       }
     },
     {
       "type": "argument",
-      "title": "留学生必须知道的两个坑",
-      "source": "海外生活指南",
-      "chapter": "留学生必须知道的两个坑",
+      "title": "2 Traps Every International Student Must Know",
+      "source": "Overseas Life Guide",
+      "chapter": "Watch Out",
       "table": {
         "headers": [
-          "坑",
-          "说明"
+          "Trap",
+          "What You Need to Know"
         ],
         "rows": [
           [
-            "9开头有效期",
-            "SIN跟学签同步过期，续了学签必须续SIN"
+            "SIN starting with 9 expires",
+            "Your SIN expires with your immigration documents, renew both"
           ],
           [
-            "SIN不是身份证",
-            "不能随便给别人，房东要SIN可以拒绝"
+            "SIN is not your ID",
+            "Never give it to landlords or phone companies, you can legally refuse"
           ]
         ]
       }
     },
     {
       "type": "argument",
-      "title": "引用来源",
-      "source": "海外生活指南",
+      "title": "Sources",
+      "source": "Overseas Life Guide",
       "table": {
         "headers": [
-          "中文名",
-          "英文名",
-          "说明",
-          "链接"
+          "Name",
+          "Organization",
+          "Description",
+          "Link"
         ],
         "rows": [
           [
-            "加拿大联邦政府",
+            "Government of Canada",
             "Service Canada",
-            "SIN申请指南",
+            "SIN Application Guide",
             "https://www.canada.ca/en/employment-social-development/services/sin/apply.html"
           ],
           [
             "",
             "",
-            "SIN保护须知",
+            "SIN Protection",
             "https://www.canada.ca/en/employment-social-development/services/sin/protection.html"
           ],
           [
             "",
             "",
-            "SIN所需文件",
+            "Required Documents",
             "https://www.canada.ca/en/employment-social-development/services/sin/required-documents.html"
           ]
         ]
@@ -157,226 +157,345 @@
     },
     {
       "type": "preview",
-      "title": "下期预告",
-      "source": "海外生活指南",
-      "chapter": "下期预告",
-      "content": "加拿大银行开户怎么选最省钱"
+      "title": "Next Episode",
+      "source": "Overseas Life Guide",
+      "chapter": "Next",
+      "content": "Which Canadian bank saves you the most money"
     }
   ],
   "timestamps": [
     {
       "index": 1,
       "start": 0.15,
-      "end": 4.67,
-      "text": "到了加拿大，安顿好住处之后，有一件事必须尽快办",
+      "end": 2.691,
+      "text": "You just landed in Canada, now what?",
       "slide_index": 0
     },
     {
       "index": 2,
-      "start": 4.97,
-      "end": 9.032,
-      "text": "一个9位数字的号码，没有它你连工作都找不到",
+      "start": 2.991,
+      "end": 6.9,
+      "text": "Before you get a job, open a bank account, or file taxes.",
       "slide_index": 0
     },
     {
       "index": 3,
-      "start": 9.332,
-      "end": 13.112,
-      "text": "这个号叫SIN，今天讲清楚怎么办、有什么坑",
+      "start": 7.2,
+      "end": 8.589,
+      "text": "You need one number.",
       "slide_index": 0
     },
     {
       "index": 4,
-      "start": 13.912,
-      "end": 17.692,
-      "text": "SIN全称Social Insurance Number，社会保险号",
-      "slide_index": 1
+      "start": 8.889,
+      "end": 10.135,
+      "text": "It's 9 digits.",
+      "slide_index": 0
     },
     {
       "index": 5,
-      "start": 17.992,
-      "end": 23.969,
-      "text": "你可以理解为加拿大的经济身份证，没有它你在加拿大没有经济身份",
-      "slide_index": 1
+      "start": 10.435,
+      "end": 13.072,
+      "text": "Without it, you're invisible to the system.",
+      "slide_index": 0
     },
     {
       "index": 6,
-      "start": 24.769,
-      "end": 27.907,
-      "text": "具体来说，没有SIN你做不了三件事",
-      "slide_index": 2
+      "start": 13.872,
+      "end": 16.453,
+      "text": "SIN stands for Social Insurance Number.",
+      "slide_index": 1
     },
     {
       "index": 7,
-      "start": 28.207,
-      "end": 32.647,
-      "text": "第一，找工作，雇主没有你的SIN就没法给你发工资",
-      "slide_index": 2
+      "start": 16.753,
+      "end": 19.634,
+      "text": "Think of it as your economic identity in Canada.",
+      "slide_index": 1
     },
     {
       "index": 8,
-      "start": 32.947,
-      "end": 37.24,
-      "text": "第二，报税，没有SIN你连个人所得税都没法申报",
-      "slide_index": 2
+      "start": 19.934,
+      "end": 22.982,
+      "text": "Without it, the government doesn't know you exist.",
+      "slide_index": 1
     },
     {
       "index": 9,
-      "start": 37.54,
-      "end": 44.343,
-      "text": "第三，政府福利，失业保险、学生贷款、养老金，全都通过SIN绑定",
+      "start": 23.782,
+      "end": 26.42,
+      "text": "Here's what you can't do without a SIN.",
       "slide_index": 2
     },
     {
       "index": 10,
-      "start": 45.143,
-      "end": 49.955,
-      "text": "办SIN很简单，三种方式现场、在线、邮寄",
-      "slide_index": 3
+      "start": 26.72,
+      "end": 28.276,
+      "text": "Number one, work.",
+      "slide_index": 2
     },
     {
       "index": 11,
-      "start": 50.255,
-      "end": 54.041,
-      "text": "推荐在线申请，官网说在线处理更快",
-      "slide_index": 3
+      "start": 28.576,
+      "end": 31.471,
+      "text": "Your employer literally cannot pay you without it.",
+      "slide_index": 2
     },
     {
       "index": 12,
-      "start": 54.341,
-      "end": 57.819,
-      "text": "也可以直接去最近的Service Canada现场办",
-      "slide_index": 3
+      "start": 31.771,
+      "end": 33.546,
+      "text": "Number two, taxes.",
+      "slide_index": 2
     },
     {
       "index": 13,
-      "start": 58.119,
-      "end": 65.051,
-      "text": "还有一个很多人不知道的，大部分学校开学第一周会请Service Canada来校园设点",
-      "slide_index": 3
+      "start": 33.846,
+      "end": 37.72,
+      "text": "No SIN means no tax return, and you lose your refund.",
+      "slide_index": 2
     },
     {
       "index": 14,
-      "start": 65.351,
-      "end": 67.804,
-      "text": "当场就能拿到号，非常方便",
-      "slide_index": 3
+      "start": 38.02,
+      "end": 39.889,
+      "text": "Number three, benefits.",
+      "slide_index": 2
     },
     {
       "index": 15,
-      "start": 68.104,
-      "end": 70.662,
-      "text": "具体看你学校的orientation通知",
-      "slide_index": 3
+      "start": 40.189,
+      "end": 43.286,
+      "text": "Employment insurance, student loans, pension.",
+      "slide_index": 2
     },
     {
       "index": 16,
-      "start": 70.962,
-      "end": 74.911,
-      "text": "但要注意，留学生的学签上必须有may work字样",
-      "slide_index": 3
+      "start": 43.586,
+      "end": 45.439,
+      "text": "All tied to your SIN.",
+      "slide_index": 2
     },
     {
       "index": 17,
-      "start": 75.211,
-      "end": 80.382,
-      "text": "如果没有这几个字，你需要确认学签条件，否则SIN办不下来",
+      "start": 46.239,
+      "end": 48.996,
+      "text": "Getting a SIN is easy, three ways to do it.",
       "slide_index": 3
     },
     {
       "index": 18,
-      "start": 81.182,
-      "end": 83.356,
-      "text": "留学生有两个坑必须知道",
-      "slide_index": 4
+      "start": 49.296,
+      "end": 52.6,
+      "text": "Fastest option, walk into a Service Canada office.",
+      "slide_index": 3
     },
     {
       "index": 19,
-      "start": 83.656,
-      "end": 90.354,
-      "text": "第一，你的SIN以9开头，意味着它有有效期，跟你的移民文件同步过期",
-      "slide_index": 4
+      "start": 52.9,
+      "end": 54.815,
+      "text": "You get your number the same day.",
+      "slide_index": 3
     },
     {
       "index": 20,
-      "start": 90.654,
-      "end": 96.387,
-      "text": "学签或工签续了，SIN也必须去更新，否则雇主无法继续雇你",
-      "slide_index": 4
+      "start": 55.115,
+      "end": 59.229,
+      "text": "Pro tip, most universities invite Service Canada to campus.",
+      "slide_index": 3
     },
     {
       "index": 21,
-      "start": 96.687,
-      "end": 100.236,
-      "text": "第二，SIN不是身份证，不能随便给别人",
-      "slide_index": 4
+      "start": 59.529,
+      "end": 61.884,
+      "text": "That happens during orientation week.",
+      "slide_index": 3
     },
     {
       "index": 22,
-      "start": 100.536,
-      "end": 104.386,
-      "text": "房东要你的SIN，可以拒绝，这是你的合法权利",
-      "slide_index": 4
+      "start": 62.184,
+      "end": 64.085,
+      "text": "You can also apply online.",
+      "slide_index": 3
     },
     {
       "index": 23,
-      "start": 104.686,
-      "end": 111.207,
-      "text": "常见需要提供SIN的情况包括入职后给雇主，银行报利息收入，还有报税",
-      "slide_index": 4
+      "start": 64.385,
+      "end": 66.025,
+      "text": "Takes a few business days.",
+      "slide_index": 3
     },
     {
       "index": 24,
-      "start": 112.007,
-      "end": 116.597,
-      "text": "本期数据来自加拿大联邦政府官网，链接在屏幕上",
-      "slide_index": 5
+      "start": 66.325,
+      "end": 68.98,
+      "text": "One thing to watch if you're on a study permit.",
+      "slide_index": 3
     },
     {
       "index": 25,
-      "start": 117.397,
-      "end": 121.648,
-      "text": "关注我，下期讲加拿大银行开户怎么选最省钱",
-      "slide_index": 6
+      "start": 69.28,
+      "end": 71.079,
+      "text": "It must say may work on it.",
+      "slide_index": 3
     },
     {
       "index": 26,
-      "start": 121.948,
-      "end": 126.23,
-      "text": "五大行哪家免费期最长，哪家坑最多，一次说清",
+      "start": 71.379,
+      "end": 74.322,
+      "text": "If those words aren't there, check your permit first.",
+      "slide_index": 3
+    },
+    {
+      "index": 27,
+      "start": 75.122,
+      "end": 77.554,
+      "text": "Two traps every student needs to know.",
+      "slide_index": 4
+    },
+    {
+      "index": 28,
+      "start": 77.854,
+      "end": 81.57,
+      "text": "First, if your SIN starts with 9, it has an expiry date.",
+      "slide_index": 4
+    },
+    {
+      "index": 29,
+      "start": 81.87,
+      "end": 85.136,
+      "text": "It expires when your study or work permit expires.",
+      "slide_index": 4
+    },
+    {
+      "index": 30,
+      "start": 85.436,
+      "end": 86.816,
+      "text": "Renewed your permit?",
+      "slide_index": 4
+    },
+    {
+      "index": 31,
+      "start": 87.116,
+      "end": 89.544,
+      "text": "You must also update your SIN.",
+      "slide_index": 4
+    },
+    {
+      "index": 32,
+      "start": 89.844,
+      "end": 92.496,
+      "text": "Otherwise your employer can't keep paying you.",
+      "slide_index": 4
+    },
+    {
+      "index": 33,
+      "start": 92.796,
+      "end": 95.52,
+      "text": "Second, your SIN is not an ID card.",
+      "slide_index": 4
+    },
+    {
+      "index": 34,
+      "start": 95.82,
+      "end": 97.767,
+      "text": "Do not give it to just anyone.",
+      "slide_index": 4
+    },
+    {
+      "index": 35,
+      "start": 98.067,
+      "end": 102.765,
+      "text": "Your landlord asks for your SIN? You can say no.",
+      "slide_index": 4
+    },
+    {
+      "index": 36,
+      "start": 103.065,
+      "end": 104.561,
+      "text": "That's your legal right.",
+      "slide_index": 4
+    },
+    {
+      "index": 37,
+      "start": 104.861,
+      "end": 108.62,
+      "text": "You only give it to your employer, your bank, and for taxes.",
+      "slide_index": 4
+    },
+    {
+      "index": 38,
+      "start": 109.42,
+      "end": 112.546,
+      "text": "All data comes from the Government of Canada website.",
+      "slide_index": 5
+    },
+    {
+      "index": 39,
+      "start": 112.846,
+      "end": 114.366,
+      "text": "Links are on screen.",
+      "slide_index": 5
+    },
+    {
+      "index": 40,
+      "start": 115.166,
+      "end": 116.711,
+      "text": "Follow for part two.",
+      "slide_index": 6
+    },
+    {
+      "index": 41,
+      "start": 117.011,
+      "end": 120.287,
+      "text": "Which Canadian bank is actually free for newcomers?",
+      "slide_index": 6
+    },
+    {
+      "index": 42,
+      "start": 120.587,
+      "end": 122.828,
+      "text": "I compared all five big banks.",
+      "slide_index": 6
+    },
+    {
+      "index": 43,
+      "start": 123.128,
+      "end": 125.599,
+      "text": "The difference is a full year of free banking.",
       "slide_index": 6
     }
   ],
   "audioUrl": "/public/audio.wav",
   "chapters": [
     {
-      "title": "开场",
+      "title": "Hook",
       "startSec": 0.15,
       "slideIndex": 0
     },
     {
-      "title": "SIN是什么",
-      "startSec": 13.912,
+      "title": "What Is SIN",
+      "startSec": 13.872,
       "slideIndex": 1
     },
     {
-      "title": "没有SIN你做不了这三件事",
-      "startSec": 24.769,
+      "title": "Why You Need It",
+      "startSec": 23.782,
       "slideIndex": 2
     },
     {
-      "title": "怎么办SIN",
-      "startSec": 45.143,
+      "title": "How to Apply",
+      "startSec": 46.239,
       "slideIndex": 3
     },
     {
-      "title": "留学生必须知道的两个坑",
-      "startSec": 81.182,
+      "title": "Watch Out",
+      "startSec": 75.122,
       "slideIndex": 4
     },
     {
-      "title": "下期预告",
-      "startSec": 117.397,
+      "title": "Next",
+      "startSec": 115.166,
       "slideIndex": 6
     }
   ]

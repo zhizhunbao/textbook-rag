@@ -1,12 +1,12 @@
 ---
-description: 短视频生产工作流 v26 — 零编造 + 表格引用1:1 + 解读型台词 + 禁止重复台词 + 内容合规 + storyline.md 唯一数据源 + Remotion + 火山咪仔TTS + 多平台一键发布
+description: 短视频生产工作流 v28 — 零编造 + 表格引用1:1 + 解读型台词 + 禁止重复台词 + 内容合规 + storyline.md 唯一数据源 + Remotion + 火山咪仔TTS + 多平台一键发布（含 TikTok/YouTube/LinkedIn）+ 中英双语版本支持
 name: short-video
-version: 26.0.0
+version: 28.0.0
 trigger: /short-video
 ---
-# 短视频生产工作流 v26
+# 短视频生产工作流 v27
 
-从 RAG 知识库一键生成横屏短视频，**一键发布到小红书/抖音/B站/快手/视频号**。**storyline.md 是唯一数据源**，slides/台词/字幕全部自动生成。
+从 RAG 知识库一键生成横屏短视频，**一键发布到小红书/抖音/B站/快手/视频号/TikTok/YouTube/LinkedIn**（8 平台）。**storyline.md 是唯一数据源**，slides/台词/字幕全部自动生成。支持**中英文双语版本**。
 
 ## 核心理念
 
@@ -43,7 +43,7 @@ trigger: /short-video
 | 风险预警 | ④风险 | "如果你不注意X，后果是Y" | "邀请人数缩了75%，分数线还会涨" |
 | 方案框架 | ⑤方案 | "我帮你算了/整理了X" | "507分你够不够？我按4种学历算了一遍" |
 
-**技术栈**: Remotion (React) + 火山引擎 TTS（zh_female_mizai_uranus_bigtts / 咪仔）
+**技术栈**: Remotion (React) + 火山引擎 TTS（zh_female_mizai_uranus_bigtts / 咪仔）+ Edge TTS（en-US-GuyNeural 英文版）
 
 ```
 定题 → 系列规划 → RAG 数据探索 → storyline.md(数据+台词) → 硬核审计
@@ -328,6 +328,7 @@ uv run python scripts/ingest/ingest_urls.py `
 
 #### 元数据区（文件顶部）
 
+中文版：
 ```markdown
 # 视频主标题
 
@@ -338,14 +339,25 @@ uv run python scripts/ingest/ingest_urls.py `
 > **时长**: 70-80秒
 ```
 
-| 字段 | 必填 | 说明 |
-|------|------|------|
-| H1 标题 | ✅ | 视频主标题 |
-| 系列 | ✅ | 系列名 + 集号 |
-| 作者 | ✅ | 频道名 |
-| 模板 | ❌ | 默认 `competitor-gold` |
-| 布局 | ❌ | 默认 `competitor` |
-| 时长 | ❌ | 参考用，不影响渲染 |
+英文版（所有字段名使用英文）：
+```markdown
+# Video Main Title
+
+> **Series**: Series Name (N/M)
+> **Author**: Channel Name
+> **Template**: competitor-gold
+> **Layout**: competitor
+> **Duration**: 70-80s
+```
+
+| 字段 | 英文字段名 | 必填 | 说明 |
+|------|-----------|------|------|
+| H1 标题 | H1 Title | ✅ | 视频主标题 |
+| 系列 | Series | ✅ | 系列名 + 集号 |
+| 作者 | Author | ✅ | 频道名 |
+| 模板 | Template | ❌ | 默认 `competitor-gold` |
+| 布局 | Layout | ❌ | 默认 `competitor` |
+| 时长 | Duration | ❌ | 参考用，不影响渲染 |
 
 #### Slide 区（每个 `## [type]` 为一页）
 
@@ -979,90 +991,86 @@ ffprobe -v quiet -show_entries format=duration,size -of csv=p=0 `
 
 ### 多平台一键发布
 
-**执行脚本**: `publish_all.py`（统一入口） + `publish_weixin.py`（视频号专用）
+发布系统分为两套：
+
+- **v1（中文平台）**: `scripts/publish_all.py` — 小红书/抖音/B站/快手/视频号
+- **v2（国际平台）**: `publish/publish_all.py` — TikTok/YouTube/LinkedIn
+
+---
+
+#### v1: 中文平台发布
+
+**执行脚本**: `scripts/publish_all.py`（统一入口） + `scripts/publish_weixin.py`（视频号专用）
 
 **底层依赖**: [social-auto-upload](https://github.com/dreammis/social-auto-upload) (`.github/social-auto-upload/`)
-
-#### 支持平台
 
 | 优先级 | 平台 | 变现方式 | 登录方式 | Cookie 存储 |
 |--------|------|---------|---------|-------------|
 | 🥇 | 小红书 | 品牌合作（蒲公英） | 扫码 | `.github/social-auto-upload/cookies/xiaohongshu_creator.json` |
-| 🥈 | YouTube | AdSense 广告分成 | 手动上传 | — |
 | 🥉 | 抖音 | 星图广告 + 创作者基金 | 扫码 | `.github/social-auto-upload/cookies/douyin_creator.json` |
 | 4 | B站 | 创作激励 + 花火 | 扫码 | `.github/social-auto-upload/cookies/bilibili_creator.json` |
 | 5 | 快手 | 磁力金牛 | 扫码 | `.github/social-auto-upload/cookies/kuaishou_creator.json` |
 | 6 | 视频号 | 创作者分成 | 扫码 | `.agent/workflows/short-video/browser-data/weixin-channels/` |
 
-#### 首次设置：逐平台扫码登录（每个平台只需一次，Cookie 有效 ~30 天）
-
 ```powershell
-# 登录小红书（最优先）
-# cwd: textbook-rag/
+# 登录（每个平台只需一次，Cookie 有效 ~30 天）
 uv run .agent/workflows/short-video/scripts/publish_all.py --login xiaohongshu
-
-# 登录抖音
 uv run .agent/workflows/short-video/scripts/publish_all.py --login douyin
-
-# 登录B站
 uv run .agent/workflows/short-video/scripts/publish_all.py --login bilibili
-
-# 登录快手
 uv run .agent/workflows/short-video/scripts/publish_all.py --login kuaishou
-
-# 登录视频号（走独立脚本）
 uv run .agent/workflows/short-video/scripts/publish_all.py --login weixin
-```
 
-#### 检查所有平台登录状态
-
-```powershell
-# // turbo
-# cwd: textbook-rag/
-uv run .agent/workflows/short-video/scripts/publish_all.py --check
-```
-
-#### 发布到所有已登录平台
-
-```powershell
-# Dry run（模拟，不实际发布）
-# // turbo
-# cwd: textbook-rag/
-uv run .agent/workflows/short-video/scripts/publish_all.py `
-  --video data/short-videos/{slug}/output/final.mp4 `
-  --storyline data/short-videos/{slug}/storyline.md `
-  --dry-run
-```
-
-```powershell
-# 正式发布到所有已登录平台
-# cwd: textbook-rag/
+# 发布
 uv run .agent/workflows/short-video/scripts/publish_all.py `
   --video data/short-videos/{slug}/output/final.mp4 `
   --storyline data/short-videos/{slug}/storyline.md
 ```
 
+---
+
+#### v2: 国际平台发布（TikTok / YouTube / LinkedIn）
+
+**执行脚本**: `publish/publish_all.py`（config-driven 统一入口）
+
+**配置文件**: `publish/config.yaml`
+
+| 优先级 | 平台 | 引擎 | 登录方式 | Session 存储 |
+|--------|------|------|---------|-------------|
+| 🥇 | TikTok | Playwright | 手动登录（只需一次） | `publish/credentials/tiktok/browser-data/` |
+| 🥈 | YouTube | Playwright | 手动登录（只需一次） | `publish/credentials/youtube/browser-data/` |
+| 🥉 | LinkedIn | Playwright | 邮箱+密码登录（只需一次） | `publish/credentials/linkedin/browser-data/` |
+
 ```powershell
-# 只发布到指定平台
+# 首次登录（每平台只需一次，persistent context 保持 session）
 # cwd: textbook-rag/
-uv run .agent/workflows/short-video/scripts/publish_all.py `
+uv run .agent/workflows/short-video/publish/publish_all.py --login tiktok
+uv run .agent/workflows/short-video/publish/publish_all.py --login youtube
+uv run .agent/workflows/short-video/publish/publish_all.py --login linkedin
+
+# 发布到所有国际平台
+uv run .agent/workflows/short-video/publish/publish_all.py `
+  --video data/short-videos/{slug}/output/final.mp4 `
+  --storyline data/short-videos/{slug}/storyline.md
+
+# 发布到指定平台
+uv run .agent/workflows/short-video/publish/publish_all.py `
   --video data/short-videos/{slug}/output/final.mp4 `
   --storyline data/short-videos/{slug}/storyline.md `
-  --platforms xiaohongshu,douyin
+  --platforms tiktok,youtube
 ```
 
-> 💡 **原理**:
-> - 小红书/抖音/快手/B站：调用 `social-auto-upload` 的 `sau` CLI，底层使用 patchright（反检测 Playwright）
-> - 视频号：调用 `publish_weixin.py`，使用 Playwright 操作 `channels.weixin.qq.com`
-> - 标题/描述/标签从 `storyline.md` 自动提取，无需手动输入
-> - 平台间自动间隔 10 秒，避免触发风控
+> 💡 **v2 架构特点**:
+> - Config-driven：平台配置在 `config.yaml`，新增平台只需加配置 + 平台模块
+> - Playwright persistent context：登录一次，session 自动保持
+> - 反自动化检测：`--disable-blink-features=AutomationControlled`
+> - 标题/描述/标签从 `storyline.md` 自动提取
 
 > ⚠️ **注意事项**:
+> - LinkedIn 反自动化较严，登录时可能需要多次尝试或验证码
+> - TikTok 上传后视频需要平台审核，发布成功不代表立即可见
+> - YouTube 上传后默认为 Public，可在 config.yaml 中调整
 > - 所有平台均通过浏览器自动化实现，非官方 API
-> - 平台可能更新页面结构导致选择器失效，需要更新 `social-auto-upload`
-> - 高频自动操作可能触发风控，建议每次上传间隔 ≥ 5 分钟
-> - Cookie 过期后重新运行 `--login` 扫码即可
-> - YouTube 暂不支持自动发布（API 限制），需手动上传
+> - 平台页面结构更新可能导致选择器失效，需更新对应平台模块
 
 #### 单独发布视频号（兼容旧流程）
 
@@ -1111,8 +1119,9 @@ uv run .agent/workflows/short-video/scripts/publish_weixin.py `
 | `register_voice.py`    | voice-sample.wav  | FastVoiceType (腾讯云复刻音色 ID) |
 | `synthesize.py`        | storyline.md + .env | narration.wav + timestamps.json |
 | `render.mjs`           | storyline.md + narration/ | final.mp4               |
-| `publish_all.py`       | final.mp4 + storyline.md | 多平台一键发布（小红书/抖音/B站/快手/视频号） |
-| `publish_weixin.py`    | final.mp4 + storyline.md | 微信视频号发布（被 publish_all.py 内部调用） |
+| `scripts/publish_all.py`  | final.mp4 + storyline.md | 中文平台一键发布（小红书/抖音/B站/快手/视频号） |
+| `scripts/publish_weixin.py` | final.mp4 + storyline.md | 微信视频号发布（被 publish_all.py 调用） |
+| `publish/publish_all.py`  | final.mp4 + storyline.md | 国际平台一键发布（TikTok/YouTube/LinkedIn） |
 
 **脚本间零依赖** — 每个脚本独立运行，通过文件系统通信。
 
@@ -1158,13 +1167,24 @@ data/short-videos/{slug}/
 ├── scripts/
 │   ├── cite_rag.py              # RAG 检索（--collection 直接指定 ChromaDB collection）
 │   ├── synthesize.py            # TTS 合成
-│   ├── publish_all.py           # 多平台一键发布（统一入口）
+│   ├── publish_all.py           # v1 中文平台一键发布（统一入口）
 │   └── publish_weixin.py        # 微信视频号发布（被 publish_all.py 调用）
+├── publish/                     # v2 国际平台发布系统
+│   ├── publish_all.py           # 统一入口（config-driven）
+│   ├── config.yaml              # 平台配置（引擎/标签/凭证路径）
+│   ├── platforms/               # 各平台自动化模块
+│   │   ├── tiktok.py            # TikTok 上传（Playwright）
+│   │   ├── youtube.py           # YouTube 上传（Playwright）
+│   │   └── linkedin.py          # LinkedIn 上传（Playwright）
+│   └── credentials/             # 各平台 session 持久化
+│       ├── tiktok/browser-data/
+│       ├── youtube/browser-data/
+│       └── linkedin/browser-data/
 ├── browser-data/                # 视频号登录态（持久化）
 ├── voice/                       # 音色测试与样本
 └── workflow.md                  # 本文件
 
-.github/social-auto-upload/      # 多平台发布依赖（小红书/抖音/B站/快手）
+.github/social-auto-upload/      # v1 多平台发布依赖（小红书/抖音/B站/快手）
 ├── cookies/                     # 各平台 Cookie 持久化
 │   ├── xiaohongshu_creator.json
 │   ├── douyin_creator.json

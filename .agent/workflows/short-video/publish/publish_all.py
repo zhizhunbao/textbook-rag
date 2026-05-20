@@ -134,12 +134,12 @@ def parse_storyline_metadata(storyline_path: Path) -> dict:
     if h1_match:
         meta["title"] = h1_match.group(1).strip()
 
-    # 系列 / 作者
-    series_match = re.search(r"\*\*系列\*\*:\s*(.+)", text)
+    # 系列 / 作者 (中英双语)
+    series_match = re.search(r"\*\*(?:系列|Series)\*\*:\s*(.+)", text)
     if series_match:
         meta["series"] = series_match.group(1).strip()
 
-    author_match = re.search(r"\*\*作者\*\*:\s*(.+)", text)
+    author_match = re.search(r"\*\*(?:作者|Author)\*\*:\s*(.+)", text)
     if author_match:
         meta["author"] = author_match.group(1).strip()
 
@@ -148,7 +148,7 @@ def parse_storyline_metadata(storyline_path: Path) -> dict:
     text_for_narration = text[:preview_idx.start()] if preview_idx else text
 
     narration_lines = re.findall(
-        r"^\*\*台词\*\*:\s*\n((?:(?!---).+\n)*)",
+        r"^\*\*(?:台词|Narration)\*\*:\s*\n((?:(?!---).+\n)*)",
         text_for_narration,
         re.MULTILINE,
     )
@@ -224,6 +224,16 @@ def _get_tiktok_platform(cfg: dict, account: str):
     )
 
 
+def _get_linkedin_platform(cfg: dict, account: str):
+    """创建 LinkedInPlatform 实例。"""
+    from platforms.linkedin import LinkedInPlatform
+    return LinkedInPlatform(
+        project_root=PROJECT_ROOT,
+        publish_dir=PUBLISH_DIR,
+        account=account,
+    )
+
+
 def login_platform(cfg: dict, platform: str, account: str) -> bool:
     """登录指定平台。"""
     platforms = cfg.get("platforms", {})
@@ -247,6 +257,11 @@ def login_platform(cfg: dict, platform: str, account: str) -> bool:
         # TikTok → Playwright 浏览器登录
         tk = _get_tiktok_platform(cfg, account)
         return tk.login()
+
+    if platform == "linkedin":
+        # LinkedIn → Playwright 持久化浏览器登录
+        li = _get_linkedin_platform(cfg, account)
+        return li.login()
 
     if platform == "weixin":
         # 视频号走独立脚本
@@ -293,6 +308,14 @@ def check_platform(cfg: dict, platform: str, account: str) -> bool:
         try:
             tk = _get_tiktok_platform(cfg, account)
             return tk.check()
+        except Exception:
+            return False
+
+    if platform == "linkedin":
+        # LinkedIn → 检查 cookie/browser-data
+        try:
+            li = _get_linkedin_platform(cfg, account)
+            return li.check()
         except Exception:
             return False
 
@@ -393,6 +416,17 @@ def upload_to_platform(
         tk = _get_tiktok_platform(cfg, account)
         tag_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else []
         return tk.upload(
+            video_path=str(video_path.resolve()),
+            title=title,
+            tags=tag_list,
+            description=description,
+        )
+
+    # --- LinkedIn (Playwright) ---
+    if platform == "linkedin":
+        li = _get_linkedin_platform(cfg, account)
+        tag_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else []
+        return li.upload(
             video_path=str(video_path.resolve()),
             title=title,
             tags=tag_list,
