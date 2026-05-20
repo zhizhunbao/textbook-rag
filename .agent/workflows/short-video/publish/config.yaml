@@ -1,0 +1,78 @@
+# 多平台发布配置
+# ================
+
+# 品牌信息（所有平台统一）
+brand:
+  name_cn: 海外生活指南
+  name_en: Overseas Life Guide
+  bio_cn: |
+    🇨🇦 坐标加拿大
+    📌 留学 | 移民 | 租房 | 生活实用干货
+    💡 帮你少走弯路，快速适应加国生活
+  bio_en: |
+    🇨🇦 Canada newcomer guide
+    📌 Study • Immigration • Housing • Daily life
+    💡 Practical tips to settle in Canada faster
+
+# 默认账号标识（所有平台共用）
+default_account: creator
+
+# 平台配置
+platforms:
+  xiaohongshu:
+    name: 小红书
+    emoji: "📕"
+    enabled: true
+    engine: sau                     # sau = social-auto-upload CLI
+    default_tags: "加拿大生活,海外生活攻略,留学生活,海外生活指南"
+
+  douyin:
+    name: 抖音
+    emoji: "🎵"
+    enabled: true
+    engine: sau
+    default_tags: "加拿大生活,海外生活攻略,留学生活,海外生活指南"
+
+  bilibili:
+    name: B站
+    emoji: "📺"
+    enabled: true
+    engine: sau
+    bilibili_tid: 249               # 生活 > 日常
+    default_tags: "加拿大生活,海外生活攻略,留学生活,海外生活指南"
+
+  kuaishou:
+    name: 快手
+    emoji: "⚡"
+    enabled: true
+    engine: sau
+    default_tags: "加拿大生活,海外生活攻略,海外生活指南"
+
+  weixin:
+    name: 视频号
+    emoji: "💬"
+    enabled: true
+    engine: playwright              # 独立 Playwright 脚本
+    default_tags: "加拿大生活,海外生活攻略,海外生活指南"
+
+  tiktok:
+    name: TikTok
+    emoji: "🎵"
+    enabled: true
+    engine: playwright
+    default_tags: "canadaLife,newcomerGuide,overseasLife,immigrationTips"
+
+  youtube:
+    name: YouTube
+    emoji: "🎬"
+    enabled: true
+    engine: google_oauth
+    category_id: "22"               # 22 = People & Blogs
+    default_tags: "Canada,newcomer,immigration,overseas life,life guide"
+
+# Cookie / 凭证路径映射
+credentials:
+  sau_cookies_dir: "{project_root}/.github/social-auto-upload/cookies"
+  weixin_browser_data: "{publish_dir}/credentials/weixin/browser-data"
+  tiktok_browser_data: "{publish_dir}/credentials/tiktok/browser-data"
+  youtube_token: "{publish_dir}/credentials/youtube/youtube_token.json"

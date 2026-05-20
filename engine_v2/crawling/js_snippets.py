@@ -629,20 +629,16 @@ STRIP_PRINT_MEDIA = """() => {
                 width: 100% !important;
                 font-size: inherit !important;
             }
-            /* Force all elements to stay as screen layout */
+            /* Prevent containers from shrinking, but DON'T force display:block
+               or position:static — that destroys flexbox/grid layouts */
             .container, .row, [class*="col-"],
             main, article, section, div {
-                width: auto !important;
                 max-width: none !important;
-                float: none !important;
-                position: static !important;
-                display: block !important;
                 overflow: visible !important;
             }
             /* Don't hide navigation/headers (keeps original look) */
             header, nav, aside,
             [role="banner"], [role="navigation"] {
-                display: block !important;
                 visibility: visible !important;
                 position: relative !important;
             }
@@ -769,4 +765,26 @@ REMOVE_GC_FOOTER = """() => {
     // Fallback: remove any <footer> or .global-footer elements
     document.querySelectorAll('footer, .global-footer').forEach(el => el.remove());
 }"""
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  Neutralize Fixed/Sticky Headers (for PDF rendering)
+# ══════════════════════════════════════════════════════════════════════════════
+
+NEUTRALIZE_FIXED_HEADERS = """() => {
+    // Convert position:fixed/sticky → position:relative on header/nav elements
+    // so they appear only at the top of the PDF (page 1) instead of repeating
+    // on every PDF page. Does NOT remove any content — keeps original intact.
+    document.querySelectorAll('*').forEach(el => {
+        const pos = getComputedStyle(el).position;
+        if (pos === 'fixed' || pos === 'sticky') {
+            el.style.position = 'relative';
+            el.style.top = 'auto';
+            el.style.left = 'auto';
+            el.style.right = 'auto';
+            el.style.zIndex = 'auto';
+        }
+    });
+}"""
+
 

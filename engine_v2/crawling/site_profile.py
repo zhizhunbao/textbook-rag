@@ -57,6 +57,9 @@ class SiteProfile:
     # ── Pre-PDF Cleanup ──
     # JS to run just before PDF capture (remove interactive UI, etc.)
     pre_pdf_js: str | None = None
+    # Additional JS to run on NON-FIRST pages only (e.g. remove header/nav
+    # that is useful on the seed page but duplicated noise on subsequent pages)
+    pre_pdf_js_non_first: str | None = None
 
     # ── Print CSS ──
     print_css: str = ""                    # @media print overrides
@@ -85,6 +88,12 @@ class SiteProfile:
     # True → serial BFS (one page at a time), avoids WAF on bank/SPA sites.
     # False → crawl4ai's built-in concurrent BFS (default, fast for gov sites).
     serial_discovery: bool = False
+
+    # ── URL Skip Patterns ──
+    # Path substrings to skip during BFS. Checked via `pattern in url_lower`.
+    # Site-specific patterns (e.g. /phones/, /devices/ for telecom) go here.
+    # Generic auth/cart patterns are always applied by the engine.
+    skip_path_patterns: list[str] = field(default_factory=list)
 
 
 # ══════════════════════════════════════════════════════════════════════════════

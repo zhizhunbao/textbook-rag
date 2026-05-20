@@ -9,7 +9,7 @@ publish_weixin.py — 微信视频号自动发布脚本
     uv run .agent/workflows/short-video/scripts/publish_weixin.py \
         --video data/short-videos/{slug}/output/final.mp4 \
         --storyline data/short-videos/{slug}/storyline.md \
-        [--tags "#加拿大移民 #留学费用"] \
+        [--tags "#加拿大生活 #留学费用"] \
         [--schedule "2026-05-15 20:00"] \
         [--dry-run]
 
@@ -59,8 +59,15 @@ WEIXIN_CREATE_URL = "https://channels.weixin.qq.com/platform/post/create"
 WEIXIN_LOGIN_URL = "https://channels.weixin.qq.com/login"
 
 # Chrome user data dir for persistent login
-# (Chrome用户数据目录，保持登录态，避免每次扫码)
-CHROME_USER_DATA_DIR = Path(__file__).resolve().parent.parent / "browser-data" / "weixin-channels"
+# 优先使用新路径 (publish/credentials/weixin/browser-data/)
+# 如果旧路径存在数据则沿用旧路径（向后兼容）
+_NEW_USER_DATA_DIR = Path(__file__).resolve().parent.parent / "credentials" / "weixin" / "browser-data"
+_OLD_USER_DATA_DIR = Path(__file__).resolve().parent.parent.parent / "browser-data" / "weixin-channels"
+
+if _OLD_USER_DATA_DIR.exists() and any(_OLD_USER_DATA_DIR.iterdir()):
+    CHROME_USER_DATA_DIR = _OLD_USER_DATA_DIR
+else:
+    CHROME_USER_DATA_DIR = _NEW_USER_DATA_DIR
 
 # Default tags for immigration/study content
 DEFAULT_TAGS = ["加拿大生活", "海外生活攻略", "生活指南"]
@@ -289,7 +296,7 @@ class WeixinChannelsPublisher:
         except Exception:
             return False
 
-    def wait_for_login(self, timeout: int = 120):
+    def wait_for_login(self, timeout: int = 300):
         """
         等待用户扫码登录。
 
@@ -329,7 +336,7 @@ class WeixinChannelsPublisher:
             video_path: 视频文件路径
             title: 视频标题
             description: 视频描述
-            tags: 标签列表（如 ["加拿大移民", "留学费用"]）
+            tags: 标签列表（如 ["加拿大生活", "留学费用"]）
             schedule_time: 定时发布时间（None = 立即发布）
             dry_run: 仅模拟，不实际发布
 
@@ -526,30 +533,85 @@ class WeixinChannelsPublisher:
             return True
 
         # ------------------------------------------------------------------
+        # Step 6.5: 声明原创（含弹窗确认流程）
+        # ------------------------------------------------------------------
+        log.info("📝 声明原创...")
+
+        # 先滚动到页面底部
+        self.page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+        time.sleep(2)
+
+        # Step A: 点击页面上的声明原创 checkbox
+        try:
+            cb = self.page.locator('.declare-original-checkbox .ant-checkbox-input').first
+            if cb.count():
+                cb.click(force=True)
+                log.info("   ✅ 已点击声明原创 checkbox")
+                time.sleep(2)
+            else:
+                log.warning("⚠️  未找到声明原创 checkbox")
+        except Exception as e:
+            log.warning(f"⚠️  点击声明原创失败: {e}")
+
+        # Step B: 处理"原创权益"确认弹窗
+        try:
+            dialog = self.page.locator('.weui-desktop-dialog')
+            if dialog.count():
+                log.info("   📋 检测到原创权益弹窗")
+
+                # B1: 勾选"我已阅读并同意"
+                agree_cb = self.page.locator('.original-proto-wrapper .ant-checkbox-input').first
+                if agree_cb.count():
+                    agree_cb.click(force=True)
+                    log.info("   ✅ 已勾选同意条款")
+                    time.sleep(1)
+
+                # B2: 等待"声明原创"按钮变为可点击
+                # 用文字匹配 + 排除 mini 按钮，避免选到隐藏的"切换"按钮
+                declare_btn = self.page.locator(
+                    '.weui-desktop-dialog button.weui-desktop-btn_primary:not(.weui-desktop-btn_mini):has-text("声明原创")'
+                ).first
+                for _ in range(10):
+                    classes = declare_btn.get_attribute("class") or ""
+                    if "disabled" not in classes:
+                        break
+                    time.sleep(0.5)
+
+                # B3: 点击"声明原创"确认按钮
+                declare_btn.click(force=True)
+                log.info("   ✅ 已点击弹窗内的声明原创按钮")
+                time.sleep(2)
+
+                # B4: 等待弹窗关闭
+                for _ in range(10):
+                    if not dialog.count():
+                        log.info("   ✅ 弹窗已关闭")
+                        break
+                    time.sleep(0.5)
+            else:
+                log.info("   ℹ️  无弹窗（可能已声明过原创）")
+        except Exception as e:
+            log.warning(f"⚠️  处理原创弹窗失败: {e}")
+
+        time.sleep(2)
+
+        # ------------------------------------------------------------------
         # Step 7: 点击发表
         # ------------------------------------------------------------------
         log.info("📤 准备发表...")
         time.sleep(2)
 
-        publish_selectors = [
-            'button:has-text("发表")',
-            '.btn-publish',
-            '[class*="publish"] button',
-            'button.weui-desktop-btn_primary',
-        ]
-
+        # 发表按钮: <button class="weui-desktop-btn weui-desktop-btn_primary">发表</button>
+        # 注意：弹窗内也有 weui-desktop-btn_primary，所以要确认弹窗已关闭
         published = False
-        for selector in publish_selectors:
-            try:
-                btn = self.page.query_selector(selector)
-                if btn and btn.is_visible():
-                    btn.click()
-                    published = True
-                    log.info("   ✅ 已点击发表")
-                    break
-            except Exception as e:
-                log.debug(f"   选择器 {selector} 失败: {e}")
-                continue
+        try:
+            publish_btn = self.page.locator('button.weui-desktop-btn_primary:has-text("发表")').first
+            if publish_btn.count():
+                publish_btn.click(force=True)
+                published = True
+                log.info("   ✅ 已点击发表")
+        except Exception as e:
+            log.debug(f"   发表按钮点击失败: {e}")
 
         if not published:
             log.warning("⚠️  未能自动点击发表，请手动操作")
@@ -559,9 +621,36 @@ class WeixinChannelsPublisher:
             time.sleep(30)
 
         # ------------------------------------------------------------------
-        # Step 8: 确认发布成功
+        # Step 8: 等待发布完成（页面跳转 = 发布成功）
         # ------------------------------------------------------------------
-        time.sleep(5)
+        log.info("   ⏳ 等待发布完成...")
+        max_publish_wait = 60
+        start = time.time()
+        publish_confirmed = False
+        while time.time() - start < max_publish_wait:
+            current_url = self.page.url
+            # 发布成功后通常会跳转到内容管理页或首页
+            if "create" not in current_url:
+                log.info("   ✅ 页面已跳转，发布成功!")
+                publish_confirmed = True
+                break
+            # 检查是否有发布成功的提示
+            try:
+                success_hint = self.page.query_selector(
+                    'text="发表成功", text="已发表", [class*="success"]'
+                )
+                if success_hint:
+                    log.info("   ✅ 检测到发布成功提示!")
+                    publish_confirmed = True
+                    break
+            except Exception:
+                pass
+            time.sleep(2)
+
+        if not publish_confirmed:
+            log.warning("⚠️  未确认发布成功，请手动检查")
+
+        time.sleep(3)
         log.info("✅ 发布流程完成!")
         self._save_debug_screenshot("publish_done")
         return True
@@ -614,7 +703,7 @@ def main():
     parser.add_argument("--description", help="视频描述（覆盖 storyline 提取的描述）")
     parser.add_argument(
         "--tags",
-        help='标签（空格分隔，如 "#加拿大移民 #留学"）',
+        help='标签（空格分隔，如 "#加拿大生活 #留学"）',
     )
     parser.add_argument("--schedule", help='定时发布（如 "2026-05-15 20:00"）')
     parser.add_argument("--dry-run", action="store_true", help="模拟运行，不实际发表")

@@ -1,12 +1,12 @@
 ---
-description: 短视频生产工作流 v23 — 零编造 + 表格引用1:1 + 解读型台词 + 禁止重复台词 + storyline.md 唯一数据源 + Remotion + 火山咪仔TTS
+description: 短视频生产工作流 v26 — 零编造 + 表格引用1:1 + 解读型台词 + 禁止重复台词 + 内容合规 + storyline.md 唯一数据源 + Remotion + 火山咪仔TTS + 多平台一键发布
 name: short-video
-version: 23.0.0
+version: 26.0.0
 trigger: /short-video
 ---
-# 短视频生产工作流 v20
+# 短视频生产工作流 v26
 
-从 RAG 知识库一键生成微信视频号横屏短视频。**storyline.md 是唯一数据源**，slides/台词/字幕全部自动生成。
+从 RAG 知识库一键生成横屏短视频，**一键发布到小红书/抖音/B站/快手/视频号**。**storyline.md 是唯一数据源**，slides/台词/字幕全部自动生成。
 
 ## 核心理念
 
@@ -61,8 +61,9 @@ Agent 收到主题后，确认参数：
 | 画面比例  | 16:9 landscape                                        | 横屏视频号           |
 | 时长      | **不设硬上限，逻辑链完整优先**              | 参考 60-120 秒，讲透比卡秒数重要 |
 | slides 数 | **8-12 张**                                     | 含封面和结尾         |
-| 受众      | 华人移民/留学                                         | 内容定位             |
-| TTS       | 火山引擎 (`zh_female_mizai_uranus_bigtts` / 咪仔)     | 降级: Edge TTS / CosyVoice 本地 / 腾讯云  |
+| 受众      | 华人海外生活                                           | 内容定位             |
+| TTS       | Edge TTS (`zh-CN-YunyangNeural` / 云扬)               | 备选: 火山引擎咪仔 / CosyVoice 本地 / 腾讯云  |
+| 频道名    | **海外生活指南**                                       | 所有 storyline 作者字段必须使用 |
 
 ### 痛点驱动选题
 
@@ -249,6 +250,8 @@ uv run .agent/workflows/short-video/scripts/cite_rag.py `
 > | 移民/签证/EE/PNP | `ca_federal` |
 > | 银行/信用卡/金融（监管层） | `ca_federal ca_fcac` |
 > | 银行/信用卡/金融（五大行产品） | `ca_federal ca_fcac ca_bank_bmo ca_bank_cibc ca_bank_rbc ca_bank_scotiabank ca_bank_td` |
+> | 税务/TFSA/GIC 税率 | `ca_cra` |
+> | 存款保险/CDIC | `ca_cdic` |
 > | 省移民项目 | `ca_federal ca_ontario` / `ca_bc` 等 |
 
 > ⚠️ ChromaDB 数据全部英文（来自 canada.ca），中文查询命中率极低。**必须用英文查询。**
@@ -355,7 +358,9 @@ uv run python scripts/ingest/ingest_urls.py `
 | `evidence` | 数据页 | ❌ | 表格 |
 | `preview` | 互动收尾 + 下期预告 | ✅ | `**内容**` |
 
-> **收尾规则**: `[preview]` 之后必须有引用来源 slide（见下方铁律），然后是 `📋` 汇总区。
+> **免责声明规则**: **不单独占页，不念出来**。免责声明由 Remotion 自动渲染为字幕区左下角水印（`仅供参考 不构成投资或法律建议`，20% 透明度），全程可见但不干扰观看。storyline.md 中不需要写任何免责内容。
+
+> **收尾规则**: 引用来源 slide → `[preview]`，然后是 `📋` 汇总区。
 
 > 🔗 **引用来源 slide 铁律（每个 storyline 必须有）：**
 >
@@ -431,7 +436,7 @@ uv run python scripts/ingest/ingest_urls.py `
 # 省提名两条路，选错多等半年
 
 > **系列**: 省提名全解析 (1/3)
-> **作者**: 枫叶移民说
+> **作者**: 海外生活指南
 > **模板**: competitor-gold
 
 ---
@@ -701,6 +706,51 @@ Parser 从 `storyline.md` 自动生成：
 3. **禁止 emoji** — 标题、表格、台词不加 emoji
 4. **缩写词必须解释** — 首次出现用 `EE（快速通道）` 格式
 5. **文本中可用 `**加粗**`** — 渲染时变为金色高亮
+6. **内容合规** — 遵守下方「平台合规铁律」，禁止使用敏感词
+
+### Platform Compliance Rules (WeChat Video Channel)
+
+> ⚠️ **Content compliance = account safety. Violating these rules may cause throttling, demotion, or ban.**
+
+#### Sensitive Word Replacement Table
+
+| ❌ Banned Word (CN) | ✅ Safe Replacement | Reason |
+|------------|-----------|------|
+| immigration (yi-min) | newcomer, friends who just landed | Triggers "immigration agent" risk control |
+| immigration consultant/agent (yi-min gu-wen/zhong-jie) | ❌ Fully banned | Requires licensed qualification |
+| visa (qian-zheng) | visa (English), entry preparation | Triggers proxy-service risk control |
+| proxy/agent (dai-ban/dai-li) | ❌ Fully banned | Suspected agency service |
+| DM me/add me/consult (si-xin/jia-wo/zi-xun) | ❌ Fully banned | Private traffic diversion |
+| PR/permanent residency application | PR (use English directly) | Reduces sensitivity |
+| IRCC (said as abbreviation) | Canada official website | Avoid over-association with immigration |
+| new immigrant (xin yi-min, in narration/tables) | newcomer | English doesn't trigger risk control; also official bank terminology |
+| rental agent (zu-fang zhong-jie) | broker | Avoids "agent" trigger |
+
+> 💡 **Keep "newcomer" in English in bank product names**, e.g. "BMO NewStart Program".
+> Keep "immigrant/newcomer" as-is in citation blocks (inside quotes, does not trigger risk control).
+
+#### Author / Channel Name
+
+- All storyline `**作者**:` fields must use **海外生活指南**
+- Channel name must NOT contain words for immigration/consultant/study-abroad in Chinese
+
+#### Tag Compliance
+
+| ❌ Banned Tags | ✅ Safe Tags |
+|------------|----------|
+| #Canada-immigration (CN) | #加拿大生活 |
+| #immigration-guide (CN) | #海外生活攻略 |
+| #study-abroad-visa (CN) | #留学生活 |
+| #immigration-consultant (CN) | #生活指南 |
+
+#### Content Positioning Phrasing
+
+- ✅ "Teach you to read government websites"
+- ✅ "Official data interpretation"
+- ✅ "Overseas life encyclopedia"
+- ❌ "Help you get a visa" (CN)
+- ❌ "Immigration consulting" (CN)
+- ❌ "Step-by-step immigration application" (CN)
 
 ---
 
@@ -732,9 +782,21 @@ Parser 从 `storyline.md` 自动生成：
 **执行脚本**: `synthesize.py` (v2)
 
 ```powershell
-# Step 5: 合成（火山引擎 咪仔 — 默认）
+# Step 5: 合成（Edge TTS 云扬 — 默认）
 # // turbo
 # cwd: textbook-rag/
+uv run .agent/workflows/short-video/scripts/synthesize.py `
+  --storyline data/short-videos/{slug}/storyline.md `
+  --output data/short-videos/{slug}/narration/ `
+  --backend edge `
+  --voice zh-CN-YunyangNeural `
+  --gap 300 `
+  --slide-gap 800 `
+  --fade 80
+```
+
+```powershell
+# 备选 1: 火山引擎 咪仔（需 API Key，断句较重）
 uv run .agent/workflows/short-video/scripts/synthesize.py `
   --storyline data/short-videos/{slug}/storyline.md `
   --output data/short-videos/{slug}/narration/ `
@@ -745,17 +807,12 @@ uv run .agent/workflows/short-video/scripts/synthesize.py `
   --fade 80
 ```
 
-```powershell
-# 降级 1: Edge TTS（免费，无需 API Key）
-uv run .agent/workflows/short-video/scripts/synthesize.py `
-  --storyline data/short-videos/{slug}/storyline.md `
-  --output data/short-videos/{slug}/narration/ `
-  --backend edge `
-  --voice zh-CN-XiaoxiaoNeural `
-  --gap 300 `
-  --slide-gap 800 `
-  --fade 80
-```
+> **Edge TTS 推荐声音**:
+> | 声音 | 风格 | 适合 |
+> |------|------|------|
+> | `zh-CN-YunyangNeural` | 自然男声（新闻播报） | ✅ 推荐 |
+> | `zh-CN-YunxiNeural` | 年轻男声 | 备选 |
+> | `zh-CN-XiaoxiaoNeural` | 女声 | 备选 |
 
 ```powershell
 # 降级 2: CosyVoice 本地声音复刻
@@ -788,6 +845,7 @@ uv run .agent/workflows/short-video/scripts/synthesize.py `
 - **采样率**: 48000Hz（Volcano 24kHz × 2 整数倍重采样）
 - **前置静音**: 150ms 防止编码器截掉开头
 - **后置静音**: 300ms 防止截断最后一个字
+- **尾部静音截除**: silenceremove 阈值 -55dB（Edge TTS 兼容，-40dB 会误截末字衰减音）
 - **时间戳**: 基于每句实际音频时长计算（不再按字数比例估算）
 - **字幕清洗**: 只去句末标点和括号，保留逗号和顿号保持可读性
 
@@ -804,8 +862,8 @@ uv run .agent/workflows/short-video/scripts/synthesize.py `
 
 ```powershell
 # // turbo
-# cwd: textbook-rag/.agent/workflows/short-video/remotion/
-node render.mjs --data ../../../../data/short-videos/{slug}
+# cwd: textbook-rag/
+node .agent/workflows/short-video/remotion/render.mjs --data data/short-videos/{slug}
 ```
 
 ### Remotion 组件架构
@@ -917,57 +975,112 @@ ffprobe -v quiet -show_entries format=duration,size -of csv=p=0 `
 - [ ] **表格引用 1:1** — 每个表格的行数 = 引用条数
 - [ ] 声音自然，数字/英文混排无机器人感
 - [ ] 来源 URL 水印正确
-- [ ] TikTok 字幕逐词高亮同步
 - [ ] 结尾 `[preview]` 兼顾互动引导 + 下集预告（无单独 `[cta]` 重复）
 
-### 自动发布到微信视频号
+### 多平台一键发布
 
-**执行脚本**: `publish_weixin.py`
+**执行脚本**: `publish_all.py`（统一入口） + `publish_weixin.py`（视频号专用）
 
-> ⚠️ **首次使用必须先登录**（只需一次，登录态保存在本地 Chrome 用户数据中）。
+**底层依赖**: [social-auto-upload](https://github.com/dreammis/social-auto-upload) (`.github/social-auto-upload/`)
+
+#### 支持平台
+
+| 优先级 | 平台 | 变现方式 | 登录方式 | Cookie 存储 |
+|--------|------|---------|---------|-------------|
+| 🥇 | 小红书 | 品牌合作（蒲公英） | 扫码 | `.github/social-auto-upload/cookies/xiaohongshu_creator.json` |
+| 🥈 | YouTube | AdSense 广告分成 | 手动上传 | — |
+| 🥉 | 抖音 | 星图广告 + 创作者基金 | 扫码 | `.github/social-auto-upload/cookies/douyin_creator.json` |
+| 4 | B站 | 创作激励 + 花火 | 扫码 | `.github/social-auto-upload/cookies/bilibili_creator.json` |
+| 5 | 快手 | 磁力金牛 | 扫码 | `.github/social-auto-upload/cookies/kuaishou_creator.json` |
+| 6 | 视频号 | 创作者分成 | 扫码 | `.agent/workflows/short-video/browser-data/weixin-channels/` |
+
+#### 首次设置：逐平台扫码登录（每个平台只需一次，Cookie 有效 ~30 天）
 
 ```powershell
-# Step 1: 首次登录（弹出浏览器，微信扫码）
-# // turbo
+# 登录小红书（最优先）
 # cwd: textbook-rag/
-uv run .agent/workflows/short-video/scripts/publish_weixin.py --login-only
+uv run .agent/workflows/short-video/scripts/publish_all.py --login xiaohongshu
+
+# 登录抖音
+uv run .agent/workflows/short-video/scripts/publish_all.py --login douyin
+
+# 登录B站
+uv run .agent/workflows/short-video/scripts/publish_all.py --login bilibili
+
+# 登录快手
+uv run .agent/workflows/short-video/scripts/publish_all.py --login kuaishou
+
+# 登录视频号（走独立脚本）
+uv run .agent/workflows/short-video/scripts/publish_all.py --login weixin
 ```
 
+#### 检查所有平台登录状态
+
 ```powershell
-# Step 2: 模拟上传（不实际发表，检查标题/描述是否正确）
 # // turbo
 # cwd: textbook-rag/
-uv run .agent/workflows/short-video/scripts/publish_weixin.py `
+uv run .agent/workflows/short-video/scripts/publish_all.py --check
+```
+
+#### 发布到所有已登录平台
+
+```powershell
+# Dry run（模拟，不实际发布）
+# // turbo
+# cwd: textbook-rag/
+uv run .agent/workflows/short-video/scripts/publish_all.py `
   --video data/short-videos/{slug}/output/final.mp4 `
   --storyline data/short-videos/{slug}/storyline.md `
   --dry-run
 ```
 
 ```powershell
-# Step 3: 正式发表
+# 正式发布到所有已登录平台
+# cwd: textbook-rag/
+uv run .agent/workflows/short-video/scripts/publish_all.py `
+  --video data/short-videos/{slug}/output/final.mp4 `
+  --storyline data/short-videos/{slug}/storyline.md
+```
+
+```powershell
+# 只发布到指定平台
+# cwd: textbook-rag/
+uv run .agent/workflows/short-video/scripts/publish_all.py `
+  --video data/short-videos/{slug}/output/final.mp4 `
+  --storyline data/short-videos/{slug}/storyline.md `
+  --platforms xiaohongshu,douyin
+```
+
+> 💡 **原理**:
+> - 小红书/抖音/快手/B站：调用 `social-auto-upload` 的 `sau` CLI，底层使用 patchright（反检测 Playwright）
+> - 视频号：调用 `publish_weixin.py`，使用 Playwright 操作 `channels.weixin.qq.com`
+> - 标题/描述/标签从 `storyline.md` 自动提取，无需手动输入
+> - 平台间自动间隔 10 秒，避免触发风控
+
+> ⚠️ **注意事项**:
+> - 所有平台均通过浏览器自动化实现，非官方 API
+> - 平台可能更新页面结构导致选择器失效，需要更新 `social-auto-upload`
+> - 高频自动操作可能触发风控，建议每次上传间隔 ≥ 5 分钟
+> - Cookie 过期后重新运行 `--login` 扫码即可
+> - YouTube 暂不支持自动发布（API 限制），需手动上传
+
+#### 单独发布视频号（兼容旧流程）
+
+```powershell
+# 仅发布到视频号
 # cwd: textbook-rag/
 uv run .agent/workflows/short-video/scripts/publish_weixin.py `
   --video data/short-videos/{slug}/output/final.mp4 `
   --storyline data/short-videos/{slug}/storyline.md `
-  --tags "#加拿大移民 #加拿大留学 #留学费用"
+  --tags "#加拿大生活 #海外生活攻略 #生活指南"
 ```
-
-> 💡 **原理**: 脚本使用 Playwright 操作 `channels.weixin.qq.com` 视频号助手后台。
-> 标题/描述/标签从 `storyline.md` 自动提取，无需手动输入。
-> 登录态保存在 `.agent/workflows/short-video/browser-data/` 目录，约 30 天有效。
-
-> ⚠️ **注意事项**:
-> - 微信视频号没有官方上传 API，脚本通过浏览器自动化实现
-> - 微信可能更新页面结构导致选择器失效，需要定期维护
-> - 高频自动操作可能触发风控，建议每次上传间隔 ≥ 5 分钟
-> - 如果自动发表失败，脚本会保存截图并等待手动操作
 
 ### 发布规范
 
 - **标题**: 钩子句式，带数字
 - **封面**: 大字+数字，高对比度
-- **标签**: `#加拿大移民` `#程序员移民` + 主题标签
-- **系列标记**: 如 "EE全解析 1/5"
+- **标签**: `#加拿大生活` `#海外生活攻略` + 主题标签（禁止使用含"移民"的标签）
+- **系列标记**: 如 "加拿大生活常识 2/7"
 
 ### 发布后追踪
 
@@ -998,7 +1111,8 @@ uv run .agent/workflows/short-video/scripts/publish_weixin.py `
 | `register_voice.py`    | voice-sample.wav  | FastVoiceType (腾讯云复刻音色 ID) |
 | `synthesize.py`        | storyline.md + .env | narration.wav + timestamps.json |
 | `render.mjs`           | storyline.md + narration/ | final.mp4               |
-| `publish_weixin.py`    | final.mp4 + storyline.md | 微信视频号发布              |
+| `publish_all.py`       | final.mp4 + storyline.md | 多平台一键发布（小红书/抖音/B站/快手/视频号） |
+| `publish_weixin.py`    | final.mp4 + storyline.md | 微信视频号发布（被 publish_all.py 内部调用） |
 
 **脚本间零依赖** — 每个脚本独立运行，通过文件系统通信。
 
@@ -1043,9 +1157,22 @@ data/short-videos/{slug}/
 │           └── words.ts
 ├── scripts/
 │   ├── cite_rag.py              # RAG 检索（--collection 直接指定 ChromaDB collection）
-│   └── synthesize.py            # TTS 合成
+│   ├── synthesize.py            # TTS 合成
+│   ├── publish_all.py           # 多平台一键发布（统一入口）
+│   └── publish_weixin.py        # 微信视频号发布（被 publish_all.py 调用）
+├── browser-data/                # 视频号登录态（持久化）
 ├── voice/                       # 音色测试与样本
 └── workflow.md                  # 本文件
+
+.github/social-auto-upload/      # 多平台发布依赖（小红书/抖音/B站/快手）
+├── cookies/                     # 各平台 Cookie 持久化
+│   ├── xiaohongshu_creator.json
+│   ├── douyin_creator.json
+│   ├── bilibili_creator.json
+│   └── kuaishou_creator.json
+├── uploader/                    # 各平台上传器模块
+├── sau_cli.py                   # SAU CLI 入口
+└── conf.py                      # 本地配置
 ```
 
 ---

@@ -1,0 +1,110 @@
+# 系列（合集）配置
+# ================
+# 用于视频号合集管理 + 多平台系列标签
+
+series:
+  - name: 落地加拿大前7天
+    description: >-
+      刚到加拿大的留学生/新朋友，前7天必须搞定的事情。
+      SIN号、银行开户、信用卡、手机号、医保……一天一件事，关注不迷路。
+    slugs:
+      - life-sin-quick
+      - life-bank-quick
+      - life-credit-quick
+      - life-phone-quick
+      - life-healthcare-deep
+    title_keywords:
+      - SIN
+      - 银行
+      - 开户
+      - 信用分
+      - 信用卡
+      - 手机
+      - 套餐
+      - OHIP
+      - 医保
+
+  - name: 学签避坑指南
+    description: >-
+      2026学签新政、PAL认证信、留学费用、打工规则、毕业工签……
+      留学的坑我踩过，一个一个帮你避。
+    slugs:
+      - sp-pal-quick
+      - sp-cost-quick
+      - sp-overview-quick
+      - sp-work-while-study-quick
+      - sp-pgwp-deep
+    title_keywords:
+      - 学签
+      - PAL
+      - 留学一年
+      - 花多少
+      - 25万
+      - 留学费用
+      - 打工
+      - PGWP
+      - 毕业工签
+
+  - name: EE快速通道从0到懂
+    description: >-
+      Express Entry快速通道，用数据帮你拆解。
+      CRS打分、邀请分数线、加分方法、定向抽签……每条只讲一个点。
+    slugs:
+      - ee-crs-scoring
+      - ee-crs-cutoff-quick
+      - ee-overview-quick
+      - ee-draws-2026-quick
+      - ee-score-boost-deep
+      - ee-pnp-boost-deep
+      - ee-category-quick
+    title_keywords:
+      - EE
+      - CRS
+      - 评分
+      - 分数线
+      - "507"
+      - 快速通道
+      - Express
+      - 加分
+      - 定向抽签
+
+  - name: 省提名哪个省最容易
+    description: >-
+      各省提名政策一个一个拆，安省、BC省、阿省……
+      帮你找到最适合你的省份。
+    slugs:
+      - pnp-overview-quick
+      - pnp-vs-ee-quick
+      - pnp-on-oinp-deep
+      - pnp-bc-bcpnp-deep
+      - pnp-ab-aaip-deep
+    title_keywords:
+      - 省提名
+      - PNP
+      - 安省
+      - BC省
+      - 阿省
+      - OINP
+      - BCPNP
+
+  - name: 加拿大银行理财入门
+    description: >-
+      五大行储蓄利率、HISA高息储蓄、GIC定期存款、TFSA免税账户……
+      用数据帮你选最划算的银行产品。
+    slugs:
+      - life-interest-quick
+      - life-hisa-quick
+      - life-gic-quick
+      - life-bank-choose
+      - life-bank-card
+      - life-bank-credit
+    title_keywords:
+      - 利率
+      - HISA
+      - GIC
+      - TFSA
+      - 储蓄
+      - 定期
+      - 信用卡
+      - 开户
+      - 选哪家

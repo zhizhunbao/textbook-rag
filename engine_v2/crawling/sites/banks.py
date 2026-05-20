@@ -21,9 +21,15 @@ REMOVE_BANK_NOISE = """
         '[id*="Footer"]', '[id*="footer"]',
         '[class*="site-footer"]',
     ];
-    // Remove fixed-position elements (floating headers that overlap content)
+    // Neutralize fixed-position elements (floating headers that overlap content)
+    // → convert to relative instead of removing, so content is preserved
     document.querySelectorAll('*').forEach(el => {
-        if (getComputedStyle(el).position === 'fixed') el.remove();
+        const pos = getComputedStyle(el).position;
+        if (pos === 'fixed') {
+            el.style.position = 'relative';
+            el.style.top = 'auto';
+            el.style.zIndex = 'auto';
+        }
     });
     // Remove common bank chatbot widgets
     const widgetSelectors = [

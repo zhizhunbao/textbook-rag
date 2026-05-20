@@ -58,6 +58,8 @@ COLLECTION_MAP: dict[str, str] = {
     # ── Source-based: federal + provincial ──
     "federal-ircc":       "ca_federal",
     "federal-fcac":       "ca_fcac",
+    "federal-cra":        "ca_cra",
+    "federal-cdic":       "ca_cdic",
     "prov-ontario":       "ca_prov_ontario",
     "prov-bc":            "ca_prov_bc",
     "prov-alberta":       "ca_prov_alberta",

@@ -10,4 +10,7 @@ from engine_v2.crawling.sites import (  # noqa: F401
     algonquin,
     provincial,
     banks,
+    telecom,
+    federal_cdic,
+    taxtips,
 )

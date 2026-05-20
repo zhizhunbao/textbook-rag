@@ -2,718 +2,155 @@
   "slides": [
     {
       "type": "cover",
-      "title": "信用卡选错，一年白送银行200块",
-      "source": "AI全球留学移民顾问",
+      "title": "没有SIN号寸步难行",
+      "source": "海外生活指南",
       "chapter": "开场",
-      "subtitle": "五大行信用卡对比，年费、额度、返现一次说清",
-      "hookNumber": "0",
-      "hookUnit": "基础卡永久年费"
+      "subtitle": "到了加拿大第一件事",
+      "hookNumber": "9",
+      "hookUnit": "位数字决定一切"
     },
     {
       "type": "argument",
-      "title": "免费卡对比：年费$0，新移民首选",
-      "source": "AI全球留学移民顾问",
-      "chapter": "免费卡",
+      "title": "SIN是什么",
+      "source": "海外生活指南",
+      "chapter": "SIN是什么",
       "table": {
         "headers": [
-          "银行",
-          "卡名",
-          "年费",
-          "超市",
-          "加油",
-          "账单",
-          "其他",
-          "额外好处"
+          "要素",
+          "说明"
         ],
         "rows": [
           [
-            "BMO",
-            "CashBack Mastercard",
-            "**$0**",
-            "**3%**",
-            "0.5%",
-            "**1%**",
-            "0.5%",
-            "Petro-Canada省3¢/L"
+            "全称",
+            "Social Insurance Number"
           ],
           [
-            "RBC",
-            "Cash Back Mastercard",
-            "**$0**",
-            "**2%**",
-            "1%",
-            "1%",
-            "1%",
-            "Petro-Canada省3¢/L"
+            "位数",
+            "9位数字"
           ],
           [
-            "TD",
-            "Cash Back Visa",
-            "**$0**",
-            "**1%**",
-            "**1%**",
-            "**1%**",
-            "0.5%",
-            "加油/超市/公交加速返现"
+            "签发方",
+            "Service Canada"
           ],
           [
-            "CIBC",
-            "Dividend Visa Card",
-            "**$0**",
-            "**2%**",
-            "**1%**",
-            "**1%**",
-            "0.5%",
-            "Journie省油10¢/L、延保"
-          ],
-          [
-            "Scotiabank",
-            "Momentum No-Fee Visa",
-            "**$0**",
-            "**1%**",
-            "**1%**",
-            "**1%**",
-            "0.5%",
-            "AVIS租车75折、SelectPay分期"
+            "本质",
+            "加拿大的税务身份证"
           ]
         ]
       }
     },
     {
       "type": "argument",
-      "title": "中端卡对比：年费$49-$99，返现翻倍",
-      "source": "AI全球留学移民顾问",
-      "chapter": "中端卡",
+      "title": "没有SIN你做不了这三件事",
+      "source": "海外生活指南",
+      "chapter": "没有SIN你做不了这三件事",
       "table": {
         "headers": [
-          "银行",
-          "卡名",
-          "年费",
-          "超市",
-          "加油",
-          "账单",
-          "其他",
-          "额外好处"
+          "场景",
+          "没有SIN的后果"
         ],
         "rows": [
           [
-            "BMO",
-            "无中端卡，直接跳高端",
-            "—",
-            "—",
-            "—",
-            "—",
-            "—",
-            "—"
+            "找工作",
+            "雇主无法合法雇你"
           ],
           [
-            "RBC",
-            "Cash Back Preferred World Elite",
-            "**$99**",
-            "**1.5%**",
-            "**1.5%**",
-            "**1.5%**",
-            "**1.5%**",
-            "1300+机场休息室、DashPass 12个月"
+            "报税",
+            "无法申报，损失退税"
           ],
           [
-            "TD",
-            "无中端卡，直接跳高端",
-            "—",
-            "—",
-            "—",
-            "—",
-            "—",
-            "—"
-          ],
-          [
-            "CIBC",
-            "Dividend Platinum Visa",
-            "**$99**",
-            "**3%**",
-            "**3%**",
-            "**2%**",
-            "0.5%",
-            "租车碰撞险、分期付款"
-          ],
-          [
-            "Scotiabank",
-            "Momentum Visa",
-            "**$49**",
-            "**2%**",
-            "**2%**",
-            "**2%**",
-            "1%",
-            "购物90天保障、延保、AVIS 75折"
+            "领福利",
+            "EI失业保险、学生贷款全拿不到"
           ]
         ]
       }
     },
     {
       "type": "argument",
-      "title": "高端卡对比：年费$120-$139，返现天花板",
-      "source": "AI全球留学移民顾问",
-      "chapter": "高端卡",
+      "title": "怎么办SIN",
+      "source": "海外生活指南",
+      "chapter": "怎么办SIN",
       "table": {
         "headers": [
-          "银行",
-          "卡名",
-          "年费",
-          "超市",
-          "加油",
-          "账单",
-          "其他",
-          "额外好处"
+          "方式",
+          "速度",
+          "注意"
         ],
         "rows": [
           [
-            "BMO",
-            "CashBack World Elite",
-            "**$120**",
-            "**5%**",
-            "**3%**",
-            "**2%**",
-            "1%",
-            "道路救援、旅行医疗险"
+            "**现场办理**",
+            "当场出号",
+            "去Service Canada Centre"
           ],
           [
-            "RBC",
-            "无高端卡，中端即天花板",
-            "—",
-            "—",
-            "—",
-            "—",
-            "—",
-            "—"
+            "📌 开学周校内",
+            "当场出号",
+            "部分学校设办理点（详见学校orientation）"
           ],
           [
-            "TD",
-            "Cash Back Visa Infinite",
-            "**$139**",
-            "**3%**",
-            "**3%**",
-            "**3%**",
-            "1%",
-            "旅行医疗险、道路救援"
+            "在线申请",
+            "数个工作日",
+            "sin-nas.canada.ca"
           ],
           [
-            "CIBC",
-            "Dividend Visa Infinite",
-            "**$120**",
-            "**4%**",
-            "**4%**",
-            "**2%**",
-            "0.5%",
-            "旅行医疗险、延保"
-          ],
-          [
-            "Scotiabank",
-            "Momentum Visa Infinite+",
-            "**$120**",
-            "**4%**",
-            "**2%**",
-            "**4%**",
-            "1%",
-            "100万旅行医疗险、手机险"
+            "邮寄",
+            "最慢",
+            "需寄原件"
           ]
         ]
       }
     },
     {
       "type": "argument",
-      "title": "Costco会员专属（一）：先办会员再办卡",
-      "source": "AI全球留学移民顾问",
-      "chapter": "Costco联名卡",
-      "table": {
-        "headers": [
-          "会员等级",
-          "年费",
-          "2%购物返现",
-          "返现上限",
-          "回本线"
-        ],
-        "rows": [
-          [
-            "Gold Star",
-            "**$65/年**",
-            "❌",
-            "—",
-            "—"
-          ],
-          [
-            "Executive Gold Star",
-            "**$130/年**",
-            "✅ 2%",
-            "$1,250/年",
-            "年消费≥$3,250"
-          ]
-        ]
-      }
-    },
-    {
-      "type": "argument",
-      "title": "Costco会员专属（二）：白卡黑卡返现一样，区别只在门槛",
-      "source": "AI全球留学移民顾问",
-      "table": {
-        "headers": [
-          "对比项",
-          "白卡 Costco Mastercard",
-          "黑卡 Costco World Mastercard"
-        ],
-        "rows": [
-          [
-            "卡年费",
-            "**$0**",
-            "**$0**"
-          ],
-          [
-            "餐厅+Costco加油",
-            "**3%**",
-            "**3%**"
-          ],
-          [
-            "Costco.ca网购",
-            "**2%**",
-            "**2%**"
-          ],
-          [
-            "Costco门店购物",
-            "**1%**",
-            "**1%**"
-          ],
-          [
-            "其他消费",
-            "**1%**",
-            "**1%**"
-          ],
-          [
-            "收入要求",
-            "≥$15,000",
-            "≥$60,000(个人)/$100,000(家庭)"
-          ],
-          [
-            "购物保障(90天)",
-            "✅",
-            "✅"
-          ],
-          [
-            "延长保修(+1年)",
-            "✅",
-            "✅"
-          ],
-          [
-            "手机险($1,000)",
-            "✅",
-            "✅"
-          ],
-          [
-            "Mastercard World权益",
-            "❌",
-            "✅ FlexiRoam免费1GB漫游、太阳马戏团折扣"
-          ],
-          [
-            "信用额度",
-            "较低",
-            "较高"
-          ]
-        ]
-      }
-    },
-    {
-      "type": "argument",
-      "title": "Costco会员专属（三）：双重返现可叠加",
-      "source": "AI全球留学移民顾问",
-      "table": {
-        "headers": [
-          "消费场景",
-          "Executive会员返现",
-          "CIBC Costco卡返现",
-          "叠加总返现"
-        ],
-        "rows": [
-          [
-            "Costco门店购物",
-            "**2%**",
-            "**1%**",
-            "**3%**"
-          ],
-          [
-            "Costco.ca网购",
-            "**2%**",
-            "**2%**",
-            "**4%**"
-          ],
-          [
-            "Costco加油",
-            "❌(不适用)",
-            "**3%**",
-            "**3%**"
-          ],
-          [
-            "餐厅",
-            "❌(不适用)",
-            "**3%**",
-            "**3%**"
-          ]
-        ]
-      }
-    },
-    {
-      "type": "argument",
-      "title": "CIBC Cash Back全家桶：6张卡一图看懂",
-      "source": "AI全球留学移民顾问",
-      "table": {
-        "headers": [
-          "卡名",
-          "年费",
-          "超市",
-          "加油/EV",
-          "餐厅",
-          "其他",
-          "消费利率",
-          "适合谁"
-        ],
-        "rows": [
-          [
-            "Dividend Visa Infinite",
-            "**$120**",
-            "**4%**",
-            "**4%**",
-            "**2%**",
-            "0.5%",
-            "21.99%",
-            "月消费$3,000+"
-          ],
-          [
-            "Dividend Visa Platinum",
-            "**$99**",
-            "**3%**",
-            "**3%**",
-            "**2%**",
-            "0.5%",
-            "21.99%",
-            "月消费$2,000+"
-          ],
-          [
-            "Dividend Visa Card",
-            "**$0**",
-            "**2%**",
-            "**1%**",
-            "**1%**",
-            "0.5%",
-            "21.99%",
-            "新移民首选"
-          ],
-          [
-            "Dividend Visa Card学生版",
-            "**$0**",
-            "**2%**",
-            "**1%**",
-            "—",
-            "0.5%",
-            "21.99%",
-            "留学生(额度$2,000)"
-          ],
-          [
-            "Costco Mastercard",
-            "**$0**",
-            "1%",
-            "**3%**",
-            "**3%**",
-            "1%",
-            "**21.75%**",
-            "Costco会员(个人)"
-          ],
-          [
-            "Costco Business Mastercard",
-            "**$0**",
-            "1%",
-            "**3%**",
-            "**3%**",
-            "1%",
-            "**20.75%**",
-            "Costco会员(商业)"
-          ]
-        ]
-      }
-    },
-    {
-      "type": "evidence",
-      "title": "五大行新移民/学生卡对比",
-      "source": "AI全球留学移民顾问",
-      "chapter": "新移民卡",
-      "table": {
-        "headers": [
-          "银行",
-          "卡名",
-          "年费",
-          "新移民额度",
-          "无需信用记录"
-        ],
-        "rows": [
-          [
-            "BMO",
-            "CashBack Mastercard",
-            "**$0**",
-            "最高$5,000",
-            "✅"
-          ],
-          [
-            "RBC",
-            "Cash Back Mastercard",
-            "**$0**",
-            "最高$15,000",
-            "✅ (PR落地12个月内 / 工签48个月内)"
-          ],
-          [
-            "TD",
-            "Cash Back Visa",
-            "**$0**",
-            "最高$15,000",
-            "✅"
-          ],
-          [
-            "CIBC",
-            "Dividend Visa Card",
-            "**$0**",
-            "留学生$2,000 / 本地生$5,000",
-            "✅"
-          ],
-          [
-            "Scotiabank",
-            "Momentum No-Fee Visa",
-            "**$0**",
-            "最高$5,000",
-            "✅ (StartRight计划)"
-          ]
-        ]
-      }
-    },
-    {
-      "type": "argument",
-      "title": "Secured卡 vs Unsecured卡",
-      "source": "AI全球留学移民顾问",
-      "table": {
-        "headers": [
-          "特性",
-          "Unsecured（无担保）",
-          "Secured（担保）"
-        ],
-        "rows": [
-          [
-            "需要押金",
-            "❌ 不需要",
-            "✅ 交$300-$500"
-          ],
-          [
-            "谁能办",
-            "新移民计划内",
-            "任何人"
-          ],
-          [
-            "额度",
-            "银行给定",
-            "= 你的押金"
-          ],
-          [
-            "建信用效果",
-            "一样",
-            "一样"
-          ],
-          [
-            "年费",
-            "$0",
-            "$0"
-          ]
-        ]
-      }
-    },
-    {
-      "type": "argument",
-      "title": "用卡五个坑",
-      "source": "AI全球留学移民顾问",
-      "chapter": "五个坑",
+      "title": "留学生必须知道的两个坑",
+      "source": "海外生活指南",
+      "chapter": "留学生必须知道的两个坑",
       "table": {
         "headers": [
           "坑",
-          "后果",
-          "怎么避免"
+          "说明"
         ],
         "rows": [
           [
-            "只还最低还款额",
-            "消费利率约21.99%，$1,000余额一年利息$220",
-            "每月全额还款"
+            "9开头有效期",
+            "SIN跟学签同步过期，续了学签必须续SIN"
           ],
           [
-            "用信用卡取现",
-            "取现利率约22.99%，**没有免息期**，当天起计息",
-            "永远不要用信用卡取现"
-          ],
-          [
-            "刷满额度",
-            "信用使用率100%，信用分大跌",
-            "额度最多用30%"
-          ],
-          [
-            "短时间申请多张",
-            "每次申请=硬查询，扣信用分",
-            "先办一张，半年后再考虑第二张"
-          ],
-          [
-            "境外刷卡不注意汇率",
-            "额外收2.5%货币转换费，刷$1,000多付$25",
-            "出国前了解外币手续费"
+            "SIN不是身份证",
+            "不能随便给别人，房东要SIN可以拒绝"
           ]
         ]
       }
     },
     {
       "type": "argument",
-      "title": "毕业后/免费期后怎么办",
-      "source": "AI全球留学移民顾问",
+      "title": "引用来源",
+      "source": "海外生活指南",
       "table": {
         "headers": [
-          "场景",
-          "会发生什么",
-          "你要做什么"
+          "中文名",
+          "英文名",
+          "说明",
+          "链接"
         ],
         "rows": [
           [
-            "学生卡毕业后",
-            "银行自动转为同级普通卡",
-            "基础卡仍$0年费，不用操心"
+            "加拿大联邦政府",
+            "Service Canada",
+            "SIN申请指南",
+            "https://www.canada.ca/en/employment-social-development/services/sin/apply.html"
           ],
           [
-            "新移民卡过窗口期",
-            "卡继续有效",
-            "基础卡仍$0年费，不用操心"
+            "",
+            "",
+            "SIN保护须知",
+            "https://www.canada.ca/en/employment-social-development/services/sin/protection.html"
           ],
           [
-            "想要更多返现",
-            "主动申请高端卡",
-            "年费$120+，算一下返现能不能覆盖"
-          ],
-          [
-            "想关旧卡",
-            "关卡=缩短信用历史",
-            "基础卡$0年费，留着别关"
-          ]
-        ]
-      }
-    },
-    {
-      "type": "argument",
-      "title": "返现怎么拿到手",
-      "source": "AI全球留学移民顾问",
-      "chapter": "返现领取",
-      "table": {
-        "headers": [
-          "银行",
-          "最低门槛",
-          "发放方式",
-          "发放时间"
-        ],
-        "rows": [
-          [
-            "BMO",
-            "**$1**",
-            "存入账户 / 抵账单",
-            "随时兑换，或设自动定期存入"
-          ],
-          [
-            "RBC",
-            "**$25**",
-            "抵账单 / 存入账户",
-            "随时(≥$25)，或每年1月自动到账"
-          ],
-          [
-            "TD",
-            "**$1**",
-            "抵信用卡余额",
-            "随时(App/网银)，或每年1月自动到账"
-          ],
-          [
-            "CIBC",
-            "**$10**",
-            "网银/App兑换",
-            "随时(≥$10)，不过期"
-          ],
-          [
-            "Scotiabank",
-            "**$25**",
-            "抵账单 / 存入账户",
-            "随时(≥$25)，不过期"
-          ],
-          [
-            "Costco卡(CIBC)",
-            "—",
-            "Costco礼品券",
-            "每年1月，只能在Costco门店用"
-          ]
-        ]
-      }
-    },
-    {
-      "type": "argument",
-      "title": "结论：按身份和消费选卡",
-      "source": "AI全球留学移民顾问",
-      "chapter": "总结选卡",
-      "table": {
-        "headers": [
-          "场景",
-          "推荐",
-          "年费",
-          "理由"
-        ],
-        "rows": [
-          [
-            "留学生/刚落地",
-            "**CIBC Dividend Visa Card**",
-            "$0",
-            "超市2%返现，留学生专属通道最方便"
-          ],
-          [
-            "新移民PR",
-            "**BMO CashBack Mastercard**",
-            "$0",
-            "超市3%全免费卡最高，买菜返现最多"
-          ],
-          [
-            "工签持有者",
-            "**RBC Cash Back Mastercard**",
-            "$0",
-            "工签48个月内都能申请，窗口最长"
-          ],
-          [
-            "被拒了",
-            "任意银行**Secured Card**",
-            "$0",
-            "交押金办卡，建信用效果一样"
-          ],
-          [
-            "常在Costco购物",
-            "**CIBC Costco Mastercard**",
-            "$0",
-            "餐厅/加油3%，叠加会员返现最高3%"
-          ],
-          [
-            "月消费$2,000+",
-            "**Scotiabank Momentum Visa**",
-            "$49",
-            "年费最低中端卡，全类别2%返现"
-          ],
-          [
-            "月消费$3,000+",
-            "**BMO CashBack World Elite**",
-            "$120",
-            "超市5%全加拿大最高，送道路救援"
-          ],
-          [
-            "想省心不分类",
-            "**RBC Cash Back Preferred World Elite**",
-            "$99",
-            "所有消费统一1.5%，送机场休息室"
+            "",
+            "",
+            "SIN所需文件",
+            "https://www.canada.ca/en/employment-social-development/services/sin/required-documents.html"
           ]
         ]
       }
@@ -721,1920 +158,193 @@
     {
       "type": "preview",
       "title": "下期预告",
-      "source": "AI全球留学移民顾问",
-      "content": "加拿大银行转账全攻略：e-Transfer、ATM、跨行转账费用对比"
-    },
-    {
-      "type": "argument",
-      "title": "引用来源 (1/3)",
-      "source": "AI全球留学移民顾问",
-      "table": {
-        "headers": [
-          "中文名",
-          "英文名",
-          "说明",
-          "链接"
-        ],
-        "rows": [
-          [
-            "加拿大金融消费者局",
-            "FCAC",
-            "信用卡选择指南",
-            "https://www.canada.ca/en/financial-consumer-agency/services/credit-cards/choose-credit-card.html"
-          ],
-          [
-            "",
-            "",
-            "学生债务与信用卡利率",
-            "https://www.canada.ca/en/financial-consumer-agency/services/pay-down-student-debt.html"
-          ],
-          [
-            "",
-            "",
-            "信用卡运作(利率/取现/免息期)",
-            "https://www.canada.ca/en/financial-consumer-agency/services/credit-cards/credit-card-work.html"
-          ],
-          [
-            "蒙特利尔银行",
-            "BMO",
-            "新移民信用卡",
-            "https://www.bmo.com/main/personal/credit-cards/newcomers-to-canada"
-          ],
-          [
-            "",
-            "",
-            "CashBack Mastercard (免费)",
-            "https://www.bmo.com/main/personal/credit-cards/bmo-cashback-mastercard"
-          ],
-          [
-            "",
-            "",
-            "CashBack World Elite ($120)",
-            "https://www.bmo.com/main/personal/credit-cards/bmo-cashback-world-elite-mastercard"
-          ],
-          [
-            "",
-            "",
-            "返现兑换方式",
-            "https://www.bmo.com/main/personal/credit-cards/no-annual-fee"
-          ],
-          [
-            "",
-            "",
-            "留学生GIC与银行服务",
-            "https://www.bmo.com/main/personal/newcomers-to-canada/international-student-gics"
-          ]
-        ]
-      }
-    },
-    {
-      "type": "argument",
-      "title": "引用来源 (2/3)",
-      "source": "AI全球留学移民顾问",
-      "table": {
-        "headers": [
-          "中文名",
-          "英文名",
-          "说明",
-          "链接"
-        ],
-        "rows": [
-          [
-            "帝国商业银行",
-            "CIBC",
-            "学生信用卡",
-            "https://www.cibc.com/en/personal-banking/credit-cards/student-cards"
-          ],
-          [
-            "",
-            "",
-            "Dividend Visa Card (免费)",
-            "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/dividend-visa-card.html"
-          ],
-          [
-            "",
-            "",
-            "Dividend系列 (中端/高端)",
-            "https://www.cibc.com/en/personal-banking/credit-cards/cash-back-cards.html"
-          ],
-          [
-            "",
-            "",
-            "Costco Mastercard (白卡)",
-            "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/costco-mastercard.html"
-          ],
-          [
-            "",
-            "",
-            "Costco卡总览(白卡vs黑卡)",
-            "https://www.cibc.com/en/personal-banking/credit-cards/costco-cards.html"
-          ],
-          [
-            "",
-            "",
-            "Costco返现礼品券",
-            "https://www.cibc.com/en/personal-banking/credit-cards/rewards-and-points.html"
-          ],
-          [
-            "",
-            "",
-            "Costco Business Mastercard",
-            "https://www.cibc.com/en/personal-banking/credit-cards/all-credit-cards/costco-mastercard-business.html"
-          ]
-        ]
-      }
-    },
-    {
-      "type": "argument",
-      "title": "引用来源 (3/3)",
-      "source": "AI全球留学移民顾问",
-      "table": {
-        "headers": [
-          "中文名",
-          "英文名",
-          "说明",
-          "链接"
-        ],
-        "rows": [
-          [
-            "皇家银行",
-            "RBC",
-            "新移民信用卡(额度$15,000)",
-            "https://www.rbcroyalbank.com/dms/pba/newcomers-credit-card"
-          ],
-          [
-            "",
-            "",
-            "免费卡与中高端卡对比",
-            "https://www.rbcroyalbank.com/credit-cards/cash-back.html"
-          ],
-          [
-            "道明银行",
-            "TD",
-            "新移民信用卡(额度$15,000)",
-            "https://www.td.com/ca/en/personal-banking/solutions/new-to-canada/credit-cards-for-newcomers"
-          ],
-          [
-            "",
-            "",
-            "Cash Back Visa/Infinite",
-            "https://www.td.com/ca/en/personal-banking/products/credit-cards/cash-back"
-          ],
-          [
-            "丰业银行",
-            "Scotiabank",
-            "新移民信用卡指南",
-            "https://www.scotiabank.com/ca/en/personal/advice-plus/features/posts-credit-card-newcomers-to-canada"
-          ],
-          [
-            "",
-            "",
-            "Momentum No-Fee Visa (免费)",
-            "https://www.scotiabank.com/ca/en/personal/credit-cards/visa/momentum-no-fee-card.html"
-          ],
-          [
-            "",
-            "",
-            "Momentum Visa ($49)",
-            "https://www.scotiabank.com/ca/en/personal/credit-cards/visa/momentum-cash-back-card.html"
-          ],
-          [
-            "",
-            "",
-            "Momentum Visa Infinite+($120)",
-            "https://www.scotiabank.com/ca/en/personal/credit-cards/visa/momentum-infinite-card.html"
-          ],
-          [
-            "Costco",
-            "Costco Canada",
-            "会员费(Gold$65/Executive$130)",
-            "https://www.costco.ca/join-costco.html"
-          ],
-          [
-            "万事达",
-            "Mastercard",
-            "World卡权益",
-            "https://www.mastercard.ca/en-ca/personal/get-support/world-card-benefits.html"
-          ]
-        ]
-      }
+      "source": "海外生活指南",
+      "chapter": "下期预告",
+      "content": "加拿大银行开户怎么选最省钱"
     }
   ],
   "timestamps": [
     {
       "index": 1,
       "start": 0.15,
-      "end": 4.246,
-      "text": "很多新移民以为信用卡都收年费，不敢办",
+      "end": 4.67,
+      "text": "到了加拿大，安顿好住处之后，有一件事必须尽快办",
       "slide_index": 0
     },
     {
       "index": 2,
-      "start": 4.546,
-      "end": 7.955,
-      "text": "其实五大行都有永久免年费的基础卡，",
+      "start": 4.97,
+      "end": 9.032,
+      "text": "一个9位数字的号码，没有它你连工作都找不到",
       "slide_index": 0
     },
     {
       "index": 3,
-      "start": 8.255,
-      "end": 9.46,
-      "text": "关键是选对",
+      "start": 9.332,
+      "end": 13.112,
+      "text": "这个号叫SIN，今天讲清楚怎么办、有什么坑",
       "slide_index": 0
     },
     {
       "index": 4,
-      "start": 10.26,
-      "end": 11.625,
-      "text": "先看免费卡，",
+      "start": 13.912,
+      "end": 17.692,
+      "text": "SIN全称Social Insurance Number，社会保险号",
       "slide_index": 1
     },
     {
       "index": 5,
-      "start": 11.925,
-      "end": 13.346,
-      "text": "五家银行都有，",
+      "start": 17.992,
+      "end": 23.969,
+      "text": "你可以理解为加拿大的经济身份证，没有它你在加拿大没有经济身份",
       "slide_index": 1
     },
     {
       "index": 6,
-      "start": 13.646,
-      "end": 15.071,
-      "text": "年费全是零",
-      "slide_index": 1
+      "start": 24.769,
+      "end": 27.907,
+      "text": "具体来说，没有SIN你做不了三件事",
+      "slide_index": 2
     },
     {
       "index": 7,
-      "start": 15.371,
-      "end": 19.486,
-      "text": "BMO免费卡买菜返现最高，3%",
-      "slide_index": 1
+      "start": 28.207,
+      "end": 32.647,
+      "text": "第一，找工作，雇主没有你的SIN就没法给你发工资",
+      "slide_index": 2
     },
     {
       "index": 8,
-      "start": 19.786,
-      "end": 21.853,
-      "text": "RBC超市2%，",
-      "slide_index": 1
+      "start": 32.947,
+      "end": 37.24,
+      "text": "第二，报税，没有SIN你连个人所得税都没法申报",
+      "slide_index": 2
     },
     {
       "index": 9,
-      "start": 22.153,
-      "end": 24.584,
-      "text": "其他消费统一1%，",
-      "slide_index": 1
+      "start": 37.54,
+      "end": 44.343,
+      "text": "第三，政府福利，失业保险、学生贷款、养老金，全都通过SIN绑定",
+      "slide_index": 2
     },
     {
       "index": 10,
-      "start": 24.884,
-      "end": 26.192,
-      "text": "最简单直接",
-      "slide_index": 1
+      "start": 45.143,
+      "end": 49.955,
+      "text": "办SIN很简单，三种方式现场、在线、邮寄",
+      "slide_index": 3
     },
     {
       "index": 11,
-      "start": 26.492,
-      "end": 29.111,
-      "text": "CIBC的Dividend Visa卡，",
-      "slide_index": 1
+      "start": 50.255,
+      "end": 54.041,
+      "text": "推荐在线申请，官网说在线处理更快",
+      "slide_index": 3
     },
     {
       "index": 12,
-      "start": 29.411,
-      "end": 32.815,
-      "text": "超市2%，加油交通1%",
-      "slide_index": 1
+      "start": 54.341,
+      "end": 57.819,
+      "text": "也可以直接去最近的Service Canada现场办",
+      "slide_index": 3
     },
     {
       "index": 13,
-      "start": 33.115,
-      "end": 36.651,
-      "text": "加上Journie加油每升省10分钱",
-      "slide_index": 1
+      "start": 58.119,
+      "end": 65.051,
+      "text": "还有一个很多人不知道的，大部分学校开学第一周会请Service Canada来校园设点",
+      "slide_index": 3
     },
     {
       "index": 14,
-      "start": 36.951,
-      "end": 40.912,
-      "text": "TD和Scotiabank都是加速类别1%，",
-      "slide_index": 1
+      "start": 65.351,
+      "end": 67.804,
+      "text": "当场就能拿到号，非常方便",
+      "slide_index": 3
     },
     {
       "index": 15,
-      "start": 41.212,
-      "end": 42.967,
-      "text": "其他0.5%",
-      "slide_index": 1
+      "start": 68.104,
+      "end": 70.662,
+      "text": "具体看你学校的orientation通知",
+      "slide_index": 3
     },
     {
       "index": 16,
-      "start": 43.267,
-      "end": 44.903,
-      "text": "新移民第一张卡，",
-      "slide_index": 1
+      "start": 70.962,
+      "end": 74.911,
+      "text": "但要注意，留学生的学签上必须有may work字样",
+      "slide_index": 3
     },
     {
       "index": 17,
-      "start": 45.203,
-      "end": 46.685,
-      "text": "免费卡就够用了",
-      "slide_index": 1
+      "start": 75.211,
+      "end": 80.382,
+      "text": "如果没有这几个字，你需要确认学签条件，否则SIN办不下来",
+      "slide_index": 3
     },
     {
       "index": 18,
-      "start": 47.485,
-      "end": 49.332,
-      "text": "中端卡只有三家有，",
-      "slide_index": 2
+      "start": 81.182,
+      "end": 83.356,
+      "text": "留学生有两个坑必须知道",
+      "slide_index": 4
     },
     {
       "index": 19,
-      "start": 49.632,
-      "end": 52.186,
-      "text": "BMO和TD没有中端，",
-      "slide_index": 2
+      "start": 83.656,
+      "end": 90.354,
+      "text": "第一，你的SIN以9开头，意味着它有有效期，跟你的移民文件同步过期",
+      "slide_index": 4
     },
     {
       "index": 20,
-      "start": 52.486,
-      "end": 54.595,
-      "text": "直接从免费跳到高端",
-      "slide_index": 2
+      "start": 90.654,
+      "end": 96.387,
+      "text": "学签或工签续了，SIN也必须去更新，否则雇主无法继续雇你",
+      "slide_index": 4
     },
     {
       "index": 21,
-      "start": 54.895,
-      "end": 57.665,
-      "text": "Scotiabank的Momentum最便宜，",
-      "slide_index": 2
+      "start": 96.687,
+      "end": 100.236,
+      "text": "第二，SIN不是身份证，不能随便给别人",
+      "slide_index": 4
     },
     {
       "index": 22,
-      "start": 57.965,
-      "end": 59.48,
-      "text": "年费49块，",
-      "slide_index": 2
+      "start": 100.536,
+      "end": 104.386,
+      "text": "房东要你的SIN，可以拒绝，这是你的合法权利",
+      "slide_index": 4
     },
     {
       "index": 23,
-      "start": 59.78,
-      "end": 62.535,
-      "text": "全类别2%，最省心",
-      "slide_index": 2
+      "start": 104.686,
+      "end": 111.207,
+      "text": "常见需要提供SIN的情况包括入职后给雇主，银行报利息收入，还有报税",
+      "slide_index": 4
     },
     {
       "index": 24,
-      "start": 62.835,
-      "end": 67.126,
-      "text": "CIBC的Platinum超市加油都是3%，",
-      "slide_index": 2
+      "start": 112.007,
+      "end": 116.597,
+      "text": "本期数据来自加拿大联邦政府官网，链接在屏幕上",
+      "slide_index": 5
     },
     {
       "index": 25,
-      "start": 67.426,
-      "end": 68.89,
-      "text": "年费99块，",
-      "slide_index": 2
+      "start": 117.397,
+      "end": 121.648,
+      "text": "关注我，下期讲加拿大银行开户怎么选最省钱",
+      "slide_index": 6
     },
     {
       "index": 26,
-      "start": 69.19,
-      "end": 70.757,
-      "text": "买菜多的人划算",
-      "slide_index": 2
-    },
-    {
-      "index": 27,
-      "start": 71.057,
-      "end": 73.952,
-      "text": "RBC的99块不按类别算，",
-      "slide_index": 2
-    },
-    {
-      "index": 28,
-      "start": 74.252,
-      "end": 77.124,
-      "text": "所有消费统一1.5%，",
-      "slide_index": 2
-    },
-    {
-      "index": 29,
-      "start": 77.424,
-      "end": 80.021,
-      "text": "加上1300个机场休息室",
-      "slide_index": 2
-    },
-    {
-      "index": 30,
-      "start": 80.321,
-      "end": 84.409,
-      "text": "中端卡适合每月消费1500块以上的人，",
-      "slide_index": 2
-    },
-    {
-      "index": 31,
-      "start": 84.709,
-      "end": 86.729,
-      "text": "返现开始覆盖年费",
-      "slide_index": 2
-    },
-    {
-      "index": 32,
-      "start": 87.529,
-      "end": 91.054,
-      "text": "高端卡年费120到139块，",
-      "slide_index": 3
-    },
-    {
-      "index": 33,
-      "start": 91.354,
-      "end": 93.243,
-      "text": "返现率全面升级",
-      "slide_index": 3
-    },
-    {
-      "index": 34,
-      "start": 93.543,
-      "end": 95.96,
-      "text": "BMO的World Elite最猛，",
-      "slide_index": 3
-    },
-    {
-      "index": 35,
-      "start": 96.26,
-      "end": 99.252,
-      "text": "超市5%，全加拿大最高",
-      "slide_index": 3
-    },
-    {
-      "index": 36,
-      "start": 99.552,
-      "end": 103.994,
-      "text": "加油3%，还送道路救援和旅行医疗险",
-      "slide_index": 3
-    },
-    {
-      "index": 37,
-      "start": 104.294,
-      "end": 106.805,
-      "text": "RBC没有高端cash back卡，",
-      "slide_index": 3
-    },
-    {
-      "index": 38,
-      "start": 107.105,
-      "end": 110.357,
-      "text": "99块的中端就是他家天花板了",
-      "slide_index": 3
-    },
-    {
-      "index": 39,
-      "start": 110.657,
-      "end": 113.261,
-      "text": "TD的Infinite最整齐，",
-      "slide_index": 3
-    },
-    {
-      "index": 40,
-      "start": 113.561,
-      "end": 117.482,
-      "text": "加速类别统一3%，其他1%",
-      "slide_index": 3
-    },
-    {
-      "index": 41,
-      "start": 117.782,
-      "end": 120.717,
-      "text": "还送旅行医疗险和道路救援",
-      "slide_index": 3
-    },
-    {
-      "index": 42,
-      "start": 121.017,
-      "end": 125.257,
-      "text": "CIBC的Infinite超市加油都是4%，",
-      "slide_index": 3
-    },
-    {
-      "index": 43,
-      "start": 125.557,
-      "end": 127.038,
-      "text": "120块年费，",
-      "slide_index": 3
-    },
-    {
-      "index": 44,
-      "start": 127.338,
-      "end": 128.614,
-      "text": "性价比不错",
-      "slide_index": 3
-    },
-    {
-      "index": 45,
-      "start": 128.914,
-      "end": 133.845,
-      "text": "Scotiabank的Infinite Plus超市和账单都是4%",
-      "slide_index": 3
-    },
-    {
-      "index": 46,
-      "start": 134.145,
-      "end": 137.339,
-      "text": "送100万旅行医疗险和手机险",
-      "slide_index": 3
-    },
-    {
-      "index": 47,
-      "start": 137.639,
-      "end": 141.455,
-      "text": "高端卡适合每月消费3000块以上的人，",
-      "slide_index": 3
-    },
-    {
-      "index": 48,
-      "start": 141.755,
-      "end": 143.55,
-      "text": "返现能覆盖年费",
-      "slide_index": 3
-    },
-    {
-      "index": 49,
-      "start": 144.35,
-      "end": 146.519,
-      "text": "如果你经常逛Costco，",
-      "slide_index": 4
-    },
-    {
-      "index": 50,
-      "start": 146.819,
-      "end": 148.691,
-      "text": "这部分一定要听仔细，",
-      "slide_index": 4
-    },
-    {
-      "index": 51,
-      "start": 148.991,
-      "end": 150.605,
-      "text": "因为能省不少钱",
-      "slide_index": 4
-    },
-    {
-      "index": 52,
-      "start": 150.905,
-      "end": 153.357,
-      "text": "首先你得有Costco会员，",
-      "slide_index": 4
-    },
-    {
-      "index": 53,
-      "start": 153.657,
-      "end": 156.868,
-      "text": "这是前提，没有会员办不了这张卡",
-      "slide_index": 4
-    },
-    {
-      "index": 54,
-      "start": 157.168,
-      "end": 159.781,
-      "text": "Gold Star会员年费65块，",
-      "slide_index": 4
-    },
-    {
-      "index": 55,
-      "start": 160.081,
-      "end": 162.783,
-      "text": "只能进去买东西，没有返现",
-      "slide_index": 4
-    },
-    {
-      "index": 56,
-      "start": 163.083,
-      "end": 166.112,
-      "text": "Executive会员年费130块，",
-      "slide_index": 4
-    },
-    {
-      "index": 57,
-      "start": 166.412,
-      "end": 168.727,
-      "text": "多了一个2%购物返现，",
-      "slide_index": 4
-    },
-    {
-      "index": 58,
-      "start": 169.027,
-      "end": 171.682,
-      "text": "每年最多返1250块",
-      "slide_index": 4
-    },
-    {
-      "index": 59,
-      "start": 171.982,
-      "end": 178.473,
-      "text": "算一下，年消费超过3250块就能把多花的65块赚回来",
-      "slide_index": 4
-    },
-    {
-      "index": 60,
-      "start": 179.273,
-      "end": 180.617,
-      "text": "有了会员之后，",
-      "slide_index": 5
-    },
-    {
-      "index": 61,
-      "start": 180.917,
-      "end": 184.694,
-      "text": "可以申请CIBC的Costco联名信用卡，",
-      "slide_index": 5
-    },
-    {
-      "index": 62,
-      "start": 184.994,
-      "end": 186.807,
-      "text": "卡本身年费是零",
-      "slide_index": 5
-    },
-    {
-      "index": 63,
-      "start": 187.107,
-      "end": 191.159,
-      "text": "这张卡最大的卖点不是在Costco买东西，",
-      "slide_index": 5
-    },
-    {
-      "index": 64,
-      "start": 191.459,
-      "end": 194.146,
-      "text": "门店购物其实只有1%",
-      "slide_index": 5
-    },
-    {
-      "index": 65,
-      "start": 194.446,
-      "end": 198.013,
-      "text": "真正值钱的是餐厅和Costco加油，",
-      "slide_index": 5
-    },
-    {
-      "index": 66,
-      "start": 198.313,
-      "end": 200.104,
-      "text": "都是3%返现",
-      "slide_index": 5
-    },
-    {
-      "index": 67,
-      "start": 200.404,
-      "end": 203.967,
-      "text": "注意，餐厅3%是所有餐厅都算，",
-      "slide_index": 5
-    },
-    {
-      "index": 68,
-      "start": 204.267,
-      "end": 207.253,
-      "text": "不只是Costco里面的food court",
-      "slide_index": 5
-    },
-    {
-      "index": 69,
-      "start": 207.553,
-      "end": 211.262,
-      "text": "经常下馆子或者去Costco加油的人，",
-      "slide_index": 5
-    },
-    {
-      "index": 70,
-      "start": 211.562,
-      "end": 214.763,
-      "text": "光这两项就比大多数免费卡强",
-      "slide_index": 5
-    },
-    {
-      "index": 71,
-      "start": 215.063,
-      "end": 218.019,
-      "text": "白卡和黑卡返现率完全一样，",
-      "slide_index": 5
-    },
-    {
-      "index": 72,
-      "start": 218.319,
-      "end": 219.469,
-      "text": "保险也一样，",
-      "slide_index": 5
-    },
-    {
-      "index": 73,
-      "start": 219.769,
-      "end": 223.441,
-      "text": "都送购物保障、延长保修和手机险",
-      "slide_index": 5
-    },
-    {
-      "index": 74,
-      "start": 223.741,
-      "end": 225.18,
-      "text": "区别只在门槛，",
-      "slide_index": 5
-    },
-    {
-      "index": 75,
-      "start": 225.48,
-      "end": 227.756,
-      "text": "白卡年收入1万5就能办，",
-      "slide_index": 5
-    },
-    {
-      "index": 76,
-      "start": 228.056,
-      "end": 229.371,
-      "text": "黑卡要6万",
-      "slide_index": 5
-    },
-    {
-      "index": 77,
-      "start": 229.671,
-      "end": 231.023,
-      "text": "黑卡多了什么",
-      "slide_index": 5
-    },
-    {
-      "index": 78,
-      "start": 231.323,
-      "end": 237.168,
-      "text": "国际漫游免费1G流量、太阳马戏团折扣、信用额度更高",
-      "slide_index": 5
-    },
-    {
-      "index": 79,
-      "start": 237.468,
-      "end": 240.938,
-      "text": "说白了就多了几个用不太上的小福利，",
-      "slide_index": 5
-    },
-    {
-      "index": 80,
-      "start": 241.238,
-      "end": 244.896,
-      "text": "收入够了银行自动升级，不用追求",
-      "slide_index": 5
-    },
-    {
-      "index": 81,
-      "start": 245.196,
-      "end": 249.442,
-      "text": "另外，信用卡背面就是你的Costco会员卡，",
-      "slide_index": 5
-    },
-    {
-      "index": 82,
-      "start": 249.742,
-      "end": 251.444,
-      "text": "出门少带一张卡",
-      "slide_index": 5
-    },
-    {
-      "index": 83,
-      "start": 251.744,
-      "end": 253.238,
-      "text": "但有一点要注意，",
-      "slide_index": 5
-    },
-    {
-      "index": 84,
-      "start": 253.538,
-      "end": 255.921,
-      "text": "这张卡的返现不是现金",
-      "slide_index": 5
-    },
-    {
-      "index": 85,
-      "start": 256.221,
-      "end": 260.658,
-      "text": "是每年1月跟账单一起发一张Costco礼品券，",
-      "slide_index": 5
-    },
-    {
-      "index": 86,
-      "start": 260.958,
-      "end": 263.315,
-      "text": "电子版或者纸质寄到家",
-      "slide_index": 5
-    },
-    {
-      "index": 87,
-      "start": 263.615,
-      "end": 265.862,
-      "text": "只能去Costco门店花，",
-      "slide_index": 5
-    },
-    {
-      "index": 88,
-      "start": 266.162,
-      "end": 267.339,
-      "text": "网上不能用",
-      "slide_index": 5
-    },
-    {
-      "index": 89,
-      "start": 267.639,
-      "end": 268.787,
-      "text": "有了这张卡，",
-      "slide_index": 5
-    },
-    {
-      "index": 90,
-      "start": 269.087,
-      "end": 272.832,
-      "text": "基本不需要再办CIBC其他信用卡了",
-      "slide_index": 5
-    },
-    {
-      "index": 91,
-      "start": 273.132,
-      "end": 274.997,
-      "text": "餐厅加油3%，",
-      "slide_index": 5
-    },
-    {
-      "index": 92,
-      "start": 275.297,
-      "end": 277.065,
-      "text": "其他消费1%，",
-      "slide_index": 5
-    },
-    {
-      "index": 93,
-      "start": 277.365,
-      "end": 279.948,
-      "text": "比免费的Dividend卡还强",
-      "slide_index": 5
-    },
-    {
-      "index": 94,
-      "start": 280.248,
-      "end": 283.646,
-      "text": "唯一不如Dividend卡的是其他超市",
-      "slide_index": 5
-    },
-    {
-      "index": 95,
-      "start": 283.946,
-      "end": 285.888,
-      "text": "Dividend卡给2%，",
-      "slide_index": 5
-    },
-    {
-      "index": 96,
-      "start": 286.188,
-      "end": 287.939,
-      "text": "这张只有1%",
-      "slide_index": 5
-    },
-    {
-      "index": 97,
-      "start": 288.739,
-      "end": 294.493,
-      "text": "重点来了，Executive会员返现和信用卡返现是可以叠加的",
+      "start": 121.948,
+      "end": 126.23,
+      "text": "五大行哪家免费期最长，哪家坑最多，一次说清",
       "slide_index": 6
-    },
-    {
-      "index": 98,
-      "start": 294.793,
-      "end": 298.282,
-      "text": "这是两套完全独立的系统，同时生效",
-      "slide_index": 6
-    },
-    {
-      "index": 99,
-      "start": 298.582,
-      "end": 300.844,
-      "text": "你在Costco门店买东西，",
-      "slide_index": 6
-    },
-    {
-      "index": 100,
-      "start": 301.144,
-      "end": 304.933,
-      "text": "会员返2%加信用卡返1%，",
-      "slide_index": 6
-    },
-    {
-      "index": 101,
-      "start": 305.233,
-      "end": 307.157,
-      "text": "实际拿回3%",
-      "slide_index": 6
-    },
-    {
-      "index": 102,
-      "start": 307.457,
-      "end": 310.588,
-      "text": "会员的2%返现不包括加油，",
-      "slide_index": 6
-    },
-    {
-      "index": 103,
-      "start": 310.888,
-      "end": 313.49,
-      "text": "但信用卡加油返3%，",
-      "slide_index": 6
-    },
-    {
-      "index": 104,
-      "start": 313.79,
-      "end": 316.167,
-      "text": "所以加油还是3%",
-      "slide_index": 6
-    },
-    {
-      "index": 105,
-      "start": 316.467,
-      "end": 318.963,
-      "text": "很多人不知道这个可以叠加，",
-      "slide_index": 6
-    },
-    {
-      "index": 106,
-      "start": 319.263,
-      "end": 321.12,
-      "text": "结果白白少拿了钱",
-      "slide_index": 6
-    },
-    {
-      "index": 107,
-      "start": 321.92,
-      "end": 325.029,
-      "text": "CIBC一共有6张cash back卡，",
-      "slide_index": 7
-    },
-    {
-      "index": 108,
-      "start": 325.329,
-      "end": 327.587,
-      "text": "放在一起看就很清楚了",
-      "slide_index": 7
-    },
-    {
-      "index": 109,
-      "start": 327.887,
-      "end": 329.817,
-      "text": "Dividend系列有4张，",
-      "slide_index": 7
-    },
-    {
-      "index": 110,
-      "start": 330.117,
-      "end": 332.472,
-      "text": "从免费到120块年费，",
-      "slide_index": 7
-    },
-    {
-      "index": 111,
-      "start": 332.772,
-      "end": 336.539,
-      "text": "超市返现从2%到4%递增",
-      "slide_index": 7
-    },
-    {
-      "index": 112,
-      "start": 336.839,
-      "end": 339.363,
-      "text": "免费版和学生版返现一样，",
-      "slide_index": 7
-    },
-    {
-      "index": 113,
-      "start": 339.663,
-      "end": 341.965,
-      "text": "区别只在通道和额度",
-      "slide_index": 7
-    },
-    {
-      "index": 114,
-      "start": 342.265,
-      "end": 343.978,
-      "text": "留学生额度2000，",
-      "slide_index": 7
-    },
-    {
-      "index": 115,
-      "start": 344.278,
-      "end": 345.701,
-      "text": "本地学生5000",
-      "slide_index": 7
-    },
-    {
-      "index": 116,
-      "start": 346.001,
-      "end": 347.861,
-      "text": "Costco系列有2张，",
-      "slide_index": 7
-    },
-    {
-      "index": 117,
-      "start": 348.161,
-      "end": 349.767,
-      "text": "个人版和商业版，",
-      "slide_index": 7
-    },
-    {
-      "index": 118,
-      "start": 350.067,
-      "end": 351.606,
-      "text": "返现率完全一样",
-      "slide_index": 7
-    },
-    {
-      "index": 119,
-      "start": 351.906,
-      "end": 355.056,
-      "text": "Costco卡的优势在餐厅和加油，",
-      "slide_index": 7
-    },
-    {
-      "index": 120,
-      "start": 355.356,
-      "end": 358.986,
-      "text": "都是3%，但超市只有1%",
-      "slide_index": 7
-    },
-    {
-      "index": 121,
-      "start": 359.286,
-      "end": 361.259,
-      "text": "主要在Costco买菜，",
-      "slide_index": 7
-    },
-    {
-      "index": 122,
-      "start": 361.559,
-      "end": 365.235,
-      "text": "配合Executive会员叠加拿3%",
-      "slide_index": 7
-    },
-    {
-      "index": 123,
-      "start": 365.535,
-      "end": 367.202,
-      "text": "其他超市买菜多，",
-      "slide_index": 7
-    },
-    {
-      "index": 124,
-      "start": 367.502,
-      "end": 369.231,
-      "text": "Dividend卡更划算，",
-      "slide_index": 7
-    },
-    {
-      "index": 125,
-      "start": 369.531,
-      "end": 371.518,
-      "text": "2%到4%",
-      "slide_index": 7
-    },
-    {
-      "index": 126,
-      "start": 371.818,
-      "end": 373.462,
-      "text": "商业版多个好处，",
-      "slide_index": 7
-    },
-    {
-      "index": 127,
-      "start": 373.762,
-      "end": 376.735,
-      "text": "网购和运费也是2%返现",
-      "slide_index": 7
-    },
-    {
-      "index": 128,
-      "start": 377.035,
-      "end": 380.86,
-      "text": "商业卡消费利率只有20.75%，",
-      "slide_index": 7
-    },
-    {
-      "index": 129,
-      "start": 381.16,
-      "end": 382.706,
-      "text": "CIBC最低",
-      "slide_index": 7
-    },
-    {
-      "index": 130,
-      "start": 383.506,
-      "end": 387.387,
-      "text": "新移民和学生卡其实就是同一张免费卡，",
-      "slide_index": 8
-    },
-    {
-      "index": 131,
-      "start": 387.687,
-      "end": 390.57,
-      "text": "只是申请通道不需要信用记录",
-      "slide_index": 8
-    },
-    {
-      "index": 132,
-      "start": 390.87,
-      "end": 394.076,
-      "text": "BMO办的就是CashBack Mastercard",
-      "slide_index": 8
-    },
-    {
-      "index": 133,
-      "start": 394.376,
-      "end": 397.869,
-      "text": "Scotiabank办的就是Momentum No-Fee Visa",
-      "slide_index": 8
-    },
-    {
-      "index": 134,
-      "start": 398.169,
-      "end": 400.855,
-      "text": "和普通人拿到的卡完全一样",
-      "slide_index": 8
-    },
-    {
-      "index": 135,
-      "start": 401.155,
-      "end": 402.54,
-      "text": "年费全是零，",
-      "slide_index": 8
-    },
-    {
-      "index": 136,
-      "start": 402.84,
-      "end": 404.004,
-      "text": "返现也一样，",
-      "slide_index": 8
-    },
-    {
-      "index": 137,
-      "start": 404.304,
-      "end": 405.768,
-      "text": "区别只在额度",
-      "slide_index": 8
-    },
-    {
-      "index": 138,
-      "start": 406.068,
-      "end": 408.464,
-      "text": "RBC和TD最大方，",
-      "slide_index": 8
-    },
-    {
-      "index": 139,
-      "start": 408.764,
-      "end": 410.897,
-      "text": "额度最高到15000",
-      "slide_index": 8
-    },
-    {
-      "index": 140,
-      "start": 411.197,
-      "end": 414.308,
-      "text": "BMO和Scotiabank最高5000，",
-      "slide_index": 8
-    },
-    {
-      "index": 141,
-      "start": 414.608,
-      "end": 416.678,
-      "text": "CIBC最低2000",
-      "slide_index": 8
-    },
-    {
-      "index": 142,
-      "start": 416.978,
-      "end": 418.424,
-      "text": "RBC要注意，",
-      "slide_index": 8
-    },
-    {
-      "index": 143,
-      "start": 418.724,
-      "end": 420.265,
-      "text": "PR和留学生，",
-      "slide_index": 8
-    },
-    {
-      "index": 144,
-      "start": 420.565,
-      "end": 424.318,
-      "text": "落地12个月内申请才免信用记录要求，",
-      "slide_index": 8
-    },
-    {
-      "index": 145,
-      "start": 424.618,
-      "end": 426.434,
-      "text": "工签是48个月",
-      "slide_index": 8
-    },
-    {
-      "index": 146,
-      "start": 426.734,
-      "end": 428.169,
-      "text": "额度不是重点，",
-      "slide_index": 8
-    },
-    {
-      "index": 147,
-      "start": 428.469,
-      "end": 429.568,
-      "text": "500块够了，",
-      "slide_index": 8
-    },
-    {
-      "index": 148,
-      "start": 429.868,
-      "end": 431.717,
-      "text": "目的是建信用记录",
-      "slide_index": 8
-    },
-    {
-      "index": 149,
-      "start": 432.517,
-      "end": 435.337,
-      "text": "如果银行拒绝给你unsecured卡，",
-      "slide_index": 9
-    },
-    {
-      "index": 150,
-      "start": 435.637,
-      "end": 436.945,
-      "text": "还有一个选择，",
-      "slide_index": 9
-    },
-    {
-      "index": 151,
-      "start": 437.245,
-      "end": 438.251,
-      "text": "secured卡",
-      "slide_index": 9
-    },
-    {
-      "index": 152,
-      "start": 438.551,
-      "end": 440.582,
-      "text": "交300到500块押金，",
-      "slide_index": 9
-    },
-    {
-      "index": 153,
-      "start": 440.882,
-      "end": 443.15,
-      "text": "银行给你等额的信用额度",
-      "slide_index": 9
-    },
-    {
-      "index": 154,
-      "start": 443.45,
-      "end": 444.867,
-      "text": "押金不是费用，",
-      "slide_index": 9
-    },
-    {
-      "index": 155,
-      "start": 445.167,
-      "end": 447.26,
-      "text": "退卡的时候会还给你",
-      "slide_index": 9
-    },
-    {
-      "index": 156,
-      "start": 447.56,
-      "end": 450.643,
-      "text": "建信用效果和普通卡完全一样，",
-      "slide_index": 9
-    },
-    {
-      "index": 157,
-      "start": 450.943,
-      "end": 452.76,
-      "text": "只是需要先掏押金",
-      "slide_index": 9
-    },
-    {
-      "index": 158,
-      "start": 453.56,
-      "end": 455.341,
-      "text": "用信用卡有五个坑，",
-      "slide_index": 10
-    },
-    {
-      "index": 159,
-      "start": 455.641,
-      "end": 457.33,
-      "text": "很多新移民踩过",
-      "slide_index": 10
-    },
-    {
-      "index": 160,
-      "start": 457.63,
-      "end": 460.085,
-      "text": "第一，只还最低还款额",
-      "slide_index": 10
-    },
-    {
-      "index": 161,
-      "start": 460.385,
-      "end": 463.741,
-      "text": "信用卡消费利率大约22%，",
-      "slide_index": 10
-    },
-    {
-      "index": 162,
-      "start": 464.041,
-      "end": 466.527,
-      "text": "英文叫Purchase Interest Rate",
-      "slide_index": 10
-    },
-    {
-      "index": 163,
-      "start": 466.827,
-      "end": 470.036,
-      "text": "1000块余额一年利息220块，",
-      "slide_index": 10
-    },
-    {
-      "index": 164,
-      "start": 470.336,
-      "end": 472.434,
-      "text": "每月一定要全额还清",
-      "slide_index": 10
-    },
-    {
-      "index": 165,
-      "start": 472.734,
-      "end": 475.454,
-      "text": "第二，千万别用信用卡取现",
-      "slide_index": 10
-    },
-    {
-      "index": 166,
-      "start": 475.754,
-      "end": 478.343,
-      "text": "取现利率叫Cash Interest Rate，",
-      "slide_index": 10
-    },
-    {
-      "index": 167,
-      "start": 478.643,
-      "end": 480.313,
-      "text": "比消费利率还高，",
-      "slide_index": 10
-    },
-    {
-      "index": 168,
-      "start": 480.613,
-      "end": 482.305,
-      "text": "大约23%",
-      "slide_index": 10
-    },
-    {
-      "index": 169,
-      "start": 482.605,
-      "end": 484.903,
-      "text": "而且取现没有免息期，",
-      "slide_index": 10
-    },
-    {
-      "index": 170,
-      "start": 485.203,
-      "end": 487.924,
-      "text": "从你取钱那一秒就开始计息，",
-      "slide_index": 10
-    },
-    {
-      "index": 171,
-      "start": 488.224,
-      "end": 489.993,
-      "text": "还额外收手续费",
-      "slide_index": 10
-    },
-    {
-      "index": 172,
-      "start": 490.293,
-      "end": 492.782,
-      "text": "FCAC官网说得很清楚，",
-      "slide_index": 10
-    },
-    {
-      "index": 173,
-      "start": 493.082,
-      "end": 495.053,
-      "text": "这是最贵的借钱方式",
-      "slide_index": 10
-    },
-    {
-      "index": 174,
-      "start": 495.353,
-      "end": 497.186,
-      "text": "第三，刷满额度",
-      "slide_index": 10
-    },
-    {
-      "index": 175,
-      "start": 497.486,
-      "end": 501.938,
-      "text": "信用使用率超过30%就会拉低信用分",
-      "slide_index": 10
-    },
-    {
-      "index": 176,
-      "start": 502.238,
-      "end": 503.449,
-      "text": "1000块额度，",
-      "slide_index": 10
-    },
-    {
-      "index": 177,
-      "start": 503.749,
-      "end": 505.3,
-      "text": "最多刷300块",
-      "slide_index": 10
-    },
-    {
-      "index": 178,
-      "start": 505.6,
-      "end": 508.662,
-      "text": "第四，短时间申请好几张卡",
-      "slide_index": 10
-    },
-    {
-      "index": 179,
-      "start": 508.962,
-      "end": 511.937,
-      "text": "每一次申请银行都会查你的信用，",
-      "slide_index": 10
-    },
-    {
-      "index": 180,
-      "start": 512.237,
-      "end": 514.296,
-      "text": "叫硬查询，会扣分",
-      "slide_index": 10
-    },
-    {
-      "index": 181,
-      "start": 514.596,
-      "end": 517.786,
-      "text": "先办一张，用半年再考虑第二张",
-      "slide_index": 10
-    },
-    {
-      "index": 182,
-      "start": 518.086,
-      "end": 520.966,
-      "text": "第五，境外刷卡不注意汇率",
-      "slide_index": 10
-    },
-    {
-      "index": 183,
-      "start": 521.266,
-      "end": 526.615,
-      "text": "大部分信用卡境外消费会收2.5%的货币转换费",
-      "slide_index": 10
-    },
-    {
-      "index": 184,
-      "start": 526.915,
-      "end": 529.425,
-      "text": "刷1000块多付25块，",
-      "slide_index": 10
-    },
-    {
-      "index": 185,
-      "start": 529.725,
-      "end": 531.923,
-      "text": "出国前一定要了解清楚",
-      "slide_index": 10
-    },
-    {
-      "index": 186,
-      "start": 532.723,
-      "end": 535.698,
-      "text": "很多人问毕业后学生卡怎么办",
-      "slide_index": 11
-    },
-    {
-      "index": 187,
-      "start": 535.998,
-      "end": 538.431,
-      "text": "银行会自动把你的学生卡，",
-      "slide_index": 11
-    },
-    {
-      "index": 188,
-      "start": 538.731,
-      "end": 540.785,
-      "text": "转成同级别的普通卡，",
-      "slide_index": 11
-    },
-    {
-      "index": 189,
-      "start": 541.085,
-      "end": 543.056,
-      "text": "基础款还是零年费",
-      "slide_index": 11
-    },
-    {
-      "index": 190,
-      "start": 543.356,
-      "end": 544.713,
-      "text": "所以不用操心，",
-      "slide_index": 11
-    },
-    {
-      "index": 191,
-      "start": 545.013,
-      "end": 546.666,
-      "text": "也不用主动做什么",
-      "slide_index": 11
-    },
-    {
-      "index": 192,
-      "start": 546.966,
-      "end": 549.1,
-      "text": "关键是这张卡别关",
-      "slide_index": 11
-    },
-    {
-      "index": 193,
-      "start": 549.4,
-      "end": 551.267,
-      "text": "零年费留着不花钱，",
-      "slide_index": 11
-    },
-    {
-      "index": 194,
-      "start": 551.567,
-      "end": 554.184,
-      "text": "关了会缩短你的信用历史长度，",
-      "slide_index": 11
-    },
-    {
-      "index": 195,
-      "start": 554.484,
-      "end": 555.73,
-      "text": "拉低信用分",
-      "slide_index": 11
-    },
-    {
-      "index": 196,
-      "start": 556.53,
-      "end": 558.885,
-      "text": "很多人问返现怎么拿到手，",
-      "slide_index": 12
-    },
-    {
-      "index": 197,
-      "start": 559.185,
-      "end": 560.733,
-      "text": "各家银行不一样",
-      "slide_index": 12
-    },
-    {
-      "index": 198,
-      "start": 561.033,
-      "end": 562.68,
-      "text": "BMO最灵活，",
-      "slide_index": 12
-    },
-    {
-      "index": 199,
-      "start": 562.98,
-      "end": 564.306,
-      "text": "1块钱就能兑，",
-      "slide_index": 12
-    },
-    {
-      "index": 200,
-      "start": 564.606,
-      "end": 566.803,
-      "text": "直接存进你的活期账户，",
-      "slide_index": 12
-    },
-    {
-      "index": 201,
-      "start": 567.103,
-      "end": 569.004,
-      "text": "或者抵信用卡账单",
-      "slide_index": 12
-    },
-    {
-      "index": 202,
-      "start": 569.304,
-      "end": 571.277,
-      "text": "TD也是1块起兑，",
-      "slide_index": 12
-    },
-    {
-      "index": 203,
-      "start": 571.577,
-      "end": 572.936,
-      "text": "通过App操作，",
-      "slide_index": 12
-    },
-    {
-      "index": 204,
-      "start": 573.236,
-      "end": 576.208,
-      "text": "也可以设成每年1月自动到账",
-      "slide_index": 12
-    },
-    {
-      "index": 205,
-      "start": 576.508,
-      "end": 580.666,
-      "text": "RBC和Scotiabank要攒到25块才能取，",
-      "slide_index": 12
-    },
-    {
-      "index": 206,
-      "start": 580.966,
-      "end": 583.528,
-      "text": "不着急的话等1月自动到账",
-      "slide_index": 12
-    },
-    {
-      "index": 207,
-      "start": 583.828,
-      "end": 586.027,
-      "text": "CIBC是10块起兑，",
-      "slide_index": 12
-    },
-    {
-      "index": 208,
-      "start": 586.327,
-      "end": 588.668,
-      "text": "通过网银操作，不过期",
-      "slide_index": 12
-    },
-    {
-      "index": 209,
-      "start": 588.968,
-      "end": 590.887,
-      "text": "Costco卡比较特殊，",
-      "slide_index": 12
-    },
-    {
-      "index": 210,
-      "start": 591.187,
-      "end": 593.738,
-      "text": "前面说过是礼品券形式，",
-      "slide_index": 12
-    },
-    {
-      "index": 211,
-      "start": 594.038,
-      "end": 595.098,
-      "text": "表里也列了，",
-      "slide_index": 12
-    },
-    {
-      "index": 212,
-      "start": 595.398,
-      "end": 597.658,
-      "text": "注意和其他四家区分开",
-      "slide_index": 12
-    },
-    {
-      "index": 213,
-      "start": 598.458,
-      "end": 602.55,
-      "text": "总结一下，按你的身份和消费水平来选",
-      "slide_index": 13
-    },
-    {
-      "index": 214,
-      "start": 602.85,
-      "end": 604.474,
-      "text": "刚落地的留学生，",
-      "slide_index": 13
-    },
-    {
-      "index": 215,
-      "start": 604.774,
-      "end": 608.1,
-      "text": "首选CIBC的Dividend Visa Card",
-      "slide_index": 13
-    },
-    {
-      "index": 216,
-      "start": 608.4,
-      "end": 611.246,
-      "text": "零年费，超市2%返现，",
-      "slide_index": 13
-    },
-    {
-      "index": 217,
-      "start": 611.546,
-      "end": 613.986,
-      "text": "留学生通道申请最方便",
-      "slide_index": 13
-    },
-    {
-      "index": 218,
-      "start": 614.286,
-      "end": 617.503,
-      "text": "新移民PR选BMO的CashBack，",
-      "slide_index": 13
-    },
-    {
-      "index": 219,
-      "start": 617.803,
-      "end": 619.728,
-      "text": "超市3%最高",
-      "slide_index": 13
-    },
-    {
-      "index": 220,
-      "start": 620.028,
-      "end": 621.875,
-      "text": "工签推荐RBC，",
-      "slide_index": 13
-    },
-    {
-      "index": 221,
-      "start": 622.175,
-      "end": 624.714,
-      "text": "48个月窗口期最长",
-      "slide_index": 13
-    },
-    {
-      "index": 222,
-      "start": 625.014,
-      "end": 627.19,
-      "text": "被拒了就办secured卡，",
-      "slide_index": 13
-    },
-    {
-      "index": 223,
-      "start": 627.49,
-      "end": 629.306,
-      "text": "交押金建信用一样",
-      "slide_index": 13
-    },
-    {
-      "index": 224,
-      "start": 629.606,
-      "end": 634.323,
-      "text": "常逛Costco的加一张CIBC联名卡，零年费",
-      "slide_index": 13
-    },
-    {
-      "index": 225,
-      "start": 634.623,
-      "end": 636.488,
-      "text": "餐厅加油3%，",
-      "slide_index": 13
-    },
-    {
-      "index": 226,
-      "start": 636.788,
-      "end": 639.495,
-      "text": "叠加会员还能再拿2%",
-      "slide_index": 13
-    },
-    {
-      "index": 227,
-      "start": 639.795,
-      "end": 642.681,
-      "text": "等信用建好消费稳定了再升级",
-      "slide_index": 13
-    },
-    {
-      "index": 228,
-      "start": 642.981,
-      "end": 644.486,
-      "text": "月花2000以上，",
-      "slide_index": 13
-    },
-    {
-      "index": 229,
-      "start": 644.786,
-      "end": 647.702,
-      "text": "Scotiabank只要49块年费",
-      "slide_index": 13
-    },
-    {
-      "index": 230,
-      "start": 648.002,
-      "end": 649.497,
-      "text": "月花3000以上，",
-      "slide_index": 13
-    },
-    {
-      "index": 231,
-      "start": 649.797,
-      "end": 652.954,
-      "text": "BMO超市5%覆盖年费",
-      "slide_index": 13
-    },
-    {
-      "index": 232,
-      "start": 653.254,
-      "end": 658.195,
-      "text": "RBC的99块年费统一1.5%，最省心",
-      "slide_index": 13
-    },
-    {
-      "index": 233,
-      "start": 658.495,
-      "end": 659.755,
-      "text": "记住五件事",
-      "slide_index": 13
-    },
-    {
-      "index": 234,
-      "start": 660.055,
-      "end": 661.95,
-      "text": "全额还，别取现，",
-      "slide_index": 13
-    },
-    {
-      "index": 235,
-      "start": 662.25,
-      "end": 664.426,
-      "text": "额度别超30%",
-      "slide_index": 13
-    },
-    {
-      "index": 236,
-      "start": 664.726,
-      "end": 666.395,
-      "text": "别短时间申多张，",
-      "slide_index": 13
-    },
-    {
-      "index": 237,
-      "start": 666.695,
-      "end": 668.62,
-      "text": "境外刷卡注意汇率",
-      "slide_index": 13
-    },
-    {
-      "index": 238,
-      "start": 668.92,
-      "end": 670.598,
-      "text": "基础卡留着别关，",
-      "slide_index": 13
-    },
-    {
-      "index": 239,
-      "start": 670.898,
-      "end": 672.859,
-      "text": "零年费放着不花钱",
-      "slide_index": 13
-    },
-    {
-      "index": 240,
-      "start": 673.659,
-      "end": 677.75,
-      "text": "下期我讲银行转账和ATM的隐藏费用",
-      "slide_index": 14
-    },
-    {
-      "index": 241,
-      "start": 678.05,
-      "end": 680.297,
-      "text": "e-Transfer一笔多少钱，",
-      "slide_index": 14
-    },
-    {
-      "index": 242,
-      "start": 680.597,
-      "end": 684.054,
-      "text": "用别家ATM扣多少，怎么避免",
-      "slide_index": 14
-    },
-    {
-      "index": 243,
-      "start": 684.854,
-      "end": 689.04,
-      "text": "本期数据均来自FCAC和五大行官网",
-      "slide_index": 15
-    },
-    {
-      "index": 244,
-      "start": 689.84,
-      "end": 691.667,
-      "text": "完整链接在屏幕上",
-      "slide_index": 16
-    },
-    {
-      "index": 245,
-      "start": 692.467,
-      "end": 695.112,
-      "text": "以上就是本期全部引用来源",
-      "slide_index": 17
     }
   ],
   "audioUrl": "/public/audio.wav",
@@ -2645,44 +355,29 @@
       "slideIndex": 0
     },
     {
-      "title": "免费卡",
-      "startSec": 10.26,
+      "title": "SIN是什么",
+      "startSec": 13.912,
       "slideIndex": 1
     },
     {
-      "title": "中端卡",
-      "startSec": 47.485,
+      "title": "没有SIN你做不了这三件事",
+      "startSec": 24.769,
       "slideIndex": 2
     },
     {
-      "title": "高端卡",
-      "startSec": 87.529,
+      "title": "怎么办SIN",
+      "startSec": 45.143,
       "slideIndex": 3
     },
     {
-      "title": "Costco联名卡",
-      "startSec": 144.35,
+      "title": "留学生必须知道的两个坑",
+      "startSec": 81.182,
       "slideIndex": 4
     },
     {
-      "title": "新移民卡",
-      "startSec": 383.506,
-      "slideIndex": 8
-    },
-    {
-      "title": "五个坑",
-      "startSec": 453.56,
-      "slideIndex": 10
-    },
-    {
-      "title": "返现领取",
-      "startSec": 556.53,
-      "slideIndex": 12
-    },
-    {
-      "title": "总结选卡",
-      "startSec": 598.458,
-      "slideIndex": 13
+      "title": "下期预告",
+      "startSec": 117.397,
+      "slideIndex": 6
     }
   ]
 }

@@ -41,6 +41,8 @@ SOURCE_DIRS: dict[str, Path] = {
     # ── Source-based: federal + provincial ──
     "federal-ircc":       CRAWLED_WEB_DIR / "federal-ircc",
     "federal-fcac":       CRAWLED_WEB_DIR / "federal-fcac",
+    "federal-cra":        CRAWLED_WEB_DIR / "federal-cra",
+    "federal-cdic":       CRAWLED_WEB_DIR / "federal-cdic",
     "prov-ontario":       CRAWLED_WEB_DIR / "prov-ontario",
     "prov-bc":            CRAWLED_WEB_DIR / "prov-bc",
     "prov-alberta":       CRAWLED_WEB_DIR / "prov-alberta",
@@ -59,6 +61,21 @@ SOURCE_DIRS: dict[str, Path] = {
     "bank-td":         CRAWLED_WEB_DIR / "bank-td",
     "bank-cibc":       CRAWLED_WEB_DIR / "bank-cibc",
     "bank-scotiabank": CRAWLED_WEB_DIR / "bank-scotiabank",
+    # ── Internet providers ──
+    "internet-bell":     CRAWLED_WEB_DIR / "internet-bell",
+    "internet-rogers":   CRAWLED_WEB_DIR / "internet-rogers",
+    "internet-teksavvy": CRAWLED_WEB_DIR / "internet-teksavvy",
+    # ── Telecom carriers ──
+    "telecom-chatr":        CRAWLED_WEB_DIR / "telecom-chatr",
+    "telecom-fido":         CRAWLED_WEB_DIR / "telecom-fido",
+    "telecom-freedom":      CRAWLED_WEB_DIR / "telecom-freedom",
+    "telecom-koodo":        CRAWLED_WEB_DIR / "telecom-koodo",
+    "telecom-luckymobile":  CRAWLED_WEB_DIR / "telecom-luckymobile",
+    "telecom-publicmobile": CRAWLED_WEB_DIR / "telecom-publicmobile",
+    "telecom-virginplus":   CRAWLED_WEB_DIR / "telecom-virginplus",
+    # ── Missing provinces ──
+    "prov-newfoundland": CRAWLED_WEB_DIR / "prov-newfoundland",
+    "prov-pei":          CRAWLED_WEB_DIR / "prov-pei",
 }
 
 # Minimum output size thresholds for completeness validation

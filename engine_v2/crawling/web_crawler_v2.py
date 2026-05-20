@@ -165,6 +165,13 @@ async def _discover_urls_impl(
 
                 while queue and len(discovered) < max_pages:
                     url, depth = queue.popleft()
+
+                    # Skip auth/account/site-specific URLs (uses profile patterns)
+                    _serial_profile = get_profile(url)
+                    if _should_skip_url(url, _serial_profile):
+                        logger.info("  [SKIP] {}", url[:80])
+                        continue
+
                     logger.info("  [{}/{}] depth={} → {}", len(discovered) + 1, max_pages, depth, url)
 
                     try:
@@ -449,7 +456,8 @@ async def save_pdfs_from_manifest(
             logger.info("  [{}/{}] Saving: {} -> {}.pdf", i+1, len(pages), url, filename)
             try:
                 result = await asyncio.wait_for(
-                    _save_single_pdf(url, out_file, headless=headless, timeout=timeout),
+                    _save_single_pdf(url, out_file, headless=headless, timeout=timeout,
+                                     is_first_page=(i == 0)),
                     timeout=120)
             except asyncio.TimeoutError:
                 logger.error("    TIMEOUT (120s): {} — skipping", url)
@@ -532,12 +540,13 @@ async def save_pdfs_from_manifest(
 # ║  Core: Profile-driven PDF rendering                                       ║
 # ╚════════════════════════════════════════════════════════════════════════════╝
 
-async def _save_single_pdf(url, pdf_path, *, headless=True, timeout=30_000):
-    return await _render_page_to_pdf(url, pdf_path, headless=headless, timeout=timeout)
+async def _save_single_pdf(url, pdf_path, *, headless=True, timeout=30_000, is_first_page=True):
+    return await _render_page_to_pdf(url, pdf_path, headless=headless, timeout=timeout, is_first_page=is_first_page)
 
 
 async def _render_page_to_pdf(
     url: str, pdf_path: Path, *, headless: bool = True, timeout: int = 30_000,
+    is_first_page: bool = True,
 ) -> CrawlResult:
     """Render URL to PDF — all site-specific behavior driven by SiteProfile."""
     from playwright.async_api import async_playwright
@@ -547,7 +556,7 @@ async def _render_page_to_pdf(
 
     try:
         async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=headless)
+            browser = await p.chromium.launch(headless=headless, channel="chrome")
             page = await browser.new_page()
             await page.set_viewport_size({"width": profile.viewport_width, "height": profile.viewport_height})
             await page.emulate_media(media="screen")
@@ -629,6 +638,13 @@ async def _render_page_to_pdf(
             if profile.pre_pdf_js:
                 await page.evaluate(profile.pre_pdf_js)
 
+            # Neutralize fixed/sticky headers → relative (appear at top of PDF only)
+            await page.evaluate(JS.NEUTRALIZE_FIXED_HEADERS)
+
+            # Profile-specific non-first-page cleanup (if any)
+            if not is_first_page and profile.pre_pdf_js_non_first:
+                await page.evaluate(profile.pre_pdf_js_non_first)
+
             # Source URL banner
             if profile.inject_source_banner:
                 capture_date = datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -639,7 +655,8 @@ async def _render_page_to_pdf(
 
             # ── Save PDF ─────────────────────────────────────────────────
             await page.pdf(
-                path=str(pdf_path), width="1280px", print_background=True,
+                path=str(pdf_path), width=f"{profile.viewport_width}px",
+                print_background=True,
                 margin={"top": "10mm", "bottom": "10mm", "left": "10mm", "right": "10mm"})
             await browser.close()
 
@@ -654,16 +671,317 @@ async def _render_page_to_pdf(
 
 
 # ╔════════════════════════════════════════════════════════════════════════════╗
-# ║  Combined: discover → save                                                ║
+# ║  Combined: discover + save in ONE browser session                          ║
 # ╚════════════════════════════════════════════════════════════════════════════╝
+
+# URL patterns to skip during BFS discovery (generic — applies to ALL sites)
+_BFS_SKIP_PATH_PATTERNS = [
+    "/login", "/signin", "/sign-in", "/signup", "/sign-up",
+    "/register", "/account", "/my-account", "/myaccount",
+    "/auth", "/oauth", "/sso", "/forgot", "/reset-password",
+    "/cart", "/checkout", "/order", "/billing",
+]
+_BFS_SKIP_SUBDOMAIN_PREFIXES = ["account.", "login.", "auth.", "sso.", "my."]
+
+# JS to extract same-domain links from a rendered page
+_EXTRACT_LINKS_JS = """
+() => {
+    const links = new Set();
+    const origin = location.origin;
+    document.querySelectorAll('a[href]').forEach(a => {
+        try {
+            const url = new URL(a.href, origin);
+            if (url.origin === origin && url.pathname !== location.pathname) {
+                links.add(url.origin + url.pathname);
+            }
+        } catch(e) {}
+    });
+    return [...links];
+}
+"""
+
+
+def _should_skip_url(url: str, profile: Any | None = None) -> bool:
+    """Check if URL should be skipped during BFS.
+
+    Checks both generic auth/cart patterns AND profile-specific patterns
+    (e.g. /phones/, /devices/ for telecom sites).
+    """
+    url_lower = url.lower()
+    # Generic patterns (auth, cart, etc.)
+    if any(pat in url_lower for pat in _BFS_SKIP_PATH_PATTERNS):
+        return True
+    # Profile-specific patterns (phones, devices, fr locale, etc.)
+    if profile and hasattr(profile, 'skip_path_patterns'):
+        if any(pat in url_lower for pat in profile.skip_path_patterns):
+            return True
+    netloc = urlparse(url).netloc.lower()
+    if any(netloc.startswith(p) for p in _BFS_SKIP_SUBDOMAIN_PREFIXES):
+        return True
+    path = urlparse(url).path.lower()
+    ext = Path(path).suffix
+    if ext in _SKIP_EXTENSIONS:
+        return True
+    # Skip fragment-only or empty
+    if not urlparse(url).path or urlparse(url).path == "/":
+        return False  # root is OK
+    return False
+
+
+async def discover_and_save_pdfs(
+    seed_url: str, *,
+    persona_slug: str = "general",
+    max_depth: int = 2,
+    max_pages: int = 50,
+    headless: bool = True,
+    delay_between: float = 8.0,
+    output_dir: Path | str = _DEFAULT_OUTPUT_DIR,
+    url_filter: Any | None = None,
+    supplemental_urls: list[str] | None = None,
+) -> list[CrawlResult]:
+    """Single-pass: BFS discover links + save PDF for each page in ONE browser.
+
+    For each page visited:
+      1. Navigate & wait for SPA render
+      2. Extract all <a> links (for BFS queue)
+      3. Run expansion JS + cleanup
+      4. Save PDF
+
+    This avoids opening each page twice (once for discovery, once for PDF).
+    """
+    from playwright.async_api import async_playwright
+    from collections import deque
+
+    profile = get_profile(seed_url)
+    out_dir = Path(output_dir) / persona_slug
+    out_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path = out_dir / "manifest.json"
+
+    logger.info("=" * 60)
+    logger.info("DISCOVER + SAVE (single-pass) [profile={}]", profile.name)
+    logger.info("  seed: {}", seed_url)
+    logger.info("  depth={}, max_pages={}, delay={:.0f}s", max_depth, max_pages, delay_between)
+    logger.info("=" * 60)
+
+    # BFS state
+    visited: set[str] = set()
+    queue: deque[tuple[str, int]] = deque()
+
+    # Seed the queue
+    norm_seed = _normalize_url(seed_url)
+    queue.append((norm_seed, 0))
+    visited.add(norm_seed)
+
+    # Also add supplemental URLs at depth 0
+    if supplemental_urls:
+        for su in supplemental_urls:
+            ns = _normalize_url(su)
+            if ns not in visited:
+                visited.add(ns)
+                queue.append((ns, 0))
+        logger.info("  +{} supplemental URLs queued", len(supplemental_urls))
+
+    results: list[CrawlResult] = []
+    pages_meta: list[dict] = []
+
+    try:
+        async with async_playwright() as p:
+            # Use system Chrome (channel='chrome') instead of Playwright's Chromium
+            # to bypass Cloudflare automation detection fingerprinting
+            browser = await p.chromium.launch(
+                headless=headless, channel="chrome")
+            ctx = await browser.new_context(
+                viewport={"width": profile.viewport_width, "height": profile.viewport_height})
+            # Single reusable page tab — preserves cookies (critical for Cloudflare)
+            page = await ctx.new_page()
+            page.set_default_timeout(90_000)
+            await page.emulate_media(media="screen")
+
+            page_count = 0
+            while queue and page_count < max_pages:
+                url, depth = queue.popleft()
+
+                # Skip auth/account/site-specific URLs
+                if _should_skip_url(url, profile):
+                    logger.info("  [SKIP] {}", url[:80])
+                    continue
+
+                page_count += 1
+                rel_path = _url_to_relpath(url)
+                filename = rel_path if rel_path else "index"
+                pdf_path = out_dir / f"{filename}.pdf"
+                pdf_path.parent.mkdir(parents=True, exist_ok=True)
+
+                # Skip if PDF already exists and is non-trivial (>10KB)
+                if pdf_path.exists() and pdf_path.stat().st_size > 10_000:
+                    logger.info("  [{}/{}] [CACHED] {} ({:.0f}KB)", page_count, max_pages,
+                                pdf_path.name, pdf_path.stat().st_size/1024)
+                    pages_meta.append({"url": url, "filename": filename, "status": "cached",
+                                       "file_size": pdf_path.stat().st_size})
+                    results.append(CrawlResult(url=url, pdf_path=str(pdf_path),
+                                               success=True, file_size=pdf_path.stat().st_size))
+                    continue
+
+                logger.info("  [{}/{}] depth={} → {}", page_count, max_pages, depth, url[:80])
+
+                try:
+                    await page.goto(url, wait_until="domcontentloaded", timeout=15_000)
+                    await page.wait_for_timeout(profile.wait_after_load_ms)
+
+                    # ── Cloudflare challenge detection + wait ────────────
+                    _cf_keywords = ["just a moment", "请稍候", "checking your browser",
+                                    "verify you are human", "验证您是否是真人"]
+                    for _cf_attempt in range(3):
+                        title = await page.title()
+                        body_text = await page.evaluate("document.body?.innerText?.slice(0,200) || ''")
+                        is_cf = any(k in title.lower() or k in body_text.lower() for k in _cf_keywords)
+                        if not is_cf:
+                            break
+                        logger.info("    [CF-challenge] waiting 10s for Cloudflare... (attempt {})", _cf_attempt+1)
+                        await page.wait_for_timeout(10_000)
+                    else:
+                        logger.warning("    [CF-blocked] {} — skipping", url[:60])
+                        results.append(CrawlResult(url=url, success=False, error="cloudflare_blocked"))
+                        pages_meta.append({"url": url, "filename": filename, "status": "cf_blocked"})
+                        if queue:
+                            await asyncio.sleep(delay_between)
+                        continue
+
+                    # ── Check for soft-404 / error pages ────────────────
+                    title = await page.title()
+                    if any(k in title.lower() for k in profile.soft_404_keywords):
+                        logger.info("    SKIP soft-404: '{}' ", title[:50])
+                        results.append(CrawlResult(url=url, title=title, success=False, error="soft_404"))
+                        if queue:
+                            await asyncio.sleep(delay_between)
+                        continue
+
+                    # ── Extract links for BFS (BEFORE expansion changes DOM) ─
+                    if depth < max_depth:
+                        try:
+                            links = await page.evaluate(_EXTRACT_LINKS_JS)
+                            new_links = 0
+                            for href in links:
+                                norm = _normalize_url(href)
+                                if norm in visited:
+                                    continue
+                                if url_filter and not url_filter(norm):
+                                    continue
+                                if _should_skip_url(norm, profile):
+                                    continue
+                                visited.add(norm)
+                                queue.append((norm, depth + 1))
+                                new_links += 1
+                            if new_links:
+                                logger.info("    +{} new links discovered (queue={})", new_links, len(queue))
+                        except Exception as e:
+                            logger.warning("    link extraction error: {}", e)
+
+                    # ── Expansion & cleanup pipeline ──────────────────────
+                    await page.evaluate(JS.DISMISS_COOKIE_CONSENT)
+                    await page.wait_for_timeout(500)
+
+                    await page.evaluate(JS.FORCE_LAZY_IMAGES)
+                    await page.evaluate(JS.SCROLL_TO_BOTTOM)
+                    await page.evaluate(JS.EXPAND_DETAILS)
+                    await page.evaluate(JS.EXPAND_SHOW_MORE)
+                    await page.wait_for_timeout(1000)
+                    await page.evaluate(JS.EXPAND_GENERIC_TABS)
+                    await page.wait_for_timeout(1000)
+                    await page.evaluate(JS.EXPAND_BOOTSTRAP_COLLAPSE)
+                    await page.wait_for_timeout(1000)
+
+                    for js_code, wait_ms in profile.extra_expansion_steps:
+                        await page.evaluate(js_code)
+                        if wait_ms > 0:
+                            await page.wait_for_timeout(wait_ms)
+
+                    await page.evaluate(JS.WAIT_FOR_IMAGES)
+                    await page.evaluate(JS.DISMISS_COOKIE_CONSENT)
+                    await page.evaluate(JS.REMOVE_POPUPS_AND_OVERLAYS)
+                    await page.evaluate(JS.REMOVE_GENERIC_CHATBOTS)
+
+                    if profile.extra_noise_removal_js:
+                        await page.evaluate(profile.extra_noise_removal_js)
+
+                    await page.evaluate("window.scrollTo(0, 0)")
+                    await page.wait_for_timeout(2000)
+
+                    if profile.print_css:
+                        await page.add_style_tag(content=profile.print_css)
+                    if profile.pre_pdf_js:
+                        await page.evaluate(profile.pre_pdf_js)
+
+                    # Neutralize fixed/sticky headers → relative (top of PDF only)
+                    await page.evaluate(JS.NEUTRALIZE_FIXED_HEADERS)
+
+                    # Profile-specific non-first-page cleanup (if any)
+                    if page_count > 1 and profile.pre_pdf_js_non_first:
+                        await page.evaluate(profile.pre_pdf_js_non_first)
+
+                    if profile.inject_source_banner:
+                        capture_date = datetime.now().strftime("%Y-%m-%d %H:%M")
+                        await page.evaluate(JS.SOURCE_BANNER, {
+                            "url": url, "date": capture_date,
+                            "borderColor": profile.banner_border_color,
+                        })
+
+                    # ── Save PDF ──────────────────────────────────────────
+                    await page.pdf(
+                        path=str(pdf_path), width=f"{profile.viewport_width}px",
+                        print_background=True,
+                        margin={"top": "10mm", "bottom": "10mm", "left": "10mm", "right": "10mm"})
+
+                    file_size = pdf_path.stat().st_size
+                    logger.info("    saved: {}.pdf ({:.1f} KB) '{}'", pdf_path.stem, file_size/1024, title[:50])
+                    result = CrawlResult(url=url, pdf_path=str(pdf_path), title=title,
+                                         success=True, file_size=file_size)
+                    pages_meta.append({"url": url, "filename": filename, "title": title,
+                                       "status": "saved", "file_size": file_size})
+
+                except Exception as e:
+                    logger.error("    FAILED: {} - {}", url[:60], e)
+                    result = CrawlResult(url=url, success=False, error=str(e))
+                    pages_meta.append({"url": url, "filename": filename, "status": "error", "error": str(e)})
+
+                results.append(result)
+
+                if queue:
+                    logger.info("    waiting {:.0f}s...", delay_between)
+                    await asyncio.sleep(delay_between)
+
+            await page.close()
+            await browser.close()
+
+    except Exception as e:
+        logger.error("Browser error: {}", e)
+
+    # Write manifest
+    manifest = {
+        "seed_urls": [seed_url],
+        "persona": persona_slug,
+        "discovered_at": datetime.now(timezone.utc).isoformat(),
+        "total_urls": len(pages_meta),
+        "pages": pages_meta,
+    }
+    manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    succeeded = sum(1 for r in results if r.success)
+    total_size = sum(r.file_size for r in results if r.success)
+    logger.info("=" * 60)
+    logger.info("COMPLETE: {}/{} saved ({:.1f} MB)", succeeded, len(results), total_size/1024/1024)
+    logger.info("=" * 60)
+    return results
+
 
 async def crawl_and_save_pdfs(
     seed_url: str, *, persona_slug: str = "general", max_depth: int = 2,
     max_pages: int = 20, headless: bool = True, delay_between: float = 2.0,
     output_dir: Path | str = _DEFAULT_OUTPUT_DIR,
 ) -> list[CrawlResult]:
-    manifest_path = await discover_urls(
+    """Legacy wrapper — now uses single-pass discover+save."""
+    return await discover_and_save_pdfs(
         seed_url, persona_slug=persona_slug, max_depth=max_depth,
-        max_pages=max_pages, headless=headless, output_dir=output_dir)
-    return await save_pdfs_from_manifest(
-        manifest_path, headless=headless, delay_between=delay_between)
+        max_pages=max_pages, headless=headless, delay_between=delay_between,
+        output_dir=output_dir)
+

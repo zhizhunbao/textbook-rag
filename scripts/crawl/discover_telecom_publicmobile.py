@@ -1,16 +1,13 @@
-"""Discover RBC personal banking URLs.
+"""Discover Public Mobile plan URLs.
 
-BFS crawl from RBC newcomer/banking/credit-card pages.
-Category: bank-rbc, Collection: ca_bank_rbc.
-
-Note: RBC uses two domains:
-  - rbc.com (newcomers landing)
-  - rbcroyalbank.com (product pages)
+BFS crawl from Public Mobile plan/activation pages.
+Category: telecom-publicmobile, Collection: ca_telecom_publicmobile.
+Network: Telus (Budget tier)
 
 Usage:
-    uv run python scripts/crawl/discover_rbc.py
-    uv run python scripts/crawl/discover_rbc.py --dry-run
-    uv run python scripts/crawl/discover_rbc.py --supplemental-only
+    uv run python scripts/crawl/discover_publicmobile.py
+    uv run python scripts/crawl/discover_publicmobile.py --dry-run
+    uv run python scripts/crawl/discover_publicmobile.py --supplemental-only
 """
 import asyncio
 import json
@@ -22,48 +19,24 @@ from urllib.parse import urlparse
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 # ── Config ──
-PERSONA = "bank-rbc"
+PERSONA = "telecom-publicmobile"
 MANIFEST_PATH = Path(__file__).resolve().parents[2] / "data" / "crawled_web" / PERSONA / "manifest.json"
 
 # Phase 1: BFS seeds
 BFS_SEEDS = [
-    # Newcomer 专属页面
-    "https://www.rbc.com/newcomers/",
-    # 个人银行账户
-    "https://www.rbcroyalbank.com/personal-banking/",
-    # 信用卡
-    "https://www.rbcroyalbank.com/credit-cards/",
-    # 学生
-    "https://www.rbcroyalbank.com/student-solution/",
+    "https://www.publicmobile.ca",
 ]
 BFS_DEPTH = 2
-BFS_MAX_PAGES = 500
+BFS_MAX_PAGES = 200
 
 # Phase 1.5: Supplemental URLs
+# Public Mobile is behind Cloudflare (403) — these paths are from sitemap/search
 SUPPLEMENTAL_URLS = [
-    # ── Newcomer ──
-    "https://www.rbc.com/newcomers/",
-    "https://www.rbcroyalbank.com/dms/pba/newcomers/",
-    # ── Bank Accounts ──
-    "https://www.rbcroyalbank.com/personal-banking/",
-    "https://www.rbcroyalbank.com/accounts/chequing-accounts.html",
-    "https://www.rbcroyalbank.com/accounts/savings-accounts.html",
-    "https://www.rbcroyalbank.com/accounts/no-limit-banking.html",
-    "https://www.rbcroyalbank.com/accounts/advantage-banking.html",
-    # ── Credit Cards ──
-    "https://www.rbcroyalbank.com/credit-cards/",
-    "https://www.rbcroyalbank.com/credit-cards/no-annual-fee.html",
-    "https://www.rbcroyalbank.com/credit-cards/cash-back.html",
-    "https://www.rbcroyalbank.com/credit-cards/rewards.html",
-    "https://www.rbcroyalbank.com/credit-cards/low-interest-rate.html",
-    # ── Students ──
-    "https://www.rbcroyalbank.com/student-solution/",
-    "https://www.rbcroyalbank.com/student-solution/student-banking.html",
-    # ── Fees ──
-    "https://www.rbcroyalbank.com/accounts/fees.html",
-    # ── GIC & Investments ──
-    "https://www.rbcroyalbank.com/investments/gic-rates.html",
-    "https://www.rbcroyalbank.com/investments/guaranteed-return-gics.html",
+    "https://www.publicmobile.ca",
+    "https://www.publicmobile.ca/en/on/plans",
+    "https://www.publicmobile.ca/en/bc/plans",
+    "https://www.publicmobile.ca/en/ab/plans",
+    "https://www.publicmobile.ca/en/qc/plans",
 ]
 
 
@@ -73,24 +46,22 @@ def _normalize_url(url: str) -> str:
 
 
 async def run_bfs_discovery(headless: bool = True):
-    """Discover RBC pages via crawl4ai BFS."""
+    """Discover pages via crawl4ai BFS."""
     from engine_v2.crawling.web_crawler_v2 import discover_urls
 
     print(f"\n{'='*60}")
     print(f"PHASE 1: BFS Discovery ({len(BFS_SEEDS)} seeds)")
     print(f"  PERSONA: {PERSONA}")
+    print(f"  MANIFEST: {MANIFEST_PATH}")
     print(f"{'='*60}")
 
     for i, url in enumerate(BFS_SEEDS):
-        name = url.rstrip("/").split("/")[-1] or "root"
+        name = url.rstrip("/").split("/")[-1]
         print(f"\n[{i+1}/{len(BFS_SEEDS)}] {name}")
 
         def url_filter(u: str) -> bool:
             parsed = urlparse(u)
-            return parsed.netloc in (
-                "www.rbc.com", "rbc.com",
-                "www.rbcroyalbank.com", "rbcroyalbank.com",
-            )
+            return parsed.netloc in ("www.publicmobile.ca", "publicmobile.ca")
 
         try:
             manifest = await discover_urls(
@@ -115,15 +86,13 @@ def merge_supplemental_into_manifest(dry_run: bool = False) -> int:
             "pages": [],
         }
         MANIFEST_PATH.write_text(
-            json.dumps(manifest, indent=2, ensure_ascii=False),
-            encoding="utf-8",
+            json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8",
         )
         print(f"[CREATED] Empty manifest: {MANIFEST_PATH}")
     else:
         manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
 
     existing_urls = {_normalize_url(p["url"]) for p in manifest["pages"]}
-
     new_pages = []
     for url in SUPPLEMENTAL_URLS:
         url_clean = _normalize_url(url)
@@ -144,8 +113,7 @@ def merge_supplemental_into_manifest(dry_run: bool = False) -> int:
         manifest["total_urls"] = len(manifest["pages"])
         manifest["supplemental_at"] = datetime.now().isoformat()
         MANIFEST_PATH.write_text(
-            json.dumps(manifest, indent=2, ensure_ascii=False),
-            encoding="utf-8",
+            json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8",
         )
         print(f"[OK] Appended {len(new_pages)} supplemental URLs (total: {manifest['total_urls']})")
         for p in new_pages:
@@ -162,10 +130,10 @@ def merge_supplemental_into_manifest(dry_run: bool = False) -> int:
 
 async def main():
     import argparse
-    parser = argparse.ArgumentParser(description="Discover RBC personal banking URLs")
+    parser = argparse.ArgumentParser(description="Discover Public Mobile URLs")
     parser.add_argument("--skip-bfs", action="store_true", help="Skip BFS phase")
     parser.add_argument("--supplemental-only", action="store_true", help="Only run supplemental merge")
-    parser.add_argument("--visible", action="store_true", help="Show browser window (bypass anti-bot)")
+    parser.add_argument("--visible", action="store_true", help="Show browser window")
     parser.add_argument("--dry-run", action="store_true", help="Preview only")
     args = parser.parse_args()
 

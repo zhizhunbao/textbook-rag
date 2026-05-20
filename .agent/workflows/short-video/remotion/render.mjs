@@ -30,7 +30,7 @@ if (dataIdx === -1 || !args[dataIdx + 1]) {
   process.exit(1);
 }
 
-const dataDir = resolve(__dirname, args[dataIdx + 1]);
+const dataDir = resolve(process.cwd(), args[dataIdx + 1]);
 const publicDir = resolve(__dirname, 'public');
 const outputDir = resolve(dataDir, 'output');
 
@@ -273,8 +273,8 @@ if (hasExplicitChapters) {
 
     // 跳过引用来源页
     if (/引用来源|引用|参考/.test(title)) continue;
-    // 跳过 preview 页
-    if (slide.type === 'preview') continue;
+    // 跳过 disclaimer / preview / citation 页
+    if (['preview', 'disclaimer', 'citation'].includes(slide.type)) continue;
 
     const firstTs = timestamps.find(ts => ts.slide_index === si);
     if (!firstTs) continue;

@@ -68,6 +68,15 @@ export const ShortVideo: React.FC<VideoProps> = ({ slides, timestamps, audioUrl,
             {slideData.source}
           </div>
         )}
+        {/* 免责声明水印 — 字幕区左下角 */}
+        <div style={{
+          position: 'absolute', bottom: 10, left: 24,
+          fontSize: 16,
+          color: 'rgba(255, 255, 255, 0.2)',
+          fontFamily: "'Inter', 'Noto Sans SC', sans-serif",
+        }}>
+          仅供参考 不构成投资或法律建议
+        </div>
       </div>
 
       {/* ── 音频轨道 ── */}

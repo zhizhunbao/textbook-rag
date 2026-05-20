@@ -17,20 +17,26 @@ import type { SlideData } from '../types';
  */
 export const ContentSlide: React.FC<{ slide: SlideData }> = ({ slide }) => {
   const isCta = slide.type === 'cta' || slide.type === 'preview';
-
-  // 估算表格是否高到需要顶部对齐（占用 >50% 可用空间）
-  const isLargeTable = slide.table && slide.table.rows.length >= 5;
+  const hasTable = !!slide.table;
 
   return (
     <div style={{
       ...baseStyles.slideArea,
-      justifyContent: isLargeTable ? 'flex-start' : 'center',
+      justifyContent: hasTable ? 'flex-start' : 'center',
     }}>
-      {/* 标题 */}
-      <h2 style={baseStyles.heading}>{slide.title}</h2>
+      {/* 有表格: 标题固定在顶部 */}
+      {hasTable && <h2 style={baseStyles.heading}>{slide.title}</h2>}
 
-      {/* 内容区 — 居中堆叠 */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+      {/* 内容区 — 有表格时占剩余空间居中，无表格时整体居中 */}
+      <div style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%',
+        ...(hasTable ? { flex: 1 } : {}),
+      }}>
+        {/* 无表格: 标题和内容作为一组居中 */}
+        {!hasTable && <h2 style={baseStyles.heading}>{slide.title}</h2>}
+
         {/* 表格 */}
         {slide.table && <DataTable headers={slide.table.headers} rows={slide.table.rows} />}
 

@@ -817,7 +817,7 @@ async def synthesize(
                  # 重置时间戳（atrim 后必须加，否则拼接时间错乱）
                  "asetpts=N/SR/TB,"
                  # areverse → silenceremove → areverse = 从尾部截静音
-                 "areverse,silenceremove=1:0:-40dB,areverse"
+                 "areverse,silenceremove=1:0:-55dB,areverse"
              ),
              "-ac", "1", "-c:a", "pcm_s16le", str(seg_norm)],
             capture_output=True,
