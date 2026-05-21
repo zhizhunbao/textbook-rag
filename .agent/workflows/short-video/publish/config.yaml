@@ -18,25 +18,26 @@ brand:
 default_account: creator
 
 # 平台配置
+# ⚠️ 小红书/抖音/B站/快手 由 scripts/publish_all.py (v1) 负责，此处禁用以避免重复发布
 platforms:
   xiaohongshu:
     name: 小红书
     emoji: "📕"
-    enabled: true
-    engine: sau                     # sau = social-auto-upload CLI
+    enabled: false                  # v1 负责
+    engine: sau
     default_tags: "加拿大生活,海外生活攻略,留学生活,海外生活指南"
 
   douyin:
     name: 抖音
     emoji: "🎵"
-    enabled: true
+    enabled: false                  # v1 负责
     engine: sau
     default_tags: "加拿大生活,海外生活攻略,留学生活,海外生活指南"
 
   bilibili:
     name: B站
     emoji: "📺"
-    enabled: true
+    enabled: false                  # v1 负责
     engine: sau
     bilibili_tid: 249               # 生活 > 日常
     default_tags: "加拿大生活,海外生活攻略,留学生活,海外生活指南"
@@ -44,7 +45,7 @@ platforms:
   kuaishou:
     name: 快手
     emoji: "⚡"
-    enabled: true
+    enabled: false                  # v1 负责
     engine: sau
     default_tags: "加拿大生活,海外生活攻略,海外生活指南"
 
@@ -77,6 +78,13 @@ platforms:
     engine: playwright
     default_tags: "CanadaNewcomer,ImmigrationTips,OverseasLife,CanadaLife,NewToCanada"
 
+  instagram:
+    name: Instagram
+    emoji: "📸"
+    enabled: true
+    engine: playwright
+    default_tags: "CanadaLife,NewcomerGuide,OverseasLife,CanadaNewcomer,LifeInCanada"
+
 # Cookie / 凭证路径映射
 credentials:
   sau_cookies_dir: "{project_root}/.github/social-auto-upload/cookies"
@@ -84,3 +92,4 @@ credentials:
   tiktok_browser_data: "{publish_dir}/credentials/tiktok/browser-data"
   youtube_token: "{publish_dir}/credentials/youtube/youtube_token.json"
   linkedin_browser_data: "{publish_dir}/credentials/linkedin/browser-data"
+  instagram_browser_data: "{publish_dir}/credentials/instagram/browser-data"

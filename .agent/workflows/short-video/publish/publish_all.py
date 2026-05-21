@@ -234,6 +234,16 @@ def _get_linkedin_platform(cfg: dict, account: str):
     )
 
 
+def _get_instagram_platform(cfg: dict, account: str):
+    """创建 InstagramPlatform 实例。"""
+    from platforms.instagram import InstagramPlatform
+    return InstagramPlatform(
+        project_root=PROJECT_ROOT,
+        publish_dir=PUBLISH_DIR,
+        account=account,
+    )
+
+
 def login_platform(cfg: dict, platform: str, account: str) -> bool:
     """登录指定平台。"""
     platforms = cfg.get("platforms", {})
@@ -262,6 +272,11 @@ def login_platform(cfg: dict, platform: str, account: str) -> bool:
         # LinkedIn → Playwright 持久化浏览器登录
         li = _get_linkedin_platform(cfg, account)
         return li.login()
+
+    if platform == "instagram":
+        # Instagram → Playwright 持久化浏览器登录
+        ig = _get_instagram_platform(cfg, account)
+        return ig.login()
 
     if platform == "weixin":
         # 视频号走独立脚本
@@ -316,6 +331,14 @@ def check_platform(cfg: dict, platform: str, account: str) -> bool:
         try:
             li = _get_linkedin_platform(cfg, account)
             return li.check()
+        except Exception:
+            return False
+
+    if platform == "instagram":
+        # Instagram → 检查 cookie 文件
+        try:
+            ig = _get_instagram_platform(cfg, account)
+            return ig.check()
         except Exception:
             return False
 
@@ -427,6 +450,17 @@ def upload_to_platform(
         li = _get_linkedin_platform(cfg, account)
         tag_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else []
         return li.upload(
+            video_path=str(video_path.resolve()),
+            title=title,
+            tags=tag_list,
+            description=description,
+        )
+
+    # --- Instagram Reels (Playwright) ---
+    if platform == "instagram":
+        ig = _get_instagram_platform(cfg, account)
+        tag_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else []
+        return ig.upload(
             video_path=str(video_path.resolve()),
             title=title,
             tags=tag_list,
@@ -600,7 +634,7 @@ def main():
     )
 
     parser.add_argument("--login", metavar="PLATFORM",
-                        help="登录指定平台 (xiaohongshu/douyin/bilibili/kuaishou/weixin/youtube/tiktok)")
+                        help="登录指定平台 (xiaohongshu/douyin/bilibili/kuaishou/weixin/youtube/tiktok/linkedin/instagram)")
     parser.add_argument("--check", action="store_true",
                         help="检查所有平台登录状态")
     parser.add_argument("--video", type=Path,

@@ -439,30 +439,128 @@ class WeixinChannelsPublisher:
             return False
 
         # ------------------------------------------------------------------
-        # Step 3: 等待视频处理完成
+        # Step 3: 等待视频上传 & 处理完成
         # ------------------------------------------------------------------
-        log.info("⏳ 等待视频处理...")
-        max_wait = 180  # 最多等 3 分钟
-        start = time.time()
-        while time.time() - start < max_wait:
-            # 检查是否有进度条或处理完成标志
-            progress = self.page.query_selector('[class*="progress"], [class*="upload-progress"]')
-            if progress:
-                text = progress.inner_text()
-                if text:
-                    log.info(f"   处理中: {text}")
+        log.info("⏳ 等待视频上传...")
+        time.sleep(3)  # 给页面时间开始上传流程
 
-            # 检查是否有视频预览（处理完成的标志）
-            preview = self.page.query_selector(
-                'video, [class*="video-preview"], [class*="cover-preview"]'
-            )
-            if preview:
-                log.info("   ✅ 视频处理完成")
+        # 截图看看上传触发后的页面状态
+        self._save_debug_screenshot("after_upload_trigger")
+
+        max_wait = 600  # 30MB+ 视频最多等 10 分钟
+        start = time.time()
+        last_progress = -1
+        upload_complete = False
+
+        while time.time() - start < max_wait:
+            elapsed = int(time.time() - start)
+
+            # ------ 检测上传进度百分比 ------
+            # 微信视频号上传时，视频预览区域会显示 "0%", "45%", "100%" 等
+            try:
+                # 尝试获取页面上所有包含百分比的文本
+                progress_text = self.page.evaluate("""
+                    () => {
+                        // 查找包含百分比的元素
+                        const allElements = document.querySelectorAll('*');
+                        for (const el of allElements) {
+                            const text = el.textContent.trim();
+                            // 匹配 "XX%" 格式
+                            const match = text.match(/^(\\d{1,3})%$/);
+                            if (match) {
+                                return parseInt(match[1]);
+                            }
+                        }
+                        // 也检查包含 "上传中" 或进度相关的元素
+                        for (const el of allElements) {
+                            const text = el.textContent.trim();
+                            const match = text.match(/(\\d{1,3})%/);
+                            if (match && el.offsetParent !== null) {
+                                return parseInt(match[1]);
+                            }
+                        }
+                        return -1;
+                    }
+                """)
+                if isinstance(progress_text, int) and progress_text >= 0:
+                    if progress_text != last_progress:
+                        log.info(f"   上传进度: {progress_text}% ({elapsed}s)")
+                        last_progress = progress_text
+                    if progress_text >= 100:
+                        log.info(f"   ✅ 视频上传完成 (100%)")
+                        upload_complete = True
+                        break
+            except Exception:
+                pass
+
+            # ------ 检测"取消上传"按钮是否消失 ------
+            # 上传中会显示"取消上传"，上传完成后消失
+            try:
+                cancel_btn = self.page.query_selector('text="取消上传"')
+                if cancel_btn is None or not cancel_btn.is_visible():
+                    # "取消上传"不可见，可能上传已完成
+                    if last_progress > 0:
+                        # 之前有看到过进度，现在取消按钮消失了，说明上传完成
+                        log.info(f"   ✅ 「取消上传」按钮已消失，上传完成 ({elapsed}s)")
+                        upload_complete = True
+                        break
+                    elif elapsed > 30:
+                        # 等了30秒还没看到取消按钮，可能已经上传完了
+                        log.info(f"   ✅ 未检测到「取消上传」按钮，视频可能已上传完成 ({elapsed}s)")
+                        upload_complete = True
+                        break
+            except Exception:
+                pass
+
+            # ------ 检测是否有"重新上传"按钮（上传完成标志）------
+            done_indicators = [
+                'text="重新上传"',
+                'text="替换"',
+                'text="删除"',
+                '[class*="re-upload"]',
+                '[class*="replace"]',
+            ]
+            for di in done_indicators:
+                try:
+                    el = self.page.query_selector(di)
+                    if el and el.is_visible():
+                        log.info(f"   ✅ 视频上传完成 - 检测到: {di} ({elapsed}s)")
+                        upload_complete = True
+                        break
+                except Exception:
+                    pass
+            if upload_complete:
                 break
 
             time.sleep(3)
         else:
-            log.warning("⚠️  视频处理超时，继续尝试填写信息...")
+            log.warning("⚠️  视频上传超时（等待了10分钟）")
+            self._save_debug_screenshot("upload_timeout")
+
+        if not upload_complete:
+            log.warning("⚠️  未能确认视频上传完成，截图查看状态...")
+            self._save_debug_screenshot("upload_uncertain")
+
+        # ------ 等待封面生成完成 ------
+        # 微信上传完视频后会生成封面缩略图，期间显示"生成中"
+        log.info("⏳ 等待封面生成...")
+        cover_wait = 120  # 封面生成最多等2分钟
+        cover_start = time.time()
+        while time.time() - cover_start < cover_wait:
+            try:
+                generating = self.page.query_selector('text="生成中"')
+                if generating is None or not generating.is_visible():
+                    log.info("   ✅ 封面已生成")
+                    break
+            except Exception:
+                break
+            time.sleep(3)
+        else:
+            log.warning("⚠️  封面生成超时，继续...")
+
+        # 额外等待几秒确保页面稳定
+        time.sleep(3)
+        self._save_debug_screenshot("before_fill_desc")
 
         # ------------------------------------------------------------------
         # Step 4: 填写描述/标题
@@ -526,11 +624,15 @@ class WeixinChannelsPublisher:
             return True
 
         # ------------------------------------------------------------------
-        # Step 7: 点击发表
+        # Step 7: 等待视频完全就绪，然后点击发表
         # ------------------------------------------------------------------
         log.info("📤 准备发表...")
         time.sleep(2)
 
+        # 截图确认发表前的状态
+        self._save_debug_screenshot("before_publish")
+
+        # 确保发表按钮可点击（等待上传完毕）
         publish_selectors = [
             'button:has-text("发表")',
             '.btn-publish',
@@ -538,33 +640,194 @@ class WeixinChannelsPublisher:
             'button.weui-desktop-btn_primary',
         ]
 
-        published = False
-        for selector in publish_selectors:
-            try:
-                btn = self.page.query_selector(selector)
-                if btn and btn.is_visible():
-                    btn.click()
-                    published = True
-                    log.info("   ✅ 已点击发表")
-                    break
-            except Exception as e:
-                log.debug(f"   选择器 {selector} 失败: {e}")
-                continue
+        # 先等发表按钮可用（排除 disabled 状态）
+        max_btn_wait = 60
+        btn_start = time.time()
+        publish_btn = None
+        while time.time() - btn_start < max_btn_wait:
+            for selector in publish_selectors:
+                try:
+                    btn = self.page.query_selector(selector)
+                    if btn and btn.is_visible():
+                        # 检查按钮是否 disabled
+                        is_disabled = btn.get_attribute("disabled")
+                        class_attr = btn.get_attribute("class") or ""
+                        if not is_disabled and "disabled" not in class_attr:
+                            publish_btn = btn
+                            break
+                except Exception:
+                    continue
+            if publish_btn:
+                break
+            time.sleep(2)
 
-        if not published:
-            log.warning("⚠️  未能自动点击发表，请手动操作")
-            self._save_debug_screenshot("publish_btn_not_found")
+        if publish_btn:
+            publish_btn.click()
+            log.info("   ✅ 已点击发表")
+        else:
+            log.warning("⚠️  未能自动点击发表（按钮未就绪），请手动操作")
+            self._save_debug_screenshot("publish_btn_not_ready")
             # 等待用户手动操作
-            log.info("   等待 30 秒让用户手动操作...")
-            time.sleep(30)
+            log.info("   等待 60 秒让用户手动操作...")
+            time.sleep(60)
+            self._save_debug_screenshot("after_manual_wait")
+            return False
 
         # ------------------------------------------------------------------
-        # Step 8: 确认发布成功
+        # Step 8: 确认发布成功 — 等视频出现在列表中再关闭
         # ------------------------------------------------------------------
-        time.sleep(5)
-        log.info("✅ 发布流程完成!")
+        log.info("⏳ 等待发布确认...")
+        time.sleep(3)
+
+        # 8a. 先等页面响应（成功提示 / 页面跳转 / 错误）
+        publish_accepted = False
+        max_confirm_wait = 60
+        confirm_start = time.time()
+
+        while time.time() - confirm_start < max_confirm_wait:
+            # 检查: 是否出现成功提示
+            success_selectors = [
+                'text="发表成功"',
+                'text="发布成功"',
+                'text="已发表"',
+                '[class*="success"]',
+                '.weui-desktop-dialog__title:has-text("成功")',
+            ]
+            for ss in success_selectors:
+                try:
+                    el = self.page.query_selector(ss)
+                    if el and el.is_visible():
+                        log.info(f"   ✅ 检测到发布成功提示")
+                        publish_accepted = True
+                        break
+                except Exception:
+                    pass
+            if publish_accepted:
+                break
+
+            # 检查: 是否跳转到了视频列表页
+            current_url = self.page.url
+            if "/post/create" not in current_url:
+                log.info(f"   ✅ 页面已跳转: {current_url[:80]}...")
+                publish_accepted = True
+                break
+
+            # 检查: 是否出现错误提示
+            error_selectors = [
+                'text="发表失败"',
+                'text="发布失败"',
+                'text="上传失败"',
+                '[class*="error-tip"]',
+                '.weui-desktop-dialog__title:has-text("失败")',
+            ]
+            for es in error_selectors:
+                try:
+                    el = self.page.query_selector(es)
+                    if el and el.is_visible():
+                        error_text = el.inner_text()
+                        log.error(f"   ❌ 发布失败: {error_text}")
+                        self._save_debug_screenshot("publish_error")
+                        return False
+                except Exception:
+                    pass
+
+            time.sleep(2)
+
+        self._save_debug_screenshot("publish_response")
+
+        if not publish_accepted:
+            log.warning("⚠️  无法确认发布状态")
+            self._save_debug_screenshot("publish_uncertain")
+            return False
+
+        # 8b. 跳转到视频列表页，等待视频出现
+        log.info("📋 等待视频出现在管理列表中...")
+
+        # 确保在视频列表页
+        try:
+            list_url = "https://channels.weixin.qq.com/platform/post/list"
+            if "/post/list" not in self.page.url:
+                self.page.goto(list_url, wait_until="domcontentloaded", timeout=30000)
+            time.sleep(3)
+        except Exception as e:
+            log.warning(f"   跳转视频列表页失败: {e}")
+
+        # 等待列表加载完成 + 视频出现
+        max_list_wait = 120  # 最多等2分钟
+        list_start = time.time()
+        video_confirmed = False
+
+        while time.time() - list_start < max_list_wait:
+            elapsed = int(time.time() - list_start)
+
+            # 等 loading spinner 消失
+            try:
+                loading = self.page.query_selector(
+                    '[class*="loading"], [class*="spinner"], .weui-loading'
+                )
+                if loading and loading.is_visible():
+                    if elapsed % 15 == 0:
+                        log.info(f"   列表加载中... ({elapsed}s)")
+                    time.sleep(2)
+                    continue
+            except Exception:
+                pass
+
+            # 检查视频标题是否出现在列表中
+            try:
+                # 用 JS 搜索整个页面文本
+                found = self.page.evaluate(f"""
+                    () => {{
+                        const title = {json.dumps(title)};
+                        // 检查页面文本中是否包含视频标题
+                        const bodyText = document.body.innerText;
+                        if (bodyText.includes(title)) return true;
+                        // 也检查是否有视频卡片/列表项
+                        const items = document.querySelectorAll(
+                            '[class*="post-item"], [class*="video-item"], '
+                            '[class*="media-item"], [class*="content-item"], '
+                            'tr, .finder-tag-list-item'
+                        );
+                        for (const item of items) {{
+                            if (item.textContent.includes(title)) return true;
+                        }}
+                        return false;
+                    }}
+                """)
+                if found:
+                    log.info(f"   ✅ 视频「{title}」已出现在列表中! ({elapsed}s)")
+                    video_confirmed = True
+                    break
+            except Exception:
+                pass
+
+            # 也检查是否有视频封面图（列表项通常有缩略图）
+            try:
+                items = self.page.query_selector_all(
+                    '[class*="post-item"], [class*="video-item"], '
+                    '[class*="media-item"], [class*="content-item"]'
+                )
+                if len(items) > 0:
+                    log.info(f"   ✅ 列表中已有 {len(items)} 个视频项 ({elapsed}s)")
+                    video_confirmed = True
+                    break
+            except Exception:
+                pass
+
+            time.sleep(3)
+
+        # 最终截图
         self._save_debug_screenshot("publish_done")
-        return True
+
+        if video_confirmed:
+            log.info("✅ 发布成功! 视频已确认出现在管理列表中")
+        elif publish_accepted:
+            log.info("✅ 发布已提交（服务端已接受），但未能在列表中确认")
+            log.info("   建议手动检查视频号后台")
+        else:
+            log.warning("⚠️  无法确认发布状态，请手动检查")
+
+        return publish_accepted
 
     def _save_debug_screenshot(self, name: str):
         """保存调试截图。"""

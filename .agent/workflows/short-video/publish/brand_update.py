@@ -201,6 +201,20 @@ MANUAL_URLS = {
         "brand_name": BRAND["name_en"],
         "bio": BRAND["bio_en"],
     },
+    "linkedin": {
+        "name": "LinkedIn",
+        "emoji": "💼",
+        "url": "https://www.linkedin.com/in/me/edit/contact-info/",
+        "brand_name": BRAND["name_en"],
+        "bio": BRAND["bio_en"],
+    },
+    "instagram": {
+        "name": "Instagram",
+        "emoji": "📸",
+        "url": "https://www.instagram.com/accounts/edit/",
+        "brand_name": BRAND["name_en"],
+        "bio": BRAND["bio_en"],
+    },
 }
 
 

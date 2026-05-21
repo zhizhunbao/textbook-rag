@@ -106,6 +106,18 @@ PLATFORM_LOGIN = {
         "engine": "google_oauth",    # Google OAuth 2.0
         "login_mode": "oauth",
     },
+    "linkedin": {
+        "name": "LinkedIn",
+        "emoji": "💼",
+        "engine": "playwright",
+        "login_mode": "browser",
+    },
+    "instagram": {
+        "name": "Instagram",
+        "emoji": "📸",
+        "engine": "playwright",      # Playwright 浏览器登录
+        "login_mode": "browser",
+    },
 }
 
 
@@ -275,6 +287,44 @@ def _youtube_check() -> bool:
 
 
 # ---------------------------------------------------------------------------
+# Instagram Login (Playwright)
+# ---------------------------------------------------------------------------
+def _instagram_login(account: str) -> bool:
+    """通过 Playwright 登录 Instagram。"""
+    venv_python = PROJECT_ROOT / ".venv" / "Scripts" / "python.exe"
+    if venv_python.exists():
+        cmd = [str(venv_python), "-c",
+               f"import sys; sys.path.insert(0, r'{PUBLISH_DIR}'); "
+               f"from platforms.instagram import InstagramPlatform; "
+               f"p = InstagramPlatform(project_root=__import__('pathlib').Path(r'{PROJECT_ROOT}'), "
+               f"publish_dir=__import__('pathlib').Path(r'{PUBLISH_DIR}'), account='{account}'); "
+               f"exit(0 if p.login() else 1)"]
+    else:
+        cmd = ["uv", "run", "--with", "playwright", "-c",
+               f"import sys; sys.path.insert(0, r'{PUBLISH_DIR}'); "
+               f"from platforms.instagram import InstagramPlatform; "
+               f"p = InstagramPlatform(project_root=__import__('pathlib').Path(r'{PROJECT_ROOT}'), "
+               f"publish_dir=__import__('pathlib').Path(r'{PUBLISH_DIR}'), account='{account}'); "
+               f"exit(0 if p.login() else 1)"]
+
+    log.info(f"   🌐 启动 Instagram 登录...")
+    result = subprocess.run(cmd, cwd=str(PROJECT_ROOT))
+    return result.returncode == 0
+
+
+def _instagram_check(account: str) -> bool:
+    """检查 Instagram cookie 状态。"""
+    cookie_file = SAU_COOKIES_DIR / f"instagram_{account}.json"
+    if cookie_file.exists():
+        try:
+            data = json.loads(cookie_file.read_text(encoding="utf-8"))
+            return bool(data)
+        except Exception:
+            pass
+    return False
+
+
+# ---------------------------------------------------------------------------
 # Main Login Flow
 # ---------------------------------------------------------------------------
 def login_one(platform: str, account: str) -> bool:
@@ -295,6 +345,8 @@ def login_one(platform: str, account: str) -> bool:
         return _tiktok_login(account)
     elif platform == "youtube":
         return _youtube_login(account)
+    elif platform == "instagram":
+        return _instagram_login(account)
     else:
         return sau_login(platform, account, cfg["login_mode"])
 
@@ -311,6 +363,8 @@ def check_one(platform: str, account: str) -> bool:
         return _tiktok_check(account)
     elif platform == "youtube":
         return _youtube_check()
+    elif platform == "instagram":
+        return _instagram_check(account)
     else:
         return sau_check(platform, account)
 

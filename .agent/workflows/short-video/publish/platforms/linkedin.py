@@ -125,15 +125,12 @@ class LinkedInPlatform:
                 page.wait_for_timeout(2000)
                 log.info("   ✏️ 打开了 Post 编辑器")
 
-                # 3. 直接用隐藏的 file input 上传视频（不点按钮，避免弹出文件选择框）
+                # 3. 直接找隐藏的 file input 并用 set_input_files 上传
+                #    不点媒体按钮（会弹出系统文件选择框，Playwright 无法控制）
                 file_input = page.locator('input[type="file"]')
                 if file_input.count() == 0:
-                    # 如果没有 file input，点 "+" 按钮让它出现
-                    more_btn = page.locator('button[aria-label="More"]')
-                    if more_btn.count() > 0:
-                        more_btn.first.click()
-                        page.wait_for_timeout(1000)
-                    page.wait_for_selector('input[type="file"]', timeout=10000)
+                    # file input 可能还没渲染，等一下
+                    page.wait_for_selector('input[type="file"]', state="attached", timeout=15000)
                     file_input = page.locator('input[type="file"]')
 
                 file_input.first.set_input_files(video_path)
@@ -189,7 +186,28 @@ class LinkedInPlatform:
                 if post_btn.count() == 0:
                     post_btn = page.locator('button:has-text("Post"):visible')
                 post_btn.first.click(timeout=10000)
-                page.wait_for_timeout(8000)
+
+                # 等待视频上传+发布完成（最多 5 分钟）
+                log.info("   ⏳ 等待视频上传完成（最多 5 分钟）...")
+                for i in range(150):  # 150 * 2s = 5 min
+                    # 检测发布完成：Post 编辑器消失
+                    modal = page.locator('.share-box--is-open, .share-creation-state, div[role="dialog"]:has(button:has-text("Post"))')
+                    if modal.count() == 0:
+                        log.info("   ✅ Post 编辑器已关闭，发布完成")
+                        break
+                    # 检测成功提示 toast
+                    toast = page.locator('text="Post successful"')
+                    if toast.count() > 0:
+                        log.info("   ✅ 检测到成功提示")
+                        break
+                    if i % 15 == 0 and i > 0:
+                        log.info(f"   ⏳ 仍在上传... ({i*2}s)")
+                    page.wait_for_timeout(2000)
+                else:
+                    log.warning("   ⚠️ 等待超时，视频可能仍在上传中")
+
+                # 额外等待确保上传完成
+                page.wait_for_timeout(5000)
 
                 log.info("✅ LinkedIn 发布成功!")
                 return True

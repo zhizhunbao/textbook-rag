@@ -149,7 +149,7 @@ async def run_ee_rounds_pipeline(category: str, collection: str, force: bool = F
 #  Step 1: Crawl URL → PDF
 # ═══════════════════════════════════════════════════════════════════
 
-async def crawl_url(url: str, category: str, *, force: bool = False, wait_for_js_ms: int = 0) -> tuple[bool, Path | None]:
+async def crawl_url(url: str, category: str, *, force: bool = False, wait_for_js_ms: int = 0, headless: bool = True) -> tuple[bool, Path | None]:
     """用 Playwright 把 URL 截取为 PDF。
 
     PDF 保存在 data/crawled_web/{category}/{relpath}.pdf
@@ -171,7 +171,7 @@ async def crawl_url(url: str, category: str, *, force: bool = False, wait_for_js
     try:
         sys.path.insert(0, str(PROJECT_ROOT))
         from engine_v2.crawling.web_crawler_v2 import _save_single_pdf
-        result = await _save_single_pdf(url, pdf_path, headless=True)
+        result = await _save_single_pdf(url, pdf_path, headless=headless)
         if result.success:
             logger.success("  [OK] Saved {:.1f} KB", result.file_size / 1024)
             return True, pdf_path
@@ -409,7 +409,7 @@ async def run_pipeline(args):
 
             # Step 1: Crawl
             print(f"\n  Step 1: Crawl → PDF")
-            ok, pdf_path = await crawl_url(url, category, force=force, wait_for_js_ms=getattr(args, 'wait_js', 0))
+            ok, pdf_path = await crawl_url(url, category, force=force, wait_for_js_ms=getattr(args, 'wait_js', 0), headless=not getattr(args, 'visible', False))
             if not ok or pdf_path is None:
                 results.append({"url": url, "book_id": book_id, "status": "crawl_failed"})
                 continue
@@ -492,6 +492,7 @@ def main():
     p.add_argument("--ee-rounds", action="store_true", help="EE轮次数据 (JSON动态加载特殊处理)")
     p.add_argument("--force", action="store_true", help="强制重新处理 (不跳过已有数据)")
     p.add_argument("--wait-js", type=int, default=0, help="等待 JS 渲染时间(ms)，动态页面用 (如 10000)")
+    p.add_argument("--visible", action="store_true", help="显示浏览器窗口（绕过反爬）")
     p.add_argument("--dry-run", action="store_true", help="只显示计划，不执行")
     args = p.parse_args()
 
