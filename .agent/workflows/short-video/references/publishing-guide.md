@@ -67,26 +67,44 @@
 
 **底层依赖**: [social-auto-upload](https://github.com/dreammis/social-auto-upload) (`.github/social-auto-upload/`)
 
-| 优先级 | 平台 | 变现方式 | 登录方式 | Cookie 存储 |
-|--------|------|---------|---------|-------------|
-| 🥇 | 小红书 | 品牌合作（蒲公英） | 扫码 | `.github/social-auto-upload/cookies/xiaohongshu_creator.json` |
-| 🥉 | 抖音 | 星图广告 + 创作者基金 | 扫码 | `.github/social-auto-upload/cookies/douyin_creator.json` |
-| 4 | B站 | 创作激励 + 花火 | 扫码 | `.github/social-auto-upload/cookies/bilibili_creator.json` |
-| 5 | 快手 | 磁力金牛 | 扫码 | `.github/social-auto-upload/cookies/kuaishou_creator.json` |
-| 6 | 视频号 | 创作者分成 | 扫码 | `.agent/workflows/short-video/browser-data/weixin-channels/` |
+| 优先级 | 平台 | 变现方式 | 发布方式 | 备注 |
+|--------|------|---------|---------|------|
+| 🥇 | 小红书 | 品牌合作（蒲公英） | ⚠️ **手动发布** | 2026-05-23 因自动化被处罚，禁止自动发布 |
+| 🥉 | 抖音 | 星图广告 + 创作者基金 | 自动（扫码登录） | `.github/social-auto-upload/cookies/douyin_creator.json` |
+| 4 | B站 | 创作激励 + 花火 | 自动（扫码登录） | `.github/social-auto-upload/cookies/bilibili_creator.json` |
+| 5 | 快手 | 磁力金牛 | 自动（扫码登录） | `.github/social-auto-upload/cookies/kuaishou_creator.json` |
+| 6 | 视频号 | 创作者分成 | 自动（⚠️ 每次需扫码） | session 不持久，每次发布前必须重新登录 |
+
+> ⚠️ **小红书手动发布警告**（2026-05-23）
+> 账号「海外生活指南」因 AI 托管发文/互动被小红书处罚（限制 7 天）。
+> **永久禁止**对小红书使用自动化发布。仅使用 `--dry-run` 生成文案，在 APP 手动发布。
 
 ```powershell
 # 登录（每个平台只需一次，Cookie 有效 ~30 天）
-uv run .agent/workflows/short-video/scripts/publish_all.py --login xiaohongshu
+# ❌ 小红书不再需要登录 — 改为手动发布
 uv run .agent/workflows/short-video/scripts/publish_all.py --login douyin
 uv run .agent/workflows/short-video/scripts/publish_all.py --login bilibili
 uv run .agent/workflows/short-video/scripts/publish_all.py --login kuaishou
 uv run .agent/workflows/short-video/scripts/publish_all.py --login weixin
 
-# 发布
+# 小红书：仅生成文案（标题+描述+标签），在 APP 手动发布
 uv run .agent/workflows/short-video/scripts/publish_all.py `
   --video data/short-videos/{slug}/output/final.mp4 `
-  --storyline data/short-videos/{slug}/storyline.md
+  --storyline data/short-videos/{slug}/storyline.md `
+  --platforms xiaohongshu --dry-run
+
+# 视频号：每次发布前必须重新扫码登录
+uv run .agent/workflows/short-video/scripts/publish_all.py --login weixin
+uv run .agent/workflows/short-video/scripts/publish_all.py `
+  --video data/short-videos/{slug}/output/final.mp4 `
+  --storyline data/short-videos/{slug}/storyline.md `
+  --platforms weixin
+
+# 其他平台：自动发布（排除小红书和视频号）
+uv run .agent/workflows/short-video/scripts/publish_all.py `
+  --video data/short-videos/{slug}/output/final.mp4 `
+  --storyline data/short-videos/{slug}/storyline.md `
+  --platforms douyin,bilibili,kuaishou
 ```
 
 ---

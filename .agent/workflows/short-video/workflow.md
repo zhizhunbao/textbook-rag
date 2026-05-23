@@ -6,7 +6,7 @@ trigger: /short-video
 ---
 # 短视频生产工作流 v29
 
-从 RAG 知识库一键生成横屏短视频，**一键发布到小红书/抖音/B站/快手/视频号/TikTok/YouTube/LinkedIn/Instagram**（9 平台）。**storyline.md 是唯一数据源**，slides/台词/字幕全部自动生成。支持**中英文双语版本**。
+从 RAG 知识库一键生成横屏短视频，**一键发布到抖音/B站/快手/视频号/TikTok/YouTube/LinkedIn/Instagram**（8 平台自动）+ **小红书手动发布**。**storyline.md 是唯一数据源**，slides/台词/字幕全部自动生成。支持**中英文双语版本**。
 
 ## 核心理念
 
@@ -127,7 +127,7 @@ uv run .agent/workflows/short-video/scripts/cite_rag.py `
 - **台词中判断句 + 翻译句占比 50% 以上**
 - **禁止重复台词（铁律 6）**
 - 信息点 ≤ 3，slides ≤ 12（不含引用来源页）
-- 引用来源 slide 存在（`[preview]` 之后）
+- `[citation]` 引用来源 slide 存在（`[preview]` 之前，渲染给观众看）
 
 ---
 
@@ -152,6 +152,7 @@ uv run .agent/workflows/short-video/scripts/cite_rag.py `
 - 审计结果为 🟢 **硬核**
 - 具体数字 ≥ 3 个，🔴 ≤ 10%，📢 ≤ 20%
 - 逻辑链无断裂
+- 跨段一致性通过（结论vs预告无矛盾、无冗余、与下期内容对齐）
 
 ---
 
@@ -218,20 +219,75 @@ ffprobe -v quiet -show_entries format=duration,size -of csv=p=0 `
 - [ ] 每个论点有证据 slide 支撑
 - [ ] **表格引用 1:1**
 - [ ] 声音自然，数字/英文混排无机器人感
-- [ ] 结尾 `[preview]` 兼顾互动引导 + 下集预告
+- [ ] 结尾 `[preview]` 固定三段式：通用互动（不变）+ 下期预告（每期换）+ 关注CTA（不变）
+- [ ] `[preview]` 不询问观众个人移民/财务数据（避免擦边咨询风险）
 
 ### 发布
 
+> ⚠️ **逐平台发布** — 每个平台单独一条命令，用户逐条运行。不要用一键全发。
+
+#### 中文平台（v1）
+
 ```powershell
-# v1 中文平台（小红书/抖音/B站/快手/视频号）
+# 1️⃣ 视频号（⚠️ 每次发布前都需要重新扫码登录）
+uv run .agent/workflows/short-video/scripts/publish_all.py --login weixin
 uv run .agent/workflows/short-video/scripts/publish_all.py `
   --video data/short-videos/{slug}/output/final.mp4 `
-  --storyline data/short-videos/{slug}/storyline.md
+  --storyline data/short-videos/{slug}/storyline.md `
+  --platforms weixin
 
-# v2 国际平台（TikTok/YouTube/LinkedIn/Instagram）
+# 2️⃣ 小红书（⚠️ 手动发布 — 禁止自动化，已被平台处罚）
+# 生成文案（标题+描述+标签），然后在小红书 APP 手动发布
+uv run .agent/workflows/short-video/scripts/publish_all.py `
+  --video data/short-videos/{slug}/output/final.mp4 `
+  --storyline data/short-videos/{slug}/storyline.md `
+  --platforms xiaohongshu --dry-run
+
+# 3️⃣ 抖音
+uv run .agent/workflows/short-video/scripts/publish_all.py `
+  --video data/short-videos/{slug}/output/final.mp4 `
+  --storyline data/short-videos/{slug}/storyline.md `
+  --platforms douyin
+
+# 4️⃣ B站
+uv run .agent/workflows/short-video/scripts/publish_all.py `
+  --video data/short-videos/{slug}/output/final.mp4 `
+  --storyline data/short-videos/{slug}/storyline.md `
+  --platforms bilibili
+
+# 5️⃣ 快手
+uv run .agent/workflows/short-video/scripts/publish_all.py `
+  --video data/short-videos/{slug}/output/final.mp4 `
+  --storyline data/short-videos/{slug}/storyline.md `
+  --platforms kuaishou
+```
+
+#### 国际平台（v2）
+
+```powershell
+# 6️⃣ YouTube
 uv run .agent/workflows/short-video/publish/publish_all.py `
   --video data/short-videos/{slug}/output/final.mp4 `
-  --storyline data/short-videos/{slug}/storyline.md
+  --storyline data/short-videos/{slug}/storyline.md `
+  --platforms youtube
+
+# 7️⃣ TikTok
+uv run .agent/workflows/short-video/publish/publish_all.py `
+  --video data/short-videos/{slug}/output/final.mp4 `
+  --storyline data/short-videos/{slug}/storyline.md `
+  --platforms tiktok
+
+# 8️⃣ LinkedIn
+uv run .agent/workflows/short-video/publish/publish_all.py `
+  --video data/short-videos/{slug}/output/final.mp4 `
+  --storyline data/short-videos/{slug}/storyline.md `
+  --platforms linkedin
+
+# 9️⃣ Instagram
+uv run .agent/workflows/short-video/publish/publish_all.py `
+  --video data/short-videos/{slug}/output/final.mp4 `
+  --storyline data/short-videos/{slug}/storyline.md `
+  --platforms instagram
 ```
 
 📖 **平台详情 + 合规规则 + 登录命令**：[publishing-guide.md](references/publishing-guide.md)

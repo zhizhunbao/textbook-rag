@@ -615,6 +615,101 @@ class WeixinChannelsPublisher:
             # 已经在描述中包含了 #tag 格式
 
         # ------------------------------------------------------------------
+        # Step 5.5: 声明原创
+        # ------------------------------------------------------------------
+        log.info("📝 声明原创...")
+        original_clicked = False
+
+        try:
+            # Step A: 勾选"视频为原创"复选框
+            original_checkbox_selectors = [
+                'label:has-text("视频为原创")',
+                'text="视频为原创"',
+                'label:has-text("声明原创")',
+                'text="声明原创"',
+                'span:has-text("声明原创")',
+            ]
+            for selector in original_checkbox_selectors:
+                try:
+                    el = self.page.query_selector(selector)
+                    if el and el.is_visible():
+                        el.click()
+                        time.sleep(1)
+                        log.info(f"   ✅ 已勾选原创复选框 (via {selector})")
+                        original_clicked = True
+                        break
+                except Exception:
+                    continue
+
+            if not original_clicked:
+                log.warning("⚠️  未找到「声明原创」复选框")
+                self._save_debug_screenshot("original_checkbox_not_found")
+            else:
+                # Step B: 弹框 — 勾选"我已阅读并同意《视频号原创声明使用条款》"
+                time.sleep(1)
+                terms_selectors = [
+                    'label:has-text("我已阅读并同意")',
+                    'label:has-text("原创声明使用条款")',
+                    'text="我已阅读并同意"',
+                ]
+                terms_checked = False
+                for selector in terms_selectors:
+                    try:
+                        terms_el = self.page.query_selector(selector)
+                        if terms_el and terms_el.is_visible():
+                            terms_el.click()
+                            time.sleep(0.5)
+                            log.info(f"   ✅ 已勾选条款 (via {selector})")
+                            terms_checked = True
+                            break
+                    except Exception:
+                        continue
+
+                if not terms_checked:
+                    # 备选：直接找 checkbox input
+                    try:
+                        dialog_checkbox = self.page.query_selector(
+                            '.weui-desktop-dialog input[type="checkbox"]:visible, '
+                            'div.declare-original-dialog input[type="checkbox"]:visible, '
+                            'input.ant-checkbox-input:visible'
+                        )
+                        if dialog_checkbox:
+                            dialog_checkbox.click()
+                            time.sleep(0.5)
+                            log.info("   ✅ 已勾选条款 (via checkbox input)")
+                            terms_checked = True
+                    except Exception:
+                        pass
+
+                if not terms_checked:
+                    log.warning("⚠️  未能勾选条款复选框，可能需要手动操作")
+                    self._save_debug_screenshot("terms_not_found")
+
+                # Step C: 点击"声明原创"确认按钮
+                time.sleep(0.5)
+                confirm_selectors = [
+                    'button:has-text("声明原创"):visible',
+                    '.weui-desktop-dialog button:has-text("声明原创"):visible',
+                    'button.weui-desktop-btn_primary:has-text("声明原创"):visible',
+                ]
+                for selector in confirm_selectors:
+                    try:
+                        btn = self.page.query_selector(selector)
+                        if btn and btn.is_visible():
+                            btn.click()
+                            time.sleep(1)
+                            log.info(f"   ✅ 已点击「声明原创」按钮 (via {selector})")
+                            break
+                    except Exception:
+                        continue
+
+                self._save_debug_screenshot("after_original_declaration")
+
+        except Exception as e:
+            log.warning(f"⚠️  声明原创过程出错: {e}")
+            self._save_debug_screenshot("original_error")
+
+        # ------------------------------------------------------------------
         # Step 6: Dry Run 检查点
         # ------------------------------------------------------------------
         if dry_run:
