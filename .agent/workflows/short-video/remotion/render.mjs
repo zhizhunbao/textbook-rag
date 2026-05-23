@@ -47,6 +47,10 @@ function parseStoryline(mdText) {
   const authorMatch = text.match(/\*\*(?:作者|Author)\*\*:\s*(.+)/m);
   const watermark = authorMatch ? authorMatch[1].trim() : '';
 
+  // 解析主题色 (可选字段: **主题色**: ocean)
+  const themeMatch = text.match(/\*\*(?:主题色|Theme)\*\*:\s*(\w+)/m);
+  const themeName = themeMatch ? themeMatch[1].trim().toLowerCase() : 'gold';
+
   // 截断引用汇总
   const summaryIdx = text.search(/^## 📋/m);
   if (summaryIdx > -1) text = text.slice(0, summaryIdx);
@@ -122,7 +126,7 @@ function parseStoryline(mdText) {
     slides.push(slide);
   }
 
-  return { slides, narrationLines };
+  return { slides, narrationLines, themeName };
 }
 
 // ── 主流程 ──────────────────────────────────────────────────
@@ -307,11 +311,18 @@ for (const ch of chapters) {
 }
 
 // ── 构建 props ──
+// 主题色: 从 storyline 元数据解析，默认 gold
+const themeName = (existsSync(storylinePath) && narrationLines)
+  ? parseStoryline(readFileSync(storylinePath, 'utf-8')).themeName
+  : 'gold';
+console.log(`🎨 主题色: ${themeName}`);
+
 const props = {
   slides,
   timestamps,
   audioUrl: '/public/audio.wav',
   chapters,
+  themeName,
 };
 
 const propsPath = join(__dirname, 'input-props.json');

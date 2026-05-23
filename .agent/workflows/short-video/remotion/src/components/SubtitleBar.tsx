@@ -1,6 +1,7 @@
 import React from 'react';
 import { useCurrentFrame, useVideoConfig } from 'remotion';
-import { theme, baseStyles } from '../theme';
+import type { ThemeConfig } from '../theme';
+import { getBaseStyles } from '../theme';
 import type { TimestampEntry } from '../types';
 
 /**
@@ -8,24 +9,26 @@ import type { TimestampEntry } from '../types';
  */
 export const SubtitleBar: React.FC<{
   timestamps: TimestampEntry[];
-}> = ({ timestamps }) => {
+  theme: ThemeConfig;
+}> = ({ timestamps, theme: t }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const currentTimeMs = (frame / fps) * 1000;
+  const styles = getBaseStyles(t);
 
   const segment = getCurrentSegment(timestamps, currentTimeMs);
-  if (!segment) return <div style={baseStyles.subtitleArea} />;
+  if (!segment) return <div style={styles.subtitleArea} />;
 
   const displayText = formatSubtitle(segment.text);
   const fontSize = 44; // 固定字号，避免字幕忽大忽小
 
   return (
-    <div style={baseStyles.subtitleArea}>
+    <div style={styles.subtitleArea}>
       <div style={{
         fontSize,
         fontWeight: 700,
-        fontFamily: theme.fontFamily,
-        color: theme.subtitleHighlight,
+        fontFamily: t.fontFamily,
+        color: t.subtitleHighlight,
         lineHeight: 1.4,
         textAlign: 'center',
         padding: '0 60px',

@@ -164,7 +164,9 @@ Parser 从 `storyline.md` 自动生成 `SlideData[]`（slide 数据）+ `narrati
 
 ---
 
-## Step 5: TTS 语音合成 → `narration/`
+## Step 5: 语音合成 → `narration/`
+
+### 方式A: TTS 自动合成（台词迭代阶段用，快速预览）
 
 ```powershell
 # // turbo
@@ -177,7 +179,20 @@ uv run .agent/workflows/short-video/scripts/synthesize.py `
   --gap 300 --slide-gap 800 --fade 80
 ```
 
-📖 **备选引擎 + 音频管线 + 配置**：[tts-guide.md](references/tts-guide.md)
+### 方式B: 真人录音（台词定稿后用，品质最高）
+
+```powershell
+# // turbo
+# cwd: textbook-rag/
+uv run .agent/workflows/short-video/scripts/record.py `
+  --storyline data/short-videos/{slug}/storyline.md `
+  --output data/short-videos/{slug}/narration/ `
+  --whisper-model medium
+```
+
+交互操作: ⏎ 开始/停止录音 | r 重录 | p 播放 | s 跳过 | q 中止
+
+📖 **TTS 备选引擎 + 音频管线 + 配置**：[tts-guide.md](references/tts-guide.md)
 
 ### 完成条件
 
@@ -309,6 +324,7 @@ uv run .agent/workflows/short-video/publish/publish_all.py `
 | `cite_rag.py` | research.md | sources.json |
 | `storyline-parser.js` | storyline.md | SlideData[] + narration[] |
 | `synthesize.py` | storyline.md + .env | narration.wav + timestamps.json |
+| `record.py` | storyline.md + 麦克风 | narration.wav + timestamps.json |
 | `render.mjs` | storyline.md + narration/ | final.mp4 |
 | `scripts/publish_all.py` | final.mp4 + storyline.md | 中文平台一键发布 |
 | `publish/publish_all.py` | final.mp4 + storyline.md | 国际平台一键发布 |

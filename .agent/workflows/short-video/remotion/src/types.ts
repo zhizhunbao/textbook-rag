@@ -2,7 +2,7 @@
 
 /** 单张幻灯片的数据 */
 export interface SlideData {
-  type: 'cover' | 'argument' | 'evidence' | 'summary' | 'cta' | 'preview';
+  type: 'cover' | 'argument' | 'evidence' | 'summary' | 'cta' | 'preview' | 'highlight';
   title: string;
   subtitle?: string;
   /** 封面钩子大数字 (cover only) */
@@ -16,7 +16,7 @@ export interface SlideData {
   };
   /** 列表要点（summary 页） */
   points?: string[];
-  /** 正文内容（cta / preview 页） */
+  /** 正文内容（cta / preview / highlight 页） */
   content?: string;
   /** 官方英文引用原文 */
   citation?: string;
@@ -66,6 +66,8 @@ export interface VideoProps {
   audioUrl: string;
   /** 章节时间轴数据 */
   chapters?: ChapterInfo[];
+  /** 主题色名称 (gold | ocean | sunset | forest | aurora) */
+  themeName?: string;
 }
 
 /** 分词后的单个 token（用于 TikTok 字幕高亮） */

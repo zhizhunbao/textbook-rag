@@ -1,6 +1,6 @@
 import React from 'react';
 import { useCurrentFrame, useVideoConfig } from 'remotion';
-import { theme } from '../theme';
+import type { ThemeConfig } from '../theme';
 import type { ChapterInfo } from '../types';
 
 /**
@@ -10,13 +10,14 @@ import type { ChapterInfo } from '../types';
  * ┌──[免费卡]──[中端卡]──[高端卡]──[Costco]──[五坑]──[总结]──┐
  *
  * - 每个章节按时长比例占宽度
- * - 当前章节高亮金色
+ * - 当前章节高亮强调色
  * - 已过章节半透明
  * - 底部有时间进度条
  */
 export const ChapterTimeline: React.FC<{
   chapters: ChapterInfo[];
-}> = ({ chapters }) => {
+  theme: ThemeConfig;
+}> = ({ chapters, theme: t }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
   const currentTimeSec = frame / fps;
@@ -24,7 +25,6 @@ export const ChapterTimeline: React.FC<{
 
   if (!chapters || chapters.length === 0) return null;
 
-  // 计算每个章节的宽度比例
   const totalDur = totalDurationSec;
 
   // 确定当前章节
@@ -36,20 +36,16 @@ export const ChapterTimeline: React.FC<{
     }
   }
 
-  // 全局进度比例
-  const globalProgress = Math.min(1, currentTimeSec / totalDur);
-
   return (
     <div style={{
-      width: theme.width,
-      height: theme.chapterHeight,
+      width: t.width,
+      height: t.chapterHeight,
       background: 'rgba(10, 10, 25, 0.95)',
       display: 'flex',
       flexDirection: 'column',
       position: 'relative',
-      fontFamily: theme.fontFamily,
+      fontFamily: t.fontFamily,
       overflow: 'hidden',
-
     }}>
       {/* ── 章节段 ── */}
       <div style={{
@@ -65,7 +61,6 @@ export const ChapterTimeline: React.FC<{
             ? chapters[i + 1].startSec
             : totalDur;
           const durSec = endSec - ch.startSec;
-          const widthPct = (durSec / totalDur) * 100;
 
           const isCurrent = i === currentChapterIdx;
           const isPast = i < currentChapterIdx;
@@ -76,7 +71,6 @@ export const ChapterTimeline: React.FC<{
             segProgress = Math.min(1, (currentTimeSec - ch.startSec) / durSec);
           }
 
-          // 简称：取 storyline 标题中冒号后的部分，再截短
           const shortLabel = getShortLabel(ch.title, i);
 
           return (
@@ -96,9 +90,9 @@ export const ChapterTimeline: React.FC<{
                 position: 'absolute',
                 inset: 0,
                 background: isPast
-                  ? `rgba(255, 215, 0, 0.15)`
+                  ? `${t.accent}26`      // 15% opacity
                   : isCurrent
-                    ? `rgba(255, 215, 0, 0.08)`
+                    ? `${t.accent}14`    // 8% opacity
                     : 'rgba(255, 255, 255, 0.04)',
                 borderRadius: 4,
               }} />
@@ -109,7 +103,7 @@ export const ChapterTimeline: React.FC<{
                   position: 'absolute',
                   left: 0, top: 0, bottom: 0,
                   width: `${segProgress * 100}%`,
-                  background: 'linear-gradient(90deg, rgba(255,215,0,0.25), rgba(255,215,0,0.15))',
+                  background: `linear-gradient(90deg, ${t.accent}40, ${t.accent}26)`,
                   borderRadius: 4,
                 }} />
               )}
@@ -124,19 +118,19 @@ export const ChapterTimeline: React.FC<{
                 }} />
               )}
 
-              {/* 章节标签 — 不截断，文字撑宽 */}
+              {/* 章节标签 */}
               <span style={{
                 position: 'relative',
                 fontSize: 20,
                 fontWeight: isCurrent ? 700 : 500,
                 color: isCurrent
-                  ? theme.accent
+                  ? t.accent
                   : isPast
-                    ? 'rgba(255, 215, 0, 0.6)'
+                    ? `${t.accent}99`
                     : 'rgba(255, 255, 255, 0.45)',
                 letterSpacing: 0.5,
                 whiteSpace: 'nowrap',
-                textShadow: isCurrent ? `0 0 12px ${theme.accent}30` : 'none',
+                textShadow: isCurrent ? `0 0 12px ${t.accent}30` : 'none',
               }}>
                 {shortLabel}
               </span>
@@ -150,40 +144,27 @@ export const ChapterTimeline: React.FC<{
                   width: 6,
                   height: 6,
                   borderRadius: '50%',
-                  background: theme.accent,
+                  background: t.accent,
                   transform: 'translateX(-50%)',
-                  boxShadow: `0 0 8px ${theme.accent}`,
+                  boxShadow: `0 0 8px ${t.accent}`,
                 }} />
               )}
             </div>
           );
         })}
       </div>
-
-
     </div>
   );
 };
 
 /**
- * 从 storyline 标题生成短标签（通用逻辑）
- * 1. 取冒号前半部分
- * 2. 去掉序号后缀 （一）（二）
- * 3. 超长则截断
+ * 从 storyline 标题生成短标签
  */
 function getShortLabel(title: string, _index: number): string {
-  // "开场" 等已被 render.mjs 预处理的简短标题直接返回
   if (title.length <= 4) return title;
-
-  // 取冒号前半
   let label = title.split(/[：:]/)[0].trim();
-
-  // 去掉序号后缀 （一）（二）(1)(2) 等
   label = label
     .replace(/[（(][一二三四五六七八九十\d]+[）)]/g, '')
     .trim();
-
-  // 不截断 — 文字撑宽 section
   return label;
 }
-
