@@ -126,36 +126,43 @@ def parse_storyline(path: Path) -> list[dict]:
             # 检查同行是否有内容 (如 "**台词**: 第一句话" or "**Narration**: First line")
             after = re.sub(r"^\*\*(?:台词|Narration)\*\*[：:]", "", stripped).strip()
             if after:
-                parsed.append({
-                    "chapter": current_slide,
-                    "narration": after,
-                    "visual_hint": "",
-                    "line_idx": len(parsed),
-                    "is_slide_start": is_first_line_of_slide,
-                })
-                is_first_line_of_slide = False
+                sub_lines = [s.strip() for s in re.split(r'(?<=[。！？；\?!;])(?![。！？；\?!;])', after) if s.strip()]
+                for sub_line in sub_lines:
+                    parsed.append({
+                        "chapter": current_slide,
+                        "narration": sub_line,
+                        "visual_hint": "",
+                        "line_idx": len(parsed),
+                        "is_slide_start": is_first_line_of_slide,
+                    })
+                    is_first_line_of_slide = False
             continue
 
-        # 台词区结束条件: 空行 / 新的 ** 字段 / --- 分隔
+        # 台词区结束条件: --- 分隔 / 新的 ** 字段 (除了 **台词)
         if in_narration:
-            if not stripped or stripped.startswith("---") or (
+            if stripped.startswith("---") or (
                 stripped.startswith("**") and not stripped.startswith("**台词") and not stripped.startswith("**Narration")
             ):
                 in_narration = False
+                continue
+            if not stripped:
+                # 仅跳过空行，不退出台词解析模式，从而支持两段式中间带空行的排版！
                 continue
             # 跳过 markdown 格式行
             if stripped.startswith("|") or stripped.startswith("#"):
                 in_narration = False
                 continue
             # 有效台词行
-            parsed.append({
-                "chapter": current_slide,
-                "narration": stripped,
-                "visual_hint": "",
-                "line_idx": len(parsed),
-                "is_slide_start": is_first_line_of_slide,
-            })
-            is_first_line_of_slide = False
+            sub_lines = [s.strip() for s in re.split(r'(?<=[。！？；\?!;])(?![。！？；\?!;])', stripped) if s.strip()]
+            for sub_line in sub_lines:
+                parsed.append({
+                    "chapter": current_slide,
+                    "narration": sub_line,
+                    "visual_hint": "",
+                    "line_idx": len(parsed),
+                    "is_slide_start": is_first_line_of_slide,
+                })
+                is_first_line_of_slide = False
 
     logger.info(f"[Storyline] Parsed {len(parsed)} narration lines from {path.name}")
     return parsed
@@ -255,9 +262,19 @@ def _get_duration(p: Path) -> float:
 
 
 async def _synth_edge(text: str, voice: str, out: Path, rate: str = "-10%"):
-    """Edge TTS 合成。"""
+    """Edge TTS 合成（含 503 重试）。"""
     import edge_tts
-    await edge_tts.Communicate(text, voice, rate=rate).save(str(out))
+    for attempt in range(5):
+        try:
+            await edge_tts.Communicate(text, voice, rate=rate).save(str(out))
+            return
+        except Exception as e:
+            if "503" in str(e) and attempt < 4:
+                wait = 2 ** attempt
+                logger.warning(f"  [Edge] 503 retry {attempt+1}/4, wait {wait}s...")
+                await asyncio.sleep(wait)
+            else:
+                raise
 
 
 def _synth_moss(text: str, out: Path, sample: Path | None = None) -> str:
@@ -640,10 +657,16 @@ def _split_multi_clause_timestamps(timestamps: list[dict]) -> list[dict]:
 
 
 def _split_clauses(text: str) -> list[str]:
-    """在「中文/数字 + 空格 + 中文」处拆分。"""
+    """在「中文/数字 + 空格 + 中文」处拆分。
+
+    但保留「数字 + 空格 + 量词/单位字」不拆（如 33,810 加元 / 1.8 万 / 365 天）。
+    """
     import re as _re
+    # 量词/单位字: 中文字后面紧跟这些字时不拆分
+    _UNITS = '加万亿元年天月个岁块期日件台倍部架米吨套杯%'
+    # 注意: 左侧只匹配中文字(不含数字)，数字后面永远不拆分
     marked = _re.sub(
-        r'([\u4e00-\u9fff0-9])\s+([\u4e00-\u9fff])',
+        rf'([\u4e00-\u9fff])\s+(?![{_UNITS}])([\u4e00-\u9fff])',
         '\\1\u2502\\2',
         text,
     )
@@ -930,7 +953,7 @@ def main():
     p.add_argument("--output", type=Path, required=True, help="输出目录")
     p.add_argument("--backend", choices=["cosyvoice", "volcano", "tencent", "tencent-clone", "edge", "qwen", "moss", "hf"], default="cosyvoice")
     p.add_argument("--voice", default="zh_female_mizai_uranus_bigtts",
-                   help="Volcano: voice_type; Tencent: VoiceType ID; Edge: voice name; CosyVoice: ignored")
+                   help="Volcano: voice_type; Tencent: VoiceType ID; Edge: voice name (defaults to zh-CN-YunyangNeural); CosyVoice: ignored")
     p.add_argument("--voice-sample", type=Path, default=None)
     p.add_argument("--rate", default="-10%", help="Edge TTS rate (e.g. '-10%%')")
     p.add_argument("--speech-rate", type=int, default=0,
@@ -945,6 +968,11 @@ def main():
         logger.error(f"{input_path} not found")
         return
 
+    # 针对 Edge 后端且为默认值时的智能切换，避免 invalid voice 崩溃，默认使用 Yunyang 音色
+    voice_to_use = args.voice
+    if args.backend == "edge" and voice_to_use == "zh_female_mizai_uranus_bigtts":
+        voice_to_use = "zh-CN-YunyangNeural"
+
     if args.storyline:
         parsed = parse_storyline(args.storyline)
     else:
@@ -957,7 +985,7 @@ def main():
     asyncio.run(synthesize(
         parsed, args.output,
         backend=args.backend,
-        voice=args.voice,
+        voice=voice_to_use,
         rate=args.rate,
         speech_rate=args.speech_rate,
         gap_ms=args.gap,

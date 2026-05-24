@@ -104,12 +104,15 @@ def parse_storyline(path: Path) -> list[dict]:
                 current_slide["lines"].append(after)
             continue
 
-        # 台词区结束条件
+        # 台词区结束条件: --- 分隔 / 新的 ** 字段 (除了 **台词)
         if in_narration:
-            if not stripped or stripped.startswith("---") or (
+            if stripped.startswith("---") or (
                 stripped.startswith("**") and not stripped.startswith("**台词") and not stripped.startswith("**Narration")
             ):
                 in_narration = False
+                continue
+            if not stripped:
+                # 仅跳过空行，不退出台词解析模式，从而支持两段式中间带空行的排版！
                 continue
             if stripped.startswith("|") or stripped.startswith("#"):
                 in_narration = False

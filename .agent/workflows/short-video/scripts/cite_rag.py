@@ -51,9 +51,16 @@ CITATION_PATTERN = re.compile(r"\[需要引用[:：]\s*(.+?)\]")
 # 分类前缀 → URL 基础映射
 CATEGORY_URL_MAP = {
     "federal-ircc": "https://www.canada.ca",
+    "federal-cra": "https://www.canada.ca",
+    "federal-fcac": "https://www.canada.ca",
     "ontario": "https://www.ontario.ca",
     "bc": "https://www.welcomebc.ca",
     "alberta": "https://www.alberta.ca",
+    "bank-bmo": "https://www.bmo.com",
+    "bank-td": "https://www.td.com",
+    "bank-scotiabank": "https://www.scotiabank.com",
+    "bank-rbc": "https://www.rbcroyalbank.com",
+    "bank-cibc": "https://www.cibc.com",
 }
 
 
@@ -178,6 +185,11 @@ def build_source_url(book_id: str, category: str) -> str:
         path = parts[0]
     else:
         path = book_id
+
+    # 丰业银行 URL 特殊修正
+    if category == "bank-scotiabank":
+        if "posts-tfsa-guide" in path:
+            return f"{base_url}/ca/en/personal/advice-plus/features/posts.tfsa-guide.html"
 
     return f"{base_url}/{path}"
 

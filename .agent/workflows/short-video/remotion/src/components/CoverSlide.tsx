@@ -23,14 +23,14 @@ export const CoverSlide: React.FC<{
   const { fps } = useVideoConfig();
   const styles = getBaseStyles(t);
 
-  // ── 钩子数字弹出动画 ──
-  const numberScale = spring({
+  // ── 钩子数字弹出动画 (缩放从 0.9 到 1.0, 初始可见) ──
+  const numberSpring = spring({
     frame,
     fps,
-    config: { damping: 10, stiffness: 100, mass: 0.6 },
+    config: { damping: 15, stiffness: 100, mass: 0.6 },
   });
-
-  const numberOpacity = interpolate(frame, [0, 8], [0, 1], {
+  const numberScale = interpolate(numberSpring, [0, 1], [0.9, 1.0]);
+  const numberOpacity = interpolate(frame, [0, 10], [0.8, 1.0], {
     extrapolateRight: 'clamp',
   });
 
@@ -41,21 +41,21 @@ export const CoverSlide: React.FC<{
     [40, 80],
   );
 
-  // ── 单位文字 fade in ──
-  const unitOpacity = interpolate(frame, [8, 18], [0, 1], {
+  // ── 单位文字 fade in (初始可见) ──
+  const unitOpacity = interpolate(frame, [0, 12], [0.7, 1.0], {
     extrapolateRight: 'clamp',
   });
 
-  // ── 标题从下方滑入 ──
-  const titleY = interpolate(frame, [10, 25], [30, 0], {
+  // ── 标题从下方滑入 (初始可见) ──
+  const titleY = interpolate(frame, [0, 15], [15, 0], {
     extrapolateRight: 'clamp',
   });
-  const titleOpacity = interpolate(frame, [10, 25], [0, 1], {
+  const titleOpacity = interpolate(frame, [0, 15], [0.8, 1.0], {
     extrapolateRight: 'clamp',
   });
 
-  // ── 副标题延迟 fade in ──
-  const subOpacity = interpolate(frame, [20, 35], [0, 1], {
+  // ── 副标题延迟 fade in (初始可见) ──
+  const subOpacity = interpolate(frame, [0, 20], [0.7, 1.0], {
     extrapolateRight: 'clamp',
   });
 

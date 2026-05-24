@@ -152,7 +152,12 @@
       slideArea.appendChild(wm);
     }
 
-    subtitleText.textContent = slide._subtitle_text || '';
+    subtitleText.innerHTML = (slide._subtitle_text || '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/([\u4e00-\u9fff]) (\d)/g, '$1\u00a0$2')
+      .replace(/(\d) ([\u4e00-\u9fff])/g, '$1\u00a0$2')
+      .replace(/([\u4e00-\u9fff]) ([A-Za-z])/g, '$1\u00a0$2')
+      .replace(/([A-Za-z]) ([\u4e00-\u9fff])/g, '$1\u00a0$2');
     subtitleText.style.color = p.subtitleText;
     $('#subtitleArea').style.background = p.subtitleBg;
     slideSelect.value = idx;

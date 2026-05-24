@@ -2,373 +2,433 @@
   "slides": [
     {
       "type": "cover",
-      "title": "锁住就能拿更高利率",
+      "title": "存钱还能退税？从零搞懂加拿大理财之王 RRSP",
       "source": "海外生活指南",
       "chapter": "开场",
-      "subtitle": "五大银行GIC定期存款全拆解",
-      "hookNumber": "4",
-      "hookUnit": "倍"
+      "subtitle": "一期讲透13个核心场景",
+      "hookNumber": "46",
+      "hookUnit": "%边际税率你扛得住？"
     },
     {
       "type": "argument",
-      "title": "GIC是什么",
+      "title": "什么是 RRSP：税前延税的\"终极理财外壳\"",
       "source": "海外生活指南",
-      "chapter": "GIC定义",
+      "chapter": "RRSP定义",
       "table": {
         "headers": [
-          "特性",
-          "HISA高息储蓄",
-          "GIC定期存款"
+          "RRSP 税务机制",
+          "比例与税率"
         ],
         "rows": [
           [
-            "利率",
-            "0.30-0.75%（浮动）",
-            "2.45-3.25%（固定）"
+            "存入抵税比例",
+            "**100%**"
           ],
           [
-            "取钱",
-            "随时",
-            "到期才能取"
+            "账户内增值税率",
+            "**0%**"
           ],
           [
-            "CDIC保险",
-            "有，最高10万",
-            "有，最高10万"
-          ],
-          [
-            "最低存款",
-            "无",
-            "$1,000起（BMO）"
-          ],
-          [
-            "风险",
-            "零",
-            "零"
+            "提前提款预扣税",
+            "**10% ~ 30%**"
           ]
         ]
       }
     },
     {
       "type": "argument",
-      "title": "三种GIC怎么选",
+      "title": "【场景 1】新移民首年落地：小白零额度误区",
       "source": "海外生活指南",
-      "chapter": "Non-Redeemable vs Redeemable vs Cashable",
+      "chapter": "首年额度",
       "table": {
         "headers": [
-          "类型",
-          "能提前取吗",
-          "利率范围",
-          "适合谁"
+          "新移民额度指标",
+          "限额与比例"
         ],
         "rows": [
           [
-            "Non-Redeemable",
-            "不能（强行取利息大打折）",
-            "2.45-3.25%",
-            "确定这笔钱短期不用"
+            "年度额度比例",
+            "**18%**"
           ],
           [
-            "Redeemable",
-            "能取，按较低赎回利率算",
-            "2.15-2.65%",
-            "可能需要提前取"
+            "2026年存款上限",
+            "**$33,810**"
           ],
           [
-            "Cashable",
-            "随时取，利息照给",
-            "1.50-2.50%",
-            "不确定什么时候需要用钱"
+            "落地首年额度",
+            "**$0**"
+          ],
+          [
+            "未用额度",
+            "**可无限累积**"
+          ],
+          [
+            "2025税年存入截止日",
+            "**2026年3月2日**"
           ]
         ]
       }
     },
     {
       "type": "argument",
-      "title": "Scotiabank GIC利率",
+      "title": "【场景 2】常规退税期：给税局白送免息贷款",
       "source": "海外生活指南",
-      "chapter": "Scotiabank GIC",
+      "chapter": "税务陷阱",
       "table": {
         "headers": [
-          "类型",
-          "期限",
-          "利率"
+          "传统退税资金指标",
+          "比例与天数"
         ],
         "rows": [
           [
-            "Non-Redeemable",
-            "2年特价",
-            "3.25%"
+            "雇主预扣税款占比",
+            "**100%**"
           ],
           [
-            "Redeemable",
-            "24月特价",
-            "2.55%"
+            "资金被占用天数",
+            "**365 天**"
           ]
         ]
       }
     },
     {
       "type": "argument",
-      "title": "RBC GIC利率",
+      "title": "【场景 3】联邦+省税组合税率速查",
       "source": "海外生活指南",
-      "chapter": "RBC GIC",
+      "chapter": "税率速查",
       "table": {
         "headers": [
-          "类型",
-          "1年",
-          "2年",
-          "3年",
-          "5年"
+          "2025 应税收入区间",
+          "联邦税率",
+          "安省税率",
+          "组合边际税率"
         ],
         "rows": [
           [
-            "Non-Redeemable",
-            "2.45%",
-            "2.55%",
-            "2.55%",
-            "2.75%"
+            "≤$57,375",
+            "**15.0%**",
+            "**5.05%**",
+            "**20.05%**"
           ],
           [
-            "Non-Redeemable特价",
-            "2.70%",
-            "2.80%",
-            "—",
-            "3.10%"
+            "$57,375 ~ $114,750",
+            "**20.5%**",
+            "**9.15%**",
+            "**29.65%**"
           ],
           [
-            "Redeemable",
-            "2.35%",
-            "2.45%",
-            "2.45%",
-            "2.65%"
+            "$114,750 ~ $158,468",
+            "**26.0%**",
+            "**11.16%**",
+            "**37.16%**"
           ],
           [
-            "One-Year Cashable",
-            "1.95%",
-            "—",
-            "—",
-            "—"
+            "$158,468 ~ $220,000",
+            "**29.0%**",
+            "**12.16%**",
+            "**41.16%**"
+          ],
+          [
+            ">$220,000",
+            "**33.0%**",
+            "**13.16%**",
+            "**46.16%**"
           ]
         ]
       }
     },
     {
       "type": "argument",
-      "title": "TD GIC利率",
+      "title": "【场景 4】降档省税原理：一次存入、双重省税",
       "source": "海外生活指南",
-      "chapter": "TD GIC",
+      "chapter": "降档原理",
       "table": {
         "headers": [
-          "产品",
-          "期限",
-          "利率"
+          "年薪$12万·安省示例",
+          "不存 RRSP",
+          "存入$18,000"
         ],
         "rows": [
           [
-            "Special Offer GIC",
-            "100天",
-            "1.80%"
+            "应税收入",
+            "**$120,000**",
+            "**$102,000**"
           ],
           [
-            "Special Offer GIC",
-            "18个月",
-            "2.85%"
+            "最高适用组合税档",
+            "**37.16%**",
+            "**29.65%**"
           ],
           [
-            "1 Year Cashable GIC",
-            "1年",
-            "1.75%"
+            "降档幅度",
+            "**—**",
+            "**-7.51%**"
           ],
           [
-            "3-Year Premium Cashable",
-            "3年",
-            "2.50%"
+            "存入部分省税",
+            "**$0**",
+            "**$5,345**"
+          ],
+          [
+            "降档额外省税",
+            "**$0**",
+            "**$394**"
           ]
         ]
       }
     },
     {
       "type": "argument",
-      "title": "BMO GIC利率",
+      "title": "【场景 5】高薪大佬期：T1213 工资单每月即时折现",
       "source": "海外生活指南",
-      "chapter": "BMO GIC",
+      "chapter": "高薪实战",
       "table": {
         "headers": [
-          "类型",
-          "1年",
-          "2年",
-          "3年",
-          "5年"
+          "资金流对比 (年薪$10万·安省)",
+          "传统年终退税",
+          "T1213 减税"
         ],
         "rows": [
           [
-            "Non-Redeemable",
-            "2.45%",
-            "2.75%",
-            "2.85%",
-            "3.10%"
+            "每月增加到手现金",
+            "**$0**",
+            "**$445**"
           ],
           [
-            "Redeemable STIC",
-            "1.50%",
-            "—",
-            "—",
-            "—"
-          ],
-          [
-            "Cashable RateRiser",
-            "1.25%",
-            "1.75%",
-            "3.00%（等效2.00%）",
-            "—"
+            "资金被占用天数",
+            "**365 天**",
+            "**0 天**"
           ]
         ]
       }
     },
     {
       "type": "argument",
-      "title": "CIBC GIC利率",
+      "title": "【场景 6】首次买房期：HBP 提款上限翻倍至\\$60,000",
       "source": "海外生活指南",
-      "chapter": "CIBC GIC",
+      "chapter": "免税买房",
       "table": {
         "headers": [
-          "类型",
-          "1年",
-          "2年",
-          "3年",
-          "4年",
-          "5年"
+          "HBP 买房政策对比",
+          "传统旧规",
+          "2024 新规"
         ],
         "rows": [
           [
-            "Non-Redeemable",
-            "2.70%",
-            "2.75%",
-            "2.85%",
-            "3.00%",
-            "3.10%"
+            "单人提款限额",
+            "**$35,000**",
+            "**$60,000**"
           ],
           [
-            "Redeemable",
-            "2.15%",
-            "—",
-            "—",
-            "—",
-            "—"
+            "夫妻合并提款限额",
+            "**$70,000**",
+            "**$120,000**"
+          ],
+          [
+            "还款宽限期",
+            "**2 年**",
+            "**5 年**"
+          ],
+          [
+            "最长还款年限",
+            "**15 年**",
+            "**15 年**"
+          ],
+          [
+            "年度最低还款比例",
+            "**1/15**",
+            "**1/15**"
           ]
         ]
       }
     },
     {
       "type": "argument",
-      "title": "GIC和HISA怎么配合",
+      "title": "【场景 7】充电深造期：LLP 终身学习计划免税提\\$20,000",
       "source": "海外生活指南",
-      "chapter": "GIC + HISA策略",
+      "chapter": "免税读书",
       "table": {
         "headers": [
-          "步骤",
-          "做什么",
-          "用什么产品",
-          "利率"
+          "LLP 读书计划指标",
+          "政策限额"
         ],
         "rows": [
           [
-            "1",
-            "存3-6个月应急资金",
-            "HISA高息储蓄",
-            "0.30-0.75%"
+            "年度提取上限",
+            "**$10,000**"
           ],
           [
-            "2",
-            "超出的闲钱分批锁定",
-            "GIC定期存款",
-            "2.45-3.25%"
+            "终身提取上限",
+            "**$20,000**"
           ],
           [
-            "3",
-            "用阶梯策略分散到期日",
-            "1年+2年+3年各一份",
-            "平均~2.8%"
+            "全日制学时要求",
+            "**≥10小时/周**"
+          ],
+          [
+            "还款期限",
+            "**10 年**"
           ]
         ]
       }
     },
     {
       "type": "argument",
-      "title": "GIC利息要交税",
+      "title": "【场景 8】超额存款期：每月 1% 重罚与免罚缓冲",
       "source": "海外生活指南",
-      "chapter": "税务提醒",
+      "chapter": "超额罚款",
       "table": {
         "headers": [
-          "账户类型",
-          "GIC利率",
-          "存入金额",
-          "利息",
-          "税率",
-          "到手"
+          "超额存款区间",
+          "罚金税率",
+          "缓冲限额"
         ],
         "rows": [
           [
-            "普通账户",
-            "3%",
-            "$10,000",
-            "$300",
-            "29.65%",
-            "$211"
+            "$2,000 以内",
+            "**0%**",
+            "**$2,000**"
           ],
           [
-            "TFSA免税账户",
-            "3%",
-            "$10,000",
-            "$300",
-            "0%",
-            "$300"
+            "超出$2,000",
+            "**1%**",
+            "**$0**"
           ]
         ]
       }
     },
     {
       "type": "argument",
-      "title": "总结",
+      "title": "【场景 9】投资爆仓期：账户亏损且额度作废",
       "source": "海外生活指南",
-      "chapter": "本期总结",
+      "chapter": "亏损风险",
       "table": {
         "headers": [
-          "场景",
-          "利率最高",
-          "产品",
-          "利率",
-          "备注"
+          "亏损后清算规则",
+          "普通投资账户",
+          "RRSP 注册账户"
         ],
         "rows": [
           [
-            "存2年不动",
-            "Scotiabank",
-            "Non-Redeemable GIC 2年特价",
-            "3.25%",
-            "全场最高，首选"
+            "亏损抵税比例",
+            "**100%**",
+            "**0%**"
           ],
           [
-            "存1年不动",
-            "CIBC",
-            "Non-Redeemable GIC 1年",
-            "2.70%",
-            "门槛$500最低"
+            "存入额度保留比例",
+            "**100%**",
+            "**0%**"
+          ]
+        ]
+      }
+    },
+    {
+      "type": "argument",
+      "title": "【场景 10】中产精英期：分批申报税务套利",
+      "source": "海外生活指南",
+      "chapter": "实战进阶",
+      "table": {
+        "headers": [
+          "3万额度申报方案",
+          "一次性申报",
+          "分三年申报"
+        ],
+        "rows": [
+          [
+            "平均申报税率",
+            "**34.3%**",
+            "**43.0%**"
           ],
           [
-            "不确定多久",
-            "Scotiabank",
-            "Redeemable GIC 24月特价",
-            "2.55%",
-            "可提前取"
+            "最终退税总额",
+            "**10,300**",
+            "**12,900**"
           ],
           [
-            "存5年不动",
-            "BMO/CIBC",
-            "Non-Redeemable GIC 5年",
-            "3.10%",
-            "⚠️ 不如2年3.25%划算"
+            "额外多赚退税",
+            "**0**",
+            "**+2,600**"
+          ]
+        ]
+      }
+    },
+    {
+      "type": "argument",
+      "title": "【场景 11】配偶平摊期：Spousal RRSP 削减税档",
+      "source": "海外生活指南",
+      "chapter": "配偶平摊",
+      "table": {
+        "headers": [
+          "Spousal RRSP 角色",
+          "额度消耗比例",
+          "计税归属比例"
+        ],
+        "rows": [
+          [
+            "高薪配偶",
+            "**100%**",
+            "**0%**"
+          ],
+          [
+            "低薪配偶",
+            "**0%**",
+            "**100%**"
+          ]
+        ]
+      }
+    },
+    {
+      "type": "argument",
+      "title": "【场景 12】低谷年份期：低税提前融化套现",
+      "source": "海外生活指南",
+      "chapter": "低谷套现",
+      "table": {
+        "headers": [
+          "RRSP 提前提款金额",
+          "联邦预扣税率",
+          "魁省预扣税率"
+        ],
+        "rows": [
+          [
+            "**$5,000 以内**",
+            "**10%**",
+            "**19%**"
+          ],
+          [
+            "**$5,000 ~ $15,000**",
+            "**20%**",
+            "**24%**"
+          ],
+          [
+            "**$15,000 以上**",
+            "**30%**",
+            "**29%**"
+          ]
+        ]
+      }
+    },
+    {
+      "type": "argument",
+      "title": "【场景 13】老年成熟期：71 岁强制关户与 OAS 扣回陷阱",
+      "source": "海外生活指南",
+      "chapter": "强制关户",
+      "table": {
+        "headers": [
+          "退休关口指标",
+          "法定数值"
+        ],
+        "rows": [
+          [
+            "RRSP 强制关户年龄",
+            "**71 岁**"
+          ],
+          [
+            "转 RRIF 三种选项",
+            "**取现 / RRIF / 年金**"
+          ],
+          [
+            "OAS 扣回起征收入",
+            "**$90,997**"
           ]
         ]
       }
@@ -386,46 +446,52 @@
         ],
         "rows": [
           [
-            "皇家银行",
-            "RBC",
-            "GIC利率表+赎回罚则",
-            "https://www.rbcroyalbank.com/investments/gic-rates.html"
+            "加拿大联邦税务局",
+            "CRA",
+            "RRSP 注册计划总览与额度规则",
+            "https://www.canada.ca/en/revenue-agency/services/tax/individuals/topics/rrsps-related-plans"
           ],
           [
-            "道明银行",
-            "TD",
-            "什么是GIC + CDIC保险",
-            "https://www.td.com/ca/en/personal-banking/personal-investing/products/gic/what-is-a-gic"
+            "",
+            "",
+            "RRSP 超额存款与罚款计算官方指南",
+            "https://www.canada.ca/en/revenue-agency/services/tax/individuals/topics/rrsps-related-plans/contributing-a-rrsp-prpp/contributions-affect-your-rrsp-prpp-deduction-limit"
           ],
           [
-            "道明银行",
-            "TD",
-            "GIC利率表",
-            "https://www.td.com/ca/en/personal-banking/personal-investing/products/gic/gic-rates-canada"
+            "",
+            "",
+            "T1213 源头减少预扣税官方申请表",
+            "https://www.canada.ca/en/revenue-agency/services/forms-publications/forms/t1213"
           ],
           [
-            "蒙特利尔银行",
-            "BMO",
-            "GIC利率表+赎回罚则",
-            "https://www.bmo.com/main/personal/investments/gic/gic-rates/"
+            "",
+            "",
+            "LLP 终身学习计划官方指南",
+            "https://www.canada.ca/en/revenue-agency/services/tax/individuals/topics/rrsps-related-plans/lifelong-learning-plan"
           ],
           [
-            "帝国商业银行",
-            "CIBC",
-            "Non-Redeemable GIC",
-            "https://www.cibc.com/en/personal-banking/investments/gics/non-redeemable"
+            "",
+            "",
+            "HBP 还款延期与配偶账户规则",
+            "https://www.canada.ca/en/revenue-agency/services/forms-publications/publications/t4040/rrsps-other-registered-plans-retirement"
           ],
           [
-            "帝国商业银行",
-            "CIBC",
-            "Redeemable GIC",
-            "https://www.cibc.com/en/personal-banking/investments/gics/redeemable"
+            "加拿大金融消费者管理局",
+            "FCAC",
+            "HBP 首次买房提取额度新规指南",
+            "https://www.canada.ca/en/financial-consumer-agency/services/buying-home"
+          ],
+          [
+            "",
+            "",
+            "RRSP 提前提取后果与预扣税率指南",
+            "https://www.canada.ca/en/financial-consumer-agency/services/retirement-planning/registered-retirement-savings-plan"
           ],
           [
             "丰业银行",
             "Scotiabank",
-            "GIC产品页及特价利率",
-            "https://www.scotiabank.com/ca/en/personal/investing/guaranteed-investment-certificates"
+            "大学生个人报税与学费折税指南",
+            "https://www.scotiabank.com/ca/en/personal/advice-plus/features/posts-student-taxes"
           ]
         ]
       }
@@ -445,44 +511,38 @@
           [
             "道明银行",
             "TD",
-            "GIC产品说明及FAQ",
-            "https://www.td.com/ca/en/personal-banking/personal-investing/products/gic/gic"
+            "RRSP 基础存入与提前提取后果指南",
+            "https://www.td.com/ca/en/personal-banking/personal-investing/products/registered-plans/rrsp"
+          ],
+          [
+            "",
+            "",
+            "HBP 夫妻合并提取首付执行细则",
+            "https://www.td.com/ca/en/personal-banking/personal-investing/learn/rrsp-homebuyers-plan"
+          ],
+          [
+            "",
+            "",
+            "Spousal RRSP 配偶账户省税运作细则",
+            "https://www.td.com/ca/en/personal-banking/personal-investing/learn/spousal-rrsp"
+          ],
+          [
+            "皇家银行",
+            "RBC",
+            "新移民投资入门与 RRSP 延税特征",
+            "https://www.rbcroyalbank.com/new-to-canada/investing-in-canada"
           ],
           [
             "蒙特利尔银行",
             "BMO",
-            "GIC产品说明及FAQ",
-            "https://www.bmo.com/main/personal/investments/gic/gic"
+            "RRSP 额度与贡献限额官方指南",
+            "https://www.bmo.com/main/personal/investments/rrsp"
           ],
           [
-            "丰业银行",
-            "Scotiabank",
-            "GIC vs HISA对比+阶梯策略",
-            "https://www.scotiabank.com/ca/en/personal/advice-plus/features/posts-how-to-choose-between-a-gic-and-a-high-interest-savings-account"
-          ],
-          [
-            "加拿大联邦",
-            "FCAC",
-            "CDIC存款保险",
-            "https://www.canada.ca/en/financial-consumer-agency/services/buying-home"
-          ],
-          [
-            "道明银行",
-            "TD",
-            "GIC税务说明",
-            "https://www.td.com/ca/en/personal-banking/personal-investing/products/gic/gic-rates-canada"
-          ],
-          [
-            "丰业银行",
-            "Scotiabank",
-            "GIC减税方法",
-            "https://www.scotiabank.com/ca/en/personal/investing/guaranteed-investment-certificates"
-          ],
-          [
-            "加拿大税务局",
-            "CRA",
-            "联邦+安省所得税税率",
-            "https://www.canada.ca/en/revenue-agency/services/tax/individuals/frequently-asked-questions-individuals/canadian-income-tax-rates-individuals-current-previous-years"
+            "",
+            "",
+            "注册账户内亏损资本损失不抵税声明",
+            "https://www.bmo.com/main/personal/investments/tfsa/"
           ]
         ]
       }
@@ -491,528 +551,681 @@
       "type": "preview",
       "title": "下期预告",
       "source": "海外生活指南",
-      "chapter": "预告",
-      "content": "TFSA免税储蓄账户 — 怎么开、额度多少、放什么最划算"
+      "content": "互动引导与下期提示"
     }
   ],
   "timestamps": [
     {
       "index": 1,
       "start": 0.15,
-      "end": 6.687,
-      "text": "上一期我说HISA利率太低，最高也就0.75%，跑不赢通胀",
+      "end": 4.133,
+      "text": "高薪不存 RRSP，等于给政府白打工",
       "slide_index": 0
     },
     {
       "index": 2,
-      "start": 6.987,
-      "end": 11.731,
-      "text": "那有没有一种产品，利率能到2%甚至3%以上",
+      "start": 4.433,
+      "end": 10.351,
+      "text": "这绝非老人的养老存折，而是打工人省税、免税买房的最强神器",
       "slide_index": 0
     },
     {
       "index": 3,
-      "start": 12.031,
-      "end": 15.78,
-      "text": "有就是GIC，定期存款",
+      "start": 10.651,
+      "end": 15.136,
+      "text": "今天用极简逻辑，彻底拆透这 13 个核心场景",
       "slide_index": 0
     },
     {
       "index": 4,
-      "start": 16.08,
-      "end": 22.508,
-      "text": "Scotiabank的GIC，2年期利率3.25%，是HISA的4倍",
+      "start": 15.436,
+      "end": 17.99,
+      "text": "字字金贵，干货直接开启",
       "slide_index": 0
     },
     {
       "index": 5,
-      "start": 22.808,
-      "end": 26.557,
-      "text": "但代价是，你的钱要锁住，到期之前不能动",
-      "slide_index": 0
+      "start": 18.79,
+      "end": 21.139,
+      "text": "究竟什么是 RRSP",
+      "slide_index": 1
     },
     {
       "index": 6,
-      "start": 26.857,
-      "end": 31.523,
-      "text": "今天我来讲五大银行GIC利率差多少，各有什么特点",
-      "slide_index": 0
+      "start": 21.439,
+      "end": 27.281,
+      "text": "简单来说，它不是普通存款账户，而是能帮你强力减税的理财外壳",
+      "slide_index": 1
     },
     {
       "index": 7,
-      "start": 32.323,
-      "end": 36.243,
-      "text": "GIC跟HISA一样安全，但利率高得多",
+      "start": 27.581,
+      "end": 34.815,
+      "text": "你存进去的钱，可以 100% 抵扣个人收入，在账户里增值，也是绝对的 0% 税率",
       "slide_index": 1
     },
     {
       "index": 8,
-      "start": 36.543,
-      "end": 41.858,
-      "text": "GIC，全名Guaranteed Investment Certificate，就是定期存款",
+      "start": 35.115,
+      "end": 43.485,
+      "text": "不过，如果平时急着要用钱，提前取出来，会面临 10% 到 30%，的惩罚性预扣税",
       "slide_index": 1
     },
     {
       "index": 9,
-      "start": 42.158,
-      "end": 46.89,
-      "text": "你把钱存进银行，锁定一段时间，银行给你一个固定利率",
+      "start": 43.785,
+      "end": 46.725,
+      "text": "那么，落地第一年到底能不能存",
       "slide_index": 1
     },
     {
       "index": 10,
-      "start": 47.19,
-      "end": 51.48,
-      "text": "到期了，本金一分不少还给你，利息也保证给你",
-      "slide_index": 1
+      "start": 47.525,
+      "end": 54.568,
+      "text": "新移民落地第一年，就算找到工作有了收入，你的首年额度也依然是绝对的 0",
+      "slide_index": 2
     },
     {
       "index": 11,
-      "start": 51.78,
-      "end": 58.887,
-      "text": "跟HISA一样受CDIC保险保护，每家银行每个类别最高赔10万加元",
-      "slide_index": 1
+      "start": 54.868,
+      "end": 60.557,
+      "text": "因为它的额度，是按你上一年在加拿大总收入的 18% 来计算的",
+      "slide_index": 2
     },
     {
       "index": 12,
-      "start": 59.187,
-      "end": 62.215,
-      "text": "就算银行倒闭了，你的钱也有保障",
-      "slide_index": 1
+      "start": 60.857,
+      "end": 67.636,
+      "text": "如果你觉得今年赚了钱，就闭着眼睛盲目存钱，税局每个月会重罚 1%",
+      "slide_index": 2
     },
     {
       "index": 13,
-      "start": 63.015,
-      "end": 68.767,
-      "text": "选GIC之前先搞清楚三种类型，选错了提前取利息大打折",
+      "start": 67.936,
+      "end": 73.374,
+      "text": "另外要记住，2026 年存款上限是 33,810 加元",
       "slide_index": 2
     },
     {
       "index": 14,
-      "start": 69.067,
-      "end": 73.57,
-      "text": "Non-Redeemable，不可赎回的，到期才能取，利率最高",
+      "start": 73.674,
+      "end": 76.284,
+      "text": "那么，老实按月打工就安全吗",
       "slide_index": 2
     },
     {
       "index": 15,
-      "start": 73.87,
-      "end": 80.312,
-      "text": "Redeemable，可赎回的，能提前取，但利息按较低的赎回利率重新算",
-      "slide_index": 2
+      "start": 77.084,
+      "end": 81.238,
+      "text": "为什么说常规退税，其实是给税局的无息贷款",
+      "slide_index": 3
     },
     {
       "index": 16,
-      "start": 80.612,
-      "end": 84.775,
-      "text": "Cashable，随时能取，利息照给，但利率最低",
-      "slide_index": 2
+      "start": 81.538,
+      "end": 85.358,
+      "text": "因为我们每个月的预扣税，是 100% 扣除的",
+      "slide_index": 3
     },
     {
       "index": 17,
-      "start": 85.075,
-      "end": 89.392,
-      "text": "不可赎回的是真锁死，提前取利息大幅缩水",
-      "slide_index": 2
+      "start": 85.658,
+      "end": 92.285,
+      "text": "这笔辛苦钱会被税局白白占用一整年，白送了整整 365 天免息期",
+      "slide_index": 3
     },
     {
       "index": 18,
-      "start": 89.692,
-      "end": 93.371,
-      "text": "确定半年一年不用，选不可赎回的利率最高",
-      "slide_index": 2
+      "start": 92.585,
+      "end": 97.675,
+      "text": "想抢回这部分现金流，首先你得搞清楚自己到底在哪个税档",
+      "slide_index": 3
     },
     {
       "index": 19,
-      "start": 93.671,
-      "end": 97.444,
-      "text": "不确定什么时候需要钱，选可赎回的更灵活",
-      "slide_index": 2
+      "start": 98.475,
+      "end": 103.181,
+      "text": "在学任何省税技巧之前，你必须先看懂这张税率表",
+      "slide_index": 4
     },
     {
       "index": 20,
-      "start": 97.744,
-      "end": 102.05,
-      "text": "每家银行罚则不一样，买之前一定要看清楚条款",
-      "slide_index": 2
+      "start": 103.481,
+      "end": 108.772,
+      "text": "加拿大联邦税分 5 档，最低 15%，最高 33%",
+      "slide_index": 4
     },
     {
       "index": 21,
-      "start": 102.85,
-      "end": 110.183,
-      "text": "Scotiabank有个杀手锏2年期Non-Redeemable特价3.25%，五大银行里最高",
-      "slide_index": 3
+      "start": 109.072,
+      "end": 112.162,
+      "text": "省税再叠加 5% 到 13%",
+      "slide_index": 4
     },
     {
       "index": 22,
-      "start": 110.483,
-      "end": 116.289,
-      "text": "可赎回的24个月也有2.55%，利率在可赎回产品中偏高",
-      "slide_index": 3
+      "start": 112.462,
+      "end": 118.161,
+      "text": "年薪 10 万的打工人，组合边际税率就已经到了将近 30%",
+      "slide_index": 4
     },
     {
       "index": 23,
-      "start": 116.589,
-      "end": 122.862,
-      "text": "但Scotiabank的问题是，官网只公布特价利率，其他期限你得去柜台问",
-      "slide_index": 3
+      "start": 118.461,
+      "end": 121.776,
+      "text": "年薪 12 万，直接跳到 37%",
+      "slide_index": 4
     },
     {
       "index": 24,
-      "start": 123.162,
-      "end": 129.04,
-      "text": "所以如果你要存2年不动，Scotiabank这个特价利率确实最划算",
-      "slide_index": 3
+      "start": 122.076,
+      "end": 129.465,
+      "text": "这个税档表要记牢，因为 RRSP 最核心的省税原理，就藏在这些档位分界线里",
+      "slide_index": 4
     },
     {
       "index": 25,
-      "start": 129.84,
-      "end": 133.572,
-      "text": "RBC产品线最全，三种GIC都有",
-      "slide_index": 4
+      "start": 130.265,
+      "end": 133.634,
+      "text": "这就是 RRSP 最核心的省税原理",
+      "slide_index": 5
     },
     {
       "index": 26,
-      "start": 133.872,
-      "end": 143.699,
-      "text": "标准利率1年不可赎回2.45%，5年2.75%，跟Scotiabank的2年3.25%比差距不小",
-      "slide_index": 4
+      "start": 133.934,
+      "end": 137.597,
+      "text": "很多人只知道存入免税，却不知道还能降档",
+      "slide_index": 5
     },
     {
       "index": 27,
-      "start": 143.999,
-      "end": 148.596,
-      "text": "不过RBC现在有特价，5年能到3.1%",
-      "slide_index": 4
+      "start": 137.897,
+      "end": 144.427,
+      "text": "举个例子，年薪 12 万的安省打工人，最高组合税率是 37.16%",
+      "slide_index": 5
     },
     {
       "index": 28,
-      "start": 148.896,
-      "end": 159.109,
-      "text": "提前赎回代价不小29天内利息归零，30到59天只给0.75%，两个月到半年给1%",
-      "slide_index": 4
+      "start": 144.727,
+      "end": 149.925,
+      "text": "存入 1.8 万到 RRSP，税局只按 10.2 万来算税",
+      "slide_index": 5
     },
     {
       "index": 29,
-      "start": 159.409,
-      "end": 162.671,
-      "text": "所以不可赎回的就别打算提前取",
-      "slide_index": 4
+      "start": 150.225,
+      "end": 152.529,
+      "text": "这一刀砍下去，两重效果",
+      "slide_index": 5
     },
     {
       "index": 30,
-      "start": 163.471,
-      "end": 172.081,
-      "text": "TD不走传统1年2年3年的路子，主推100天的Special Offer GIC，利率只有1.8%",
+      "start": 152.829,
+      "end": 157.319,
+      "text": "第一，这 1.8 万本身省了约 5345 元税款",
       "slide_index": 5
     },
     {
       "index": 31,
-      "start": 172.381,
-      "end": 178.364,
-      "text": "还有个18个月的特价，2.85%，比Scotiabank和RBC都低",
+      "start": 157.619,
+      "end": 162.852,
+      "text": "第二，剩下的收入从 37% 高档掉回 30% 低档",
       "slide_index": 5
     },
     {
       "index": 32,
-      "start": 178.664,
-      "end": 185.654,
-      "text": "Cashable可赎回的1年只有1.75%，3年Premium Cashable 2.5%",
+      "start": 163.152,
+      "end": 165.498,
+      "text": "还额外多省了 394 元",
       "slide_index": 5
     },
     {
       "index": 33,
-      "start": 185.954,
-      "end": 190.024,
-      "text": "整体来看，TD的GIC产品线竞争力不强",
+      "start": 165.798,
+      "end": 170.346,
+      "text": "一次存入，双重省税，这才是 RRSP 的真正威力",
       "slide_index": 5
     },
     {
       "index": 34,
-      "start": 190.824,
-      "end": 197.917,
-      "text": "BMO标准Non-Redeemable利率从1年2.45%逐年递增到5年3.1%",
-      "slide_index": 6
+      "start": 170.646,
+      "end": 173.647,
+      "text": "那么，怎么把预扣税当月就夺回来",
+      "slide_index": 5
     },
     {
       "index": 35,
-      "start": 198.217,
-      "end": 201.83,
-      "text": "最低存款要1000块，门槛在五家里偏高",
+      "start": 174.447,
+      "end": 179.716,
+      "text": "知道了自己在 30% 的税档，怎么把预扣税当月就夺回来",
       "slide_index": 6
     },
     {
       "index": 36,
-      "start": 202.13,
-      "end": 208.917,
-      "text": "提前赎回罚则30天内利息归零，31到364天只给1%",
+      "start": 180.016,
+      "end": 185.626,
+      "text": "只要向税局提交一张 T1213 表格，就能当场阻断预扣税",
       "slide_index": 6
     },
     {
       "index": 37,
-      "start": 209.217,
-      "end": 217.077,
-      "text": "BMO还有个RateRiser，每年利率递增，第三年能到3%，但平均下来也就2%",
+      "start": 185.926,
+      "end": 189.712,
+      "text": "以安省年薪 10 万为例，存满额度 1.8 万",
       "slide_index": 6
     },
     {
       "index": 38,
-      "start": 217.877,
-      "end": 222.914,
-      "text": "CIBC的特点是每个期限利率都不低，而且门槛最低",
-      "slide_index": 7
+      "start": 190.012,
+      "end": 195.893,
+      "text": "按 29.65% 的边际税率，每月多出 445 元到手现金",
+      "slide_index": 6
     },
     {
       "index": 39,
-      "start": 223.214,
-      "end": 228.072,
-      "text": "Non-Redeemable 1年2.7%，1年期里五大银行最高",
-      "slide_index": 7
+      "start": 196.193,
+      "end": 200.16,
+      "text": "资金被占用天数从 365 天直接归零",
+      "slide_index": 6
     },
     {
       "index": 40,
-      "start": 228.372,
-      "end": 235.205,
-      "text": "2年2.75%，3年2.85%，5年3.1%，全线均衡",
-      "slide_index": 7
+      "start": 200.46,
+      "end": 202.707,
+      "text": "当月就能拿去理财赚利息",
+      "slide_index": 6
     },
     {
       "index": 41,
-      "start": 235.505,
-      "end": 239.219,
-      "text": "最低存款只要500块，是五家里门槛最低的",
-      "slide_index": 7
+      "start": 203.007,
+      "end": 205.626,
+      "text": "那么，想要免税买房该怎么用",
+      "slide_index": 6
     },
     {
       "index": 42,
-      "start": 239.519,
-      "end": 247.002,
-      "text": "可赎回的1年2.15%，30天后取利息照给，29天内取则一分钱没有",
+      "start": 206.426,
+      "end": 210.85,
+      "text": "第一次买房的打工人，绝对不能错过这次政策大礼包",
       "slide_index": 7
     },
     {
       "index": 43,
-      "start": 247.302,
-      "end": 255.629,
-      "text": "综合来看，CIBC胜在均衡和低门槛，但单项最高还是Scotiabank 2年3.25%",
+      "start": 211.15,
+      "end": 218.664,
+      "text": "根据最新 HBP 规定，单人免税提取额度，从 3.5 万直接翻倍到了 6 万加元",
       "slide_index": 7
     },
     {
       "index": 44,
-      "start": 256.429,
-      "end": 260.991,
-      "text": "GIC和HISA不是二选一，而是配合着用",
-      "slide_index": 8
+      "start": 218.964,
+      "end": 225.88,
+      "text": "而且，还款宽限期从 2 年延长到了 5 年，等于白白送你 5 年的免息首付资金",
+      "slide_index": 7
     },
     {
       "index": 45,
-      "start": 261.291,
-      "end": 269.575,
-      "text": "Scotiabank有篇官方文章说得很清楚GIC适合一次性投入，HISA适合短期灵活存取",
-      "slide_index": 8
+      "start": 226.18,
+      "end": 229.624,
+      "text": "之后你只需要分 15 年慢慢还回去就行",
+      "slide_index": 7
     },
     {
       "index": 46,
-      "start": 269.875,
-      "end": 271.138,
-      "text": "可以分两步走",
-      "slide_index": 8
+      "start": 229.924,
+      "end": 232.791,
+      "text": "那么，想免税读书深造行不行",
+      "slide_index": 7
     },
     {
       "index": 47,
-      "start": 271.438,
-      "end": 276.991,
-      "text": "第一步，先用HISA存3到6个月应急资金，随时能取",
+      "start": 233.591,
+      "end": 237.854,
+      "text": "如果想回学校进修充电，学费同样可以免税提取",
       "slide_index": 8
     },
     {
       "index": 48,
-      "start": 277.291,
-      "end": 282.485,
-      "text": "你可能想我买Cashable GIC不就行了，还要HISA干嘛",
+      "start": 238.154,
+      "end": 244.454,
+      "text": "通过 LLP 终身学习计划，你可以免税无息提取，高达 2 万加元的学费",
       "slide_index": 8
     },
     {
       "index": 49,
-      "start": 282.785,
-      "end": 291.023,
-      "text": "区别在于，GIC赎回要等1到3个工作日，30天内取利息归零，应急资金你等不起",
+      "start": 244.754,
+      "end": 250.481,
+      "text": "虽然每年最多只能提取 1 万，但毕业之后有长达 10 年的还款时间",
       "slide_index": 8
     },
     {
       "index": 50,
-      "start": 291.323,
-      "end": 298.485,
-      "text": "而且GIC不能部分取款，一赎回就是全额，不像HISA想取多少取多少",
+      "start": 250.781,
+      "end": 254.496,
+      "text": "这相当于是自己给自己的，无息教育助学金",
       "slide_index": 8
     },
     {
       "index": 51,
-      "start": 298.785,
-      "end": 302.101,
-      "text": "第二步，超出的闲钱分批买GIC",
+      "start": 254.796,
+      "end": 257.749,
+      "text": "那么，一不小心存超额了怎么办",
       "slide_index": 8
     },
     {
       "index": 52,
-      "start": 302.401,
-      "end": 306.071,
-      "text": "另外，有个聪明方法叫GIC阶梯策略",
-      "slide_index": 8
+      "start": 258.549,
+      "end": 262.781,
+      "text": "手一抖把存款额度存超了，真的会被罚款吗",
+      "slide_index": 9
     },
     {
       "index": 53,
-      "start": 306.371,
-      "end": 309.233,
-      "text": "比如1万块闲钱，别全买5年的",
-      "slide_index": 8
+      "start": 263.081,
+      "end": 268.487,
+      "text": "别慌，税局专门留下了一个，终身 2000 加元的免罚缓冲区",
+      "slide_index": 9
     },
     {
       "index": 54,
-      "start": 309.533,
-      "end": 312.602,
-      "text": "分成3份，各买1年2年3年",
-      "slide_index": 8
+      "start": 268.787,
+      "end": 273.719,
+      "text": "只要你超出的本金，没有越过 2000 的红线，就绝对不会被罚",
+      "slide_index": 9
     },
     {
       "index": 55,
-      "start": 312.902,
-      "end": 316.809,
-      "text": "每年都有一份到期，你可以决定续还是取",
-      "slide_index": 8
+      "start": 274.019,
+      "end": 279.722,
+      "text": "可一旦越过 2000，超出部分每个月，会被无情强征 1% 的罚税",
+      "slide_index": 9
     },
     {
       "index": 56,
-      "start": 317.109,
-      "end": 319.576,
-      "text": "既拿高利率，又不会全锁死",
-      "slide_index": 8
+      "start": 280.022,
+      "end": 283.167,
+      "text": "那么，在账户里买股票爆仓了怎么办",
+      "slide_index": 9
     },
     {
       "index": 57,
-      "start": 320.376,
-      "end": 324.039,
-      "text": "你可能会问凭什么GIC利息要交税",
-      "slide_index": 9
+      "start": 283.967,
+      "end": 289.885,
+      "text": "在注册账户里买高风险股票，一旦爆仓，后果绝对是毁灭性的",
+      "slide_index": 10
     },
     {
       "index": 58,
-      "start": 324.339,
-      "end": 329.104,
-      "text": "因为利息算收入，加拿大所得税法从一开始就管这个",
-      "slide_index": 9
+      "start": 290.185,
+      "end": 295.133,
+      "text": "你在里面亏掉的每一分钱，都不能拿来抵扣账户外的股票收益",
+      "slide_index": 10
     },
     {
       "index": 59,
-      "start": 329.404,
-      "end": 335.137,
-      "text": "TD官网写得很清楚非注册账户的GIC利息，按收入交税",
-      "slide_index": 9
+      "start": 295.433,
+      "end": 300.332,
+      "text": "最惨的是，被消耗掉的存款额度，会直接当场永久作废",
+      "slide_index": 10
     },
     {
       "index": 60,
-      "start": 335.437,
-      "end": 342.903,
-      "text": "以安省年收入6万到9万的人为例，联邦加省税合并边际税率29.65%",
-      "slide_index": 9
+      "start": 300.632,
+      "end": 305.506,
+      "text": "这相当于亏了本金又丢了额度，直接面临双重爆头",
+      "slide_index": 10
     },
     {
       "index": 61,
-      "start": 343.203,
-      "end": 350.214,
-      "text": "也就是说你GIC赚了300块利息，要交89块的税，到手只有211块",
-      "slide_index": 9
+      "start": 305.806,
+      "end": 309.115,
+      "text": "那么，中产想要大额退税该怎么做",
+      "slide_index": 10
     },
     {
       "index": 62,
-      "start": 350.514,
-      "end": 357.405,
-      "text": "但同一个GIC放在TFSA免税账户里，300块全拿，一分钱不用交",
-      "slide_index": 9
-    },
-    {
-      "index": 63,
-      "start": 357.705,
-      "end": 360.853,
-      "text": "差了89块，钱越多差距越大",
-      "slide_index": 9
-    },
-    {
-      "index": 64,
-      "start": 361.653,
-      "end": 366.825,
-      "text": "总结一下，Scotiabank 2年特价3.25%，全场最高",
-      "slide_index": 10
-    },
-    {
-      "index": 65,
-      "start": 367.125,
-      "end": 374.64,
-      "text": "你想想，锁2年利率3.25%，锁5年反而只有3.1%，谁会选5年",
-      "slide_index": 10
-    },
-    {
-      "index": 66,
-      "start": 374.94,
-      "end": 381.198,
-      "text": "所以有闲钱，首选Scotiabank 2年Non-Redeemable，利率最高锁定最短",
-      "slide_index": 10
-    },
-    {
-      "index": 67,
-      "start": 381.498,
-      "end": 386.887,
-      "text": "存1年不动，CIBC 2.7%最高，门槛只要500块",
-      "slide_index": 10
-    },
-    {
-      "index": 68,
-      "start": 387.187,
-      "end": 393.068,
-      "text": "不确定什么时候需要钱，Scotiabank可赎回24个月2.55%",
-      "slide_index": 10
-    },
-    {
-      "index": 69,
-      "start": 393.368,
-      "end": 399,
-      "text": "以上利率都来自各银行官网，具体数据还是需要去柜台核实",
-      "slide_index": 10
-    },
-    {
-      "index": 70,
-      "start": 399.8,
-      "end": 403.309,
-      "text": "本期所有利率数据，均来自五大银行官网",
+      "start": 309.915,
+      "end": 314.834,
+      "text": "手头有一大笔积蓄，怎么存才能把退税金额直接吃满",
       "slide_index": 11
     },
     {
+      "index": 63,
+      "start": 315.134,
+      "end": 318.553,
+      "text": "秘诀就在于，存抵是两个独立的动作",
+      "slide_index": 11
+    },
+    {
+      "index": 64,
+      "start": 318.853,
+      "end": 327.013,
+      "text": "如果一次性申报 3 万，你的计税档次，会从 43% 直接掉到 34.3%，大打折扣",
+      "slide_index": 11
+    },
+    {
+      "index": 65,
+      "start": 327.313,
+      "end": 332.838,
+      "text": "但要是分三年慢慢申报，就能稳稳锁在 43% 的高税率上",
+      "slide_index": 11
+    },
+    {
+      "index": 66,
+      "start": 333.138,
+      "end": 337.117,
+      "text": "相同的本金，平白无故多赚 2600 元退税",
+      "slide_index": 11
+    },
+    {
+      "index": 67,
+      "start": 337.417,
+      "end": 340.388,
+      "text": "那么，夫妻收入差距大该怎么省",
+      "slide_index": 11
+    },
+    {
+      "index": 68,
+      "start": 341.188,
+      "end": 346.271,
+      "text": "如果夫妻两人的年薪收入差距特别大，一定要开启配偶账户",
+      "slide_index": 12
+    },
+    {
+      "index": 69,
+      "start": 346.571,
+      "end": 351.776,
+      "text": "高薪的一方拿自己的额度往里面存钱，当场拿高税档退税",
+      "slide_index": 12
+    },
+    {
+      "index": 70,
+      "start": 352.076,
+      "end": 359.474,
+      "text": "但最绝的是，等几十年后退休提款时，这笔钱会算作低薪一方的，个人收入来征税",
+      "slide_index": 12
+    },
+    {
       "index": 71,
-      "start": 404.109,
-      "end": 407.1,
-      "text": "想自己查利率，链接都在屏幕上",
+      "start": 359.774,
+      "end": 363.495,
+      "text": "这一来一回，直接把取款税率打到地板价",
       "slide_index": 12
     },
     {
       "index": 72,
-      "start": 407.9,
-      "end": 412.956,
-      "text": "有什么想了解的，评论区留下来，问的人多我会单独做一期",
-      "slide_index": 13
+      "start": 363.795,
+      "end": 366.709,
+      "text": "那么，如果遇到低谷或失业年份呢",
+      "slide_index": 12
     },
     {
       "index": 73,
-      "start": 413.256,
-      "end": 419.944,
-      "text": "下期讲TFSA免税储蓄账户，怎么开、额度多少、放什么最划算",
+      "start": 367.509,
+      "end": 374.764,
+      "text": "如果遇到失业、产假或者停薪等，收入低谷年份，其实是提前提款的黄金期",
       "slide_index": 13
     },
     {
       "index": 74,
-      "start": 420.244,
-      "end": 421.735,
-      "text": "关注我，下期见",
+      "start": 375.064,
+      "end": 380.542,
+      "text": "虽然银行在提款时，会强制预扣 10% 到 30% 的税款",
       "slide_index": 13
+    },
+    {
+      "index": 75,
+      "start": 380.842,
+      "end": 383.677,
+      "text": "比如提取 5000 以内，扣 10%",
+      "slide_index": 13
+    },
+    {
+      "index": 76,
+      "start": 383.977,
+      "end": 386.914,
+      "text": "超过 1.5 万，则扣 30%",
+      "slide_index": 13
+    },
+    {
+      "index": 77,
+      "start": 387.214,
+      "end": 395.681,
+      "text": "但只要你当年实际收入低于免税线，预扣税次年就会全额退还，直接实现 0% 税率套现",
+      "slide_index": 13
+    },
+    {
+      "index": 78,
+      "start": 395.981,
+      "end": 399.625,
+      "text": "那么，到了 71 岁退休又该怎么保全福利",
+      "slide_index": 13
+    },
+    {
+      "index": 79,
+      "start": 400.425,
+      "end": 404.168,
+      "text": "年满 71 岁必须强制关闭 RRSP",
+      "slide_index": 14
+    },
+    {
+      "index": 80,
+      "start": 404.468,
+      "end": 409.196,
+      "text": "你只有三个选项取现、转 RRIF、或买年金",
+      "slide_index": 14
+    },
+    {
+      "index": 81,
+      "start": 409.496,
+      "end": 412.88,
+      "text": "大多数人选 RRIF，但问题来了",
+      "slide_index": 14
+    },
+    {
+      "index": 82,
+      "start": 413.18,
+      "end": 417.914,
+      "text": "RRIF 每年的取款，全部算作当年收入要征税",
+      "slide_index": 14
+    },
+    {
+      "index": 83,
+      "start": 418.214,
+      "end": 421.741,
+      "text": "取得太多，总收入超过 9 万加元红线",
+      "slide_index": 14
+    },
+    {
+      "index": 84,
+      "start": 422.041,
+      "end": 427.119,
+      "text": "政府发的老年金 OAS，就会被无情扣减甚至清零",
+      "slide_index": 14
+    },
+    {
+      "index": 85,
+      "start": 427.419,
+      "end": 428.351,
+      "text": "怎么破局",
+      "slide_index": 14
+    },
+    {
+      "index": 86,
+      "start": 428.651,
+      "end": 431.572,
+      "text": "还记得上期讲的 TFSA 吗",
+      "slide_index": 14
+    },
+    {
+      "index": 87,
+      "start": 431.872,
+      "end": 433.832,
+      "text": "它提款完全不算收入",
+      "slide_index": 14
+    },
+    {
+      "index": 88,
+      "start": 434.132,
+      "end": 439.665,
+      "text": "所以只提 RRIF 最低额度，大额消费全走 TFSA",
+      "slide_index": 14
+    },
+    {
+      "index": 89,
+      "start": 439.965,
+      "end": 443.561,
+      "text": "就能稳稳守住收入红线，保全全部福利",
+      "slide_index": 14
+    },
+    {
+      "index": 90,
+      "start": 444.361,
+      "end": 451.762,
+      "text": "本期所有的加拿大官方政策，均来自联邦税务局、金融管理局等官网的权威指引",
+      "slide_index": 15
+    },
+    {
+      "index": 91,
+      "start": 452.062,
+      "end": 456.856,
+      "text": "第1部分权威链接已在屏幕上，建议大家随时截图核对",
+      "slide_index": 15
+    },
+    {
+      "index": 92,
+      "start": 457.656,
+      "end": 464.739,
+      "text": "第2部分，则是各大商业银行，关于具体账户细节、买房与读书计划的指南链接",
+      "slide_index": 16
+    },
+    {
+      "index": 93,
+      "start": 465.039,
+      "end": 471.826,
+      "text": "我们对数据，进行了严格审计，绝无任何凭空编造，链接在此供大家参考",
+      "slide_index": 16
+    },
+    {
+      "index": 94,
+      "start": 472.626,
+      "end": 478.762,
+      "text": "有关于存款、退税或者套现的问题，欢迎在评论区随时留言交流",
+      "slide_index": 17
+    },
+    {
+      "index": 95,
+      "start": 479.062,
+      "end": 488.642,
+      "text": "下期讲 RRSP 加 TFSA 的终极混合搭配，教你根据年薪，做跨期资产配置，把福利全部吃满",
+      "slide_index": 17
+    },
+    {
+      "index": 96,
+      "start": 488.942,
+      "end": 490.352,
+      "text": "关注我，别错过",
+      "slide_index": 17
     }
   ],
   "audioUrl": "/public/audio.wav",
@@ -1023,59 +1236,75 @@
       "slideIndex": 0
     },
     {
-      "title": "GIC定义",
-      "startSec": 32.323,
+      "title": "RRSP定义",
+      "startSec": 18.79,
       "slideIndex": 1
     },
     {
-      "title": "Non-Redeemable vs Redeemable vs Cashable",
-      "startSec": 63.015,
+      "title": "首年额度",
+      "startSec": 47.525,
       "slideIndex": 2
     },
     {
-      "title": "Scotiabank GIC",
-      "startSec": 102.85,
+      "title": "税务陷阱",
+      "startSec": 77.084,
       "slideIndex": 3
     },
     {
-      "title": "RBC GIC",
-      "startSec": 129.84,
+      "title": "税率速查",
+      "startSec": 98.475,
       "slideIndex": 4
     },
     {
-      "title": "TD GIC",
-      "startSec": 163.471,
+      "title": "降档原理",
+      "startSec": 130.265,
       "slideIndex": 5
     },
     {
-      "title": "BMO GIC",
-      "startSec": 190.824,
+      "title": "高薪实战",
+      "startSec": 174.447,
       "slideIndex": 6
     },
     {
-      "title": "CIBC GIC",
-      "startSec": 217.877,
+      "title": "免税买房",
+      "startSec": 206.426,
       "slideIndex": 7
     },
     {
-      "title": "GIC + HISA策略",
-      "startSec": 256.429,
+      "title": "免税读书",
+      "startSec": 233.591,
       "slideIndex": 8
     },
     {
-      "title": "税务提醒",
-      "startSec": 320.376,
+      "title": "超额罚款",
+      "startSec": 258.549,
       "slideIndex": 9
     },
     {
-      "title": "本期总结",
-      "startSec": 361.653,
+      "title": "亏损风险",
+      "startSec": 283.967,
       "slideIndex": 10
     },
     {
-      "title": "预告",
-      "startSec": 407.9,
+      "title": "实战进阶",
+      "startSec": 309.915,
+      "slideIndex": 11
+    },
+    {
+      "title": "配偶平摊",
+      "startSec": 341.188,
+      "slideIndex": 12
+    },
+    {
+      "title": "低谷套现",
+      "startSec": 367.509,
       "slideIndex": 13
+    },
+    {
+      "title": "强制关户",
+      "startSec": 400.425,
+      "slideIndex": 14
     }
-  ]
+  ],
+  "themeName": "gold"
 }
