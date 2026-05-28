@@ -2,440 +2,214 @@
   "slides": [
     {
       "type": "cover",
-      "title": "存钱还能退税？从零搞懂加拿大理财之王 RRSP",
+      "title": "毕业工签 PGWP",
       "source": "海外生活指南",
       "chapter": "开场",
-      "subtitle": "一期讲透13个核心场景",
-      "hookNumber": "46",
-      "hookUnit": "%边际税率你扛得住？"
+      "subtitle": "选错专业直接没工签",
+      "hookNumber": "3",
+      "hookUnit": "年工签 不是谁都能拿"
     },
     {
       "type": "argument",
-      "title": "什么是 RRSP：税前延税的\"终极理财外壳\"",
+      "title": "什么是 PGWP：毕业后合法工作的唯一通行证",
       "source": "海外生活指南",
-      "chapter": "RRSP定义",
+      "chapter": "PGWP定义",
       "table": {
         "headers": [
-          "RRSP 税务机制",
-          "比例与税率"
+          "PGWP 核心属性",
+          "规则"
         ],
         "rows": [
           [
-            "存入抵税比例",
-            "**100%**"
+            "工签类型",
+            "**开放式**"
           ],
           [
-            "账户内增值税率",
-            "**0%**"
+            "最长有效期",
+            "**3 年**"
           ],
           [
-            "提前提款预扣税",
-            "**10% ~ 30%**"
+            "终身次数",
+            "**1 次**"
+          ],
+          [
+            "工作限制",
+            "**无**"
           ]
         ]
       }
     },
     {
       "type": "argument",
-      "title": "【场景 1】新移民首年落地：小白零额度误区",
+      "title": "基本资格：四个硬门槛缺一不可",
       "source": "海外生活指南",
-      "chapter": "首年额度",
+      "chapter": "基本资格",
       "table": {
         "headers": [
-          "新移民额度指标",
-          "限额与比例"
+          "PGWP 资格条件",
+          "要求"
         ],
         "rows": [
           [
-            "年度额度比例",
-            "**18%**"
+            "学校",
+            "**PGWP 资格的 DLI**"
           ],
           [
-            "2026年存款上限",
-            "**$33,810**"
+            "项目时长",
+            "**≥ 8 个月**"
           ],
           [
-            "落地首年额度",
-            "**$0**"
+            "学习状态",
+            "**全日制**"
           ],
           [
-            "未用额度",
-            "**可无限累积**"
-          ],
-          [
-            "2025税年存入截止日",
-            "**2026年3月2日**"
+            "申请窗口",
+            "**毕业后 180 天内**"
           ]
         ]
       }
     },
     {
       "type": "argument",
-      "title": "【场景 2】常规退税期：给税局白送免息贷款",
+      "title": "时长计算：读多久决定拿几年",
       "source": "海外生活指南",
-      "chapter": "税务陷阱",
+      "chapter": "时长规则",
       "table": {
         "headers": [
-          "传统退税资金指标",
-          "比例与天数"
+          "情况",
+          "PGWP 时长"
         ],
         "rows": [
           [
-            "雇主预扣税款占比",
-            "**100%**"
+            "< 8 个月",
+            "**无资格**"
           ],
           [
-            "资金被占用天数",
-            "**365 天**"
+            "硕士/博士学位（≥ 8 个月）",
+            "**直接 3 年**"
+          ],
+          [
+            "42 周加速 Diploma（官方算 2 年）",
+            "**3 年**"
+          ],
+          [
+            "其他项目 8 个月 – 2 年",
+            "**= 学习时长**"
+          ],
+          [
+            "其他项目 ≥ 2 年",
+            "**3 年**"
           ]
         ]
       }
     },
     {
       "type": "argument",
-      "title": "【场景 3】联邦+省税组合税率速查",
+      "title": "语言门槛：考不过就没工签",
       "source": "海外生活指南",
-      "chapter": "税率速查",
+      "chapter": "语言门槛",
       "table": {
         "headers": [
-          "2025 应税收入区间",
-          "联邦税率",
-          "安省税率",
-          "组合边际税率"
+          "毕业类型",
+          "语言要求"
         ],
         "rows": [
           [
-            "≤$57,375",
-            "**15.0%**",
-            "**5.05%**",
-            "**20.05%**"
+            "大学学位（本硕博）",
+            "**CLB 7（听说读写四项）**"
           ],
           [
-            "$57,375 ~ $114,750",
-            "**20.5%**",
-            "**9.15%**",
-            "**29.65%**"
-          ],
-          [
-            "$114,750 ~ $158,468",
-            "**26.0%**",
-            "**11.16%**",
-            "**37.16%**"
-          ],
-          [
-            "$158,468 ~ $220,000",
-            "**29.0%**",
-            "**12.16%**",
-            "**41.16%**"
-          ],
-          [
-            ">$220,000",
-            "**33.0%**",
-            "**13.16%**",
-            "**46.16%**"
+            "学院",
+            "**CLB 5（听说读写四项）**"
           ]
         ]
       }
     },
     {
       "type": "argument",
-      "title": "【场景 4】降档省税原理：一次存入、双重省税",
+      "title": "专业限制：学院读错方向直接白读",
       "source": "海外生活指南",
-      "chapter": "降档原理",
+      "chapter": "专业限制",
       "table": {
         "headers": [
-          "年薪$12万·安省示例",
-          "不存 RRSP",
-          "存入$18,000"
+          "毕业类型",
+          "专业要求"
         ],
         "rows": [
           [
-            "应税收入",
-            "**$120,000**",
-            "**$102,000**"
+            "大学学位（本硕博）",
+            "**不限专业**"
           ],
           [
-            "最高适用组合税档",
-            "**37.16%**",
-            "**29.65%**"
+            "学院",
+            "**必须是指定领域**"
           ],
           [
-            "降档幅度",
-            "**—**",
-            "**-7.51%**"
-          ],
-          [
-            "存入部分省税",
-            "**$0**",
-            "**$5,345**"
-          ],
-          [
-            "降档额外省税",
-            "**$0**",
-            "**$394**"
+            "指定领域",
+            "**STEM / 医疗 / 农业 / 交通**"
           ]
         ]
       }
     },
     {
       "type": "argument",
-      "title": "【场景 5】高薪大佬期：T1213 工资单每月即时折现",
+      "title": "申请费用和材料：$255 一次交清",
       "source": "海外生活指南",
-      "chapter": "高薪实战",
+      "chapter": "费用材料",
       "table": {
         "headers": [
-          "资金流对比 (年薪$10万·安省)",
-          "传统年终退税",
-          "T1213 减税"
+          "费用项",
+          "金额"
         ],
         "rows": [
           [
-            "每月增加到手现金",
-            "**$0**",
-            "**$445**"
+            "工签申请费",
+            "**$155**"
           ],
           [
-            "资金被占用天数",
-            "**365 天**",
-            "**0 天**"
+            "开放工签持有人费",
+            "**$100**"
+          ],
+          [
+            "生物采集费（如需）",
+            "**$85**"
+          ],
+          [
+            "合计（不含生物采集）",
+            "**$255**"
           ]
         ]
       }
     },
     {
       "type": "argument",
-      "title": "【场景 6】首次买房期：HBP 提款上限翻倍至\\$60,000",
+      "title": "PGWP 到期：不可续签 必须提前规划",
       "source": "海外生活指南",
-      "chapter": "免税买房",
+      "chapter": "到期规划",
       "table": {
         "headers": [
-          "HBP 买房政策对比",
-          "传统旧规",
-          "2024 新规"
+          "PGWP 到期选项",
+          "操作"
         ],
         "rows": [
           [
-            "单人提款限额",
-            "**$35,000**",
-            "**$60,000**"
+            "已提交 PR 申请",
+            "**申请桥梁工签继续工作**"
           ],
           [
-            "夫妻合并提款限额",
-            "**$70,000**",
-            "**$120,000**"
+            "未申请 PR",
+            "**转换其他工签或离境**"
           ],
           [
-            "还款宽限期",
-            "**2 年**",
-            "**5 年**"
-          ],
-          [
-            "最长还款年限",
-            "**15 年**",
-            "**15 年**"
-          ],
-          [
-            "年度最低还款比例",
-            "**1/15**",
-            "**1/15**"
-          ]
-        ]
-      }
-    },
-    {
-      "type": "argument",
-      "title": "【场景 7】充电深造期：LLP 终身学习计划免税提\\$20,000",
-      "source": "海外生活指南",
-      "chapter": "免税读书",
-      "table": {
-        "headers": [
-          "LLP 读书计划指标",
-          "政策限额"
-        ],
-        "rows": [
-          [
-            "年度提取上限",
-            "**$10,000**"
-          ],
-          [
-            "终身提取上限",
-            "**$20,000**"
-          ],
-          [
-            "全日制学时要求",
-            "**≥10小时/周**"
-          ],
-          [
-            "还款期限",
-            "**10 年**"
-          ]
-        ]
-      }
-    },
-    {
-      "type": "argument",
-      "title": "【场景 8】超额存款期：每月 1% 重罚与免罚缓冲",
-      "source": "海外生活指南",
-      "chapter": "超额罚款",
-      "table": {
-        "headers": [
-          "超额存款区间",
-          "罚金税率",
-          "缓冲限额"
-        ],
-        "rows": [
-          [
-            "$2,000 以内",
-            "**0%**",
-            "**$2,000**"
-          ],
-          [
-            "超出$2,000",
-            "**1%**",
-            "**$0**"
-          ]
-        ]
-      }
-    },
-    {
-      "type": "argument",
-      "title": "【场景 9】投资爆仓期：账户亏损且额度作废",
-      "source": "海外生活指南",
-      "chapter": "亏损风险",
-      "table": {
-        "headers": [
-          "亏损后清算规则",
-          "普通投资账户",
-          "RRSP 注册账户"
-        ],
-        "rows": [
-          [
-            "亏损抵税比例",
-            "**100%**",
-            "**0%**"
-          ],
-          [
-            "存入额度保留比例",
-            "**100%**",
-            "**0%**"
-          ]
-        ]
-      }
-    },
-    {
-      "type": "argument",
-      "title": "【场景 10】中产精英期：分批申报税务套利",
-      "source": "海外生活指南",
-      "chapter": "实战进阶",
-      "table": {
-        "headers": [
-          "3万额度申报方案",
-          "一次性申报",
-          "分三年申报"
-        ],
-        "rows": [
-          [
-            "平均申报税率",
-            "**34.3%**",
-            "**43.0%**"
-          ],
-          [
-            "最终退税总额",
-            "**10,300**",
-            "**12,900**"
-          ],
-          [
-            "额外多赚退税",
-            "**0**",
-            "**+2,600**"
-          ]
-        ]
-      }
-    },
-    {
-      "type": "argument",
-      "title": "【场景 11】配偶平摊期：Spousal RRSP 削减税档",
-      "source": "海外生活指南",
-      "chapter": "配偶平摊",
-      "table": {
-        "headers": [
-          "Spousal RRSP 角色",
-          "额度消耗比例",
-          "计税归属比例"
-        ],
-        "rows": [
-          [
-            "高薪配偶",
-            "**100%**",
-            "**0%**"
-          ],
-          [
-            "低薪配偶",
-            "**0%**",
-            "**100%**"
-          ]
-        ]
-      }
-    },
-    {
-      "type": "argument",
-      "title": "【场景 12】低谷年份期：低税提前融化套现",
-      "source": "海外生活指南",
-      "chapter": "低谷套现",
-      "table": {
-        "headers": [
-          "RRSP 提前提款金额",
-          "联邦预扣税率",
-          "魁省预扣税率"
-        ],
-        "rows": [
-          [
-            "**$5,000 以内**",
-            "**10%**",
-            "**19%**"
-          ],
-          [
-            "**$5,000 ~ $15,000**",
-            "**20%**",
-            "**24%**"
-          ],
-          [
-            "**$15,000 以上**",
-            "**30%**",
-            "**29%**"
-          ]
-        ]
-      }
-    },
-    {
-      "type": "argument",
-      "title": "【场景 13】老年成熟期：71 岁强制关户与 OAS 扣回陷阱",
-      "source": "海外生活指南",
-      "chapter": "强制关户",
-      "table": {
-        "headers": [
-          "退休关口指标",
-          "法定数值"
-        ],
-        "rows": [
-          [
-            "RRSP 强制关户年龄",
-            "**71 岁**"
-          ],
-          [
-            "转 RRIF 三种选项",
-            "**取现 / RRIF / 年金**"
-          ],
-          [
-            "OAS 扣回起征收入",
-            "**$90,997**"
+            "配偶",
+            "**可申请配偶开放工签**"
           ]
         ]
       }
     },
     {
       "type": "citation",
-      "title": "引用来源 (1/2)",
+      "title": "引用来源",
       "source": "海外生活指南",
       "table": {
         "headers": [
@@ -446,103 +220,40 @@
         ],
         "rows": [
           [
-            "加拿大联邦税务局",
-            "CRA",
-            "RRSP 注册计划总览与额度规则",
-            "https://www.canada.ca/en/revenue-agency/services/tax/individuals/topics/rrsps-related-plans"
+            "加拿大联邦政府",
+            "IRCC",
+            "PGWP 资格要求",
+            "https://www.canada.ca/en/immigration-refugees-citizenship/services/study-canada/work/after-graduation/eligibility"
           ],
           [
             "",
             "",
-            "RRSP 超额存款与罚款计算官方指南",
-            "https://www.canada.ca/en/revenue-agency/services/tax/individuals/topics/rrsps-related-plans/contributing-a-rrsp-prpp/contributions-affect-your-rrsp-prpp-deduction-limit"
+            "PGWP 申请材料",
+            "https://www.canada.ca/en/immigration-refugees-citizenship/services/study-canada/work/after-graduation/get-documents"
           ],
           [
             "",
             "",
-            "T1213 源头减少预扣税官方申请表",
-            "https://www.canada.ca/en/revenue-agency/services/forms-publications/forms/t1213"
+            "PGWP 申请指南",
+            "https://www.canada.ca/en/immigration-refugees-citizenship/services/application/application-forms-guides/guide-5580-applying-work-permit-student-guide"
           ],
           [
             "",
             "",
-            "LLP 终身学习计划官方指南",
-            "https://www.canada.ca/en/revenue-agency/services/tax/individuals/topics/rrsps-related-plans/lifelong-learning-plan"
+            "DLI 学校名单（查 PGWP 资格）",
+            "https://www.canada.ca/en/immigration-refugees-citizenship/services/study-canada/study-permit/prepare/designated-learning-institutions-list"
           ],
           [
             "",
             "",
-            "HBP 还款延期与配偶账户规则",
-            "https://www.canada.ca/en/revenue-agency/services/forms-publications/publications/t4040/rrsps-other-registered-plans-retirement"
-          ],
-          [
-            "加拿大金融消费者管理局",
-            "FCAC",
-            "HBP 首次买房提取额度新规指南",
-            "https://www.canada.ca/en/financial-consumer-agency/services/buying-home"
+            "合格专业 CIP 代码（STEM 类）",
+            "https://www.canada.ca/en/immigration-refugees-citizenship/services/study-canada/work/after-graduation/eligibility/field-of-study/stem"
           ],
           [
             "",
             "",
-            "RRSP 提前提取后果与预扣税率指南",
-            "https://www.canada.ca/en/financial-consumer-agency/services/retirement-planning/registered-retirement-savings-plan"
-          ],
-          [
-            "丰业银行",
-            "Scotiabank",
-            "大学生个人报税与学费折税指南",
-            "https://www.scotiabank.com/ca/en/personal/advice-plus/features/posts-student-taxes"
-          ]
-        ]
-      }
-    },
-    {
-      "type": "citation",
-      "title": "引用来源 (2/2)",
-      "source": "海外生活指南",
-      "table": {
-        "headers": [
-          "中文名",
-          "英文名",
-          "说明",
-          "链接"
-        ],
-        "rows": [
-          [
-            "道明银行",
-            "TD",
-            "RRSP 基础存入与提前提取后果指南",
-            "https://www.td.com/ca/en/personal-banking/personal-investing/products/registered-plans/rrsp"
-          ],
-          [
-            "",
-            "",
-            "HBP 夫妻合并提取首付执行细则",
-            "https://www.td.com/ca/en/personal-banking/personal-investing/learn/rrsp-homebuyers-plan"
-          ],
-          [
-            "",
-            "",
-            "Spousal RRSP 配偶账户省税运作细则",
-            "https://www.td.com/ca/en/personal-banking/personal-investing/learn/spousal-rrsp"
-          ],
-          [
-            "皇家银行",
-            "RBC",
-            "新移民投资入门与 RRSP 延税特征",
-            "https://www.rbcroyalbank.com/new-to-canada/investing-in-canada"
-          ],
-          [
-            "蒙特利尔银行",
-            "BMO",
-            "RRSP 额度与贡献限额官方指南",
-            "https://www.bmo.com/main/personal/investments/rrsp"
-          ],
-          [
-            "",
-            "",
-            "注册账户内亏损资本损失不抵税声明",
-            "https://www.bmo.com/main/personal/investments/tfsa/"
+            "EE 快速通道",
+            "https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/express-entry/eligibility/canadian-experience-class"
           ]
         ]
       }
@@ -551,681 +262,471 @@
       "type": "preview",
       "title": "下期预告",
       "source": "海外生活指南",
-      "content": "互动引导与下期提示"
+      "content": "互动引导 + 下期预告"
     }
   ],
   "timestamps": [
     {
       "index": 1,
       "start": 0.15,
-      "end": 4.133,
-      "text": "高薪不存 RRSP，等于给政府白打工",
+      "end": 2.299,
+      "text": "读完书就能拿 3 年工签",
       "slide_index": 0
     },
     {
       "index": 2,
-      "start": 4.433,
-      "end": 10.351,
-      "text": "这绝非老人的养老存折，而是打工人省税、免税买房的最强神器",
+      "start": 2.599,
+      "end": 3.697,
+      "text": "没那么简单",
       "slide_index": 0
     },
     {
       "index": 3,
-      "start": 10.651,
-      "end": 15.136,
-      "text": "今天用极简逻辑，彻底拆透这 13 个核心场景",
+      "start": 3.997,
+      "end": 6.647,
+      "text": "选错专业，直接没有毕业工签",
       "slide_index": 0
     },
     {
       "index": 4,
-      "start": 15.436,
-      "end": 17.99,
-      "text": "字字金贵，干货直接开启",
+      "start": 6.947,
+      "end": 13.032,
+      "text": "今天一期讲透，资格、时长、哪些专业能拿、哪些直接出局",
       "slide_index": 0
     },
     {
       "index": 5,
-      "start": 18.79,
-      "end": 21.139,
-      "text": "究竟什么是 RRSP",
+      "start": 13.832,
+      "end": 15.505,
+      "text": "PGWP 是什么",
       "slide_index": 1
     },
     {
       "index": 6,
-      "start": 21.439,
-      "end": 27.281,
-      "text": "简单来说，它不是普通存款账户，而是能帮你强力减税的理财外壳",
+      "start": 15.805,
+      "end": 20.997,
+      "text": "全称 Post-Graduation Work Permit，翻译过来就是毕业后工作许可",
       "slide_index": 1
     },
     {
       "index": 7,
-      "start": 27.581,
-      "end": 34.815,
-      "text": "你存进去的钱，可以 100% 抵扣个人收入，在账户里增值，也是绝对的 0% 税率",
+      "start": 21.297,
+      "end": 25.634,
+      "text": "它是开放式工签，不绑定雇主，你想给谁打工都行",
       "slide_index": 1
     },
     {
       "index": 8,
-      "start": 35.115,
-      "end": 43.485,
-      "text": "不过，如果平时急着要用钱，提前取出来，会面临 10% 到 30%，的惩罚性预扣税",
+      "start": 25.934,
+      "end": 28.724,
+      "text": "最长 3 年，一辈子只能拿一次",
       "slide_index": 1
     },
     {
       "index": 9,
-      "start": 43.785,
-      "end": 46.725,
-      "text": "那么，落地第一年到底能不能存",
+      "start": 29.024,
+      "end": 30.658,
+      "text": "为什么它这么重要",
       "slide_index": 1
     },
     {
       "index": 10,
-      "start": 47.525,
-      "end": 54.568,
-      "text": "新移民落地第一年，就算找到工作有了收入，你的首年额度也依然是绝对的 0",
-      "slide_index": 2
+      "start": 30.958,
+      "end": 38.938,
+      "text": "因为 PGWP 期间积累的加拿大工作经验，是走 EE 快速通道申请 PR 的硬性前提",
+      "slide_index": 1
     },
     {
       "index": 11,
-      "start": 54.868,
-      "end": 60.557,
-      "text": "因为它的额度，是按你上一年在加拿大总收入的 18% 来计算的",
-      "slide_index": 2
+      "start": 39.238,
+      "end": 44.143,
+      "text": "没有 PGWP，大部分留学生连 PR 的门都摸不到",
+      "slide_index": 1
     },
     {
       "index": 12,
-      "start": 60.857,
-      "end": 67.636,
-      "text": "如果你觉得今年赚了钱，就闭着眼睛盲目存钱，税局每个月会重罚 1%",
-      "slide_index": 2
+      "start": 44.443,
+      "end": 45.598,
+      "text": "那谁能拿到",
+      "slide_index": 1
     },
     {
       "index": 13,
-      "start": 67.936,
-      "end": 73.374,
-      "text": "另外要记住，2026 年存款上限是 33,810 加元",
+      "start": 46.398,
+      "end": 47.6,
+      "text": "四个硬门槛",
       "slide_index": 2
     },
     {
       "index": 14,
-      "start": 73.674,
-      "end": 76.284,
-      "text": "那么，老实按月打工就安全吗",
+      "start": 47.9,
+      "end": 50.791,
+      "text": "第一，你的学校必须是 DLI",
       "slide_index": 2
     },
     {
       "index": 15,
-      "start": 77.084,
-      "end": 81.238,
-      "text": "为什么说常规退税，其实是给税局的无息贷款",
-      "slide_index": 3
+      "start": 51.091,
+      "end": 56.245,
+      "text": "DLI 全称 Designated Learning Institution，就是指定学习机构",
+      "slide_index": 2
     },
     {
       "index": 16,
-      "start": 81.538,
-      "end": 85.358,
-      "text": "因为我们每个月的预扣税，是 100% 扣除的",
-      "slide_index": 3
+      "start": 56.545,
+      "end": 63.012,
+      "text": "加拿大政府有一个 DLI 官方名单，上面标了哪些学校有 PGWP 资格",
+      "slide_index": 2
     },
     {
       "index": 17,
-      "start": 85.658,
-      "end": 92.285,
-      "text": "这笔辛苦钱会被税局白白占用一整年，白送了整整 365 天免息期",
-      "slide_index": 3
+      "start": 63.312,
+      "end": 70.192,
+      "text": "注意，不是所有 DLI 都能让你拿工签，必须看 PGWP 那一栏是不是 Yes",
+      "slide_index": 2
     },
     {
       "index": 18,
-      "start": 92.585,
-      "end": 97.675,
-      "text": "想抢回这部分现金流，首先你得搞清楚自己到底在哪个税档",
-      "slide_index": 3
+      "start": 70.492,
+      "end": 74.627,
+      "text": "第二，项目至少 8 个月，不到 8 个月直接没资格",
+      "slide_index": 2
     },
     {
       "index": 19,
-      "start": 98.475,
-      "end": 103.181,
-      "text": "在学任何省税技巧之前，你必须先看懂这张税率表",
-      "slide_index": 4
+      "start": 74.927,
+      "end": 78.214,
+      "text": "第三，除了最后一学期，必须全日制",
+      "slide_index": 2
     },
     {
       "index": 20,
-      "start": 103.481,
-      "end": 108.772,
-      "text": "加拿大联邦税分 5 档，最低 15%，最高 33%",
-      "slide_index": 4
+      "start": 78.514,
+      "end": 83.277,
+      "text": "第四，毕业后 180 天内必须提交申请，逾期作废",
+      "slide_index": 2
     },
     {
       "index": 21,
-      "start": 109.072,
-      "end": 112.162,
-      "text": "省税再叠加 5% 到 13%",
-      "slide_index": 4
+      "start": 83.577,
+      "end": 87.663,
+      "text": "特别注意，学签在这 180 天里必须有效过",
+      "slide_index": 2
     },
     {
       "index": 22,
-      "start": 112.462,
-      "end": 118.161,
-      "text": "年薪 10 万的打工人，组合边际税率就已经到了将近 30%",
-      "slide_index": 4
+      "start": 87.963,
+      "end": 93.139,
+      "text": "如果毕业前学签就过期了，先续学签再申请 PGWP",
+      "slide_index": 2
     },
     {
       "index": 23,
-      "start": 118.461,
-      "end": 121.776,
-      "text": "年薪 12 万，直接跳到 37%",
-      "slide_index": 4
+      "start": 93.439,
+      "end": 95.495,
+      "text": "那拿到之后能用多久",
+      "slide_index": 2
     },
     {
       "index": 24,
-      "start": 122.076,
-      "end": 129.465,
-      "text": "这个税档表要记牢，因为 RRSP 最核心的省税原理，就藏在这些档位分界线里",
-      "slide_index": 4
+      "start": 96.295,
+      "end": 99.032,
+      "text": "时长规则很重要，先说特殊的",
+      "slide_index": 3
     },
     {
       "index": 25,
-      "start": 130.265,
-      "end": 133.634,
-      "text": "这就是 RRSP 最核心的省税原理",
-      "slide_index": 5
+      "start": 99.332,
+      "end": 105.539,
+      "text": "硕士和博士学位，不管读 1 年还是 2 年，只要满 8 个月，直接给 3 年",
+      "slide_index": 3
     },
     {
       "index": 26,
-      "start": 133.934,
-      "end": 137.597,
-      "text": "很多人只知道存入免税，却不知道还能降档",
-      "slide_index": 5
+      "start": 105.839,
+      "end": 107.384,
+      "text": "还有一种省钱路线",
+      "slide_index": 3
     },
     {
       "index": 27,
-      "start": 137.897,
-      "end": 144.427,
-      "text": "举个例子，年薪 12 万的安省打工人，最高组合税率是 37.16%",
-      "slide_index": 5
+      "start": 107.684,
+      "end": 113.568,
+      "text": "有些学院的 42 周加速 Diploma，官方算 2 年项目，也能拿 3 年",
+      "slide_index": 3
     },
     {
       "index": 28,
-      "start": 144.727,
-      "end": 149.925,
-      "text": "存入 1.8 万到 RRSP，税局只按 10.2 万来算税",
-      "slide_index": 5
+      "start": 113.868,
+      "end": 121.386,
+      "text": "比如木工、暖通、幼教这些，42 周读完省一年房租，工签时长不打折",
+      "slide_index": 3
     },
     {
       "index": 29,
-      "start": 150.225,
-      "end": 152.529,
-      "text": "这一刀砍下去，两重效果",
-      "slide_index": 5
+      "start": 121.686,
+      "end": 123.61,
+      "text": "其他项目就按时长算",
+      "slide_index": 3
     },
     {
       "index": 30,
-      "start": 152.829,
-      "end": 157.319,
-      "text": "第一，这 1.8 万本身省了约 5345 元税款",
-      "slide_index": 5
+      "start": 123.91,
+      "end": 129.583,
+      "text": "不到 8 个月没资格，8 个月到 2 年读多久给多久，2 年以上给 3 年",
+      "slide_index": 3
     },
     {
       "index": 31,
-      "start": 157.619,
-      "end": 162.852,
-      "text": "第二，剩下的收入从 37% 高档掉回 30% 低档",
-      "slide_index": 5
+      "start": 129.883,
+      "end": 134.51,
+      "text": "护照有效期比工签短的话，PGWP 也会被截断",
+      "slide_index": 3
     },
     {
       "index": 32,
-      "start": 163.152,
-      "end": 165.498,
-      "text": "还额外多省了 394 元",
-      "slide_index": 5
+      "start": 134.81,
+      "end": 137.935,
+      "text": "那 2024 年底新规又改了什么",
+      "slide_index": 3
     },
     {
       "index": 33,
-      "start": 165.798,
-      "end": 170.346,
-      "text": "一次存入，双重省税，这才是 RRSP 的真正威力",
-      "slide_index": 5
+      "start": 138.735,
+      "end": 144.343,
+      "text": "2024 年 11 月 1 日起，申请 PGWP 必须提交语言成绩",
+      "slide_index": 4
     },
     {
       "index": 34,
-      "start": 170.646,
-      "end": 173.647,
-      "text": "那么，怎么把预扣税当月就夺回来",
-      "slide_index": 5
+      "start": 144.643,
+      "end": 148.639,
+      "text": "大学毕业 CLB 7，学院毕业 CLB 5",
+      "slide_index": 4
     },
     {
       "index": 35,
-      "start": 174.447,
-      "end": 179.716,
-      "text": "知道了自己在 30% 的税档，怎么把预扣税当月就夺回来",
-      "slide_index": 6
+      "start": 148.939,
+      "end": 153.854,
+      "text": "注意这是四项全部要达标，听说读写哪项不够都不行",
+      "slide_index": 4
     },
     {
       "index": 36,
-      "start": 180.016,
-      "end": 185.626,
-      "text": "只要向税局提交一张 T1213 表格，就能当场阻断预扣税",
-      "slide_index": 6
+      "start": 154.154,
+      "end": 156.033,
+      "text": "接受的考试只有三种",
+      "slide_index": 4
     },
     {
       "index": 37,
-      "start": 185.926,
-      "end": 189.712,
-      "text": "以安省年薪 10 万为例，存满额度 1.8 万",
-      "slide_index": 6
+      "start": 156.333,
+      "end": 159.311,
+      "text": "雅思 G 类、思培、PTE Core",
+      "slide_index": 4
     },
     {
       "index": 38,
-      "start": 190.012,
-      "end": 195.893,
-      "text": "按 29.65% 的边际税率，每月多出 445 元到手现金",
-      "slide_index": 6
+      "start": 159.611,
+      "end": 163.938,
+      "text": "成绩必须在申请时两年内有效，所以别考太早",
+      "slide_index": 4
     },
     {
       "index": 39,
-      "start": 196.193,
-      "end": 200.16,
-      "text": "资金被占用天数从 365 天直接归零",
-      "slide_index": 6
+      "start": 164.238,
+      "end": 166.749,
+      "text": "那除了语言，专业也有限制",
+      "slide_index": 4
     },
     {
       "index": 40,
-      "start": 200.46,
-      "end": 202.707,
-      "text": "当月就能拿去理财赚利息",
-      "slide_index": 6
+      "start": 167.549,
+      "end": 171.424,
+      "text": "专业限制是现行规则里杀伤力最大的一条",
+      "slide_index": 5
     },
     {
       "index": 41,
-      "start": 203.007,
-      "end": 205.626,
-      "text": "那么，想要免税买房该怎么用",
-      "slide_index": 6
+      "start": 171.724,
+      "end": 177.011,
+      "text": "大学学位不受影响，本硕博任何专业都能申请 PGWP",
+      "slide_index": 5
     },
     {
       "index": 42,
-      "start": 206.426,
-      "end": 210.85,
-      "text": "第一次买房的打工人，绝对不能错过这次政策大礼包",
-      "slide_index": 7
+      "start": 177.311,
+      "end": 181.66,
+      "text": "但学院毕业生，必须读的是指定领域，才有资格",
+      "slide_index": 5
     },
     {
       "index": 43,
-      "start": 211.15,
-      "end": 218.664,
-      "text": "根据最新 HBP 规定，单人免税提取额度，从 3.5 万直接翻倍到了 6 万加元",
-      "slide_index": 7
+      "start": 181.96,
+      "end": 187.868,
+      "text": "指定领域包括 STEM、医疗健康、农业食品、交通运输这几大类",
+      "slide_index": 5
     },
     {
       "index": 44,
-      "start": 218.964,
-      "end": 225.88,
-      "text": "而且，还款宽限期从 2 年延长到了 5 年，等于白白送你 5 年的免息首付资金",
-      "slide_index": 7
+      "start": 188.168,
+      "end": 188.859,
+      "text": "怎么查",
+      "slide_index": 5
     },
     {
       "index": 45,
-      "start": 226.18,
-      "end": 229.624,
-      "text": "之后你只需要分 15 年慢慢还回去就行",
-      "slide_index": 7
+      "start": 189.159,
+      "end": 196.846,
+      "text": "最简单的办法是直接上你学校官网，找到项目介绍页，一般会标明是否有 PGWP 资格",
+      "slide_index": 5
     },
     {
       "index": 46,
-      "start": 229.924,
-      "end": 232.791,
-      "text": "那么，想免税读书深造行不行",
-      "slide_index": 7
+      "start": 197.146,
+      "end": 200.243,
+      "text": "也可以去 IRCC 官网查 CIP 代码",
+      "slide_index": 5
     },
     {
       "index": 47,
-      "start": 233.591,
-      "end": 237.854,
-      "text": "如果想回学校进修充电，学费同样可以免税提取",
-      "slide_index": 8
+      "start": 200.543,
+      "end": 205.747,
+      "text": "选专业之前一定确认清楚，别读完两年才发现不在名单上",
+      "slide_index": 5
     },
     {
       "index": 48,
-      "start": 238.154,
-      "end": 244.454,
-      "text": "通过 LLP 终身学习计划，你可以免税无息提取，高达 2 万加元的学费",
-      "slide_index": 8
+      "start": 206.047,
+      "end": 207.81,
+      "text": "那申请要花多少钱",
+      "slide_index": 5
     },
     {
       "index": 49,
-      "start": 244.754,
-      "end": 250.481,
-      "text": "虽然每年最多只能提取 1 万，但毕业之后有长达 10 年的还款时间",
-      "slide_index": 8
+      "start": 208.61,
+      "end": 215.916,
+      "text": "申请费用很简单，工签费 155 加开放工签持有人费 100，一共 255 加元",
+      "slide_index": 6
     },
     {
       "index": 50,
-      "start": 250.781,
-      "end": 254.496,
-      "text": "这相当于是自己给自己的，无息教育助学金",
-      "slide_index": 8
+      "start": 216.216,
+      "end": 219.791,
+      "text": "如果之前没采过生物信息，还要加 85",
+      "slide_index": 6
     },
     {
       "index": 51,
-      "start": 254.796,
-      "end": 257.749,
-      "text": "那么，一不小心存超额了怎么办",
-      "slide_index": 8
+      "start": 220.091,
+      "end": 229.676,
+      "text": "材料方面，需要毕业证明或成绩单、护照、2024年11月之后的申请还要语言成绩和 CIP 代码证明",
+      "slide_index": 6
     },
     {
       "index": 52,
-      "start": 258.549,
-      "end": 262.781,
-      "text": "手一抖把存款额度存超了，真的会被罚款吗",
-      "slide_index": 9
+      "start": 229.976,
+      "end": 235.26,
+      "text": "特别注意，IRCC 系统有 bug，不会自动让你上传语言成绩",
+      "slide_index": 6
     },
     {
       "index": 53,
-      "start": 263.081,
-      "end": 268.487,
-      "text": "别慌，税局专门留下了一个，终身 2000 加元的免罚缓冲区",
-      "slide_index": 9
+      "start": 235.56,
+      "end": 238.837,
+      "text": "你必须手动传到 Client Information 栏目里",
+      "slide_index": 6
     },
     {
       "index": 54,
-      "start": 268.787,
-      "end": 273.719,
-      "text": "只要你超出的本金，没有越过 2000 的红线，就绝对不会被罚",
-      "slide_index": 9
+      "start": 239.137,
+      "end": 241.156,
+      "text": "漏传了可能直接被拒",
+      "slide_index": 6
     },
     {
       "index": 55,
-      "start": 274.019,
-      "end": 279.722,
-      "text": "可一旦越过 2000，超出部分每个月，会被无情强征 1% 的罚税",
-      "slide_index": 9
+      "start": 241.456,
+      "end": 244.09,
+      "text": "那 PGWP 到期了怎么办",
+      "slide_index": 6
     },
     {
       "index": 56,
-      "start": 280.022,
-      "end": 283.167,
-      "text": "那么，在账户里买股票爆仓了怎么办",
-      "slide_index": 9
+      "start": 244.89,
+      "end": 249.307,
+      "text": "PGWP 过期了，不能续、不能延，这是铁律",
+      "slide_index": 7
     },
     {
       "index": 57,
-      "start": 283.967,
-      "end": 289.885,
-      "text": "在注册账户里买高风险股票，一旦爆仓，后果绝对是毁灭性的",
-      "slide_index": 10
+      "start": 249.607,
+      "end": 255.496,
+      "text": "疫情期间的临时延期政策，已经在 2023年底结束了，以后不会再有",
+      "slide_index": 7
     },
     {
       "index": 58,
-      "start": 290.185,
-      "end": 295.133,
-      "text": "你在里面亏掉的每一分钱，都不能拿来抵扣账户外的股票收益",
-      "slide_index": 10
+      "start": 255.796,
+      "end": 259.93,
+      "text": "所以 PGWP 拿到手的第一天就要倒推规划",
+      "slide_index": 7
     },
     {
       "index": 59,
-      "start": 295.433,
-      "end": 300.332,
-      "text": "最惨的是，被消耗掉的存款额度，会直接当场永久作废",
-      "slide_index": 10
+      "start": 260.23,
+      "end": 268.683,
+      "text": "最佳路径是 PGWP 期间，积累 1 年以上加拿大工作经验，通过 EE 快速通道申请 PR",
+      "slide_index": 7
     },
     {
       "index": 60,
-      "start": 300.632,
-      "end": 305.506,
-      "text": "这相当于亏了本金又丢了额度，直接面临双重爆头",
-      "slide_index": 10
+      "start": 268.983,
+      "end": 273.288,
+      "text": "PR 审批期间可以申请桥梁工签继续合法工作",
+      "slide_index": 7
     },
     {
       "index": 61,
-      "start": 305.806,
-      "end": 309.115,
-      "text": "那么，中产想要大额退税该怎么做",
-      "slide_index": 10
+      "start": 273.588,
+      "end": 281.801,
+      "text": "如果 PGWP 快到期还没拿到 PR 邀请，必须找雇主担保转封闭式工签，或者离境",
+      "slide_index": 7
     },
     {
       "index": 62,
-      "start": 309.915,
-      "end": 314.834,
-      "text": "手头有一大笔积蓄，怎么存才能把退税金额直接吃满",
-      "slide_index": 11
+      "start": 282.101,
+      "end": 284.164,
+      "text": "别拖到最后一天才想办法",
+      "slide_index": 7
     },
     {
       "index": 63,
-      "start": 315.134,
-      "end": 318.553,
-      "text": "秘诀就在于，存抵是两个独立的动作",
-      "slide_index": 11
+      "start": 284.964,
+      "end": 291.545,
+      "text": "本期所有数据均来自加拿大联邦政府 IRCC 官网，完整链接在屏幕上",
+      "slide_index": 8
     },
     {
       "index": 64,
-      "start": 318.853,
-      "end": 327.013,
-      "text": "如果一次性申报 3 万，你的计税档次，会从 43% 直接掉到 34.3%，大打折扣",
-      "slide_index": 11
+      "start": 292.345,
+      "end": 297.401,
+      "text": "有什么想了解的，评论区留下来，问的人多我会单独做一期",
+      "slide_index": 9
     },
     {
       "index": 65,
-      "start": 327.313,
-      "end": 332.838,
-      "text": "但要是分三年慢慢申报，就能稳稳锁在 43% 的高税率上",
-      "slide_index": 11
+      "start": 297.701,
+      "end": 305.286,
+      "text": "PGWP 拿到手只是第一步，EE 快速通道、省提名怎么选，后面会一个一个拆",
+      "slide_index": 9
     },
     {
       "index": 66,
-      "start": 333.138,
-      "end": 337.117,
-      "text": "相同的本金，平白无故多赚 2600 元退税",
-      "slide_index": 11
-    },
-    {
-      "index": 67,
-      "start": 337.417,
-      "end": 340.388,
-      "text": "那么，夫妻收入差距大该怎么省",
-      "slide_index": 11
-    },
-    {
-      "index": 68,
-      "start": 341.188,
-      "end": 346.271,
-      "text": "如果夫妻两人的年薪收入差距特别大，一定要开启配偶账户",
-      "slide_index": 12
-    },
-    {
-      "index": 69,
-      "start": 346.571,
-      "end": 351.776,
-      "text": "高薪的一方拿自己的额度往里面存钱，当场拿高税档退税",
-      "slide_index": 12
-    },
-    {
-      "index": 70,
-      "start": 352.076,
-      "end": 359.474,
-      "text": "但最绝的是，等几十年后退休提款时，这笔钱会算作低薪一方的，个人收入来征税",
-      "slide_index": 12
-    },
-    {
-      "index": 71,
-      "start": 359.774,
-      "end": 363.495,
-      "text": "这一来一回，直接把取款税率打到地板价",
-      "slide_index": 12
-    },
-    {
-      "index": 72,
-      "start": 363.795,
-      "end": 366.709,
-      "text": "那么，如果遇到低谷或失业年份呢",
-      "slide_index": 12
-    },
-    {
-      "index": 73,
-      "start": 367.509,
-      "end": 374.764,
-      "text": "如果遇到失业、产假或者停薪等，收入低谷年份，其实是提前提款的黄金期",
-      "slide_index": 13
-    },
-    {
-      "index": 74,
-      "start": 375.064,
-      "end": 380.542,
-      "text": "虽然银行在提款时，会强制预扣 10% 到 30% 的税款",
-      "slide_index": 13
-    },
-    {
-      "index": 75,
-      "start": 380.842,
-      "end": 383.677,
-      "text": "比如提取 5000 以内，扣 10%",
-      "slide_index": 13
-    },
-    {
-      "index": 76,
-      "start": 383.977,
-      "end": 386.914,
-      "text": "超过 1.5 万，则扣 30%",
-      "slide_index": 13
-    },
-    {
-      "index": 77,
-      "start": 387.214,
-      "end": 395.681,
-      "text": "但只要你当年实际收入低于免税线，预扣税次年就会全额退还，直接实现 0% 税率套现",
-      "slide_index": 13
-    },
-    {
-      "index": 78,
-      "start": 395.981,
-      "end": 399.625,
-      "text": "那么，到了 71 岁退休又该怎么保全福利",
-      "slide_index": 13
-    },
-    {
-      "index": 79,
-      "start": 400.425,
-      "end": 404.168,
-      "text": "年满 71 岁必须强制关闭 RRSP",
-      "slide_index": 14
-    },
-    {
-      "index": 80,
-      "start": 404.468,
-      "end": 409.196,
-      "text": "你只有三个选项取现、转 RRIF、或买年金",
-      "slide_index": 14
-    },
-    {
-      "index": 81,
-      "start": 409.496,
-      "end": 412.88,
-      "text": "大多数人选 RRIF，但问题来了",
-      "slide_index": 14
-    },
-    {
-      "index": 82,
-      "start": 413.18,
-      "end": 417.914,
-      "text": "RRIF 每年的取款，全部算作当年收入要征税",
-      "slide_index": 14
-    },
-    {
-      "index": 83,
-      "start": 418.214,
-      "end": 421.741,
-      "text": "取得太多，总收入超过 9 万加元红线",
-      "slide_index": 14
-    },
-    {
-      "index": 84,
-      "start": 422.041,
-      "end": 427.119,
-      "text": "政府发的老年金 OAS，就会被无情扣减甚至清零",
-      "slide_index": 14
-    },
-    {
-      "index": 85,
-      "start": 427.419,
-      "end": 428.351,
-      "text": "怎么破局",
-      "slide_index": 14
-    },
-    {
-      "index": 86,
-      "start": 428.651,
-      "end": 431.572,
-      "text": "还记得上期讲的 TFSA 吗",
-      "slide_index": 14
-    },
-    {
-      "index": 87,
-      "start": 431.872,
-      "end": 433.832,
-      "text": "它提款完全不算收入",
-      "slide_index": 14
-    },
-    {
-      "index": 88,
-      "start": 434.132,
-      "end": 439.665,
-      "text": "所以只提 RRIF 最低额度，大额消费全走 TFSA",
-      "slide_index": 14
-    },
-    {
-      "index": 89,
-      "start": 439.965,
-      "end": 443.561,
-      "text": "就能稳稳守住收入红线，保全全部福利",
-      "slide_index": 14
-    },
-    {
-      "index": 90,
-      "start": 444.361,
-      "end": 451.762,
-      "text": "本期所有的加拿大官方政策，均来自联邦税务局、金融管理局等官网的权威指引",
-      "slide_index": 15
-    },
-    {
-      "index": 91,
-      "start": 452.062,
-      "end": 456.856,
-      "text": "第1部分权威链接已在屏幕上，建议大家随时截图核对",
-      "slide_index": 15
-    },
-    {
-      "index": 92,
-      "start": 457.656,
-      "end": 464.739,
-      "text": "第2部分，则是各大商业银行，关于具体账户细节、买房与读书计划的指南链接",
-      "slide_index": 16
-    },
-    {
-      "index": 93,
-      "start": 465.039,
-      "end": 471.826,
-      "text": "我们对数据，进行了严格审计，绝无任何凭空编造，链接在此供大家参考",
-      "slide_index": 16
-    },
-    {
-      "index": 94,
-      "start": 472.626,
-      "end": 478.762,
-      "text": "有关于存款、退税或者套现的问题，欢迎在评论区随时留言交流",
-      "slide_index": 17
-    },
-    {
-      "index": 95,
-      "start": 479.062,
-      "end": 488.642,
-      "text": "下期讲 RRSP 加 TFSA 的终极混合搭配，教你根据年薪，做跨期资产配置，把福利全部吃满",
-      "slide_index": 17
-    },
-    {
-      "index": 96,
-      "start": 488.942,
-      "end": 490.352,
+      "start": 305.586,
+      "end": 306.997,
       "text": "关注我，别错过",
-      "slide_index": 17
+      "slide_index": 9
     }
   ],
   "audioUrl": "/public/audio.wav",
@@ -1236,74 +737,39 @@
       "slideIndex": 0
     },
     {
-      "title": "RRSP定义",
-      "startSec": 18.79,
+      "title": "PGWP定义",
+      "startSec": 13.832,
       "slideIndex": 1
     },
     {
-      "title": "首年额度",
-      "startSec": 47.525,
+      "title": "基本资格",
+      "startSec": 46.398,
       "slideIndex": 2
     },
     {
-      "title": "税务陷阱",
-      "startSec": 77.084,
+      "title": "时长规则",
+      "startSec": 96.295,
       "slideIndex": 3
     },
     {
-      "title": "税率速查",
-      "startSec": 98.475,
+      "title": "语言门槛",
+      "startSec": 138.735,
       "slideIndex": 4
     },
     {
-      "title": "降档原理",
-      "startSec": 130.265,
+      "title": "专业限制",
+      "startSec": 167.549,
       "slideIndex": 5
     },
     {
-      "title": "高薪实战",
-      "startSec": 174.447,
+      "title": "费用材料",
+      "startSec": 208.61,
       "slideIndex": 6
     },
     {
-      "title": "免税买房",
-      "startSec": 206.426,
+      "title": "到期规划",
+      "startSec": 244.89,
       "slideIndex": 7
-    },
-    {
-      "title": "免税读书",
-      "startSec": 233.591,
-      "slideIndex": 8
-    },
-    {
-      "title": "超额罚款",
-      "startSec": 258.549,
-      "slideIndex": 9
-    },
-    {
-      "title": "亏损风险",
-      "startSec": 283.967,
-      "slideIndex": 10
-    },
-    {
-      "title": "实战进阶",
-      "startSec": 309.915,
-      "slideIndex": 11
-    },
-    {
-      "title": "配偶平摊",
-      "startSec": 341.188,
-      "slideIndex": 12
-    },
-    {
-      "title": "低谷套现",
-      "startSec": 367.509,
-      "slideIndex": 13
-    },
-    {
-      "title": "强制关户",
-      "startSec": 400.425,
-      "slideIndex": 14
     }
   ],
   "themeName": "gold"

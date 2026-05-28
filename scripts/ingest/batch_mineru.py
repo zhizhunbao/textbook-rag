@@ -43,6 +43,7 @@ SOURCE_DIRS: dict[str, Path] = {
     "federal-fcac":       CRAWLED_WEB_DIR / "federal-fcac",
     "federal-cra":        CRAWLED_WEB_DIR / "federal-cra",
     "federal-cdic":       CRAWLED_WEB_DIR / "federal-cdic",
+    "federal-esdc":       CRAWLED_WEB_DIR / "federal-esdc",
     "prov-ontario":       CRAWLED_WEB_DIR / "prov-ontario",
     "prov-bc":            CRAWLED_WEB_DIR / "prov-bc",
     "prov-alberta":       CRAWLED_WEB_DIR / "prov-alberta",
