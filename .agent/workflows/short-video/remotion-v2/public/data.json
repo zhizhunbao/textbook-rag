@@ -1,0 +1,17 @@
+{
+  "slides": [
+    { "type": "cover", "title": "测试视频", "subtitle": "v2 Progressive Disclosure", "hookNumber": "507", "hookUnit": "CRS 最低分", "source": "海外生活指南" },
+    { "type": "argument", "title": "EE 快速通道分数趋势", "source": "海外生活指南", "table": { "headers": ["轮次", "最低分", "邀请人数"], "rows": [["第1轮", "507", "1,500"], ["第2轮", "512", "1,200"], ["第3轮", "515", "800"]] } },
+    { "type": "preview", "title": "下期预告", "content": "关注我，别错过", "source": "海外生活指南" }
+  ],
+  "timestamps": [
+    { "index": 1, "text": "五百零七分就能获邀？", "start": 0.5, "end": 2.5, "slide_index": 0 },
+    { "index": 2, "text": "我翻完数据发现没这么简单。", "start": 2.5, "end": 5.0, "slide_index": 0 },
+    { "index": 3, "text": "先看第一轮的数据。", "start": 5.2, "end": 7.0, "slide_index": 1 },
+    { "index": 4, "text": "五百零七分，邀请了一千五百人。", "start": 7.0, "end": 9.5, "slide_index": 1 },
+    { "index": 5, "text": "第二轮分数涨到了五百一十二。", "start": 9.5, "end": 12.0, "slide_index": 1 },
+    { "index": 6, "text": "第三轮更高，五百一十五分。", "start": 12.0, "end": 14.5, "slide_index": 1 },
+    { "index": 7, "text": "有什么想了解的，评论区留下来。", "start": 14.8, "end": 17.0, "slide_index": 2 },
+    { "index": 8, "text": "关注我，别错过。", "start": 17.0, "end": 19.0, "slide_index": 2 }
+  ]
+}

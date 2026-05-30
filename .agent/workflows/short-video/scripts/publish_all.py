@@ -115,14 +115,31 @@ PLATFORMS = {
     },
 }
 
-# Default tags per platform
-PLATFORM_TAGS = {
-    "xiaohongshu": "加拿大生活,海外生活攻略,加拿大银行,留学生活",
-    "douyin":      "加拿大生活,海外生活攻略,加拿大银行,留学生活",
-    "bilibili":    "加拿大生活,海外生活攻略,加拿大银行,留学生活",
-    "kuaishou":    "加拿大生活,海外生活攻略,加拿大银行,留学生活",
-    "weixin":      "加拿大生活,海外生活攻略,生活指南",
-}
+# Base tags (always included) + keyword → topic tag mapping
+_BASE_TAGS = ["加拿大生活", "海外生活攻略"]
+_KEYWORD_TAG_MAP: list[tuple[list[str], str]] = [
+    (["PR", "永居", "枫叶卡", "联邦", "通道", "EE", "PNP", "AIP"], "加拿大PR"),
+    (["银行", "开户", "存款", "利率"], "加拿大银行"),
+    (["工签", "工作", "LMIA"], "加拿大工作"),
+    (["学签", "留学", "大学"], "留学生活"),
+    (["租房", "买房", "住房"], "加拿大租房"),
+    (["签证", "续签", "身份"], "加拿大签证"),
+    (["报税", "税务", "退税"], "加拿大报税"),
+    (["驾照", "买车", "保险"], "加拿大生活攻略"),
+]
+
+
+def _tags_from_title(title: str) -> str:
+    """从 storyline 标题自动提取标签，回退到通用标签。"""
+    tags = list(_BASE_TAGS)
+    for keywords, tag in _KEYWORD_TAG_MAP:
+        if any(kw in title for kw in keywords):
+            if tag not in tags:
+                tags.append(tag)
+    # 至少 3 个标签
+    if len(tags) < 3:
+        tags.append("生活指南")
+    return ",".join(tags[:5])  # 最多 5 个
 
 
 # ---------------------------------------------------------------------------
@@ -402,7 +419,7 @@ def publish_all(
     # 3. 逐平台发布
     results = {}
     for platform in target_platforms:
-        tags = PLATFORM_TAGS.get(platform, "")
+        tags = _tags_from_title(title)
         try:
             ok = upload_to_platform(
                 platform=platform,

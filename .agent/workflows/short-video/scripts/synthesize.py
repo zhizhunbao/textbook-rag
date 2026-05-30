@@ -657,27 +657,61 @@ def _split_multi_clause_timestamps(timestamps: list[dict]) -> list[dict]:
 
 
 def _split_clauses(text: str) -> list[str]:
-    """在「中文/数字 + 空格 + 中文」处拆分。
+    """智能拆分长句为字幕片段。
 
-    但保留「数字 + 空格 + 量词/单位字」不拆（如 33,810 加元 / 1.8 万 / 365 天）。
+    三层拆分策略:
+    1. 先按句末标点（。！？）拆分
+    2. 对仍然过长的片段（>20字），再按分号/冒号拆
+    3. 对仍然过长的片段（>25字），再按逗号拆
+    4. 合并过短片段（<5字）到前一个
+
+    同时保留旧逻辑: 在「中文/数字 + 空格 + 中文」处拆分（TTS 吃标点后留空格）。
     """
     import re as _re
-    # 量词/单位字: 中文字后面紧跟这些字时不拆分
-    _UNITS = '加万亿元年天月个岁块期日件台倍部架米吨套杯%'
-    # 注意: 左侧只匹配中文字(不含数字)，数字后面永远不拆分
-    marked = _re.sub(
-        rf'([\u4e00-\u9fff])\s+(?![{_UNITS}])([\u4e00-\u9fff])',
-        '\\1\u2502\\2',
-        text,
-    )
-    parts = [s.strip() for s in marked.split('\u2502') if s.strip()]
-    # 合并过短的片段 (< 4 字) 到下一个
-    merged = []
+
+    # ── Step 1: 按句末标点拆 ──
+    # 保留标点在前一段末尾
+    parts = _re.split(r'(?<=[。！？])', text)
+    parts = [p.strip() for p in parts if p.strip()]
+
+    # ── Step 2: 过长片段按分号/冒号再拆 ──
+    refined = []
     for p in parts:
-        if merged and len(merged[-1]) < 4:
+        if len(p) > 20:
+            subs = _re.split(r'(?<=[；：])', p)
+            refined.extend(s.strip() for s in subs if s.strip())
+        else:
+            refined.append(p)
+
+    # ── Step 3: 仍然过长的按逗号拆 ──
+    refined2 = []
+    for p in refined:
+        if len(p) > 25:
+            subs = _re.split(r'(?<=[，])', p)
+            refined2.extend(s.strip() for s in subs if s.strip())
+        else:
+            refined2.append(p)
+
+    # ── Step 4: 旧逻辑 — 空格拆分（TTS 吃标点后留空格） ──
+    _UNITS = '加万亿元年天月个岁块期日件台倍部架米吨套杯%'
+    refined3 = []
+    for p in refined2:
+        marked = _re.sub(
+            rf'([\u4e00-\u9fff])\s+(?![{_UNITS}])([\u4e00-\u9fff])',
+            '\\1\u2502\\2',
+            p,
+        )
+        subs = [s.strip() for s in marked.split('\u2502') if s.strip()]
+        refined3.extend(subs)
+
+    # ── Step 5: 合并过短片段（<5字）到前一个 ──
+    merged = []
+    for p in refined3:
+        if merged and len(p) < 5:
             merged[-1] += p
         else:
             merged.append(p)
+
     return merged if merged else [text]
 
 

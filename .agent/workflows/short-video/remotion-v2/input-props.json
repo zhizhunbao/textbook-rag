@@ -1,0 +1,477 @@
+{
+  "slides": [
+    {
+      "type": "cover",
+      "title": "加拿大联邦全景",
+      "source": "海外生活指南",
+      "chapter": "开场",
+      "subtitle": "2026还能走哪条？",
+      "hookNumber": "10",
+      "hookUnit": "条PR通道"
+    },
+    {
+      "type": "argument",
+      "title": "还在开放的联邦通道",
+      "source": "海外生活指南",
+      "chapter": "开放通道",
+      "table": {
+        "headers": [
+          "分类",
+          "中文名",
+          "英文名",
+          "缩写",
+          "开始日期",
+          "结束日期",
+          "状态"
+        ],
+        "rows": [
+          [
+            "工作类",
+            "快速通道",
+            "Express Entry",
+            "EE",
+            "2015-01-01",
+            "—",
+            "开放"
+          ],
+          [
+            "工作类",
+            "医生通道",
+            "Medical Doctors Pathway",
+            "—",
+            "—",
+            "—",
+            "开放"
+          ],
+          [
+            "工作类",
+            "护理工",
+            "Caregivers",
+            "—",
+            "—",
+            "—",
+            "试点已关"
+          ],
+          [
+            "地区类",
+            "省提名",
+            "Provincial Nominee Program",
+            "PNP",
+            "1998",
+            "—",
+            "开放"
+          ],
+          [
+            "地区类",
+            "大西洋四省",
+            "Atlantic Immigration Program",
+            "AIP",
+            "2017-03",
+            "—",
+            "开放"
+          ],
+          [
+            "地区类",
+            "社区试点",
+            "Rural and Francophone Community Immigration Pilots",
+            "RCIP/FCIP",
+            "2024-12-02",
+            "—",
+            "开放"
+          ],
+          [
+            "地区类",
+            "魁省通道",
+            "Quebec Skilled Workers / Investors",
+            "QSW",
+            "—",
+            "—",
+            "开放"
+          ],
+          [
+            "家庭类",
+            "家庭团聚",
+            "Family Sponsorship",
+            "—",
+            "—",
+            "—",
+            "开放"
+          ],
+          [
+            "难民类",
+            "难民庇护",
+            "Refugees and Asylum",
+            "—",
+            "—",
+            "—",
+            "开放"
+          ],
+          [
+            "特殊类",
+            "港人通道",
+            "Hong Kong Residents Permanent Residence",
+            "HK",
+            "2021-06",
+            "2026-08-31",
+            "开放"
+          ]
+        ]
+      }
+    },
+    {
+      "type": "argument",
+      "title": "暂停和关闭 — 关的比开的多",
+      "source": "海外生活指南",
+      "chapter": "暂停/关闭",
+      "table": {
+        "headers": [
+          "中文名",
+          "英文名",
+          "缩写",
+          "开始日期",
+          "结束日期",
+          "状态"
+        ],
+        "rows": [
+          [
+            "创业visa",
+            "Start-up Visa Program",
+            "SUV",
+            "2013-04",
+            "2026-01-01",
+            "暂停"
+          ],
+          [
+            "自雇项目",
+            "Self-Employed Persons Program",
+            "SEP",
+            "—",
+            "2026-01-01",
+            "暂停"
+          ],
+          [
+            "护理工试点",
+            "Home Care Worker Immigration Pilots",
+            "HCWP",
+            "2019-06-18",
+            "2024-06-17",
+            "关闭"
+          ],
+          [
+            "经济流动试点",
+            "Economic Mobility Pathways Pilot",
+            "EMPP",
+            "2023",
+            "—",
+            "关闭"
+          ],
+          [
+            "临转永",
+            "Temporary Resident to Permanent Resident Pathway",
+            "TR→PR",
+            "2021-05",
+            "2021-11-05",
+            "关闭"
+          ],
+          [
+            "农食试点",
+            "Agri-Food Pilot",
+            "AFP",
+            "2020",
+            "2025-05-14",
+            "关闭"
+          ],
+          [
+            "老版农村试点",
+            "Rural and Northern Immigration Pilot",
+            "RNIP",
+            "2020",
+            "2024-12-02",
+            "关闭"
+          ],
+          [
+            "GTA建筑工",
+            "Out-of-Status Construction Workers",
+            "—",
+            "2024",
+            "2024-12-31",
+            "关闭"
+          ],
+          [
+            "PS752空难",
+            "Families of Flight PS752 Victims",
+            "—",
+            "2020",
+            "2025-10-27",
+            "关闭"
+          ],
+          [
+            "乌克兰",
+            "Canada-Ukraine Authorization for Emergency Travel",
+            "CUAET",
+            "2022-03",
+            "2023-07-15",
+            "关闭"
+          ],
+          [
+            "哥委海地",
+            "Family-based Program for Colombians, Haitians and Venezuelans",
+            "—",
+            "—",
+            "—",
+            "关闭"
+          ],
+          [
+            "苏丹冲突",
+            "People Affected by the Conflict in Sudan",
+            "—",
+            "2023",
+            "—",
+            "关闭"
+          ],
+          [
+            "Yazidi家属",
+            "Resettled Yazidis and Survivors of Daesh",
+            "—",
+            "—",
+            "—",
+            "关闭"
+          ]
+        ]
+      }
+    },
+    {
+      "type": "citation",
+      "title": "引用来源",
+      "source": "海外生活指南",
+      "table": {
+        "headers": [
+          "中文名",
+          "英文名",
+          "说明",
+          "链接"
+        ],
+        "rows": [
+          [
+            "加拿大IRCC",
+            "Immigration, Refugees and Citizenship Canada (IRCC)",
+            "联邦总览页",
+            "https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada"
+          ],
+          [
+            "",
+            "",
+            "2025年报",
+            "https://www.canada.ca/en/immigration-refugees-citizenship/corporate/publications-manuals/annual-report-parliament-immigration-2025"
+          ],
+          [
+            "",
+            "",
+            "SUV暂停公告",
+            "https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/start-visa/about"
+          ],
+          [
+            "",
+            "",
+            "自雇项目",
+            "https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/self-employed"
+          ]
+        ]
+      }
+    },
+    {
+      "type": "preview",
+      "title": "下期预告",
+      "source": "海外生活指南",
+      "chapter": "下期",
+      "content": "AIP 大西洋四省详解"
+    }
+  ],
+  "timestamps": [
+    {
+      "index": 1,
+      "start": 0.15,
+      "end": 3.775,
+      "text": "2026年联邦拿PR，还剩10条通道",
+      "slide_index": 0
+    },
+    {
+      "index": 2,
+      "start": 4.075,
+      "end": 6.315,
+      "text": "哪条还能走，快速过一遍",
+      "slide_index": 0
+    },
+    {
+      "index": 3,
+      "start": 7.115,
+      "end": 8.568,
+      "text": "EE快速通道，",
+      "slide_index": 1
+    },
+    {
+      "index": 4,
+      "start": 8.568,
+      "end": 9.606,
+      "text": "联邦主力，",
+      "slide_index": 1
+    },
+    {
+      "index": 5,
+      "start": 9.606,
+      "end": 11.474,
+      "text": "学历语言年龄打分，",
+      "slide_index": 1
+    },
+    {
+      "index": 6,
+      "start": 11.474,
+      "end": 12.719,
+      "text": "够线直接邀请",
+      "slide_index": 1
+    },
+    {
+      "index": 7,
+      "start": 13.019,
+      "end": 15.101,
+      "text": "医生专属通道单独开，",
+      "slide_index": 1
+    },
+    {
+      "index": 8,
+      "start": 15.101,
+      "end": 16.766,
+      "text": "护理工试点已关，",
+      "slide_index": 1
+    },
+    {
+      "index": 9,
+      "start": 16.766,
+      "end": 18.431,
+      "text": "目前只能申请工签",
+      "slide_index": 1
+    },
+    {
+      "index": 10,
+      "start": 18.731,
+      "end": 22.689,
+      "text": "PNP省提名，各省自己定规则，名额最多",
+      "slide_index": 1
+    },
+    {
+      "index": 11,
+      "start": 22.989,
+      "end": 28.165,
+      "text": "AIP大西洋四省，语言只要CLB 4，联邦门槛最低",
+      "slide_index": 1
+    },
+    {
+      "index": 12,
+      "start": 28.465,
+      "end": 30.8,
+      "text": "RCIP农村社区试点，",
+      "slide_index": 1
+    },
+    {
+      "index": 13,
+      "start": 30.8,
+      "end": 33.984,
+      "text": "2024年12月刚启动，新通道",
+      "slide_index": 1
+    },
+    {
+      "index": 14,
+      "start": 34.284,
+      "end": 37.249,
+      "text": "魁省走独立体系，不进EE池子",
+      "slide_index": 1
+    },
+    {
+      "index": 15,
+      "start": 37.549,
+      "end": 42.088,
+      "text": "家庭团聚靠担保，难民走人道，跟技术条件无关",
+      "slide_index": 1
+    },
+    {
+      "index": 16,
+      "start": 42.388,
+      "end": 47.136,
+      "text": "港人通道2026年8月31号到期，还剩3个月窗口",
+      "slide_index": 1
+    },
+    {
+      "index": 17,
+      "start": 47.936,
+      "end": 50.843,
+      "text": "SUV创业签证和自雇SEP，",
+      "slide_index": 2
+    },
+    {
+      "index": 18,
+      "start": 50.843,
+      "end": 53.75,
+      "text": "2026年1月1号起暂停受理",
+      "slide_index": 2
+    },
+    {
+      "index": 19,
+      "start": 54.05,
+      "end": 57.113,
+      "text": "以前想走这两条的，现在必须换路",
+      "slide_index": 2
+    },
+    {
+      "index": 20,
+      "start": 57.413,
+      "end": 62.658,
+      "text": "TR转PR、农食试点、GTA建筑工这些，早都过期了",
+      "slide_index": 2
+    },
+    {
+      "index": 21,
+      "start": 63.458,
+      "end": 66.1,
+      "text": "所有数据来自IRCC官网",
+      "slide_index": 3
+    },
+    {
+      "index": 22,
+      "start": 66.9,
+      "end": 70.742,
+      "text": "下期讲AIP大西洋四省，联邦门槛最低",
+      "slide_index": 4
+    },
+    {
+      "index": 23,
+      "start": 71.042,
+      "end": 72.533,
+      "text": "关注我，下期见",
+      "slide_index": 4
+    }
+  ],
+  "audioUrl": "/public/audio.wav",
+  "chapters": [
+    {
+      "title": "开场",
+      "startSec": 0.15,
+      "slideIndex": 0
+    },
+    {
+      "title": "开放通道",
+      "startSec": 7.115,
+      "slideIndex": 1
+    },
+    {
+      "title": "暂停/关闭",
+      "startSec": 47.936,
+      "slideIndex": 2
+    },
+    {
+      "title": "下期",
+      "startSec": 66.9,
+      "slideIndex": 4
+    }
+  ],
+  "themeName": "gold"
+}
