@@ -1,5 +1,5 @@
 import React from 'react';
-import { staticFile, useCurrentFrame, interpolate } from 'remotion';
+import { staticFile, Img } from 'remotion';
 import type { ThemeConfig } from '../theme';
 import { getBaseStyles } from '../theme';
 import type { RevealState, CropImage } from '../types';
@@ -162,25 +162,11 @@ const FramedImage: React.FC<{
   frameH: number;
   reveal: RevealState;
 }> = ({ src, crops, allSorted, activeIdx, isActive, frameW, frameH, reveal }) => {
-  const frame = useCurrentFrame();
 
-  // ── crossfade: 不同截图之间平滑过渡 ──
-  const prevActiveRef = React.useRef(isActive);
-  const transitionFrameRef = React.useRef(0);
-
-  if (isActive !== prevActiveRef.current) {
-    transitionFrameRef.current = frame;
-    prevActiveRef.current = isActive;
-  }
-
-  const FADE_FRAMES = 4;
-  const framesSinceChange = frame - transitionFrameRef.current;
-  let opacity: number;
-  if (isActive) {
-    opacity = interpolate(framesSinceChange, [0, FADE_FRAMES], [0.5, 1], { extrapolateRight: 'clamp' });
-  } else {
-    opacity = interpolate(framesSinceChange, [0, FADE_FRAMES], [1, 0], { extrapolateRight: 'clamp' });
-  }
+  // ── opacity: purely deterministic, no useRef ──
+  // Active group is fully visible; inactive groups are hidden.
+  // This eliminates flicker caused by Remotion's non-sequential frame rendering.
+  const opacity = isActive ? 1 : 0;
 
   // ── 当前活跃 crop ──
   let localActiveIdx = 0;
@@ -211,7 +197,7 @@ const FramedImage: React.FC<{
       overflow: 'hidden',
       opacity,
     }}>
-      <img
+      <Img
         src={staticFile(src)}
         style={{
           position: 'absolute',

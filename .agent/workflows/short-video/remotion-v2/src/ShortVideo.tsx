@@ -171,49 +171,15 @@ function getCurrentSlideIndex(timestamps: TimestampEntry[], currentTimeMs: numbe
 }
 
 /**
- * slide 切换过渡 — 200ms 淡入淡出 (与 v1 一致)
+ * slide 切换过渡 — 直切 (no fade)
  *
- * 在 slide 切换点附近:
- * - 切换前 200ms: opacity 1 → 0 (fade out)
- * - 切换后 200ms: opacity 0 → 1 (fade in)
+ * v2.5: 去掉 fade out/in，消除切换时的黑屏闪烁。
+ * 幻灯片瞬间切换，像 PPT 一样。
  */
 function getSlideTransition(
-  timestamps: TimestampEntry[],
-  currentTimeMs: number,
-  currentSlideIndex: number,
+  _timestamps: TimestampEntry[],
+  _currentTimeMs: number,
+  _currentSlideIndex: number,
 ): { opacity: number } {
-  const FADE_MS = 200;
-
-  // 找到下一个 slide 切换点
-  for (const ts of timestamps) {
-    if (ts.slide_index !== undefined && ts.slide_index !== currentSlideIndex) {
-      const switchMs = ts.start * 1000;
-      const distToSwitch = switchMs - currentTimeMs;
-
-      // 即将切换 (0 ~ FADE_MS ms 之前): fade out
-      if (distToSwitch > 0 && distToSwitch < FADE_MS) {
-        return { opacity: distToSwitch / FADE_MS };
-      }
-    }
-  }
-
-  // 找上一个 slide 切换点 (fade in)
-  let lastSwitchMs = 0;
-  for (const ts of timestamps) {
-    if (ts.slide_index === currentSlideIndex && ts.start * 1000 <= currentTimeMs) {
-      const tsIdx = timestamps.indexOf(ts);
-      if (tsIdx > 0 && timestamps[tsIdx - 1].slide_index !== currentSlideIndex) {
-        lastSwitchMs = ts.start * 1000;
-      }
-    }
-  }
-
-  if (lastSwitchMs > 0) {
-    const timeSinceSwitch = currentTimeMs - lastSwitchMs;
-    if (timeSinceSwitch < FADE_MS) {
-      return { opacity: timeSinceSwitch / FADE_MS };
-    }
-  }
-
   return { opacity: 1 };
 }

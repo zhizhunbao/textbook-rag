@@ -16,6 +16,35 @@ from engine_v2.crawling import js_snippets as JS
 from engine_v2.crawling.site_profile import SiteProfile, register
 
 # ── Ontario (Radware WAF, aggressive rate-limiting) ──
+_ONTARIO_REMOVE_BOILERPLATE = """() => {
+    // Remove site footer (identical on every page — pollutes RAG)
+    // NOTE: do NOT use [role="contentinfo"] — on ontario.ca it wraps
+    // the Updated/Published dates and final content paragraphs too.
+    document.querySelectorAll(
+        'footer.footer, .footer--expanded, .footer__expanded-top-section, ' +
+        '.footer__expanded-bottom-section, .footer__copyright'
+    ).forEach(el => el.remove());
+}"""
+
+_ONTARIO_PRE_PDF = """() => {
+    // Force all content containers to show full content (no clipping).
+    // Ontario.ca CSS clips overflow in print mode, truncating bottom content.
+    document.querySelectorAll(
+        'main, article, .main-content, .body-field, ' +
+        '.grid__inner-wrap, .grid__outer-wrap, .book__off-canvas--wrapper, ' +
+        '.row, .columns, .small-12, [id="toc-end"]'
+    ).forEach(el => {
+        el.style.overflow = 'visible';
+        el.style.maxHeight = 'none';
+        el.style.height = 'auto';
+    });
+    // Ensure body/html don't clip either
+    document.documentElement.style.overflow = 'visible';
+    document.documentElement.style.height = 'auto';
+    document.body.style.overflow = 'visible';
+    document.body.style.height = 'auto';
+}"""
+
 ontario_gov = SiteProfile(
     name="Ontario.ca",
     domains=["ontario.ca", "www.ontario.ca"],
@@ -23,6 +52,8 @@ ontario_gov = SiteProfile(
     print_css=JS.PRINT_CSS_GENERIC,
     min_delay_between=15.0,    # Radware WAF blocks after ~14 reqs at 8s
     retry_backoff_sec=30.0,
+    extra_noise_removal_js=_ONTARIO_REMOVE_BOILERPLATE,
+    pre_pdf_js=_ONTARIO_PRE_PDF,
 )
 register(ontario_gov)
 
